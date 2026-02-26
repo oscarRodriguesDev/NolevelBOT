@@ -149,7 +149,7 @@ O colaborador disse: "${userInput}".
 
       if (precisaAbrirChamado) {
         const chamadoId = Math.random().toString(36).substring(7)
-        const link = `https://sistema.com.br/${chamadoId}`
+        const link = `https://nolevel-bot.vercel.app/chamado/${chamadoId}`
         await sendEvolutionText(instance, number, `Aqui está seu acesso exclusivo para abrir o chamado:\n\n🔗 ${link}`)
         session.state = "identificacao" // Reseta para o próximo contato ou mantém conforme sua regra
       }
