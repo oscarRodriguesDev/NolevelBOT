@@ -1,0 +1,159 @@
+import { NextRequest, NextResponse } from "next/server"
+import { OpenAI } from "openai"
+import type { ChatCompletionMessageParam } from "openai/resources/chat"
+
+const fakeAviso = [
+  {
+    titulo: "Pagamento da Folha",
+    setor: "DP",
+    descricao: "Informamos que o pagamento do salario, devido aos feriados do mês serão adiantados"
+  },
+  {
+    titulo: "Manutenção no Servidor",
+    setor: "TI",
+    descricao: "Havera indisponibilidade do sistema interno no sabado das 22h as 02h para atualizacao de seguranca"
+  },
+  {
+    titulo: "Atualização de Política Comercial",
+    setor: "Comercial",
+    descricao: "A partir do proximo mes os descontos para novos contratos serao limitados conforme nova diretriz interna"
+  },
+  {
+    titulo: "Inventário de Estoque",
+    setor: "Logistica",
+    descricao: "Sera realizado inventario geral no dia 25, solicitamos que todas as movimentacoes sejam registradas corretamente"
+  },
+  {
+    titulo: "Campanha Interna de Endomarketing",
+    setor: "Marketing",
+    descricao: "Iniciamos hoje a campanha interna de engajamento com foco em cultura organizacional"
+  },
+  {
+    titulo: "Revisão de Contratos",
+    setor: "Juridico",
+    descricao: "Todos os novos contratos deverao passar por revisao previa antes de assinatura"
+  },
+  {
+    titulo: "Treinamento Obrigatório de Segurança",
+    setor: "RH",
+    descricao: "Colaboradores devem concluir o treinamento online ate o final do mes"
+  },
+  {
+    titulo: "Auditoria Financeira",
+    setor: "Financeiro",
+    descricao: "A auditoria externa iniciara na proxima semana, manter documentos organizados"
+  },
+  {
+    titulo: "Nova Política de Compras",
+    setor: "Compras",
+    descricao: "Pedidos acima de determinado valor deverao ter aprovacao da diretoria"
+  },
+  {
+    titulo: "Atualização no Processo de Produção",
+    setor: "Producao",
+    descricao: "Sera implementado novo fluxo para reduzir retrabalho e aumentar eficiencia"
+  },
+  {
+    titulo: "Mudança no Layout do Escritorio",
+    setor: "Administrativo",
+    descricao: "Alguns setores serao realocados para melhor distribuicao do espaco fisico"
+  }
+]
+
+// Inicializa OpenAI
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY!,
+})
+
+// Estrutura de sessão simples em memória
+type UserSession = { messages: { role: 'user' | 'system'; content: string }[] }
+const sessions = new Map<string, UserSession>()
+
+function getSession(userId: string): UserSession {
+  if (!sessions.has(userId)) {
+    sessions.set(userId, { messages: [] })
+  }
+  return sessions.get(userId)!
+}
+
+// Cria o prompt de conversa para a IA
+function getChatbotPrompt(message: string, session: UserSession) {
+  const promptMessage = {
+    role: 'system' as const,
+    content: `Você é uma atendente que responde dúvidas dos colaboradores da Hiskra chamada Hevelyn. 
+    Você deve responder todas as dúvidas dos colaboradores. Sua função principal é evitar que os colaboradores precisem entrar
+    em contato com o RH, DP, TI, Financeiro, Comercial, Logística, Marketing, Jurídico, Compras, Produção ou Administrativo.
+    Você tem acesso ao quadro de avisos da empresa com os avisos mais recentes da empresa, e deve usar essas informações para responder as dúvidas dos colaboradores.
+    Se a dúvida do colaborador for sobre um aviso, responda usando as informações do aviso. Se a dúvida do colaborador não for sobre um aviso, responda usando seu conhecimento geral.
+    Se você não souber a resposta, diga que não sabe e sugira que o colaborador entre em contato com o setor responsável`
+  }
+
+  // Limita histórico a últimas 10 mensagens
+  const history = session.messages.slice(-10).map(m => ({ role: m.role, content: m.content }))
+
+  return [promptMessage, ...history, { role: 'user' as const, content: message }]
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json()
+    console.log("Webhook received:", body)
+
+    if (body.event !== "messages.upsert") {
+      return NextResponse.json({ ok: true })
+    }
+
+    const data = body.data
+    if (!data || !data.message || data.key?.fromMe) {
+      return NextResponse.json({ ok: true })
+    }
+
+    // Extrai texto da mensagem
+    let text: string | null = null
+    if (data.message.conversation) text = data.message.conversation
+    if (data.message.extendedTextMessage?.text) text = data.message.extendedTextMessage.text
+    if (!text) return NextResponse.json({ ok: true })
+
+    const number: string = data.key.senderPn || data.key.remoteJid
+    const instance: string = body.instance || data.instance
+    if (!instance) return NextResponse.json({ ok: false, reason: "No instance" })
+
+    // Busca ou cria sessão
+    const session = getSession(number)
+    const messages = getChatbotPrompt(text, session)
+
+    // Chama OpenAI
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      temperature: 0.7,
+      messages: messages as ChatCompletionMessageParam[], // já estão todos no formato {role, content}
+    })
+
+    const responseText = completion.choices[0]?.message?.content ?? "Não entendi."
+    session.messages.push({ role: 'user', content: text })
+    session.messages.push({ role: 'system', content: responseText })
+
+    // Envia resposta via Evolution API
+    const res = await fetch(`${process.env.EVOLUTION_API_URL}/message/sendText/${instance}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: process.env.EVOLUTION_API_KEY as string
+      },
+      body: JSON.stringify({
+        number,
+        text: responseText
+      })
+    })
+
+    if (!res.ok) {
+      console.error("Error sending message:", await res.text())
+      return NextResponse.json({ sent: false, status: res.status })
+    }
+
+    return NextResponse.json({ sent: true })
+  } catch (error) {
+    console.error("Webhook error:", error)
+    return NextResponse.json({ error: true }, { status: 500 })
+  }
+}
