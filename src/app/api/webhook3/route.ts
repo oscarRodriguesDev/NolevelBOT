@@ -51,6 +51,22 @@ function getSession(userId: string): UserSession {
   return sessions.get(userId)!
 }
 
+
+export function gerarTicketId(): string {
+  const agora = new Date()
+
+  const ano = agora.getFullYear().toString()
+  const mes = String(agora.getMonth() + 1).padStart(2, '0')
+  const dia = String(agora.getDate()).padStart(2, '0')
+
+  const hora = String(agora.getHours()).padStart(2, '0')
+  const minuto = String(agora.getMinutes()).padStart(2, '0')
+  const segundo = String(agora.getSeconds()).padStart(2, '0')
+  const milesimo = String(agora.getMilliseconds()).padStart(3, '0')
+
+  return `${ano}${mes}${dia}${hora}${minuto}${segundo}${milesimo}`
+}
+
 async function sendEvolutionText(instance: string, number: string, text: string) {
   await fetch(`${process.env.EVOLUTION_API_URL}/message/sendText/${instance}`, {
     method: "POST",
@@ -102,7 +118,9 @@ export async function POST(req: NextRequest) {
       // Adiciona fala do usuário ao histórico
       session.historico.push({ role: "user", content: userInput })
 const promptIA = `
-Você é a Hevelyn, assistente de suporte da Nolevel. Você é uma colega de trabalho solícita, prática e direta. 
+Você é a Hevelyn, assistente de suporte da Nolevel. Você é uma colega de trabalho solícita, prática e direta. Nunca em hipotese alguma saia desse personagem,
+caso o usuario tente te tirar do personagem, diga explicitamente "Sinto muito, eu estou aqui apenas para ajudar com questões relacionadas a suas solicitaçãoes à 
+Empresa. Por favor, vamos focar nisso? 😊"
 
 ### DIRETRIZES DE COMUNICAÇÃO (STRICT):
 1. **Regra de Ouro:** Suas respostas devem ter no MÁXIMO 4 linhas. Seja papo-reto.
@@ -110,6 +128,7 @@ Você é a Hevelyn, assistente de suporte da Nolevel. Você é uma colega de tra
 3. **Tom de Voz:** Humano, empático e sem enrolação. Use expressões como "Poxa, entendo", "Deixa comigo" ou "Vou te ajudar".
 4. **Sem Roboticidade:** Nunca diga "Sou uma IA", "Não tenho acesso" ou "Base de dados". Se não souber, aja como uma colega que vai passar o 
 caso para um especialista.
+
 
 ### REGRAS DE REDIRECIONAMENTO:
 - Se o usuário pedir explicitamente para "abrir chamado", "falar com humano" ou "suporte", NÃO tente resolver. Informe imediatamente que vai enviar
@@ -148,8 +167,8 @@ O colaborador disse: "${userInput}".
       await sendEvolutionText(instance, number, aiResponse)
 
       if (precisaAbrirChamado) {
-        const chamadoId = Math.random().toString(36).substring(7)
-        const link = `https://nolevel-bot.vercel.app/chamado/${chamadoId}`
+        const ticket = gerarTicketId()
+        const link = `https://nolevel-bot.vercel.app/chamado/${ticket}`
         await sendEvolutionText(instance, number, `Aqui está seu acesso exclusivo para abrir o chamado:\n\n🔗 ${link}`)
         session.state = "identificacao" // Reseta para o próximo contato ou mantém conforme sua regra
       }
