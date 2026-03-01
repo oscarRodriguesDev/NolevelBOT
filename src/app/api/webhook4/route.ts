@@ -56,7 +56,7 @@ async function sendEvolutionText(instance: string, number: string, text: string)
 async function enviarChamado(nome: string, cpf: string, setor: string, descricao: string) {
   try {
     // 1. Definição da URL (Garanta que a variável NEXT_PUBLIC_BASE_URL esteja no seu .env)
-    const url = `https://nolevel-bot.vercel.app/api/tickets`;
+    const url = `https://nolevel-bot.vercel.app/tickets`;
 
     // 2. Chamada para a API interna ou externa
     const response = await fetch(url, {
@@ -192,7 +192,7 @@ export async function POST(req: NextRequest) {
 
         // TENTATIVA DE CRIAÇÃO DE TICKET COM LOGS
         try {
-          const ticketUrl = `$https://nolevel-bot.vercel.app/api/ticketsapi/tickets`
+          const ticketUrl = `$https://nolevel-bot.vercel.app/tickets`
           const ticketRes = await fetch(ticketUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
