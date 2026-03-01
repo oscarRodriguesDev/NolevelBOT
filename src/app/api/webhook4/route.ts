@@ -1,207 +1,231 @@
 import { NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
-import { prisma } from "@/lib/prisma"
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
+// Mock de CPFs (Idealmente, isso viria de um banco de dados)
 const CPFS_COLABORADORES = ["12345678901", "98765432100", "11122233344"]
 
 const QUADRO_DE_AVISOS = `
-1. Problemas com Email: Reinicie a senha no portal self-service da empresa.
-2. Lentidão no Sistema: Manutenção programada nos servidores até as 14h de hoje.
-3. Solicitação de Férias: Deve ser feita exclusivamente pelo App RH Digital com 30 dias de antecedência.
-4. Entrega de Atestados: Enviar foto legível para o email saude@empresa.com.br em até 48h.
-5. Segunda Via de Contracheque: Disponível no Portal do Colaborador na aba 'Financeiro'.
-6. Cartão Alimentação/Refeição: Se o cartão não passou, verifique o saldo no App da operadora. Recargas ocorrem todo dia 01.
-7. Substituição de EPI: Vá até o almoxarifado do seu contrato atual e assine a cautela de troca.
-8. Crachá Perdido ou Danificado: Informe ao seu supervisor imediato para que ele solicite a 2ª via via malote.
-9. Vale Transporte: Atualizações de trajeto devem ser solicitadas até o dia 15 de cada mês para o RH da matriz.
-10. Erro no Batimento de Ponto: O ajuste deve ser feito direto com o administrativo do seu contrato via formulário de correção.
-11. Uniforme Rasgado/Tamanho Errado: Solicite a troca enviando suas medidas atuais para o setor de suprimentos.
-12. Pagamento não caiu: Verifique se sua conta bancária está ativa e sem restrições antes de abrir um chamado.
-13. Solicitação de Adiantamento (Val): Só é permitida para quem tem mais de 3 meses de contrato, via App RH.
-14. Equipamento de Trabalho com Defeito: Entregue ao fiscal de contrato para envio à manutenção.
-15. Mudança de Endereço ou Telefone: Atualize seus dados no Portal do Colaborador.
-16. Reembolso de Despesas: Envie notas fiscais para financeiro@empresa.com.br.
-17. Treinamentos Obrigatórios: Cronograma enviado pelo SESMT.
-18. Licença Maternidade/Paternidade: Solicitar via Portal.
-19. Informe de Rendimentos: Disponível na aba 'Documentos'.
-20. Convênio Médico: Lista de clínicas no site da seguradora.
+1. Problemas com Email: Reinicie a senha no portal self-service.
+2. Lentidão no Sistema: Manutenção programada até as 14h de hoje.
+3. Solicitação de Férias: App RH Digital com 30 dias de antecedência.
+4. Entrega de Atestados: Email saude@empresa.com.br em até 48h.
+5. Segunda Via de Contracheque: Portal do Colaborador > Financeiro.
+6. Cartão Alimentação: Verifique o saldo no App. Recargas todo dia 01.
+7. EPI: Vá ao almoxarifado do contrato e assine a cautela.
+8. Crachá: Informe ao supervisor imediato.
+9. Vale Transporte: Atualizações até o dia 15 no RH.
+10. Ponto: Ajuste via formulário com o administrativo.
 `
 
-type FlowState =
-  | "coletar_nome"
-  | "identificacao"
-  | "coletar_motivo"
-  | "escolher_abertura"
-  | "coletar_setor"
+type FlowState = "inicio" | "identificacao" | "coletar_motivo" | "escolher_abertura" | "coletar_setor"
 
 type UserSession = {
   state: FlowState
   nome?: string
   cpf?: string
   resumo?: string
-  historico: { role: "user" | "assistant"; content: string }[]
 }
 
 const sessions = new Map<string, UserSession>()
 
-function getSession(userId: string): UserSession {
-  if (!sessions.has(userId)) {
-    sessions.set(userId, {
-      state: "coletar_nome",
-      historico: []
-    })
-  }
-  return sessions.get(userId)!
-}
-
-function gerarTicketId(): string {
-  return `TKT-${Date.now()}`
-}
-
+// Função auxiliar para mensagens mais cordiais
 async function sendEvolutionText(instance: string, number: string, text: string) {
-  await fetch(`${process.env.EVOLUTION_API_URL}/message/sendText/${instance}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      apikey: process.env.EVOLUTION_API_KEY as string
-    },
-    body: JSON.stringify({ number, text })
-  })
+  try {
+    await fetch(`${process.env.EVOLUTION_API_URL}/message/sendText/${instance}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: process.env.EVOLUTION_API_KEY as string
+      },
+      body: JSON.stringify({ 
+        number: number.replace("@s.whatsapp.net", ""), 
+        text,
+        options: { delay: 1200, presence: "composing" } // Simula digitação para ser mais humano
+      })
+    })
+  } catch (error) {
+    console.error("Erro ao enviar mensagem Evolution:", error)
+  }
 }
+
+/**
+ * Envia os dados do colaborador para a API de suporte e retorna o protocolo gerado.
+ */
+async function enviarChamado(nome: string, cpf: string, setor: string, descricao: string) {
+  try {
+    // 1. Definição da URL (Garanta que a variável NEXT_PUBLIC_BASE_URL esteja no seu .env)
+    const url = `https://nolevel-bot.vercel.app/api/tickets`;
+
+    // 2. Chamada para a API interna ou externa
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        // Caso sua API precise de um Token de Admin, adicione aqui:
+        // "Authorization": `Bearer ${process.env.INTERNAL_API_TOKEN}`
+      },
+      body: JSON.stringify({
+        nome,
+        cpf,
+        setor,
+        descricao,
+        prioridade: "normal", // Valor padrão
+        origem: "WhatsApp_Evolution",
+        dataAbertura: new Date().toISOString()
+      }),
+    });
+
+    // 3. Verificação de erros de rede ou status (404, 500, etc)
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ Erro na API de Tickets (${response.status}):`, errorText);
+      return { success: false, error: "Falha ao registrar no banco de dados." };
+    }
+
+    // 4. Captura do retorno (Geralmente o banco retorna o ID ou Número do Ticket)
+    const data = await response.json();
+
+    return { 
+      success: true, 
+      ticketId: data.ticket || data.id || "Gerando...", // Fallback caso o nome do campo varie
+      data: data 
+    };
+
+  } catch (error) {
+    console.error("🚨 Erro crítico ao enviar chamado:", error);
+    return { success: false, error: "Erro de conexão com o servidor." };
+  }
+}
+
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
+
+    // Validação básica do Webhook da Evolution
     if (body.event !== "messages.upsert") return NextResponse.json({ ok: true })
-
     const data = body.data
-    if (!data || !data.message || data.key?.fromMe) {
+    if (!data?.message || data.key?.fromMe) return NextResponse.json({ ok: true })
+
+    const number = data.key.remoteJid
+    const instance = body.instance
+    const userInput = data.message.conversation || data.message.extendedTextMessage?.text || ""
+    
+    if (!sessions.has(number)) {
+      sessions.set(number, { state: "inicio" })
+      await sendEvolutionText(instance, number, "Olá! 😊 Eu sou a Hevelyn, sua assistente virtual da Nolevel. Para começarmos, como você se chama?")
       return NextResponse.json({ ok: true })
     }
 
-    const number = data.key.senderPn || data.key.remoteJid
-    const instance = body.instance || data.instance
-    const session = getSession(number)
+    const session = sessions.get(number)!
 
-    const userInput =
-      data.message.conversation ||
-      data.message.extendedTextMessage?.text ||
-      ""
+    // LÓGICA DO FLUXO (ESTADOS)
+    switch (session.state) {
+      
+      case "inicio":
+        session.nome = userInput.trim()
+        session.state = "identificacao"
+        await sendEvolutionText(instance, number, `Prazer em te conhecer, ${session.nome}! ✨\nAgora, por segurança, poderia me informar seu CPF? (Apenas os 11 números)`)
+        break
 
-    if (!userInput) return NextResponse.json({ ok: true })
-
-    if (session.state === "coletar_nome") {
-      session.nome = userInput.trim()
-      session.state = "identificacao"
-      await sendEvolutionText(instance, number, "Agora informe seu CPF com 11 números.")
-      return NextResponse.json({ ok: true })
-    }
-
-    if (session.state === "identificacao") {
-      const cleanCPF = userInput.replace(/\D/g, "")
-      if (cleanCPF.length === 11 && CPFS_COLABORADORES.includes(cleanCPF)) {
-        session.cpf = cleanCPF
-        session.state = "coletar_motivo"
-        await sendEvolutionText(instance, number, "CPF validado. Me conta o que está acontecendo.")
-      } else {
-        await sendEvolutionText(instance, number, "CPF inválido ou não encontrado. Digite novamente.")
-      }
-      return NextResponse.json({ ok: true })
-    }
-
-    if (session.state === "coletar_motivo") {
-      session.historico.push({ role: "user", content: userInput })
-
-      const promptIA = `
-Você é a Hevelyn, assistente de suporte da Nolevel. Nunca saia do personagem.
-
-Diretrizes:
-- Máximo 4 linhas.
-- Linguagem simples e direta.
-- Se não resolver pelo quadro, ofereça abertura de chamado.
-
-Conhecimento:
-${QUADRO_DE_AVISOS}
-
-Usuário disse: "${userInput}"
-Responda apenas o texto da conversa.
-`
-
-      const response = await openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
-        messages: [{ role: "system", content: promptIA }],
-        temperature: 0.3
-      })
-
-      const aiResponse = response.choices[0].message.content || ""
-      await sendEvolutionText(instance, number, aiResponse)
-
-      session.resumo = userInput
-      session.state = "escolher_abertura"
-
-      await sendEvolutionText(
-        instance,
-        number,
-        "Você prefere:\n1 - Que eu abra o chamado agora\n2 - Receber o link para abrir manualmente\n\nResponda 1 ou 2."
-      )
-
-      return NextResponse.json({ ok: true })
-    }
-
-    if (session.state === "escolher_abertura") {
-      if (userInput.trim() === "1") {
-        session.state = "coletar_setor"
-        await sendEvolutionText(instance, number, "Informe seu setor: vitoria, serra, vale ou arcelor.")
-      } else if (userInput.trim() === "2") {
-        await sendEvolutionText(instance, number, "Abra seu chamado pelo link:\nhttps://seusite.com/abrir-chamado")
-        session.state = "coletar_nome"
-        session.nome = undefined
-        session.cpf = undefined
-        session.resumo = undefined
-      } else {
-        await sendEvolutionText(instance, number, "Responda apenas 1 ou 2.")
-      }
-      return NextResponse.json({ ok: true })
-    }
-
-    if (session.state === "coletar_setor") {
-      const setor = userInput.toLowerCase()
-      const setoresValidos = ["vitoria", "serra", "vale", "arcelor"]
-
-      if (!setoresValidos.includes(setor)) {
-        await sendEvolutionText(instance, number, "Setor inválido.")
-        return NextResponse.json({ ok: true })
-      }
-
-      const ticket = gerarTicketId()
-
-      await prisma.chamado.create({
-        data: {
-          ticket,
-          nome: session.nome!,
-          cpf: session.cpf!,
-          setor,
-          descricao: session.resumo!,
-          prioridade: "normal",
-          status: "aberto"
+      case "identificacao":
+        const cleanCPF = userInput.replace(/\D/g, "")
+        if (cleanCPF.length === 11 && CPFS_COLABORADORES.includes(cleanCPF)) {
+          session.cpf = cleanCPF
+          session.state = "coletar_motivo"
+          await sendEvolutionText(instance, number, "CPF confirmado com sucesso! ✅\nComo posso te ajudar hoje? Pode descrever o que está acontecendo.")
+        } else {
+          await sendEvolutionText(instance, number, "Poxa, não encontrei esse CPF na nossa base de colaboradores. 🤔\nPor favor, digite novamente os 11 números com atenção.")
         }
-      })
+        break
 
-      await sendEvolutionText(instance, number, `Chamado aberto.\nNúmero: ${ticket}`)
+      case "coletar_motivo":
+        session.resumo = userInput
+        
+        // Chamada IA Personalizada
+        const promptIA = `Você é a Hevelyn, assistente de RH/Suporte da Nolevel.
+        Seja gentil, use emojis e responda de forma acolhedora.
+        Tente ajudar com base nestas informações: ${QUADRO_DE_AVISOS}.
+        Se a resposta estiver no quadro, explique de forma educada.
+        Se não estiver, ou se o usuário parecer frustrado, diga que pode abrir um chamado.
+        Mantenha a resposta curta (máximo 4 linhas).`
 
-      session.state = "coletar_nome"
-      session.nome = undefined
-      session.cpf = undefined
-      session.resumo = undefined
+        const aiResponse = await openai.chat.completions.create({
+          model: "gpt-3.5-turbo",
+          messages: [
+            { role: "system", content: promptIA },
+            { role: "user", content: userInput }
+          ],
+          temperature: 0.7 // Aumentado para respostas menos mecânicas
+        })
 
-      return NextResponse.json({ ok: true })
+        const textoIA = aiResponse.choices[0].message.content || "Entendi sua situação."
+        await sendEvolutionText(instance, number, textoIA)
+
+        // Transição para abertura de chamado
+        session.state = "escolher_abertura"
+        await sendEvolutionText(instance, number, "Ficou claro ou você prefere que eu registre um chamado oficial para o time te ajudar?\n\n1️⃣ - Abrir chamado agora\n2️⃣ - Receber link para abrir depois")
+        break
+
+      case "escolher_abertura":
+        if (userInput.includes("1")) {
+          session.state = "coletar_setor"
+          await sendEvolutionText(instance, number, "Ótimo, vou agilizar isso! Para qual setor é o chamado?\n(Vitória, Serra, Vale ou Arcelor)")
+        } else if (userInput.includes("2")) {
+          await sendEvolutionText(instance, number, "Sem problemas! Quando precisar, você pode abrir por aqui: https://suporte.nolevel.com.br\n\nAlgo mais em que eu possa te ajudar?")
+          sessions.delete(number) // Reseta a sessão
+        } else {
+          await sendEvolutionText(instance, number, "Não entendi bem... Digite '1' para eu abrir agora ou '2' para te enviar o link. 😉")
+        }
+        break
+
+      case "coletar_setor":
+        const setor = userInput.toLowerCase().trim()
+        const setoresValidos = ["vitoria", "serra", "vale", "arcelor"]
+
+        if (!setoresValidos.includes(setor)) {
+          await sendEvolutionText(instance, number, "Desculpe, ainda não atendo esse setor. Escolha entre: Vitória, Serra, Vale ou Arcelor.")
+          return NextResponse.json({ ok: true })
+        }
+
+        // TENTATIVA DE CRIAÇÃO DE TICKET COM LOGS
+        try {
+          const ticketUrl = `$https://nolevel-bot.vercel.app/api/ticketsapi/tickets`
+          const ticketRes = await fetch(ticketUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              nome: session.nome,
+              cpf: session.cpf,
+              setor,
+              descricao: session.resumo,
+              prioridade: "normal",
+              origem: "WhatsApp"
+            })
+          })
+
+          if (ticketRes.ok) {
+            const ticketData = await ticketRes.json()
+            await sendEvolutionText(instance, number, `Prontinho, ${session.nome}! Seu chamado foi gerado com sucesso. ✨\n\n🎫 *Protocolo:* ${ticketData.ticket || ticketData.id}\nO time entrará em contato em breve!`)
+            sessions.delete(number)
+          } else {
+            const errorText = await ticketRes.text()
+            console.error("ERRO API TICKET:", errorText)
+            throw new Error("Falha na API")
+          }
+        } catch (err) {
+          console.error("ERRO CRITICAL TICKET:", err)
+          await sendEvolutionText(instance, number, "Mil desculpas, mas tive um probleminha técnico ao salvar seu chamado no sistema. 😟\nPor favor, tente novamente em instantes ou use nosso portal web.")
+        }
+        break
     }
 
     return NextResponse.json({ ok: true })
   } catch (err) {
-    console.error("ERRO WEBHOOK:", err)
-    return NextResponse.json({ error: true }, { status: 500 })
+    console.error("ERRO GERAL WEBHOOK:", err)
+    return NextResponse.json({ error: "Internal Error" }, { status: 500 })
   }
 }
+
