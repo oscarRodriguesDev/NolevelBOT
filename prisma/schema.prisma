@@ -7,15 +7,41 @@ datasource db {
 }
 
 model Chamado {
-  id          String   @id @default(uuid())
-  ticket      String   @unique
-  nome        String
-  cpf         String
-  setor       String
-  descricao   String
-  status      String   @default("aberto")
-  prioridade  String   @default("normal")
-  anexoUrl    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(uuid())
+  ticket       String   @unique
+  nome         String
+  cpf          String
+  setor        String
+  descricao    String
+  historico    String?
+  status       String   @default("NOVO")
+  prioridade   String   @default("normal")
+  anexoUrl     String?
+  atendente String? 
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// Modelo para armazenar CPFs e nomes dos usuários autorizados a usar o chatbot
+model cpfs{
+  id        String   @id @default(uuid())
+  cpf       String   @unique
+  nome      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//para gerar os dashboards de chamados fechados, para não poluir a tabela principal
+model tickets_fechados{
+  id           String   @id @default(uuid())
+  ticket       String   @unique
+  nome         String
+  cpf          String
+  setor        String
+  historico    String? 
+  prioridade   String   
+  anexoUrl     String?
+  atendente    String? 
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }

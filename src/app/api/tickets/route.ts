@@ -71,6 +71,9 @@ export async function GET(req: NextRequest) {
     const cpf = searchParams.get('cpf')
     const status = searchParams.get('status')
     const nome = searchParams.get('nome')
+    const prioridade = searchParams.get('prioridade')
+    const startDate = searchParams.get('startDate')
+    const endDate = searchParams.get('endDate')
 
     const where: Prisma.ChamadoWhereInput = {}
 
@@ -90,10 +93,26 @@ export async function GET(req: NextRequest) {
       where.status = status
     }
 
+    if (prioridade) {
+      where.prioridade = prioridade
+    }
+
     if (nome) {
       where.nome = {
         contains: nome,
         mode: 'insensitive',
+      }
+    }
+
+    if (startDate || endDate) {
+      where.createdAt = {}
+
+      if (startDate) {
+        where.createdAt.gte = new Date(startDate)
+      }
+
+      if (endDate) {
+        where.createdAt.lte = new Date(endDate)
       }
     }
 
@@ -110,5 +129,102 @@ export async function GET(req: NextRequest) {
       { error: 'Erro ao buscar chamados' },
       { status: 500 }
     )
+  }
+}
+
+
+
+
+
+
+export async function PUT(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url)
+    const ticketNumber = searchParams.get("atendimento")
+    const estagio = searchParams.get("estagio")
+
+    if (!ticketNumber) {
+      return NextResponse.json({ error: "Número do ticket não fornecido" }, { status: 400 })
+    }
+
+    if (!estagio) {
+      return NextResponse.json({ error: "Estágio não fornecido" }, { status: 400 })
+    }
+
+    // Atualiza o chamado com novo status, atendente e histórico
+    const chamadoAtualizado = await prisma.chamado.updateMany({
+      where: { ticket: { equals: ticketNumber.trim(), mode: "insensitive" } },
+      data: {
+        status: estagio,
+        atendente: "Carlos Mock",
+        historico: JSON.stringify([{
+          data: new Date(),
+          acao: `Status alterado para ${estagio} por Carlos Mock`
+        }])
+      }
+    })
+
+    if (chamadoAtualizado.count === 0) {
+      return NextResponse.json({ error: "Chamado não encontrado" }, { status: 404 })
+    }
+
+    // Retorna o chamado atualizado
+    const atualizado = await prisma.chamado.findFirst({
+      where: { ticket: { equals: ticketNumber.trim(), mode: "insensitive" } }
+    })
+
+    return NextResponse.json(atualizado, { status: 200 })
+  } catch (error) {
+    console.error(error)
+    return NextResponse.json({ error: "Erro ao atualizar chamado" }, { status: 500 })
+  }
+}
+
+
+
+
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url)
+    const ticketNumber = searchParams.get("atendimento")
+
+    if (!ticketNumber) {
+      return NextResponse.json({ error: "Número do ticket não fornecido" }, { status: 400 })
+    }
+
+    // Busca o chamado
+    const chamado = await prisma.chamado.findFirst({
+      where: { ticket: { equals: ticketNumber.trim(), mode: "insensitive" } }
+    })
+
+    if (!chamado) {
+      return NextResponse.json({ error: "Chamado não encontrado" }, { status: 404 })
+    }
+
+    // Move para tickets_fechados
+    await prisma.tickets_fechados.create({
+      data: {
+        ticket: chamado.ticket,
+        nome: chamado.nome,
+        cpf: chamado.cpf,
+        setor: chamado.setor,
+        historico: chamado.descricao,
+        prioridade: chamado.prioridade,
+        atendente: chamado.atendente,
+        createdAt: chamado.createdAt,
+        anexoUrl: chamado.anexoUrl || null
+      }
+    })
+
+    // Deleta da tabela principal
+    await prisma.chamado.delete({
+      where: { id: chamado.id }
+    })
+
+    return NextResponse.json({ message: "Chamado movido para tickets fechados" }, { status: 200 })
+  } catch (error) {
+    console.error(error)
+    return NextResponse.json({ error: "Erro ao mover chamado" }, { status: 500 })
   }
 }

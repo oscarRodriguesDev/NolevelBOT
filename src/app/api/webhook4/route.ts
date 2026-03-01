@@ -30,7 +30,7 @@ type UserSession = {
 
 const sessions = new Map<string, UserSession>()
 
-// --- FUNÇÕES DE HUMANIZAÇÃO ---
+// --- AUXILIARES ---
 
 function obterSaudacao() {
   const hora = new Date().getHours()
@@ -41,9 +41,7 @@ function obterSaudacao() {
 
 async function sendEvolutionText(instance: string, number: string, text: string) {
   try {
-    // Simula tempo de leitura/digitação: 50ms por caractere (mínimo 1.5s)
-    const typingDelay = Math.max(1500, text.length * 50);
-    
+    const typingDelay = Math.min(Math.max(1500, text.length * 30), 4000); // Dinâmico mas controlado
     await fetch(`${process.env.EVOLUTION_API_URL}/message/sendText/${instance}`, {
       method: "POST",
       headers: {
@@ -74,7 +72,7 @@ async function enviarChamado(nome: string, cpf: string, setor: string, descricao
     const response = await fetch(url, { method: "POST", body: formData });
     if (!response.ok) throw new Error(`Status: ${response.status}`);
     const data = await response.json();
-    return { success: true, ticketId: data.ticket || "Gerado" };
+    return { success: true, ticketId: data.ticket || data.id || "Gerado" };
   } catch (error) {
     return { success: false };
   }
@@ -92,33 +90,33 @@ export async function POST(req: NextRequest) {
     const number = data.key.remoteJid
     const instance = body.instance
     const userInput = data.message.conversation || data.message.extendedTextMessage?.text || ""
-    const session = sessions.get(number) || { state: "inicio", lastInteraction: Date.now() }
-
-    // Reinicia se ficar muito tempo parado (ex: 2 horas)
-    if (Date.now() - session.lastInteraction > 1000 * 60 * 60 * 2) {
-      session.state = "inicio"
+    
+    // Recupera ou cria sessão
+    let session = sessions.get(number)
+    if (!session || (Date.now() - session.lastInteraction > 1000 * 60 * 60 * 2)) {
+      session = { state: "inicio", lastInteraction: Date.now() }
+      sessions.set(number, session)
     }
     session.lastInteraction = Date.now()
-    sessions.set(number, session)
 
     switch (session.state) {
       case "inicio":
-        await sendEvolutionText(instance, number, `${obterSaudacao()}! Sou a Hevelyn da Nolevel. 😊 Antes de começarmos, com quem eu falo?`)
+        await sendEvolutionText(instance, number, `${obterSaudacao()}! Eu sou a Hevelyn, sua assistente aqui na Nolevel. 😊\n\nCom quem eu tenho o prazer de falar?`)
         session.state = "identificacao"
         break
 
       case "identificacao":
         if (!session.nome) {
           session.nome = userInput.trim()
-          await sendEvolutionText(instance, number, `Prazer em te conhecer, ${session.nome}! ✨ Por uma questão de segurança, poderia me passar seu CPF? Só os números já servem.`)
+          await sendEvolutionText(instance, number, `Prazer em te conhecer, ${session.nome}! ✨\n\nPara eu acessar seu painel de colaborador, poderia me digitar seu CPF? (Apenas os números).`)
         } else {
           const cleanCPF = userInput.replace(/\D/g, "")
           if (cleanCPF.length === 11 && CPFS_COLABORADORES.includes(cleanCPF)) {
             session.cpf = cleanCPF
             session.state = "coletar_motivo"
-            await sendEvolutionText(instance, number, `Perfeito, localizei você aqui. Como posso te ajudar hoje? Pode me contar o que está acontecendo.`)
+            await sendEvolutionText(instance, number, `Certo, localizei você! ✅\n\nComo posso te ajudar hoje? Pode me descrever sua dúvida ou o que está acontecendo.`)
           } else {
-            await sendEvolutionText(instance, number, `Ih, não consegui validar esse CPF... 🤔 Tem certeza que os números estão certinhos? Tenta digitar de novo para mim.`)
+            await sendEvolutionText(instance, number, `Poxa, não achei esse CPF aqui no sistema. 🤔\n\nTenta digitar novamente, conferindo se os 11 números estão certinhos.`)
           }
         }
         break
@@ -128,32 +126,30 @@ export async function POST(req: NextRequest) {
         const aiResponse = await openai.chat.completions.create({
           model: "gpt-3.5-turbo",
           messages: [
-            { role: "system", content: `Você é a Hevelyn, uma assistente de suporte humano e empática. 
-              REGRAS:
-              1. Responda de forma natural, como se estivesse no WhatsApp.
-              2. Use o quadro: ${QUADRO_DE_AVISOS}.
-              3. Se a solução estiver no quadro, explique calmamente.
-              4. Se não estiver, diga que compreende e pergunte se o usuário quer que você registre um chamado oficial.
-              5. Nunca use listas numeradas rígidas, prefira parágrafos curtos.` },
+            { role: "system", content: `Você é a Hevelyn, assistente virtual da Nolevel. 
+              Seja educada, humana e use emojis.
+              Responda com base no Quadro de Avisos: ${QUADRO_DE_AVISOS}.
+              Se a resposta estiver no quadro, resuma-a gentilmente. 
+              Se não estiver, diga que não tem essa informação específica agora e que o melhor é abrir um chamado.` },
             { role: "user", content: userInput }
           ],
-          temperature: 0.8 // Mais criatividade/humanização
+          temperature: 0.7
         })
 
-        const resposta = aiResponse.choices[0].message.content || "Entendi sua situação."
-        await sendEvolutionText(instance, number, resposta)
+        const respostaIA = aiResponse.choices[0].message.content || "Entendi sua solicitação."
+        await sendEvolutionText(instance, number, respostaIA)
         
         session.state = "escolher_abertura"
-        await sendEvolutionText(instance, number, `Consegui te ajudar ou você prefere que eu registre um chamado oficial para o pessoal do suporte resolver isso para você?`)
+        await sendEvolutionText(instance, number, `Deseja que eu registre um chamado oficial para você agora?\n\n1️⃣ - Sim, abrir chamado\n2️⃣ - Não, obrigado`)
         break
 
       case "escolher_abertura":
-        const input = userInput.toLowerCase()
-        if (input.includes("sim") || input.includes("quero") || input.includes("abrir") || input.includes("1")) {
+        const cleanInput = userInput.trim()
+        if (cleanInput === "1" || cleanInput.toLowerCase().includes("sim") || cleanInput.toLowerCase().includes("quero")) {
           session.state = "coletar_setor"
-          await sendEvolutionText(instance, number, `Combinado! Só preciso que me diga qual o seu setor (Vitória, Serra, Vale ou Arcelor).`)
+          await sendEvolutionText(instance, number, `Ótimo! Vou agilizar isso. Para qual setor você quer enviar o chamado?\n\n📍 Vitória\n📍 Serra\n📍 Vale\n📍 Arcelor`)
         } else {
-          await sendEvolutionText(instance, number, `Entendido! Qualquer coisa, estou por aqui. Ah, se precisar abrir um chamado depois por conta própria, o link é este: https://nolevel-bot.vercel.app/chamado/web. Até mais! 👋`)
+          await sendEvolutionText(instance, number, `Tudo bem! Fico à disposição. Se mudar de ideia ou precisar de outra coisa, é só me chamar. 👋`)
           sessions.delete(number)
         }
         break
@@ -162,19 +158,22 @@ export async function POST(req: NextRequest) {
         const setor = userInput.toLowerCase().trim()
         const setoresValidos = ["vitoria", "serra", "vale", "arcelor"]
 
-        if (!setoresValidos.includes(setor)) {
-          await sendEvolutionText(instance, number, `Putz, não conheço esse setor. Escolhe um desses aqui: Vitória, Serra, Vale ou Arcelor.`)
+        if (!setoresValidos.some(s => setor.includes(s))) {
+          await sendEvolutionText(instance, number, `Ops, não reconheci esse setor. 🤔\n\nPor favor, escolha entre: Vitória, Serra, Vale ou Arcelor.`)
           return NextResponse.json({ ok: true })
         }
 
-        await sendEvolutionText(instance, number, `Só um segundinho, estou registrando tudo agora...`)
+        // Extrai o nome exato do setor
+        const setorFinal = setoresValidos.find(s => setor.includes(s))!
 
-        const resultado = await enviarChamado(session.nome || "", session.cpf || "", setor, session.resumo || "")
+        await sendEvolutionText(instance, number, `Só um segundinho, ${session.nome}, estou gerando seu protocolo... ⏳`)
+
+        const resultado = await enviarChamado(session.nome || "", session.cpf || "", setorFinal, session.resumo || "")
 
         if (resultado.success) {
-          await sendEvolutionText(instance, number, `Prontinho! O número do seu chamado é ${resultado.ticketId}. O pessoal vai analisar e te dar um retorno o quanto antes, tá bom? ✨`)
+          await sendEvolutionText(instance, number, `Prontinho! ✨\n\nSeu chamado foi registrado para o setor *${setorFinal.toUpperCase()}*.\n🎫 Protocolo: *${resultado.ticketId}*\n\nO time vai analisar e entrará em contato em breve!`)
         } else {
-          await sendEvolutionText(instance, number, `Poxa, o sistema de chamados deu um erro agora... 😕 Mas não vamos te deixar na mão! Tenta abrir manualmente por aqui: https://nolevel-bot.vercel.app/chamado/externo`)
+          await sendEvolutionText(instance, number, `Houve um pequeno erro no sistema de tickets, mas não se preocupe. 😟\n\nVocê pode abrir diretamente pelo nosso site: https://nolevel-bot.vercel.app/chamado`)
         }
         sessions.delete(number)
         break
@@ -182,7 +181,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true })
   } catch (err) {
-    console.error("ERRO GERAL:", err)
+    console.error("ERRO WEBHOOK:", err)
     return NextResponse.json({ ok: true })
   }
 }
