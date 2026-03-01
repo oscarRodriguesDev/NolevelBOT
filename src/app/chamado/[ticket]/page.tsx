@@ -30,33 +30,37 @@ export default function TicketPage() {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  setLoading(true)
 
-    try {
-      const form = new FormData()
-      form.append('setor', formData.contract)
-      form.append('descricao', formData.reason)
-      form.append('prioridade', 'normal')
-      form.append('userName', formData.userName)
+  try {
+    const form = new FormData()
+    form.append('setor', formData.contract)
+    form.append('descricao', formData.reason)
+    form.append('prioridade', 'normal')
+    form.append('userName', formData.userName)
 
-      if (file) {
-        form.append('anexo', file)
-      }
-
-      await fetch(`/api/chamados/${ticketId}`, {
-        method: 'POST',
-        body: form,
-      })
-
-      setSubmitted(true)
-    } catch (error) {
-      alert('Erro ao processar. Tente novamente.')
-    } finally {
-      setLoading(false)
+    if (file) {
+      form.append('anexo', file)
     }
+
+    const response = await fetch(`/api/tickets`, {
+      method: 'POST',
+      body: form,
+    })
+
+    if (!response.ok) {
+      throw new Error('Erro na requisição')
+    }
+
+    setSubmitted(true)
+  } catch (error) {
+    alert('Erro ao processar. Tente novamente.')
+  } finally {
+    setLoading(false)
   }
+}
 
   if (submitted) {
     return (
