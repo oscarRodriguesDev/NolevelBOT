@@ -22,7 +22,7 @@ async function verificarAutorizacao(cpfInformado: string) {
 async function pegarAvisosDoBanco() {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://nolevel-bot.vercel.app";
-    const res = await fetch(`${baseUrl}/api/avisos`, { cache: 'no-store' });
+    const res = await fetch(`${baseUrl}/api/quadro-avisos`, { cache: 'no-store' });
     
     if (!res.ok) return "O quadro de avisos está sendo atualizado. Por favor, tente novamente em instantes.";
 

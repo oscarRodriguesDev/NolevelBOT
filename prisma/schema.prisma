@@ -55,3 +55,13 @@ model avisos{
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+
+model resumoPersona{
+  id        String   @id @default(uuid())
+  cpf       String   @unique
+  nome      String
+  resumo    String //resumo da persona gerado pelo gpt, para ele se lembrar da personalidade do usuário
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
