@@ -4,19 +4,13 @@ import { gerarTicketId } from "../webhook3/route"
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-// --- FUNÇÃO DE BUSCA DE CPFs CORRIGIDA ---
+// --- FUNÇÃO DE BUSCA DE CPFs ---
 async function verificarAutorizacao(cpfInformado: string) {
   try {
-    // Em Server Components/Routes, precisamos da URL completa ou chamar o banco diretamente
-    // Vou usar a variável de ambiente do seu domínio para garantir o fetch
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://nolevel-bot.vercel.app";
     const res = await fetch(`${baseUrl}/api/cpfs`, { cache: 'no-store' });
-    
     if (!res.ok) return false;
-
     const cpfs: { nome: string; cpf: string }[] = await res.json();
-    
-    // Verifica se o CPF limpo existe na lista retornada pelo banco
     return cpfs.some(c => c.cpf === cpfInformado);
   } catch (error) {
     console.error("Erro na verificação de CPFs:", error);
@@ -24,19 +18,25 @@ async function verificarAutorizacao(cpfInformado: string) {
   }
 }
 
+// --- NOVO: FUNÇÃO PARA BUSCAR QUADRO DE AVISOS DO BANCO ---
+async function pegarAvisosDoBanco() {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://nolevel-bot.vercel.app";
+    const res = await fetch(`${baseUrl}/api/avisos`, { cache: 'no-store' });
+    
+    if (!res.ok) return "O quadro de avisos está sendo atualizado. Por favor, tente novamente em instantes.";
 
-const QUADRO_DE_AVISOS = `
-1. Problemas com Email: Reiniciar senha no portal self-service.
-2. Lentidão no Sistema: Manutenção programada até as 14h de hoje.
-3. Férias: App RH Digital com 30 dias de antecedência.
-4. Atestados: saude@empresa.com.br em até 48h.
-5. Contracheque: Portal do Colaborador > Financeiro.
-6. Cartão Alimentação: Verifique saldo no App. Recargas todo dia 01.
-7. EPI: Almoxarifado do contrato (assinar cautela).
-8. Crachá: Supervisor imediato.
-9. Vale Transporte: RH até dia 15.
-10. Ponto: Ajuste via formulário administrativo.
-`
+    const avisos: { id: number; titulo: string; conteudo: string }[] = await res.json();
+    
+    // Formata a lista de avisos para texto
+    if (avisos.length === 0) return "Não há avisos importantes no momento.";
+    
+    return avisos.map((aviso, index) => `${index + 1}. ${aviso.titulo}: ${aviso.conteudo}`).join('\n');
+  } catch (error) {
+    console.error("Erro ao buscar avisos:", error);
+    return "Não consegui carregar os avisos agora, mas posso te ajudar com outras dúvidas.";
+  }
+}
 
 const LINK_PORTAL = "https://nolevel-bot.vercel.app/chamado";
 
@@ -111,7 +111,6 @@ async function buscarStatusChamado(filtro: string) {
     const isTicket = filtro.toUpperCase().includes("TKT") || filtro.length > 11;
     const param = isTicket ? `ticket=${filtro}` : `cpf=${filtro}`;
     const url = `https://nolevel-bot.vercel.app/api/tickets?${param}`;
-
     const response = await fetch(url, { method: "GET" });
     if (!response.ok) return null;
     return await response.json();
@@ -152,8 +151,6 @@ export async function POST(req: NextRequest) {
           await sendEvolutionText(instance, number, `Prazer em te conhecer, ${session.nome}! ✨\n\nPara eu acessar seu painel, poderia me digitar seu CPF? (Apenas os números).`)
         } else {
           const cleanCPF = userInput.replace(/\D/g, "")
-          
-          // CHAMADA PARA O BANCO DE DADOS AQUI
           const autorizado = await verificarAutorizacao(cleanCPF);
 
           if (autorizado) {
@@ -174,7 +171,9 @@ export async function POST(req: NextRequest) {
           session.state = "consultar_chamado"
           await sendEvolutionText(instance, number, `Com certeza! Digite o número do seu ticket ou digite "MEUS" para listar tudo.\n\nSe preferir ver pelo portal: ${LINK_PORTAL}/${gerarTicketId()}`)
         } else if (userInput.includes("3")) {
-          await sendEvolutionText(instance, number, `Aqui está o que temos hoje:\n${QUADRO_DE_AVISOS}\n\nPosso ajudar em algo mais? (1 - Novo chamado | 2 - Consultar status)`)
+          // BUSCA DINÂMICA DE AVISOS
+          const avisosAtuais = await pegarAvisosDoBanco();
+          await sendEvolutionText(instance, number, `Aqui está o que temos hoje:\n\n${avisosAtuais}\n\nPosso ajudar em algo mais? (1 - Novo chamado | 2 - Consultar status)`)
         } else {
           await sendEvolutionText(instance, number, `Escolha uma das opções acima (1, 2 ou 3) para eu te ajudar. 😉`)
         }
@@ -183,7 +182,6 @@ export async function POST(req: NextRequest) {
       case "consultar_chamado":
         const filtro = userInput.trim().toLowerCase() === "meus" ? session.cpf! : userInput.trim();
         await sendEvolutionText(instance, number, `Só um segundinho, estou consultando aqui no sistema... 🔍`)
-        
         const dados = await buscarStatusChamado(filtro);
         if (dados) {
           const chamados = Array.isArray(dados) ? dados : [dados];
@@ -205,10 +203,13 @@ export async function POST(req: NextRequest) {
 
       case "coletar_motivo":
         session.resumo = userInput
+        // BUSCA AVISOS PARA CONTEXTO DA IA
+        const avisosContexto = await pegarAvisosDoBanco();
+        
         const aiResponse = await openai.chat.completions.create({
           model: "gpt-3.5-turbo",
           messages: [
-            { role: "system", content: `Você é a Hevelyn, assistente virtual da Nolevel. Aja como uma pessoa real e empática. Se o problema estiver no Quadro: ${QUADRO_DE_AVISOS}, explique de forma humana.` },
+            { role: "system", content: `Você é a Hevelyn, assistente virtual da Nolevel. Aja como uma pessoa real e empática. Baseie-se nestes avisos atuais do banco de dados: ${avisosContexto}. Explique de forma humana e sempre mencione que o portal oficial ${LINK_PORTAL} está disponível.` },
             { role: "user", content: userInput }
           ],
           temperature: 0.8
@@ -223,7 +224,7 @@ export async function POST(req: NextRequest) {
           session.state = "coletar_setor"
           await sendEvolutionText(instance, number, `Ótimo! Para qual setor vamos enviar? (Vitória, Serra, Vale ou Arcelor)`)
         } else if (userInput.includes("2") || userInput.toLowerCase().includes("portal")) {
-          await sendEvolutionText(instance, number, `Combinado! O portal é super rápido também. Aqui está o link: ${LINK_PORTAL}/${gerarTicketId()}\n\nQualquer coisa, estarei por aqui! 👋`)
+          await sendEvolutionText(instance, number, `Combinado! O portal é super rápido também. Link: ${LINK_PORTAL}/${gerarTicketId()}\n\nQualquer coisa, estarei por aqui! 👋`)
           sessions.delete(number)
         } else {
           await sendEvolutionText(instance, number, `Tudo bem! Qualquer coisa é só me chamar. 👋`)
@@ -247,7 +248,7 @@ export async function POST(req: NextRequest) {
         if (resultado.success) {
           await sendEvolutionText(instance, number, `Prontinho! ✨\n\nTicket: *${resultado.ticketId}*\nSetor: *${setorFinal.toUpperCase()}*\n\nO time já foi avisado e logo te responde!`)
         } else {
-          await sendEvolutionText(instance, number, `Tive um probleminha no sistema agora. 😟 Para não te deixar na mão, abre pelo portal que é garantido: ${LINK_PORTAL}/${gerarTicketId()}`)
+          await sendEvolutionText(instance, number, `Tive um probleminha no sistema agora. 😟 Para não te deixar na mão, abre pelo portal: ${LINK_PORTAL}/${gerarTicketId()}`)
         }
         sessions.delete(number)
         break

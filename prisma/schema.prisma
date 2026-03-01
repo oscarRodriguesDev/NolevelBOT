@@ -45,3 +45,13 @@ model tickets_fechados{
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
+
+//representa o quadro de avisos da empresa
+model avisos{
+  id        String   @id @default(uuid())
+  titulo    String
+  conteudo  String
+  setor     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
