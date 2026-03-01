@@ -112,3 +112,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Erro ao processar requisição" }, { status: 500 })
   }
 }
+
+export async function GET(req: NextRequest) {
+  try {
+    const todosCPFs = await prisma.cpfs.findMany({
+      select: {
+        nome: true,
+        cpf: true
+      }
+    })
+
+    return NextResponse.json(todosCPFs)
+  } catch (error) {
+    console.error(error)
+    return NextResponse.json({ error: "Erro ao buscar CPFs" }, { status: 500 })
+  }
+}
