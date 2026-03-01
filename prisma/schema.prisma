@@ -9,6 +9,8 @@ datasource db {
 model Chamado {
   id          String   @id @default(uuid())
   ticket      String   @unique
+  nome        String
+  cpf         String
   setor       String
   descricao   String
   status      String   @default("aberto")

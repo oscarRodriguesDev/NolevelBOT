@@ -8,9 +8,10 @@ export default function TicketPage() {
   const ticketId = params.ticket as string
 
   const [formData, setFormData] = useState({
-    userName: '',
-    contract: '',
-    reason: '',
+    nome: '',
+    cpf: '',
+    setor: '',
+    descricao: '',
   })
 
   const [file, setFile] = useState<File | null>(null)
@@ -30,37 +31,38 @@ export default function TicketPage() {
     }
   }
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault()
-  setLoading(true)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
 
-  try {
-    const form = new FormData()
-    form.append('setor', formData.contract)
-    form.append('descricao', formData.reason)
-    form.append('prioridade', 'normal')
-    form.append('userName', formData.userName)
+    try {
+      const form = new FormData()
+      form.append('nome', formData.nome)
+      form.append('cpf', formData.cpf)
+      form.append('setor', formData.setor)
+      form.append('descricao', formData.descricao)
+      form.append('prioridade', 'normal')
 
-    if (file) {
-      form.append('anexo', file)
+      if (file) {
+        form.append('anexo', file)
+      }
+
+      const response = await fetch('/api/tickets', {
+        method: 'POST',
+        body: form,
+      })
+
+      if (!response.ok) {
+        throw new Error('Erro na requisição')
+      }
+
+      setSubmitted(true)
+    } catch {
+      alert('Erro ao processar. Tente novamente.')
+    } finally {
+      setLoading(false)
     }
-
-    const response = await fetch(`/api/tickets`, {
-      method: 'POST',
-      body: form,
-    })
-
-    if (!response.ok) {
-      throw new Error('Erro na requisição')
-    }
-
-    setSubmitted(true)
-  } catch (error) {
-    alert('Erro ao processar. Tente novamente.')
-  } finally {
-    setLoading(false)
   }
-}
 
   if (submitted) {
     return (
@@ -71,11 +73,7 @@ const handleSubmit = async (e: React.FormEvent) => {
             Solicitação Enviada
           </h2>
           <p className="text-gray-400 mb-6 text-sm">
-            O protocolo{' '}
-            <span className="text-[#f59e0b] font-mono font-bold">
-              #{ticketId}
-            </span>{' '}
-            foi enviado para a matriz.
+            O chamado foi enviado com sucesso.
           </p>
           <button
             onClick={() => window.close()}
@@ -91,27 +89,17 @@ const handleSubmit = async (e: React.FormEvent) => {
   return (
     <div className="min-h-screen bg-[#121212] text-white pb-12 font-sans">
       <div className="bg-[#1a1a1a] border-b border-[#333] p-8 mb-8">
-        <div className="max-w-md mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="bg-[#f59e0b] p-2 rounded-lg">
-              <LuHardHat className="h-6 w-6 text-black" />
-            </div>
-            <div>
-              <h1 className="text-lg font-black uppercase tracking-tighter">
-                Nolevel Suporte
-              </h1>
-              <p className="text-[#f59e0b] text-[10px] font-bold tracking-[0.2em] uppercase">
-                Setor de Operações
-              </p>
-            </div>
+        <div className="max-w-md mx-auto flex items-center gap-3">
+          <div className="bg-[#f59e0b] p-2 rounded-lg">
+            <LuHardHat className="h-6 w-6 text-black" />
           </div>
-          <div className="text-right">
-            <span className="text-gray-500 text-[10px] block uppercase">
-              ID do Ticket
-            </span>
-            <span className="font-mono text-sm text-gray-300">
-              #{ticketId}
-            </span>
+          <div>
+            <h1 className="text-lg font-black uppercase tracking-tighter">
+              Nolevel Suporte
+            </h1>
+            <p className="text-[#f59e0b] text-[10px] font-bold tracking-[0.2em] uppercase">
+              Setor de Operações
+            </p>
           </div>
         </div>
       </div>
@@ -121,68 +109,80 @@ const handleSubmit = async (e: React.FormEvent) => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
-                Nome do Colaborador
+                Nome
               </label>
               <input
                 type="text"
-                name="userName"
-                value={formData.userName}
+                name="nome"
+                value={formData.nome}
                 onChange={handleChange}
                 required
-                className="w-full px-5 py-4 bg-[#262626] border border-[#333] rounded-2xl focus:border-[#f59e0b] outline-none transition-all text-white placeholder-gray-600"
+                className="w-full px-5 py-4 bg-[#262626] border border-[#333] rounded-2xl outline-none text-white"
                 placeholder="Digite seu nome completo"
               />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
-                Contrato / Unidade
+                CPF
               </label>
-              <div className="relative">
-                <select
-                  name="contract"
-                  value={formData.contract}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-5 py-4 bg-[#262626] rounded-2xl outline-none appearance-none text-white transition-all cursor-pointer"
-                >
-                  <option value="">Selecione seu local</option>
-                  <option value="vitoria">Vitória - Matriz</option>
-                  <option value="serra">Serra - Logística</option>
-                  <option value="vale">Vale Tubarão</option>
-                  <option value="arcelor">ArcelorMittal</option>
-                </select>
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
-                  <LuArrowRight className="rotate-90 h-4 w-4" />
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
-                Detalhes da Ocorrência
-              </label>
-              <textarea
-                name="reason"
-                value={formData.reason}
+              <input
+                type="text"
+                name="cpf"
+                value={formData.cpf}
                 onChange={handleChange}
                 required
-                rows={4}
-                className="w-full px-5 py-4 bg-[#262626] border border-[#333] rounded-2xl focus:border-[#f59e0b] outline-none transition-all text-white placeholder-gray-600 resize-none"
-                placeholder="Descreva o problema de forma clara"
+                pattern="\d{11}"
+                maxLength={11}
+                className="w-full px-5 py-4 bg-[#262626] border border-[#333] rounded-2xl outline-none text-white"
+                placeholder="Digite os 11 números do CPF"
               />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
-                Anexar Atestado ou Declaração
+                Setor
+              </label>
+              <select
+                name="setor"
+                value={formData.setor}
+                onChange={handleChange}
+                required
+                className="w-full px-5 py-4 bg-[#262626] rounded-2xl outline-none text-white"
+              >
+                <option value="">Selecione seu local</option>
+                <option value="vitoria">Vitória - Matriz</option>
+                <option value="serra">Serra - Logística</option>
+                <option value="vale">Vale Tubarão</option>
+                <option value="arcelor">ArcelorMittal</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                Descrição
+              </label>
+              <textarea
+                name="descricao"
+                value={formData.descricao}
+                onChange={handleChange}
+                required
+                rows={4}
+                className="w-full px-5 py-4 bg-[#262626] border border-[#333] rounded-2xl outline-none text-white resize-none"
+                placeholder="Descreva o problema"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                Anexo
               </label>
 
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/jpg"
                 onChange={handleFileChange}
-                className="w-full px-5 py-4 bg-[#262626] border border-[#333] rounded-2xl file:bg-[#f59e0b] file:text-black file:font-bold file:border-none file:px-4 file:py-2 file:rounded-xl"
+                className="w-full px-5 py-4 bg-[#262626] border border-[#333] rounded-2xl"
               />
 
               {file && (
@@ -196,7 +196,7 @@ const handleSubmit = async (e: React.FormEvent) => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[#f59e0b] active:scale-95 text-black font-black py-5 rounded-2xl shadow-xl shadow-[#f59e0b]/10 transition-all disabled:opacity-50 flex items-center justify-center gap-3 uppercase text-sm tracking-tighter"
+                className="w-full bg-[#f59e0b] text-black font-black py-5 rounded-2xl disabled:opacity-50 flex items-center justify-center gap-3 uppercase text-sm"
               >
                 {loading ? (
                   <>
@@ -212,14 +212,6 @@ const handleSubmit = async (e: React.FormEvent) => {
               </button>
             </div>
           </form>
-        </div>
-
-        <div className="flex justify-center items-center gap-2 mt-10">
-          <div className="h-[1px] w-8 bg-gray-800"></div>
-          <p className="text-gray-600 text-[10px] font-bold uppercase tracking-widest">
-            Nolevel Operations v2.0
-          </p>
-          <div className="h-[1px] w-8 bg-gray-800"></div>
         </div>
       </div>
     </div>

@@ -2,53 +2,58 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import type { Prisma } from '@prisma/client'
+import fs from 'fs'
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData()
 
+    const nome = formData.get('nome') as string
+    const cpf = formData.get('cpf') as string
     const setor = formData.get('setor') as string
     const descricao = formData.get('descricao') as string
-    const prioridade = (formData.get('prioridade') as string) ?? 'normal'
-    const userName = formData.get('userName') as string
-    const anexo = formData.get('anexo') as File | null
+    const prioridade = (formData.get('prioridade') as string) || 'normal'
+    const file = formData.get('anexo') as File | null
 
-    if (!setor || !descricao || !userName) {
+    if (!nome || !cpf || !setor || !descricao) {
       return NextResponse.json(
-        { error: 'Campos obrigatórios não informados' },
+        { error: 'Campos obrigatórios não preenchidos' },
         { status: 400 }
       )
     }
 
     let anexoUrl: string | null = null
 
-    if (anexo && anexo.size > 0) {
-      // aqui você pode implementar upload para storage (ex: Supabase Storage)
-      // por enquanto apenas salva o nome do arquivo
-      anexoUrl = anexo.name
+    if (file && file.size > 0) {
+      const bytes = await file.arrayBuffer()
+      const buffer = Buffer.from(bytes)
+
+      const fileName = `${Date.now()}-${file.name}`
+      const filePath = `uploads/${fileName}`
+
+      await fs.promises.writeFile(filePath, buffer)
+
+      anexoUrl = `/${filePath}`
     }
+
+    const ticket = `TKT-${Date.now()}`
 
     const chamado = await prisma.chamado.create({
       data: {
-        ticket: `TICKET-${Date.now()}`,
+        ticket,
+        nome,
+        cpf,
         setor,
         descricao,
-        status: 'aberto',
         prioridade,
         anexoUrl,
       },
     })
 
     return NextResponse.json(chamado, { status: 201 })
-  } catch (error: unknown) {
-    if (error && typeof error === 'object' && 'code' in error && (error as { code: string }).code === 'P2002') {
-      return NextResponse.json(
-        { error: 'Registro duplicado' },
-        { status: 409 }
-      )
-    }
-
+  } catch (error) {
     return NextResponse.json(
       { error: 'Erro ao criar chamado' },
       { status: 500 }
@@ -57,16 +62,17 @@ export async function POST(req: NextRequest) {
 }
 
 
-
-
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
 
     const ticket = searchParams.get('ticket')
     const setor = searchParams.get('setor')
+    const cpf = searchParams.get('cpf')
+    const status = searchParams.get('status')
+    const nome = searchParams.get('nome')
 
-    const where: Record<string, string> = {}
+    const where: Prisma.ChamadoWhereInput = {}
 
     if (ticket) {
       where.ticket = ticket
@@ -74,6 +80,21 @@ export async function GET(req: NextRequest) {
 
     if (setor) {
       where.setor = setor
+    }
+
+    if (cpf) {
+      where.cpf = cpf
+    }
+
+    if (status) {
+      where.status = status
+    }
+
+    if (nome) {
+      where.nome = {
+        contains: nome,
+        mode: 'insensitive',
+      }
     }
 
     const chamados = await prisma.chamado.findMany({
