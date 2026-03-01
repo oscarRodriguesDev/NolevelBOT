@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
-import { gerarTicketId } from "../webhook3/route"
+
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
