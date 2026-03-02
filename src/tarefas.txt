@@ -1,0 +1,6 @@
+criarum modal para visualizar os chamados
+fazer o bot consultar stauts do chamados
+visualizar a descrição dos chamados
+criar a autenticação e aplicar
+criar modo escuro e modo claro
+pesquisar onde hospedar meu sistema
