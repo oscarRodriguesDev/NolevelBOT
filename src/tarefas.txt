@@ -1,6 +1,10 @@
-criarum modal para visualizar os chamados
-fazer o bot consultar stauts do chamados
-visualizar a descrição dos chamados
+criarum modal para visualizar os chamados - resolvdio
+quando salvar os tickets fechados tem que pegar o texto de solução e colocar la
+fazer o bot consultar stauts do chamados - resolvdio
+uando o bot consultar chamado deve permitir ver o status fechado
+visualizar a descrição dos chamados - resolvido - 
 criar a autenticação e aplicar
 criar modo escuro e modo claro
 pesquisar onde hospedar meu sistema
+criar uma pagina para o usuario visualizar o status do chamado
+corrigir no bot redirecionametos para locais errados

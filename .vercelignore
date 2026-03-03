@@ -1,0 +1,13 @@
+# Ignorar pastas de webhook não utilizadas no deploy da Vercel
+api/webhook8
+api/webhook9
+api/webhook10
+api/webhook11
+api/webhook12
+api/webhook13
+api/webhook14
+
+# Outros arquivos desnecessários para o runtime
+.dockerignore
+Dockerfile
+.DS_Store

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-const LINK_PORTAL = "https://nolevel-bot.vercel.app/chamado";
+
 const SETORES = ["RH", "TI", "Financeiro", "Comercial", "Vendas", "Suporte", "Manutenção", "Logística", "Medicina", "Segurança", "Limpeza", "Juridico"];
 
 type FlowState = "inicio" | "identificacao_cpf" | "identificacao_nome" | "menu_principal" | "coletar_motivo" | "escolher_abertura" | "coletar_setor"
@@ -18,6 +18,38 @@ type UserSession = {
 
 const sessions = new Map<string, UserSession>()
 
+
+function saudacao() {
+  const hora = new Date().getHours();
+
+  if (hora >= 5 && hora < 12) return "Bom dia";
+  if (hora >= 12 && hora < 18) return "Boa tarde";
+  if (hora >= 18 || hora < 5) return "Boa noite";
+  
+  return "Olá"; // Fallback de segurança
+}
+
+
+async function buscarAvisos() {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/quadro-avisos`, { cache: 'no-store' });
+    type Aviso = { titulo: string; conteudo: string };
+    const data: Aviso[] = await res.json();
+    return data
+      .map(a => `📢 *${a.titulo}*: ${a.conteudo}`)
+      .join("\n") || "Sem avisos.";
+  } catch { return "Sem avisos no momento."; }
+}
+
+
+function ticketNumber() {
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `TKT${timestamp}${randomPart}`;
+}
+
+const LINK_PORTAL = `https://nolevel-bot.vercel.app/chamado;${ticketNumber()}`;
+
 // --- IA HUMANIZADA ---
 async function hevelynIA(session: UserSession, userInput: string, instrucaoEtapa: string, avisos: string = "") {
   try {
@@ -26,13 +58,51 @@ async function hevelynIA(session: UserSession, userInput: string, instrucaoEtapa
       messages: [
         {
           role: "system",
-          content: `Você é a Hevelyn, assistente virtual da Nolevel. 
-          Responda de forma humana, empática e direta.
-          CONTEXTO:
-          - Usuário: ${session.nome || "Não identificado"}
-          - Memória: ${session.resumoHistorico || "Sem histórico anterior"}.
-          - Avisos: ${avisos}.
-          - Missão Atual: ${instrucaoEtapa}
+          content: `Você é a Hevelyn, a assistente virtual inteligente e empática da Nolevel.
+           Sua missão principal é atuar como uma camada de suporte resolutiva, garantindo que os colaboradores obtenham 
+           respostas rápidas e evitando a abertura de chamados desnecessários.
+
+### PERFIL E TOM DE VOZ
+- **Humana e Empática:** Use uma linguagem acolhedora, mas profissional.
+- **Direta e Resolutiva:** Não dê voltas. Se a resposta existe, entregue-a.
+- **Dona de Casa:** Você conhece as regras da Nolevel (avisos e histórico) melhor que ninguém.
+
+### REGRAS DE OURO (STRICT RULES)
+1. **Prioridade de Busca:** Antes de sugerir um chamado, analise MINUCIOSAMENTE o [QUADRO DE AVISOS] e a [MEMÓRIA DO USUÁRIO] fornecidos no contexto.
+2. **Filtro Anti-Chamado:** Se a dúvida do colaborador sobre VT, VR, VA ou dúvidas comuns puder ser respondida com as informações do contexto, responda e encerre de forma amigável.
+3. **Abertura de Chamado:** APENAS ofereça a abertura de chamado se:
+   - A informação NÃO constar nos Avisos.
+   - A dúvida for específica demais para a sua base de conhecimento atual.
+4. **Obrigação de Canal:** Ao sugerir um chamado, sempre informe que ele pode ser aberto diretamente pelo link: ${LINK_PORTAL}.
+
+### FLUXO DE PENSAMENTO
+1. Analise a pergunta do colaborador.
+2. Identifique se o assunto é (VT, VR, VA, RH ou TI, beneficios, ou qualquer duvida comum de colaboradores).
+3. Verifique se há algum aviso recente sobre isso em [AVISOS]: ${avisos}.
+4. Verifique o [HISTÓRICO]: ${session.resumoHistorico} para ver se isso já foi tratado.
+5. Responda a dúvida. 
+6. Se (e somente se) não houver solução, pergunte: "Não encontrei uma instrução específica sobre isso nos nossos comunicados. Deseja que eu abra um chamado para você agora ou prefere abrir pelo nosso portal?"
+
+### CONTEXTO ATUAL
+- **Colaborador:** ${session.nome || "Não identificado"}
+- **Memória/Histórico:** ${session.resumoHistorico || "Sem interações registradas"}.
+- **Quadro de Avisos Atualizado:** ${avisos}.
+- **Sua Missão Agora:** ${instrucaoEtapa}
+
+###GERAL
+-A ideia geral é impedir que duvidas comuns e recorrentes gerem chamados, por isso utilzamos o quadro de avisos ${avisos}
+-inicie com a ${saudacao()}
+
+
+### RESTRIÇÕES
+- Nunca invente regras de benefícios que não estejam nos avisos.
+- Se o usuário for grosseiro, mantenha a elegância e a empatia.
+- não diga ao usuario que existe um quadro de avisos, apenas use as informações dele para responder.
+ Se a resposta estiver lá, entregue-a como resposta definitiva.
+- Não saia do escopo de assistente da Nolevel.
+- para responder evite usar mais de 4 linhas por resposta, a não ser que seja extremamente necessário, 
+ou se a resposta for muito longa. Seja direto e objetivo, mas sem perder a empatia.
+
           `
         },
         { role: "user", content: userInput }
@@ -76,7 +146,7 @@ async function enviarChamado(nome: string, cpf: string, setor: string, descricao
 }
 
 
-//buscaar o status do chamdo pelo cpf
+//buscar o status do chamdo pelo cpf
 async function StatusChamado(filtro: string) {
   try {
     const isTicket = filtro.toUpperCase().includes("TKT") || filtro.length > 11;
@@ -89,11 +159,6 @@ async function StatusChamado(filtro: string) {
     return null;
   }
 }
-
-
-
-
-
 
 async function sendEvolutionText(instance: string, number: string, text: string) {
   const typingDelay = Math.min(Math.max(1000, text.length * 20), 3000);
@@ -137,7 +202,7 @@ export async function POST(req: NextRequest) {
     // --- FLUXO DE ESTADOS ---
     switch (session.state) {
       case "inicio":
-        const saudacao = await hevelynIA(session, userInput, "Dê boas-vindas e peça o CPF para iniciar.");
+        const saudacao = await hevelynIA(session, userInput,` Dê boas-vindas e peça o CPF para iniciar`);
         await sendEvolutionText(instance, number, saudacao);
         session.state = "identificacao_cpf";
         break;
@@ -178,7 +243,20 @@ export async function POST(req: NextRequest) {
           session.state = "coletar_motivo";
           await sendEvolutionText(instance, number, "Entendido. Por favor, descreva detalhadamente o que está acontecendo.");
         } else if (userInput === "2") {
-          await sendEvolutionText(instance, number, `Você pode consultar seus chamados aqui: ${LINK_PORTAL}`);
+          // Lógica atualizada para buscar status pelo CPF da sessão
+          if (session.cpf) {
+            await sendEvolutionText(instance, number, "Buscando o status dos seus chamados...");
+            const status = await StatusChamado(session.cpf);
+
+            if (status && Array.isArray(status) && status.length > 0) {
+              const listaStatus = status.map((t: { ticket: string; status: string }) => `Ticket: ${t.ticket} - Status: ${t.status}`).join("\n");
+              await sendEvolutionText(instance, number, `Encontrei o seguinte:\n\n${listaStatus}\n\nVocê também pode consultar no portal: ${LINK_PORTAL}`);
+            } else {
+              await sendEvolutionText(instance, number, `Não encontrei chamados abertos para o seu CPF. Caso prefira, consulte o portal: ${LINK_PORTAL}`);
+            }
+          } else {
+            await sendEvolutionText(instance, number, `Você pode consultar seus chamados aqui: ${LINK_PORTAL}`);
+          }
         } else if (userInput === "3") {
           await sendEvolutionText(instance, number, `Aqui estão os avisos recentes:\n${avisos}\n\nDeseja algo mais?`);
         } else {
@@ -209,7 +287,7 @@ export async function POST(req: NextRequest) {
         if (setorAlvo) {
           await sendEvolutionText(instance, number, "Processando seu chamado... 🚀");
           const ok = await enviarChamado(session.nome!, session.cpf!, setorAlvo, session.motivoAtual!);
-          
+
           if (ok) {
             await sendEvolutionText(instance, number, `✅ Chamado aberto com sucesso para o setor ${setorAlvo}! Em breve alguém entrará em contato.`);
             await saveMemoria(session.cpf!, session.nome!, `Nome: ${session.nome}. Último chamado: ${session.motivoAtual?.substring(0, 50)}...`);
@@ -230,13 +308,3 @@ export async function POST(req: NextRequest) {
   }
 }
 
-async function buscarAvisos() {
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/quadro-avisos`, { cache: 'no-store' });
-    type Aviso = { titulo: string; conteudo: string };
-    const data: Aviso[] = await res.json();
-    return data
-      .map(a => `📢 *${a.titulo}*: ${a.conteudo}`)
-      .join("\n") || "Sem avisos.";
-  } catch { return "Sem avisos no momento."; }
-}

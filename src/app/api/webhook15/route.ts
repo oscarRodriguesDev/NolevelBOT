@@ -76,7 +76,7 @@ async function enviarChamado(nome: string, cpf: string, setor: string, descricao
 }
 
 
-//buscaar o status do chamdo pelo cpf
+//buscar o status do chamdo pelo cpf
 async function StatusChamado(filtro: string) {
   try {
     const isTicket = filtro.toUpperCase().includes("TKT") || filtro.length > 11;
@@ -89,11 +89,6 @@ async function StatusChamado(filtro: string) {
     return null;
   }
 }
-
-
-
-
-
 
 async function sendEvolutionText(instance: string, number: string, text: string) {
   const typingDelay = Math.min(Math.max(1000, text.length * 20), 3000);
@@ -178,7 +173,20 @@ export async function POST(req: NextRequest) {
           session.state = "coletar_motivo";
           await sendEvolutionText(instance, number, "Entendido. Por favor, descreva detalhadamente o que está acontecendo.");
         } else if (userInput === "2") {
-          await sendEvolutionText(instance, number, `Você pode consultar seus chamados aqui: ${LINK_PORTAL}`);
+          // Lógica atualizada para buscar status pelo CPF da sessão
+          if (session.cpf) {
+            await sendEvolutionText(instance, number, "Buscando o status dos seus chamados...");
+            const status = await StatusChamado(session.cpf);
+            
+            if (status && Array.isArray(status) && status.length > 0) {
+              const listaStatus = status.map((t: any) => `Ticket: ${t.ticket} - Status: ${t.status}`).join("\n");
+              await sendEvolutionText(instance, number, `Encontrei o seguinte:\n\n${listaStatus}\n\nVocê também pode consultar no portal: ${LINK_PORTAL}`);
+            } else {
+              await sendEvolutionText(instance, number, `Não encontrei chamados abertos para o seu CPF. Caso prefira, consulte o portal: ${LINK_PORTAL}`);
+            }
+          } else {
+            await sendEvolutionText(instance, number, `Você pode consultar seus chamados aqui: ${LINK_PORTAL}`);
+          }
         } else if (userInput === "3") {
           await sendEvolutionText(instance, number, `Aqui estão os avisos recentes:\n${avisos}\n\nDeseja algo mais?`);
         } else {

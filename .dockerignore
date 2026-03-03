@@ -1,0 +1,82 @@
+# See https://docs.docker.com/engine/reference/builder/#dockerignore-file-example
+
+# Ignore some common IDE and OS build artifacts
+**/.DS_Store
+**/Thumbs.db
+**/*.sw?
+
+# Ignore common development artifacts
+**/node_modules
+**/build
+**/.next
+**/out
+
+# Ignore common git files
+**/.git
+**/.gitignore
+
+# Ignore common macOS files
+**/.AppleDesktopServiceID
+**/com.apple.TimeMachine.plist
+**/com.apple.timemachine.plist
+
+# Ignore common Linux files
+**/*.swp
+**/*.sws
+**/*.goutput
+**/*.goutput2
+**/Session.vim
+**/viminfo
+**/tags
+**/.cproject
+**/.clang-cache/
+**/.ctags
+**/.build/
+**/compile_commands.log
+**/*.o
+**/*.a
+**/*.so
+**/*.ko
+**/*.obj
+**/*.obj~
+**/*.linkinfo
+**/*.rawdeps
+**/*.deps
+**/*.gch
+**/*.pch
+**/*.pid
+**/*.gnucache
+**/*.cvsignore
+**/*.cvplist
+**/*.csk
+**/.clang.cache/
+**/libclang_rt.*
+**/*.dSYM
+
+# Ignore common Windows files
+**/ehthumbs.db
+**/Desktop.ini
+**/*.lnk
+**/*.exe
+**/*.exe~
+**/*.dll
+**/*.dll~
+**/*.manifest
+**/*.local
+**/*.vc
+**/*.vcxproj
+**/*.suo
+**/*.sdf
+**/*.opensdf
+**/ncbBuildInfo.xml
+
+# Ignorar pastas de webhook não utilizadas
+# Removida a barra inicial para garantir a exclusão
+api/webhook8
+api/webhook9
+api/webhook10
+api/webhook11
+api/webhook12
+api/webhook13
+api/webhook14
+api/webhook15

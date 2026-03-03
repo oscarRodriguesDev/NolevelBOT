@@ -71,35 +71,29 @@ export async function GET(req: NextRequest) {
     const cpf = searchParams.get('cpf')
     const status = searchParams.get('status')
     const nome = searchParams.get('nome')
+    const descricao = searchParams.get('descricao')
     const prioridade = searchParams.get('prioridade')
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
 
     const where: Prisma.ChamadoWhereInput = {}
 
-    if (ticket) {
-      where.ticket = ticket
-    }
-
-    if (setor) {
-      where.setor = setor
-    }
-
-    if (cpf) {
-      where.cpf = cpf
-    }
-
-    if (status) {
-      where.status = status
-    }
-
-    if (prioridade) {
-      where.prioridade = prioridade
-    }
+    if (ticket) where.ticket = ticket
+    if (setor) where.setor = setor
+    if (cpf) where.cpf = cpf
+    if (status) where.status = status
+    if (prioridade) where.prioridade = prioridade
 
     if (nome) {
       where.nome = {
         contains: nome,
+        mode: 'insensitive',
+      }
+    }
+
+    if (descricao) {
+      where.descricao = {
+        contains: descricao,
         mode: 'insensitive',
       }
     }
@@ -131,7 +125,6 @@ export async function GET(req: NextRequest) {
     )
   }
 }
-
 
 
 
