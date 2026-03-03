@@ -1,6 +1,6 @@
 {
   "name": "nolevel",
-  "version": "0.1.1",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -36,3 +36,4 @@
     "typescript": "^5"
   }
 }
+
