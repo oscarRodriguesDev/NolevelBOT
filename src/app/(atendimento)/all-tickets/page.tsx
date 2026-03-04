@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { ModalChamado } from "../components/modal_tandimento"
+import { ThemeToggle } from "@/app/components/theme-toggle"
 
 type Chamado = {
   id: string
@@ -115,6 +116,7 @@ export default function TicketsPage() {
         color: "var(--foreground)",
       }}
     >
+      <ThemeToggle />
       <div
         className="max-w-6xl mx-auto shadow-lg rounded-lg p-8 space-y-6 transition-colors duration-300"
         style={{

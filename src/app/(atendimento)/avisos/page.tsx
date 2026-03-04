@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { ThemeToggle } from "@/app/components/theme-toggle"
 
 type Aviso = {
   id: string
@@ -95,6 +96,7 @@ export default function AvisosPage() {
         color: "var(--foreground)",
       }}
     >
+      <ThemeToggle />
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-10">
           <div>

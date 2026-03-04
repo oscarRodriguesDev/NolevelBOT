@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { ThemeToggle } from "@/app/components/theme-toggle"
 
 export default function CadastroCPFs() {
   const [nome, setNome] = useState("")
@@ -72,6 +73,7 @@ export default function CadastroCPFs() {
         color: "var(--foreground)",
       }}
     >
+      <ThemeToggle />
       <div
         className="w-full max-w-md p-6 rounded-lg shadow-lg space-y-8 border transition-colors duration-300"
         style={{

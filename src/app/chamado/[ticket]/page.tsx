@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useParams } from 'next/navigation'
 import { LuHardHat, LuCheck, LuLoader, LuArrowRight } from 'react-icons/lu'
 import { useTheme } from '@/app/providers'
+import { ThemeToggle } from '@/app/components/theme-toggle'
 
 export default function TicketPage() {
   const { theme } = useTheme()
@@ -118,6 +119,7 @@ export default function TicketPage() {
         color: "var(--foreground)",
       }}
     >
+      <ThemeToggle />
       <div
         className="border-b p-8 mb-8 transition-colors duration-300"
         style={{
