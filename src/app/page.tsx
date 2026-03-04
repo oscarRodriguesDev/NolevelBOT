@@ -1,6 +1,7 @@
 "use client";
 
 import { useTheme } from "./providers";
+import { ThemeToggle } from "./components/theme-toggle";
 
 export default function Home() {
   const { theme } = useTheme();
@@ -13,7 +14,8 @@ export default function Home() {
         color: "var(--foreground)",
       }}
     >
-      <div className="text-center space-y-8 max-w-2xl">
+      <ThemeToggle />
+      <div className="text-center space-y-8 max-w-2xl relative z-0">
         <h1 className="text-5xl md:text-6xl font-bold">
           <span style={{ color: "var(--primary)" }}>Nolevel</span>BOT
         </h1>
