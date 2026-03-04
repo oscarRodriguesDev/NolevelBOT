@@ -1,7 +1,7 @@
 "use client";
 
 import { useTheme } from "../providers";
-import { MoonIcon, SunIcon } from "react-icons/fa6";
+import { FaMoon, FaSun } from "react-icons/fa6";
 
 export function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
@@ -17,9 +17,9 @@ export function ThemeToggle() {
       aria-label="Alternar tema"
     >
       {theme === "light" ? (
-        <MoonIcon size={20} />
+        <FaMoon size={20} />
       ) : (
-        <SunIcon size={20} />
+        <FaSun size={20} />
       )}
     </button>
   );
