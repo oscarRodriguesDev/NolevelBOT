@@ -18,19 +18,11 @@ export const metadata: Metadata = {
   description: "Sistema inteligente de gestão de chamados e atendimento",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased transition-colors duration-300`}
-      >
-        <RootLayoutClient>
-          {children}
-        </RootLayoutClient>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased transition-colors duration-300`}>
+        <RootLayoutClient>{children}</RootLayoutClient>
       </body>
     </html>
   );
