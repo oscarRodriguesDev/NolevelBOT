@@ -1,10 +1,47 @@
 criarum modal para visualizar os chamados - resolvdio
+
 quando salvar os tickets fechados tem que pegar o texto de solução e colocar la
+
 fazer o bot consultar stauts do chamados - resolvdio
-uando o bot consultar chamado deve permitir ver o status fechado
+
+uando o bot consultar chamado deve permitir ver o status fechado (pensar melhor sobre isso)
+
 visualizar a descrição dos chamados - resolvido - 
-criar a autenticação e aplicar
-criar modo escuro e modo claro
+
+criar a autenticação e aplicar iniciado mock
+
+criar modo escuro e modo claro - feito 
+
 pesquisar onde hospedar meu sistema
-criar uma pagina para o usuario visualizar o status do chamado
+
+criar uma pagina para o usuario visualizar o status do chamado - feito
 corrigir no bot redirecionametos para locais errados
+melhorar layout colocar tudo responsivo
+criar uma landing page
+criar uma pagina de dashboard
+atualizar all tickets quando voltar do modal
+verificar logica de criação de tickets, pq quando vier do bot tem que ber como vai ser criado
+na tela de subir cpfs melhorar o layout do botão de escolha de documentos
+
+
+testes:
+1-testar tema escuro/claro na tela inicial - ok
+2- testar tema claro/escuro tela de login - ok
+3- testar se login esta funcionando - ok
+4- testar rota de consulta  informando o ticket TKT-1772404438444 consulta/TKT-1772404438444 ok
+5- testar tema escuro claro na rota de consulta ok
+6- testar tema escuro/claro na rota de chamado chamado/asdfasdf ok
+7- abrir um chamado na rota chamado/asdfasdf ( tem que salvar no banco) ok
+8- testar tema na rota all-tickets ok
+9- testar abertura de modal em all tickets (tema escuro ou claro herda do componente pai) ok
+10- alterar um chamado ok
+11- testar tema na tela de avisos ok
+12- adcionar um aviso ok - tem que salvar no banco ok
+13- testar tema na pagian cadastro cpfs cadastro_cpfs ok
+14 subir cpf manual ok
+15 -  subir por txt 
+16 - verificar no banco ou na rota  api/cpfs
+17 - subir pelo excel falhou mas atualizei e subiu resolver isso e cache precisa dar feedback quando subir o arquivo
+
+
+
