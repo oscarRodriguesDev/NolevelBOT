@@ -88,14 +88,20 @@ export default function AvisosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 p-10">
+    <div
+      className="min-h-screen p-10 transition-colors duration-300"
+      style={{
+        backgroundColor: "var(--background)",
+        color: "var(--foreground)",
+      }}
+    >
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-10">
           <div>
-            <h1 className="text-3xl font-semibold text-white">
+            <h1 className="text-3xl font-semibold" style={{ color: "var(--primary)" }}>
               Avisos
             </h1>
-            <p className="text-zinc-400 text-sm">
+            <p className="text-sm opacity-70">
               Comunicados internos do sistema
             </p>
           </div>
@@ -105,20 +111,44 @@ export default function AvisosPage() {
               setEditingId(null)
               setOpen(!open)
             }}
-            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition"
+            className="px-5 py-2.5 text-white rounded-lg transition-all duration-300 hover:scale-105 active:scale-95"
+            style={{
+              backgroundColor: "var(--primary)",
+            }}
+            onMouseEnter={e => {
+              if (e.target instanceof HTMLElement) {
+                e.target.style.backgroundColor = "var(--primary-hover)";
+              }
+            }}
+            onMouseLeave={e => {
+              if (e.target instanceof HTMLElement) {
+                e.target.style.backgroundColor = "var(--primary)";
+              }
+            }}
           >
-            New
+            Novo Aviso
           </button>
         </div>
 
         {open && (
-          <div className="mb-10 bg-zinc-900 border border-zinc-800 rounded-xl p-6 shadow-lg">
+          <div
+            className="mb-10 border rounded-xl p-6 shadow-lg transition-colors duration-300"
+            style={{
+              backgroundColor: "var(--surface)",
+              borderColor: "var(--border-subtle)",
+            }}
+          >
             <form onSubmit={handleSubmit} className="space-y-5">
               <input
                 value={titulo}
                 onChange={e => setTitulo(e.target.value)}
                 placeholder="Título"
-                className="w-full bg-zinc-950 border border-zinc-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none px-4 py-2.5 rounded-lg transition"
+                className="w-full border rounded-lg px-4 py-2.5 outline-none transition-colors duration-300"
+                style={{
+                  backgroundColor: "var(--surface-elevated)",
+                  borderColor: "var(--border-subtle)",
+                  color: "var(--foreground)",
+                }}
               />
 
               <textarea
@@ -126,20 +156,43 @@ export default function AvisosPage() {
                 onChange={e => setConteudo(e.target.value)}
                 placeholder="Conteúdo"
                 rows={4}
-                className="w-full bg-zinc-950 border border-zinc-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none px-4 py-2.5 rounded-lg transition"
+                className="w-full border rounded-lg px-4 py-2.5 outline-none transition-colors duration-300 resize-none"
+                style={{
+                  backgroundColor: "var(--surface-elevated)",
+                  borderColor: "var(--border-subtle)",
+                  color: "var(--foreground)",
+                }}
               />
 
               <input
                 value={setor}
                 onChange={e => setSetor(e.target.value)}
                 placeholder="Setor (opcional)"
-                className="w-full bg-zinc-950 border border-zinc-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none px-4 py-2.5 rounded-lg transition"
+                className="w-full border rounded-lg px-4 py-2.5 outline-none transition-colors duration-300"
+                style={{
+                  backgroundColor: "var(--surface-elevated)",
+                  borderColor: "var(--border-subtle)",
+                  color: "var(--foreground)",
+                }}
               />
 
               <div className="flex gap-4">
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition"
+                  className="px-5 py-2.5 text-white rounded-lg transition-all duration-300 hover:scale-105 active:scale-95"
+                  style={{
+                    backgroundColor: "var(--status-completed)",
+                  }}
+                  onMouseEnter={e => {
+                    if (e.target instanceof HTMLElement) {
+                      e.target.style.opacity = "0.8";
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (e.target instanceof HTMLElement) {
+                      e.target.style.opacity = "1";
+                    }
+                  }}
                 >
                   {editingId ? "Atualizar" : "Salvar"}
                 </button>
@@ -147,7 +200,10 @@ export default function AvisosPage() {
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition"
+                  className="px-5 py-2.5 text-white rounded-lg transition-all duration-300 hover:scale-105 active:scale-95"
+                  style={{
+                    backgroundColor: "var(--border-subtle)",
+                  }}
                 >
                   Cancelar
                 </button>
@@ -158,7 +214,7 @@ export default function AvisosPage() {
 
         <div className="space-y-6">
           {avisos.length === 0 && (
-            <div className="text-center text-zinc-500 py-10">
+            <div className="text-center py-10 opacity-70">
               Nenhum aviso cadastrado.
             </div>
           )}
@@ -166,40 +222,57 @@ export default function AvisosPage() {
           {avisos.map(aviso => (
             <div
               key={aviso.id}
-              className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 shadow hover:border-zinc-700 transition"
+              className="border rounded-xl p-6 shadow hover:opacity-90 transition-all duration-300"
+              style={{
+                backgroundColor: "var(--surface)",
+                borderColor: "var(--border-subtle)",
+              }}
             >
               <div className="flex justify-between items-start mb-3">
-                <h3 className="text-lg font-semibold text-white">
+                <h3 className="text-lg font-semibold">
                   {aviso.titulo}
                 </h3>
 
                 {aviso.setor && (
-                  <span className="text-xs bg-indigo-600/20 text-indigo-400 px-3 py-1 rounded-full border border-indigo-600/30">
+                  <span
+                    className="text-xs px-3 py-1 rounded-full border"
+                    style={{
+                      backgroundColor: "var(--info-light)",
+                      borderColor: "var(--primary)",
+                      color: "var(--primary)",
+                    }}
+                  >
                     {aviso.setor}
                   </span>
                 )}
               </div>
 
-              <p className="text-zinc-300 mb-4">
+              <p className="mb-4 opacity-90">
                 {aviso.conteudo}
               </p>
 
               <div className="flex items-center justify-between">
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs opacity-60">
                   {new Date(aviso.createdAt).toLocaleDateString("pt-BR")}
                 </p>
 
                 <div className="flex gap-3">
                   <button
                     onClick={() => handleEdit(aviso)}
-                    className="text-indigo-400 hover:text-indigo-300 text-sm transition"
+                    className="text-sm transition-colors duration-200 hover:opacity-70"
+                    style={{
+                      color: "var(--primary)",
+                    }}
                   >
                     Editar
                   </button>
 
                   <button
                     onClick={() => handleDelete(aviso.id)}
-                    className="text-red-500 hover:text-red-400 text-sm transition"
+                    className="text-sm transition-colors duration-200 hover:opacity-70"
+                    style={{
+                      color: "var(--status-cancelled)",
+                    }}
                   >
                     Deletar
                   </button>

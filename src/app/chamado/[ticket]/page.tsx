@@ -2,8 +2,10 @@
 import { useState } from 'react'
 import { useParams } from 'next/navigation'
 import { LuHardHat, LuCheck, LuLoader, LuArrowRight } from 'react-icons/lu'
+import { useTheme } from '@/app/providers'
 
 export default function TicketPage() {
+  const { theme } = useTheme()
   const params = useParams()
   const ticketId = params.ticket as string
 
@@ -66,18 +68,40 @@ export default function TicketPage() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-[#1a1a1a] flex items-center justify-center p-4">
-        <div className="bg-[#262626] rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center border border-[#333]">
-          <LuCheck className="h-16 w-16 text-[#f59e0b] mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-2">
+      <div
+        className="min-h-screen flex items-center justify-center p-4 transition-colors duration-300"
+        style={{ backgroundColor: "var(--background)" }}
+      >
+        <div
+          className="rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center border transition-colors duration-300"
+          style={{
+            backgroundColor: "var(--surface)",
+            borderColor: "var(--border-subtle)",
+          }}
+        >
+          <LuCheck className="h-16 w-16 mx-auto mb-4" style={{ color: "var(--primary)" }} />
+          <h2 className="text-2xl font-bold mb-2" style={{ color: "var(--primary)" }}>
             Solicitação Enviada
           </h2>
-          <p className="text-gray-400 mb-6 text-sm">
+          <p className="mb-6 text-sm opacity-70">
             O chamado foi enviado com sucesso.
           </p>
           <button
             onClick={() => window.close()}
-            className="w-full bg-[#f59e0b] text-black py-4 rounded-xl font-bold hover:bg-[#d97706] transition-all"
+            className="w-full py-4 rounded-xl font-bold transition-all duration-300 text-white hover:scale-105 active:scale-95"
+            style={{
+              backgroundColor: "var(--primary)",
+            }}
+            onMouseEnter={e => {
+              if (e.target instanceof HTMLElement) {
+                e.target.style.backgroundColor = "var(--primary-hover)";
+              }
+            }}
+            onMouseLeave={e => {
+              if (e.target instanceof HTMLElement) {
+                e.target.style.backgroundColor = "var(--primary)";
+              }
+            }}
           >
             Concluído
           </button>
@@ -87,17 +111,29 @@ export default function TicketPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#121212] text-white pb-12 font-sans">
-      <div className="bg-[#1a1a1a] border-b border-[#333] p-8 mb-8">
+    <div
+      className="min-h-screen pb-12 font-sans transition-colors duration-300"
+      style={{
+        backgroundColor: "var(--background)",
+        color: "var(--foreground)",
+      }}
+    >
+      <div
+        className="border-b p-8 mb-8 transition-colors duration-300"
+        style={{
+          backgroundColor: "var(--surface)",
+          borderColor: "var(--border-subtle)",
+        }}
+      >
         <div className="max-w-md mx-auto flex items-center gap-3">
-          <div className="bg-[#f59e0b] p-2 rounded-lg">
-            <LuHardHat className="h-6 w-6 text-black" />
+          <div className="p-2 rounded-lg" style={{ backgroundColor: "var(--primary)" }}>
+            <LuHardHat className="h-6 w-6 text-white" />
           </div>
           <div>
             <h1 className="text-lg font-black uppercase tracking-tighter">
               Nolevel Suporte
             </h1>
-            <p className="text-[#f59e0b] text-[10px] font-bold tracking-[0.2em] uppercase">
+            <p className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: "var(--primary)" }}>
               Setor de Operações
             </p>
           </div>
@@ -105,10 +141,16 @@ export default function TicketPage() {
       </div>
 
       <div className="max-w-md mx-auto px-4">
-        <div className="bg-[#1a1a1a] rounded-3xl p-8 border border-[#333] shadow-2xl">
+        <div
+          className="rounded-3xl p-8 border shadow-2xl transition-colors duration-300"
+          style={{
+            backgroundColor: "var(--surface)",
+            borderColor: "var(--border-subtle)",
+          }}
+        >
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+              <label className="block text-xs font-bold uppercase tracking-widest mb-2 opacity-75">
                 Nome
               </label>
               <input
@@ -117,13 +159,18 @@ export default function TicketPage() {
                 value={formData.nome}
                 onChange={handleChange}
                 required
-                className="w-full px-5 py-4 bg-[#262626] border border-[#333] rounded-2xl outline-none text-white"
+                className="w-full px-5 py-4 border rounded-2xl outline-none transition-colors duration-300"
+                style={{
+                  backgroundColor: "var(--surface-elevated)",
+                  borderColor: "var(--border-subtle)",
+                  color: "var(--foreground)",
+                }}
                 placeholder="Digite seu nome completo"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+              <label className="block text-xs font-bold uppercase tracking-widest mb-2 opacity-75">
                 CPF
               </label>
               <input
@@ -134,13 +181,18 @@ export default function TicketPage() {
                 required
                 pattern="\d{11}"
                 maxLength={11}
-                className="w-full px-5 py-4 bg-[#262626] border border-[#333] rounded-2xl outline-none text-white"
+                className="w-full px-5 py-4 border rounded-2xl outline-none transition-colors duration-300"
+                style={{
+                  backgroundColor: "var(--surface-elevated)",
+                  borderColor: "var(--border-subtle)",
+                  color: "var(--foreground)",
+                }}
                 placeholder="Digite os 11 números do CPF"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+              <label className="block text-xs font-bold uppercase tracking-widest mb-2 opacity-75">
                 Setor
               </label>
               <select
@@ -148,7 +200,12 @@ export default function TicketPage() {
                 value={formData.setor}
                 onChange={handleChange}
                 required
-                className="w-full px-5 py-4 bg-[#262626] rounded-2xl outline-none text-white"
+                className="w-full px-5 py-4 rounded-2xl outline-none transition-colors duration-300"
+                style={{
+                  backgroundColor: "var(--surface-elevated)",
+                  color: "var(--foreground)",
+                  borderColor: "var(--border-subtle)",
+                }}
               >
                 <option value="">Selecione seu local</option>
                 <option value="vitoria">Vitória - Matriz</option>
@@ -159,7 +216,7 @@ export default function TicketPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+              <label className="block text-xs font-bold uppercase tracking-widest mb-2 opacity-75">
                 Descrição
               </label>
               <textarea
@@ -168,13 +225,18 @@ export default function TicketPage() {
                 onChange={handleChange}
                 required
                 rows={4}
-                className="w-full px-5 py-4 bg-[#262626] border border-[#333] rounded-2xl outline-none text-white resize-none"
+                className="w-full px-5 py-4 border rounded-2xl outline-none transition-colors duration-300 resize-none"
+                style={{
+                  backgroundColor: "var(--surface-elevated)",
+                  borderColor: "var(--border-subtle)",
+                  color: "var(--foreground)",
+                }}
                 placeholder="Descreva o problema"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+              <label className="block text-xs font-bold uppercase tracking-widest mb-2 opacity-75">
                 Anexo
               </label>
 
@@ -182,11 +244,16 @@ export default function TicketPage() {
                 type="file"
                 accept="image/png,image/jpeg,image/jpg"
                 onChange={handleFileChange}
-                className="w-full px-5 py-4 bg-[#262626] border border-[#333] rounded-2xl"
+                className="w-full px-5 py-4 border rounded-2xl transition-colors duration-300"
+                style={{
+                  backgroundColor: "var(--surface-elevated)",
+                  borderColor: "var(--border-subtle)",
+                  color: "var(--foreground)",
+                }}
               />
 
               {file && (
-                <p className="text-xs text-[#f59e0b] mt-2 font-mono">
+                <p className="text-xs mt-2 font-mono" style={{ color: "var(--primary)" }}>
                   Arquivo selecionado: {file.name}
                 </p>
               )}
@@ -196,7 +263,20 @@ export default function TicketPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[#f59e0b] text-black font-black py-5 rounded-2xl disabled:opacity-50 flex items-center justify-center gap-3 uppercase text-sm"
+                className="w-full font-black py-5 rounded-2xl disabled:opacity-50 flex items-center justify-center gap-3 uppercase text-sm text-white transition-all duration-300 hover:scale-105 active:scale-95"
+                style={{
+                  backgroundColor: "var(--primary)",
+                }}
+                onMouseEnter={e => {
+                  if (e.target instanceof HTMLElement && !loading) {
+                    e.target.style.backgroundColor = "var(--primary-hover)";
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (e.target instanceof HTMLElement) {
+                    e.target.style.backgroundColor = "var(--primary)";
+                  }
+                }}
               >
                 {loading ? (
                   <>

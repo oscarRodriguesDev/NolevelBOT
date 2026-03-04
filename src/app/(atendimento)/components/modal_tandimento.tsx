@@ -117,26 +117,57 @@ export function ModalChamado({
 
   if (!open || !chamado) return null
 
+  const getStatusColor = (status: string) => {
+    const statusMap: Record<string, string> = {
+      novo: "var(--status-new)",
+      aberto: "var(--status-new)",
+      em_atendimento: "var(--status-in-progress)",
+      em_andamento: "var(--status-in-progress)",
+      aguardando: "var(--status-waiting)",
+      concluido: "var(--status-completed)",
+      finalizado: "var(--status-completed)",
+      cancelado: "var(--status-cancelled)",
+    };
+    return statusMap[status.toLowerCase()] || "var(--primary)";
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="w-full max-w-3xl bg-gray-800 text-gray-200 rounded-lg shadow-2xl p-6 relative border border-gray-700">
+      <div
+        className="w-full max-w-3xl rounded-lg shadow-2xl p-6 relative border transition-colors duration-300"
+        style={{
+          backgroundColor: "var(--surface)",
+          borderColor: "var(--border-subtle)",
+        }}
+      >
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 text-gray-400 hover:text-white text-lg"
+          className="absolute top-3 right-3 text-lg transition-colors duration-200 hover:scale-110"
+          style={{ color: "var(--foreground)" }}
         >
           ✕
         </button>
 
-        <h2 className="text-xl font-semibold mb-6 text-white">
+        <h2 className="text-2xl font-semibold mb-6" style={{ color: "var(--primary)" }}>
           Chamado {chamado.ticket}
         </h2>
 
         <div className="space-y-2 text-sm mb-6">
-          <p><strong>Nome:</strong> {chamado.nome}</p>
-          <p><strong>CPF:</strong> {chamado.cpf}</p>
-          <p><strong>Setor:</strong> {chamado.setor}</p>
-          <p><strong>Prioridade:</strong> {chamado.prioridade}</p>
-          <p><strong>Status:</strong> {chamado.status}</p>
+          <p>
+            <strong>Nome:</strong> {chamado.nome}
+          </p>
+          <p>
+            <strong>CPF:</strong> {chamado.cpf}
+          </p>
+          <p>
+            <strong>Setor:</strong> {chamado.setor}
+          </p>
+          <p>
+            <strong>Prioridade:</strong> {chamado.prioridade}
+          </p>
+          <p>
+            <strong>Status:</strong> {chamado.status}
+          </p>
           <p>
             <strong>Data:</strong>{" "}
             {new Date(chamado.createdAt).toLocaleString("pt-BR")}
@@ -146,7 +177,8 @@ export function ModalChamado({
             <a
               href={chamado.anexoUrl}
               target="_blank"
-              className="text-blue-400 underline hover:text-blue-300"
+              className="inline-block transition-colors duration-200"
+              style={{ color: "var(--primary)" }}
             >
               Ver anexo
             </a>
@@ -155,40 +187,56 @@ export function ModalChamado({
 
         {/* Descrição do chamado */}
         <div className="mb-6">
-          <h3 className="text-sm font-medium text-gray-300 mb-2">
-            Descrição do chamado
-          </h3>
-          <div className="bg-gray-900 border border-gray-700 rounded-md p-4 text-sm text-gray-200 whitespace-pre-wrap">
+          <h3 className="text-sm font-medium mb-2">Descrição do chamado</h3>
+          <div
+            className="border rounded-md p-4 text-sm whitespace-pre-wrap transition-colors duration-300"
+            style={{
+              backgroundColor: "var(--surface-elevated)",
+              borderColor: "var(--border-subtle)",
+              color: "var(--foreground)",
+            }}
+          >
             {chamado.descricao}
           </div>
         </div>
 
         {/* Histórico */}
-        <div className="border border-gray-700 rounded-md p-4 mb-6 bg-gray-900">
-          <h3 className="font-medium mb-3 text-sm text-gray-300">
-            Evolução do chamado
-          </h3>
+        <div
+          className="border rounded-md p-4 mb-6 transition-colors duration-300"
+          style={{
+            backgroundColor: "var(--surface-elevated)",
+            borderColor: "var(--border-subtle)",
+          }}
+        >
+          <h3 className="font-medium mb-3 text-sm">Evolução do chamado</h3>
 
-          <div className="h-40 overflow-y-auto border border-gray-700 rounded p-3 mb-4 text-xs bg-gray-800">
+          <div
+            className="h-40 overflow-y-auto border rounded p-3 mb-4 text-xs transition-colors duration-300"
+            style={{
+              backgroundColor: "var(--background)",
+              borderColor: "var(--border-subtle)",
+              color: "var(--foreground)",
+            }}
+          >
             {historico.length === 0 && (
-              <p className="text-gray-500">
-                Nenhuma evolução registrada
-              </p>
+              <p style={{ opacity: 0.6 }}>Nenhuma evolução registrada</p>
             )}
 
             {historico.map((item, index) => (
-              <div key={index} className="mb-3 border-b border-gray-700 pb-2">
-                <p className="font-semibold text-gray-300">
+              <div
+                key={index}
+                className="mb-3 border-b pb-2"
+                style={{ borderColor: "var(--border-subtle)" }}
+              >
+                <p className="font-semibold">
                   {new Date(item.data).toLocaleString("pt-BR")}
                 </p>
                 <p>{item.acao}</p>
                 {item.observacao && (
-                  <p className="text-gray-400">Obs: {item.observacao}</p>
+                  <p style={{ opacity: 0.7 }}>Obs: {item.observacao}</p>
                 )}
                 {item.atendente && (
-                  <p className="text-gray-500">
-                    Atendente: {item.atendente}
-                  </p>
+                  <p style={{ opacity: 0.6 }}>Atendente: {item.atendente}</p>
                 )}
               </div>
             ))}
@@ -198,7 +246,12 @@ export function ModalChamado({
             <select
               value={novoStatus}
               onChange={(e) => setNovoStatus(e.target.value)}
-              className="border border-gray-600 bg-gray-800 text-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border rounded px-3 py-2 text-sm focus:outline-none transition-colors duration-300"
+              style={{
+                borderColor: "var(--border-subtle)",
+                backgroundColor: "var(--background)",
+                color: "var(--foreground)",
+              }}
             >
               <option value="aberto">Aberto</option>
               <option value="em_atendimento">Em atendimento</option>
@@ -210,14 +263,32 @@ export function ModalChamado({
               placeholder="Adicionar observação"
               value={observacao}
               onChange={(e) => setObservacao(e.target.value)}
-              className="border border-gray-600 bg-gray-800 text-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border rounded px-3 py-2 text-sm focus:outline-none transition-colors duration-300"
+              style={{
+                borderColor: "var(--border-subtle)",
+                backgroundColor: "var(--background)",
+                color: "var(--foreground)",
+              }}
               rows={3}
             />
 
             <button
               onClick={atualizarChamado}
               disabled={loading}
-              className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 disabled:opacity-50 transition"
+              className="text-white px-4 py-2 rounded text-sm transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50"
+              style={{
+                backgroundColor: "var(--primary)",
+              }}
+              onMouseEnter={e => {
+                if (e.target instanceof HTMLElement && !loading) {
+                  e.target.style.backgroundColor = "var(--primary-hover)";
+                }
+              }}
+              onMouseLeave={e => {
+                if (e.target instanceof HTMLElement) {
+                  e.target.style.backgroundColor = "var(--primary)";
+                }
+              }}
             >
               {loading ? "Atualizando..." : "Atualizar chamado"}
             </button>
@@ -227,7 +298,20 @@ export function ModalChamado({
         <div className="flex justify-end">
           <button
             onClick={concluirChamado}
-            className="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700 transition"
+            className="text-white px-4 py-2 rounded text-sm transition-all duration-300 hover:scale-105 active:scale-95"
+            style={{
+              backgroundColor: "var(--status-cancelled)",
+            }}
+            onMouseEnter={e => {
+              if (e.target instanceof HTMLElement) {
+                e.target.style.opacity = "0.8";
+              }
+            }}
+            onMouseLeave={e => {
+              if (e.target instanceof HTMLElement) {
+                e.target.style.opacity = "1";
+              }
+            }}
           >
             Concluir chamado
           </button>

@@ -65,9 +65,21 @@ export default function CadastroCPFs() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-950">
-      <div className="w-full max-w-md bg-zinc-900 p-6 rounded-lg shadow-lg space-y-8 border border-zinc-800">
-        <h1 className="text-lg font-semibold text-center text-white">
+    <div
+      className="min-h-screen flex items-center justify-center transition-colors duration-300"
+      style={{
+        backgroundColor: "var(--background)",
+        color: "var(--foreground)",
+      }}
+    >
+      <div
+        className="w-full max-w-md p-6 rounded-lg shadow-lg space-y-8 border transition-colors duration-300"
+        style={{
+          backgroundColor: "var(--surface)",
+          borderColor: "var(--border-subtle)",
+        }}
+      >
+        <h1 className="text-lg font-semibold text-center" style={{ color: "var(--primary)" }}>
           Cadastro de CPFs Autorizados
         </h1>
 
@@ -76,17 +88,40 @@ export default function CadastroCPFs() {
             placeholder="Nome"
             value={nome}
             onChange={e => setNome(e.target.value)}
-            className="w-full p-2 rounded bg-zinc-800 border border-zinc-700 text-white placeholder-zinc-400 focus:outline-none focus:border-blue-500"
+            className="w-full p-3 rounded border outline-none transition-colors duration-300"
+            style={{
+              backgroundColor: "var(--surface-elevated)",
+              borderColor: "var(--border-subtle)",
+              color: "var(--foreground)",
+            }}
           />
           <input
             placeholder="CPF"
             value={cpf}
             onChange={e => setCpf(e.target.value)}
-            className="w-full p-2 rounded bg-zinc-800 border border-zinc-700 text-white placeholder-zinc-400 focus:outline-none focus:border-blue-500"
+            className="w-full p-3 rounded border outline-none transition-colors duration-300"
+            style={{
+              backgroundColor: "var(--surface-elevated)",
+              borderColor: "var(--border-subtle)",
+              color: "var(--foreground)",
+            }}
           />
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded transition"
+            className="w-full text-white py-3 rounded transition-all duration-300 hover:scale-105 active:scale-95 font-medium"
+            style={{
+              backgroundColor: "var(--primary)",
+            }}
+            onMouseEnter={e => {
+              if (e.target instanceof HTMLElement) {
+                e.target.style.backgroundColor = "var(--primary-hover)";
+              }
+            }}
+            onMouseLeave={e => {
+              if (e.target instanceof HTMLElement) {
+                e.target.style.backgroundColor = "var(--primary)";
+              }
+            }}
           >
             Cadastrar
           </button>
@@ -97,11 +132,27 @@ export default function CadastroCPFs() {
             type="file"
             accept=".csv,.txt,.xlsx"
             onChange={e => setFile(e.target.files?.[0] || null)}
-            className="w-full text-sm text-zinc-300 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-zinc-700 file:text-white hover:file:bg-zinc-600"
+            className="w-full text-sm"
+            style={{
+              color: "var(--foreground)",
+            }}
           />
           <button
             type="submit"
-            className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded transition"
+            className="w-full text-white py-3 rounded transition-all duration-300 hover:scale-105 active:scale-95 font-medium"
+            style={{
+              backgroundColor: "var(--status-completed)",
+            }}
+            onMouseEnter={e => {
+              if (e.target instanceof HTMLElement) {
+                e.target.style.opacity = "0.8";
+              }
+            }}
+            onMouseLeave={e => {
+              if (e.target instanceof HTMLElement) {
+                e.target.style.opacity = "1";
+              }
+            }}
           >
             Importar Arquivo
           </button>
