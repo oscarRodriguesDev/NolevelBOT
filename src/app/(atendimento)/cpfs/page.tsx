@@ -173,28 +173,27 @@ export default function CadastroCPFs() {
               </p>
             </div>
 
-
-
-          <button
-            type="submit"
-            className="w-full text-white py-3 rounded transition-all duration-300 hover:scale-105 active:scale-95 font-medium"
-            style={{
-              backgroundColor: "var(--status-completed)",
-            }}
-            onMouseEnter={e => {
-              if (e.target instanceof HTMLElement) {
-                e.target.style.opacity = "0.8";
-              }
-            }}
-            onMouseLeave={e => {
-              if (e.target instanceof HTMLElement) {
-                e.target.style.opacity = "1";
-              }
-            }}
-          >
-            Importar Arquivo
-          </button>
-        </form>
+            <button
+              type="submit"
+              className="w-full text-white py-3 rounded-lg transition-all duration-300 hover:scale-105 active:scale-95 font-medium"
+              style={{
+                backgroundColor: "var(--status-completed)",
+              }}
+              onMouseEnter={e => {
+                if (e.target instanceof HTMLElement) {
+                  e.target.style.opacity = "0.8";
+                }
+              }}
+              onMouseLeave={e => {
+                if (e.target instanceof HTMLElement) {
+                  e.target.style.opacity = "1";
+                }
+              }}
+            >
+              Importar Arquivo
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   )
