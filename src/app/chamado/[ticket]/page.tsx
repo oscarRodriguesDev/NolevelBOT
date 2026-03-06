@@ -1,14 +1,11 @@
 'use client'
 import { useState } from 'react'
-import { useParams } from 'next/navigation'
 import { LuHardHat, LuCheck, LuLoader, LuArrowRight } from 'react-icons/lu'
-import { useTheme } from '@/app/providers'
 import { ThemeToggle } from '@/app/components/theme-toggle'
+import { Header } from '@/app/(atendimento)/components/header'
 
 export default function TicketPage() {
-  const { theme } = useTheme()
-  const params = useParams()
-  const ticketId = params.ticket as string
+ 
 
   const [formData, setFormData] = useState({
     nome: '',
@@ -119,28 +116,8 @@ export default function TicketPage() {
         color: "var(--foreground)",
       }}
     >
-      <ThemeToggle />
-      <div
-        className="border-b p-8 mb-8 transition-colors duration-300"
-        style={{
-          backgroundColor: "var(--surface)",
-          borderColor: "var(--border-subtle)",
-        }}
-      >
-        <div className="max-w-md mx-auto flex items-center gap-3">
-          <div className="p-2 rounded-lg" style={{ backgroundColor: "var(--primary)" }}>
-            <LuHardHat className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-lg font-black uppercase tracking-tighter">
-              Nolevel Suporte
-            </h1>
-            <p className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: "var(--primary)" }}>
-              Setor de Operações
-            </p>
-          </div>
-        </div>
-      </div>
+     
+      <Header />
 
       <div className="max-w-md mx-auto px-4">
         <div

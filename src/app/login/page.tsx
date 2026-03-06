@@ -25,7 +25,7 @@ export default function LoginPage() {
     setTimeout(() => {
       if (email === validEmail && password === validPassword) {
         // Login bem-sucedido - redirecionar para página inicial
-        router.push("/");
+        router.push("/all-tickets");
       } else {
         // Login falhou
         setError("Email ou senha incorretos");

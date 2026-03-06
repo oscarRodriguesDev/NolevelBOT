@@ -21,7 +21,7 @@ type Chamado = {
   createdAt: string
   anexoUrl?: string | null
   historico?: string | null
-  atendente?: string | null
+  atendente?: string | null 
 }
 
 interface ModalChamadoProps {
@@ -40,6 +40,7 @@ export function ModalChamado({
   const [chamado, setChamado] = useState<Chamado | null>(null)
   const [novoStatus, setNovoStatus] = useState("")
   const [observacao, setObservacao] = useState("")
+  const [descricao, setDescricao] = useState("")
   const [historico, setHistorico] = useState<HistoricoItem[]>([])
   const [loading, setLoading] = useState(false)
 
@@ -53,6 +54,8 @@ export function ModalChamado({
 
       setChamado(chamadoData)
       setNovoStatus(chamadoData?.status || "")
+
+      setDescricao(chamadoData?.descricao || "")
 
       if (chamadoData?.historico) {
         try {
@@ -68,41 +71,47 @@ export function ModalChamado({
     fetchChamado()
   }, [ticket, open])
 
-  async function atualizarChamado() {
-    if (!ticket || !novoStatus) return
-    setLoading(true)
+async function atualizarChamado() {
+  if (!ticket || !novoStatus) return
+  setLoading(true)
 
-    await fetch(
-      `/api/tickets?atendimento=${ticket}&estagio=${novoStatus}`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          observacao,
-        }),
-      }
-    )
-
-    const res = await fetch(`/api/tickets?ticket=${ticket}`)
-    const data = await res.json()
-    const atualizado = data[0]
-
-    setChamado(atualizado)
-    setNovoStatus(atualizado.status)
-
-    if (atualizado?.historico) {
-      try {
-        setHistorico(JSON.parse(atualizado.historico))
-      } catch {
-        setHistorico([])
-      }
-    }
-
-    setObservacao("")
-    setLoading(false)
+  // Cria o novo item de histórico
+  const novoHistoricoItem: HistoricoItem = {
+    data: new Date().toISOString(),
+    acao: novoStatus,
+    observacao, // mesmo que não exista no Prisma, é só para exibir no histórico
   }
+
+  // Atualiza histórico local
+  const historicoAtualizado = [...historico, novoHistoricoItem]
+  setHistorico(historicoAtualizado)
+
+  // Atualiza descricao local concatenando a observação
+  const descricaoAtualizada = descricao ? `${descricao}\n${observacao}` : observacao
+  setDescricao(descricaoAtualizada)
+
+  // Envia apenas os campos que existem no Prisma
+  await fetch(`/api/tickets?atendimento=${ticket}&estagio=${novoStatus}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      descricao: descricaoAtualizada,
+      historico: JSON.stringify(historicoAtualizado),
+    }),
+  })
+
+  // Recarrega chamado atualizado
+  const res = await fetch(`/api/tickets?ticket=${ticket}`)
+  const data = await res.json()
+  const atualizado = data[0]
+
+  setChamado(atualizado)
+  setNovoStatus(atualizado.status)
+  setObservacao("")
+  setLoading(false)
+}
+
+
 
   async function concluirChamado() {
     if (!ticket) return
@@ -116,20 +125,6 @@ export function ModalChamado({
   }
 
   if (!open || !chamado) return null
-
-  const getStatusColor = (status: string) => {
-    const statusMap: Record<string, string> = {
-      novo: "var(--status-new)",
-      aberto: "var(--status-new)",
-      em_atendimento: "var(--status-in-progress)",
-      em_andamento: "var(--status-in-progress)",
-      aguardando: "var(--status-waiting)",
-      concluido: "var(--status-completed)",
-      finalizado: "var(--status-completed)",
-      cancelado: "var(--status-cancelled)",
-    };
-    return statusMap[status.toLowerCase()] || "var(--primary)";
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
@@ -153,25 +148,12 @@ export function ModalChamado({
         </h2>
 
         <div className="space-y-2 text-sm mb-6">
-          <p>
-            <strong>Nome:</strong> {chamado.nome}
-          </p>
-          <p>
-            <strong>CPF:</strong> {chamado.cpf}
-          </p>
-          <p>
-            <strong>Setor:</strong> {chamado.setor}
-          </p>
-          <p>
-            <strong>Prioridade:</strong> {chamado.prioridade}
-          </p>
-          <p>
-            <strong>Status:</strong> {chamado.status}
-          </p>
-          <p>
-            <strong>Data:</strong>{" "}
-            {new Date(chamado.createdAt).toLocaleString("pt-BR")}
-          </p>
+          <p><strong>Nome:</strong> {chamado.nome}</p>
+          <p><strong>CPF:</strong> {chamado.cpf}</p>
+          <p><strong>Setor:</strong> {chamado.setor}</p>
+          <p><strong>Prioridade:</strong> {chamado.prioridade}</p>
+          <p><strong>Status:</strong> {chamado.status}</p>
+          <p><strong>Data:</strong> {new Date(chamado.createdAt).toLocaleString("pt-BR")}</p>
 
           {chamado.anexoUrl && (
             <a
@@ -185,7 +167,6 @@ export function ModalChamado({
           )}
         </div>
 
-        {/* Descrição do chamado */}
         <div className="mb-6">
           <h3 className="text-sm font-medium mb-2">Descrição do chamado</h3>
           <div
@@ -196,11 +177,10 @@ export function ModalChamado({
               color: "var(--foreground)",
             }}
           >
-            {chamado.descricao}
+            {descricao}
           </div>
         </div>
 
-        {/* Histórico */}
         <div
           className="border rounded-md p-4 mb-6 transition-colors duration-300"
           style={{
@@ -218,26 +198,14 @@ export function ModalChamado({
               color: "var(--foreground)",
             }}
           >
-            {historico.length === 0 && (
-              <p style={{ opacity: 0.6 }}>Nenhuma evolução registrada</p>
-            )}
+            {historico.length === 0 && <p style={{ opacity: 0.6 }}>Nenhuma evolução registrada</p>}
 
             {historico.map((item, index) => (
-              <div
-                key={index}
-                className="mb-3 border-b pb-2"
-                style={{ borderColor: "var(--border-subtle)" }}
-              >
-                <p className="font-semibold">
-                  {new Date(item.data).toLocaleString("pt-BR")}
-                </p>
+              <div key={index} className="mb-3 border-b pb-2" style={{ borderColor: "var(--border-subtle)" }}>
+                <p className="font-semibold">{new Date(item.data).toLocaleString("pt-BR")}</p>
                 <p>{item.acao}</p>
-                {item.observacao && (
-                  <p style={{ opacity: 0.7 }}>Obs: {item.observacao}</p>
-                )}
-                {item.atendente && (
-                  <p style={{ opacity: 0.6 }}>Atendente: {item.atendente}</p>
-                )}
+                {item.observacao && <p style={{ opacity: 0.7 }}>Obs: {item.observacao}</p>}
+                {item.atendente && <p style={{ opacity: 0.6 }}>Atendente: {item.atendente}</p>}
               </div>
             ))}
           </div>
@@ -276,9 +244,7 @@ export function ModalChamado({
               onClick={atualizarChamado}
               disabled={loading}
               className="text-white px-4 py-2 rounded text-sm transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50"
-              style={{
-                backgroundColor: "var(--primary)",
-              }}
+              style={{ backgroundColor: "var(--primary)" }}
               onMouseEnter={e => {
                 if (e.target instanceof HTMLElement && !loading) {
                   e.target.style.backgroundColor = "var(--primary-hover)";
@@ -299,9 +265,7 @@ export function ModalChamado({
           <button
             onClick={concluirChamado}
             className="text-white px-4 py-2 rounded text-sm transition-all duration-300 hover:scale-105 active:scale-95"
-            style={{
-              backgroundColor: "var(--status-cancelled)",
-            }}
+            style={{ backgroundColor: "var(--status-cancelled)" }}
             onMouseEnter={e => {
               if (e.target instanceof HTMLElement) {
                 e.target.style.opacity = "0.8";

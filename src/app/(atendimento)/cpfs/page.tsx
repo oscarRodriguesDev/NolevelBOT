@@ -130,7 +130,7 @@ export default function CadastroCPFs() {
         </form>
 
         <form onSubmit={enviarArquivo} className="space-y-4">
-          <input
+          {/*          <input
             type="file"
             accept=".csv,.txt,.xlsx"
             onChange={e => setFile(e.target.files?.[0] || null)}
@@ -138,7 +138,37 @@ export default function CadastroCPFs() {
             style={{
               color: "var(--foreground)",
             }}
-          />
+          /> */}
+
+          <div className="w-full">
+            <label className="block text-sm font-medium mb-2 text-[#94A3B8]">
+              Importar arquivo
+            </label>
+
+            <label className="flex items-center justify-between gap-4 w-full px-4 py-3 rounded-xl border border-[#1E293B] bg-[#0F172A] hover:border-[#7C3AED] transition-all cursor-pointer">
+              <span className="text-sm text-[#94A3B8] truncate">
+                {file ? file.name : "Selecione um arquivo (.csv, .txt, .xlsx)"}
+              </span>
+
+              <span className="px-4 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-[#7C3AED] to-[#06B6D4] text-white">
+                Escolher
+              </span>
+
+              <input
+                type="file"
+                accept=".csv,.txt,.xlsx"
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+                className="hidden"
+              />
+            </label>
+
+            <p className="mt-2 text-xs text-[#64748B]">
+              Formatos aceitos: CSV, TXT ou XLSX
+            </p>
+          </div>
+
+
+
           <button
             type="submit"
             className="w-full text-white py-3 rounded transition-all duration-300 hover:scale-105 active:scale-95 font-medium"

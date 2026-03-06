@@ -1,27 +1,40 @@
-criarum modal para visualizar os chamados - resolvdio
-
-quando salvar os tickets fechados tem que pegar o texto de solução e colocar la
+ 
 
 fazer o bot consultar stauts do chamados - resolvdio
 
-uando o bot consultar chamado deve permitir ver o status fechado (pensar melhor sobre isso)
-
 visualizar a descrição dos chamados - resolvido - 
 
-criar a autenticação e aplicar iniciado mock
+criar a autenticação e aplicar iniciado mock - ok
 
 criar modo escuro e modo claro - feito 
+
+quando salvar os tickets fechados tem que pegar o texto de solução e colocar la
+
+quando o bot consultar chamado deve permitir ver o status fechado (pensar melhor sobre isso)
+
+criar sidebar para navegação
 
 pesquisar onde hospedar meu sistema
 
 criar uma pagina para o usuario visualizar o status do chamado - feito
+
 corrigir no bot redirecionametos para locais errados
+
 melhorar layout colocar tudo responsivo
+
 criar uma landing page
+
 criar uma pagina de dashboard
+
 atualizar all tickets quando voltar do modal
-verificar logica de criação de tickets, pq quando vier do bot tem que ber como vai ser criado
+
+verificar logica de criação do numero de tickets, pq quando vier do bot tem que ber como vai ser criado
+
 na tela de subir cpfs melhorar o layout do botão de escolha de documentos
+
+tentar aplicar resposividade no projeto quando o v0 voltar
+
+
 
 
 testes:

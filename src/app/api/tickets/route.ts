@@ -129,7 +129,7 @@ export async function GET(req: NextRequest) {
 
 
 
-
+/* 
 export async function PUT(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
@@ -173,7 +173,71 @@ export async function PUT(req: NextRequest) {
   }
 }
 
+ */
 
+
+
+
+type HistoricoItem = {
+  data: string
+  acao: string
+  observacao?: string
+  atendente?: string
+}
+
+export async function PUT(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url)
+    const ticketNumber = searchParams.get("atendimento")
+    const estagio = searchParams.get("estagio")
+
+    if (!ticketNumber) return NextResponse.json({ error: "Número do ticket não fornecido" }, { status: 400 })
+    if (!estagio) return NextResponse.json({ error: "Estágio não fornecido" }, { status: 400 })
+
+    const body = await req.json()
+    const { descricao, historico } = body
+
+    // Busca o chamado atual
+    const chamadoExistente = await prisma.chamado.findFirst({
+      where: { ticket: { equals: ticketNumber.trim(), mode: "insensitive" } }
+    })
+    if (!chamadoExistente) return NextResponse.json({ error: "Chamado não encontrado" }, { status: 404 })
+
+    const historicoExistente: HistoricoItem[] = chamadoExistente.historico
+      ? JSON.parse(chamadoExistente.historico)
+      : []
+
+    const novosItens: HistoricoItem[] = historico ? JSON.parse(historico) : []
+
+    // Filtra itens que já existem
+    const itensFiltrados = novosItens.filter(novo =>
+      !historicoExistente.some(
+        antigo =>
+          antigo.data === novo.data &&
+          antigo.acao === novo.acao &&
+          antigo.observacao === novo.observacao
+      )
+    )
+
+    const novoHistorico: HistoricoItem[] = [...historicoExistente, ...itensFiltrados]
+
+    // Atualiza o chamado
+    const chamadoAtualizado = await prisma.chamado.update({
+      where: { ticket: ticketNumber.trim() },
+      data: {
+        status: estagio,
+        atendente: "Carlos Mock",
+        descricao: descricao || chamadoExistente.descricao,
+        historico: JSON.stringify(novoHistorico),
+      }
+    })
+
+    return NextResponse.json(chamadoAtualizado, { status: 200 })
+  } catch (error) {
+    console.error(error)
+    return NextResponse.json({ error: "Erro ao atualizar chamado" }, { status: 500 })
+  }
+}
 
 
 

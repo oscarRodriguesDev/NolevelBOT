@@ -67,6 +67,8 @@ export default function TicketsPage() {
   }
 
   const fecharModal = () => {
+    //atualizar pagina para refletir mudanças
+    fetchTickets()
     setModalOpen(false)
     setSelectedTicket(null)
   }
