@@ -127,9 +127,9 @@ async function atualizarChamado() {
   if (!open || !chamado) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
       <div
-        className="w-full max-w-3xl rounded-lg shadow-2xl p-6 relative border transition-colors duration-300"
+        className="w-full max-w-4xl rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 relative border transition-colors duration-300 my-4"
         style={{
           backgroundColor: "var(--surface)",
           borderColor: "var(--border-subtle)",
@@ -137,40 +137,47 @@ async function atualizarChamado() {
       >
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 text-lg transition-colors duration-200 hover:scale-110"
+          className="absolute top-4 right-4 sm:top-6 sm:right-6 text-lg transition-colors duration-200 hover:scale-110"
           style={{ color: "var(--foreground)" }}
+          aria-label="Fechar modal"
         >
           ✕
         </button>
 
-        <h2 className="text-2xl font-semibold mb-6" style={{ color: "var(--primary)" }}>
+        <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-4 sm:mb-6 pr-8" style={{ color: "var(--primary)" }}>
           Chamado {chamado.ticket}
         </h2>
 
-        <div className="space-y-2 text-sm mb-6">
-          <p><strong>Nome:</strong> {chamado.nome}</p>
-          <p><strong>CPF:</strong> {chamado.cpf}</p>
-          <p><strong>Setor:</strong> {chamado.setor}</p>
-          <p><strong>Prioridade:</strong> {chamado.prioridade}</p>
-          <p><strong>Status:</strong> {chamado.status}</p>
-          <p><strong>Data:</strong> {new Date(chamado.createdAt).toLocaleString("pt-BR")}</p>
-
-          {chamado.anexoUrl && (
-            <a
-              href={chamado.anexoUrl}
-              target="_blank"
-              className="inline-block transition-colors duration-200"
-              style={{ color: "var(--primary)" }}
-            >
-              Ver anexo
-            </a>
-          )}
+        {/* Informações do Chamado */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          <div className="space-y-2 text-xs sm:text-sm">
+            <p><strong>Nome:</strong> {chamado.nome}</p>
+            <p><strong>CPF:</strong> {chamado.cpf}</p>
+            <p><strong>Setor:</strong> {chamado.setor}</p>
+          </div>
+          <div className="space-y-2 text-xs sm:text-sm">
+            <p><strong>Prioridade:</strong> {chamado.prioridade}</p>
+            <p><strong>Status:</strong> {chamado.status}</p>
+            <p><strong>Data:</strong> {new Date(chamado.createdAt).toLocaleString("pt-BR")}</p>
+          </div>
         </div>
 
+        {chamado.anexoUrl && (
+          <a
+            href={chamado.anexoUrl}
+            target="_blank"
+            className="inline-block text-xs sm:text-sm mb-6 transition-colors duration-200"
+            style={{ color: "var(--primary)" }}
+          >
+            Ver anexo
+          </a>
+        )}
+
+        {/* Descrição do Chamado */}
         <div className="mb-6">
-          <h3 className="text-sm font-medium mb-2">Descrição do chamado</h3>
+          <h3 className="text-sm font-semibold mb-2">Descrição</h3>
           <div
-            className="border rounded-md p-4 text-sm whitespace-pre-wrap transition-colors duration-300"
+            className="border rounded-lg p-3 sm:p-4 text-xs sm:text-sm whitespace-pre-wrap transition-colors duration-300 max-h-32 overflow-y-auto"
             style={{
               backgroundColor: "var(--surface-elevated)",
               borderColor: "var(--border-subtle)",
@@ -181,17 +188,18 @@ async function atualizarChamado() {
           </div>
         </div>
 
+        {/* Histórico */}
         <div
-          className="border rounded-md p-4 mb-6 transition-colors duration-300"
+          className="border rounded-lg p-4 sm:p-6 mb-6 transition-colors duration-300"
           style={{
             backgroundColor: "var(--surface-elevated)",
             borderColor: "var(--border-subtle)",
           }}
         >
-          <h3 className="font-medium mb-3 text-sm">Evolução do chamado</h3>
+          <h3 className="font-semibold mb-3 text-sm">Evolução do Chamado</h3>
 
           <div
-            className="h-40 overflow-y-auto border rounded p-3 mb-4 text-xs transition-colors duration-300"
+            className="h-32 sm:h-40 overflow-y-auto border rounded-lg p-3 mb-4 text-xs transition-colors duration-300"
             style={{
               backgroundColor: "var(--background)",
               borderColor: "var(--border-subtle)",
@@ -201,83 +209,98 @@ async function atualizarChamado() {
             {historico.length === 0 && <p style={{ opacity: 0.6 }}>Nenhuma evolução registrada</p>}
 
             {historico.map((item, index) => (
-              <div key={index} className="mb-3 border-b pb-2" style={{ borderColor: "var(--border-subtle)" }}>
-                <p className="font-semibold">{new Date(item.data).toLocaleString("pt-BR")}</p>
-                <p>{item.acao}</p>
-                {item.observacao && <p style={{ opacity: 0.7 }}>Obs: {item.observacao}</p>}
-                {item.atendente && <p style={{ opacity: 0.6 }}>Atendente: {item.atendente}</p>}
+              <div key={index} className="mb-3 border-b pb-2 last:border-b-0" style={{ borderColor: "var(--border-subtle)" }}>
+                <p className="font-semibold text-xs">{new Date(item.data).toLocaleString("pt-BR")}</p>
+                <p className="text-xs">{item.acao}</p>
+                {item.observacao && <p style={{ opacity: 0.7 }} className="text-xs">Obs: {item.observacao}</p>}
+                {item.atendente && <p style={{ opacity: 0.6 }} className="text-xs">Atendente: {item.atendente}</p>}
               </div>
             ))}
           </div>
 
-          <div className="flex flex-col gap-3">
-            <select
-              value={novoStatus}
-              onChange={(e) => setNovoStatus(e.target.value)}
-              className="border rounded px-3 py-2 text-sm focus:outline-none transition-colors duration-300"
-              style={{
-                borderColor: "var(--border-subtle)",
-                backgroundColor: "var(--background)",
-                color: "var(--foreground)",
-              }}
-            >
-              <option value="aberto">Aberto</option>
-              <option value="em_atendimento">Em atendimento</option>
-              <option value="aguardando">Aguardando</option>
-              <option value="concluido">Concluído</option>
-            </select>
+          {/* Formulário de Atualização */}
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs sm:text-sm font-medium mb-1">Novo Status</label>
+              <select
+                value={novoStatus}
+                onChange={(e) => setNovoStatus(e.target.value)}
+                className="w-full border rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none transition-colors duration-300"
+                style={{
+                  borderColor: "var(--border-subtle)",
+                  backgroundColor: "var(--background)",
+                  color: "var(--foreground)",
+                }}
+              >
+                <option value="aberto">Aberto</option>
+                <option value="em_atendimento">Em atendimento</option>
+                <option value="aguardando">Aguardando</option>
+                <option value="concluido">Concluído</option>
+              </select>
+            </div>
 
-            <textarea
-              placeholder="Adicionar observação"
-              value={observacao}
-              onChange={(e) => setObservacao(e.target.value)}
-              className="border rounded px-3 py-2 text-sm focus:outline-none transition-colors duration-300"
-              style={{
-                borderColor: "var(--border-subtle)",
-                backgroundColor: "var(--background)",
-                color: "var(--foreground)",
-              }}
-              rows={3}
-            />
+            <div>
+              <label className="block text-xs sm:text-sm font-medium mb-1">Observação</label>
+              <textarea
+                placeholder="Adicionar observação..."
+                value={observacao}
+                onChange={(e) => setObservacao(e.target.value)}
+                className="w-full border rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none transition-colors duration-300 resize-none"
+                style={{
+                  borderColor: "var(--border-subtle)",
+                  backgroundColor: "var(--background)",
+                  color: "var(--foreground)",
+                }}
+                rows={2}
+              />
+            </div>
 
             <button
               onClick={atualizarChamado}
               disabled={loading}
-              className="text-white px-4 py-2 rounded text-sm transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50"
+              className="w-full text-white px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
               style={{ backgroundColor: "var(--primary)" }}
               onMouseEnter={e => {
-                if (e.target instanceof HTMLElement && !loading) {
-                  e.target.style.backgroundColor = "var(--primary-hover)";
+                if (e.currentTarget instanceof HTMLElement && !loading) {
+                  e.currentTarget.style.backgroundColor = "var(--primary-hover)";
                 }
               }}
               onMouseLeave={e => {
-                if (e.target instanceof HTMLElement) {
-                  e.target.style.backgroundColor = "var(--primary)";
+                if (e.currentTarget instanceof HTMLElement) {
+                  e.currentTarget.style.backgroundColor = "var(--primary)";
                 }
               }}
             >
-              {loading ? "Atualizando..." : "Atualizar chamado"}
+              {loading ? "Atualizando..." : "Atualizar Chamado"}
             </button>
           </div>
         </div>
 
-        <div className="flex justify-end">
+        {/* Botão Concluir */}
+        <div className="flex flex-col sm:flex-row gap-3 justify-end">
+          <button
+            onClick={onClose}
+            className="text-white px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 hover:scale-105 active:scale-95"
+            style={{ backgroundColor: "var(--border-subtle)" }}
+          >
+            Fechar
+          </button>
           <button
             onClick={concluirChamado}
-            className="text-white px-4 py-2 rounded text-sm transition-all duration-300 hover:scale-105 active:scale-95"
+            className="text-white px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 hover:scale-105 active:scale-95"
             style={{ backgroundColor: "var(--status-cancelled)" }}
             onMouseEnter={e => {
-              if (e.target instanceof HTMLElement) {
-                e.target.style.opacity = "0.8";
+              if (e.currentTarget instanceof HTMLElement) {
+                e.currentTarget.style.opacity = "0.8";
               }
             }}
             onMouseLeave={e => {
-              if (e.target instanceof HTMLElement) {
-                e.target.style.opacity = "1";
+              if (e.currentTarget instanceof HTMLElement) {
+                e.currentTarget.style.opacity = "1";
               }
             }}
           >
-            Concluir chamado
+            Concluir Chamado
           </button>
         </div>
       </div>
