@@ -90,18 +90,18 @@ export default function AvisosPage() {
 
   return (
     <div
-      className="min-h-screen p-10 transition-colors duration-300"
+      className="min-h-screen px-4 sm:px-6 lg:px-8 py-6 sm:py-10 transition-colors duration-300"
       style={{
         backgroundColor: "var(--background)",
         color: "var(--foreground)",
       }}
     >
       <ThemeToggle />
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-10">
-          <div>
-            <h1 className="text-3xl font-semibold" style={{ color: "var(--primary)" }}>
-              Avisos
+      <div className="max-w-5xl mx-auto">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 sm:mb-10">
+          <div className="space-y-2">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold" style={{ color: "var(--primary)" }}>
+              Quadro de Avisos
             </h1>
             <p className="text-sm opacity-70">
               Comunicados internos do sistema
@@ -214,17 +214,17 @@ export default function AvisosPage() {
           </div>
         )}
 
-        <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
           {avisos.length === 0 && (
-            <div className="text-center py-10 opacity-70">
-              Nenhum aviso cadastrado.
+            <div className="col-span-full text-center py-12 opacity-70">
+              <p className="text-lg">Nenhum aviso cadastrado.</p>
             </div>
           )}
 
           {avisos.map(aviso => (
             <div
               key={aviso.id}
-              className="border rounded-xl p-6 shadow hover:opacity-90 transition-all duration-300"
+              className="border rounded-xl p-6 shadow hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
               style={{
                 backgroundColor: "var(--surface)",
                 borderColor: "var(--border-subtle)",

@@ -67,7 +67,7 @@ export default function CadastroCPFs() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center transition-colors duration-300"
+      className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 transition-colors duration-300"
       style={{
         backgroundColor: "var(--background)",
         color: "var(--foreground)",
@@ -75,39 +75,48 @@ export default function CadastroCPFs() {
     >
       <ThemeToggle />
       <div
-        className="w-full max-w-md p-6 rounded-lg shadow-lg space-y-8 border transition-colors duration-300"
+        className="w-full max-w-lg p-6 sm:p-8 rounded-2xl shadow-lg space-y-8 border transition-colors duration-300"
         style={{
           backgroundColor: "var(--surface)",
           borderColor: "var(--border-subtle)",
         }}
       >
-        <h1 className="text-lg font-semibold text-center" style={{ color: "var(--primary)" }}>
-          Cadastro de CPFs Autorizados
-        </h1>
+        <div className="text-center space-y-2">
+          <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: "var(--primary)" }}>
+            Cadastro de CPFs
+          </h1>
+          <p className="text-sm opacity-70">Gerencie e importe CPFs autorizados</p>
+        </div>
 
         <form onSubmit={cadastrarManual} className="space-y-4">
-          <input
-            placeholder="Nome"
-            value={nome}
-            onChange={e => setNome(e.target.value)}
-            className="w-full p-3 rounded border outline-none transition-colors duration-300"
-            style={{
-              backgroundColor: "var(--surface-elevated)",
-              borderColor: "var(--border-subtle)",
-              color: "var(--foreground)",
-            }}
-          />
-          <input
-            placeholder="CPF"
-            value={cpf}
-            onChange={e => setCpf(e.target.value)}
-            className="w-full p-3 rounded border outline-none transition-colors duration-300"
-            style={{
-              backgroundColor: "var(--surface-elevated)",
-              borderColor: "var(--border-subtle)",
-              color: "var(--foreground)",
-            }}
-          />
+          <div>
+            <label className="block text-sm font-medium mb-2">Nome</label>
+            <input
+              placeholder="Nome completo"
+              value={nome}
+              onChange={e => setNome(e.target.value)}
+              className="w-full p-3 rounded-lg border outline-none transition-colors duration-300"
+              style={{
+                backgroundColor: "var(--surface-elevated)",
+                borderColor: "var(--border-subtle)",
+                color: "var(--foreground)",
+              }}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-2">CPF</label>
+            <input
+              placeholder="000.000.000-00"
+              value={cpf}
+              onChange={e => setCpf(e.target.value)}
+              className="w-full p-3 rounded-lg border outline-none transition-colors duration-300"
+              style={{
+                backgroundColor: "var(--surface-elevated)",
+                borderColor: "var(--border-subtle)",
+                color: "var(--foreground)",
+              }}
+            />
+          </div>
           <button
             type="submit"
             className="w-full text-white py-3 rounded transition-all duration-300 hover:scale-105 active:scale-95 font-medium"
@@ -129,43 +138,40 @@ export default function CadastroCPFs() {
           </button>
         </form>
 
-        <form onSubmit={enviarArquivo} className="space-y-4">
-          {/*          <input
-            type="file"
-            accept=".csv,.txt,.xlsx"
-            onChange={e => setFile(e.target.files?.[0] || null)}
-            className="w-full text-sm"
-            style={{
-              color: "var(--foreground)",
-            }}
-          /> */}
+        <div className="border-t pt-6" style={{ borderColor: "var(--border-subtle)" }}>
+          <h3 className="text-lg font-semibold mb-4">Ou importe em lote</h3>
+          <form onSubmit={enviarArquivo} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Arquivo
+              </label>
 
-          <div className="w-full">
-            <label className="block text-sm font-medium mb-2 text-[#94A3B8]">
-              Importar arquivo
-            </label>
+              <label className="flex items-center justify-between gap-4 w-full px-4 py-3 rounded-lg border transition-all cursor-pointer hover:opacity-80"
+                style={{
+                  borderColor: "var(--border-subtle)",
+                  backgroundColor: "var(--surface-elevated)",
+                }}>
+                <span className="text-sm truncate flex-1">
+                  {file ? file.name : "Selecione um arquivo (.csv, .txt, .xlsx)"}
+                </span>
 
-            <label className="flex items-center justify-between gap-4 w-full px-4 py-3 rounded-xl border border-[#1E293B] bg-[#0F172A] hover:border-[#7C3AED] transition-all cursor-pointer">
-              <span className="text-sm text-[#94A3B8] truncate">
-                {file ? file.name : "Selecione um arquivo (.csv, .txt, .xlsx)"}
-              </span>
+                <span className="px-3 py-1 text-xs font-medium rounded text-white flex-shrink-0"
+                  style={{ backgroundColor: "var(--primary)" }}>
+                  Escolher
+                </span>
 
-              <span className="px-4 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-[#7C3AED] to-[#06B6D4] text-white">
-                Escolher
-              </span>
+                <input
+                  type="file"
+                  accept=".csv,.txt,.xlsx"
+                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  className="hidden"
+                />
+              </label>
 
-              <input
-                type="file"
-                accept=".csv,.txt,.xlsx"
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
-                className="hidden"
-              />
-            </label>
-
-            <p className="mt-2 text-xs text-[#64748B]">
-              Formatos aceitos: CSV, TXT ou XLSX
-            </p>
-          </div>
+              <p className="mt-2 text-xs opacity-60">
+                Formatos aceitos: CSV, TXT ou XLSX
+              </p>
+            </div>
 
 
 

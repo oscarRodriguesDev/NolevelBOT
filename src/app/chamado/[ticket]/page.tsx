@@ -67,11 +67,11 @@ export default function TicketPage() {
   if (submitted) {
     return (
       <div
-        className="min-h-screen flex items-center justify-center p-4 transition-colors duration-300"
+        className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 transition-colors duration-300"
         style={{ backgroundColor: "var(--background)" }}
       >
         <div
-          className="rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center border transition-colors duration-300"
+          className="rounded-3xl shadow-2xl p-6 sm:p-8 max-w-sm w-full text-center border transition-colors duration-300"
           style={{
             backgroundColor: "var(--surface)",
             borderColor: "var(--border-subtle)",
@@ -110,13 +110,13 @@ export default function TicketPage() {
 
   return (
     <div
-      className="min-h-screen pb-12 font-sans transition-colors duration-300"
+      className="min-h-screen px-4 sm:px-6 lg:px-8 py-6 sm:py-8 transition-colors duration-300"
       style={{
         backgroundColor: "var(--background)",
         color: "var(--foreground)",
       }}
     >
-     
+      <ThemeToggle />
       <Header />
 
       <div className="max-w-md mx-auto px-4">
