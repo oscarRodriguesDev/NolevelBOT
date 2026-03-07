@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { ThemeToggle } from '@/app/components/theme-toggle'
 
 type Message = {
   id: number
@@ -10,7 +9,13 @@ type Message = {
 }
 
 export default function MobileHevelynChat() {
-  const [messages, setMessages] = useState<Message[]>([])
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: 1,
+      role: 'assistant',
+      content: 'Olá, eu sou a Hevelyn. Como posso ajudar você hoje?'
+    }
+  ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -36,11 +41,9 @@ export default function MobileHevelynChat() {
     setLoading(true)
 
     try {
-      const res = await fetch('/api/chat', {
+      const res = await fetch('/api/hevelyn/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text })
       })
 
@@ -49,7 +52,7 @@ export default function MobileHevelynChat() {
       const botMessage: Message = {
         id: Date.now() + 1,
         role: 'assistant',
-        content: data.reply || 'Erro ao responder'
+        content: data.reply || 'Não consegui responder.'
       }
 
       setMessages(prev => [...prev, botMessage])
@@ -67,25 +70,28 @@ export default function MobileHevelynChat() {
   }
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-neutral-950 text-white">
-        <ThemeToggle />
+    <div className="h-screen w-screen flex flex-col bg-gray-50">
 
-      <div className="flex items-center justify-center h-14 border-b border-neutral-800 text-sm font-semibold">
-        Hevelyn
-      </div>
+      <header className="h-16 flex items-center justify-center border-b bg-white shadow-sm">
+        <span className="text-lg font-semibold text-gray-800">
+          Hevelyn
+        </span>
+      </header>
 
-      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-3">
+      <main className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
 
         {messages.map(msg => (
           <div
             key={msg.id}
-            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            className={`flex ${
+              msg.role === 'user' ? 'justify-end' : 'justify-start'
+            }`}
           >
             <div
-              className={`max-w-[80%] px-4 py-2 rounded-xl text-sm break-words ${
+              className={`max-w-[85%] px-5 py-3 rounded-2xl text-base leading-relaxed shadow-sm ${
                 msg.role === 'user'
-                  ? 'bg-blue-600'
-                  : 'bg-neutral-800'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-800 border'
               }`}
             >
               {msg.content}
@@ -95,20 +101,20 @@ export default function MobileHevelynChat() {
 
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-neutral-800 px-4 py-2 rounded-xl text-sm">
-              digitando...
+            <div className="bg-white border px-5 py-3 rounded-2xl text-base shadow-sm">
+              Hevelyn está digitando...
             </div>
           </div>
         )}
 
         <div ref={bottomRef} />
 
-      </div>
+      </main>
 
-      <div className="border-t border-neutral-800 p-2 flex gap-2">
+      <footer className="p-3 bg-white border-t flex gap-2">
 
         <input
-          className="flex-1 bg-neutral-900 rounded-lg px-3 py-2 text-sm outline-none"
+          className="flex-1 text-base px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Digite sua mensagem"
           value={input}
           onChange={e => setInput(e.target.value)}
@@ -119,12 +125,12 @@ export default function MobileHevelynChat() {
 
         <button
           onClick={sendMessage}
-          className="bg-blue-600 px-4 rounded-lg text-sm active:scale-95"
+          className="px-5 py-3 bg-blue-600 text-white rounded-xl text-base font-medium active:scale-95"
         >
           Enviar
         </button>
 
-      </div>
+      </footer>
 
     </div>
   )
