@@ -1,3 +1,4 @@
+import { Chamado } from "@prisma/client"
 import { NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
 
@@ -18,7 +19,32 @@ type UserSession = {
 
 const sessions = new Map<string, UserSession>()
 
-// Auxiliares de Contexto
+interface Colaborador {
+  nome: string;
+  cpf: string;
+}
+
+// CORREÇÃO: URL Completa e lógica de busca
+async function validarCPF(cpfDigitado: string): Promise<boolean> {
+  try {
+
+    const response = await fetch(`https://nolevel-bot.vercel.app/api/cpfs`, { cache: 'no-store' });
+    
+    if (!response.ok) return false;
+    
+    const listaDeCpfs: Colaborador[] = await response.json();
+    const cpfLimpo = cpfDigitado.replace(/\D/g, "");
+
+    return listaDeCpfs.some((item: Colaborador) => {
+      const cpfItemLimpo = item.cpf.replace(/\D/g, "");
+      return cpfItemLimpo === cpfLimpo;
+    });
+  } catch (error) {
+    console.error("Erro ao validar CPF:", error);
+    return false;
+  }
+}
+
 function saudacao() {
   const hora = new Date().getHours()
   if (hora >= 5 && hora < 12) return "Bom dia"
@@ -28,7 +54,7 @@ function saudacao() {
 
 async function buscarAvisos() {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/quadro-avisos`, { cache: "no-store" })
+    const res = await fetch(`https://nolevel-bot.vercel.app/api/quadro-avisos`, { cache: "no-store" })
     const data = await res.json()
     return data.map((a: { titulo: string; conteudo: string }) => `📢 *${a.titulo}*: ${a.conteudo}`).join("\n") || "Sem avisos no momento."
   } catch { return "Sem avisos." }
@@ -36,12 +62,11 @@ async function buscarAvisos() {
 
 async function getMemoria(cpf: string) {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/memories?cpf=${cpf}`, { cache: 'no-store' })
+    const res = await fetch(`https://nolevel-bot.vercel.app/api/memories?cpf=${cpf}`, { cache: 'no-store' })
     return res.ok ? (await res.json())?.resumo : null
   } catch { return null }
 }
 
-// IA Humanizada (Hevelyn)
 async function hevelynIA(session: UserSession, userInput: string, instrucaoEtapa: string, avisos: string = "") {
   try {
     const response = await openai.chat.completions.create({
@@ -52,7 +77,7 @@ async function hevelynIA(session: UserSession, userInput: string, instrucaoEtapa
           content: `Você é a Hevelyn, assistente virtual da Nolevel.
           - Tom: Empática, direta e resolutiva.
           - Regra: Máximo 4 linhas. 
-          - Se a dúvida estiver nos [AVISOS], responda e encerre.
+          - Se a dúvida estiver nos [AVISOS] ${avisos}, responda e encerre, a menos que ele solicite a abertura de chamado.
           - Contexto: Colaborador ${session.nome || "Novo"}, Histórico: ${session.resumoHistorico || "Vazio"}.
           - Avisos: ${avisos}
           - Missão Atual: ${instrucaoEtapa}
@@ -66,59 +91,65 @@ async function hevelynIA(session: UserSession, userInput: string, instrucaoEtapa
   } catch { return "Tive um probleminha técnico, mas pode continuar." }
 }
 
-// Chamadas de API
 async function enviarChamado(nome: string, cpf: string, setor: string, descricao: string) {
   try {
     const formData = new FormData()
     formData.append("nome", nome); formData.append("cpf", cpf);
     formData.append("setor", setor); formData.append("descricao", descricao);
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/tickets`, { method: "POST", body: formData })
+    const res = await fetch(`https://nolevel-bot.vercel.app/api/tickets`, { method: "POST", body: formData });
     return res.ok
   } catch { return false }
 }
 
 async function StatusChamado(cpf: string) {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/tickets?cpf=${cpf}`)
+    const res = await fetch(`https://nolevel-bot.vercel.app/api/tickets?cpf=${cpf}`)
     return res.ok ? await res.json() : null
   } catch { return null }
 }
 
-// WEBHOOK / API HANDLER
 export async function POST(req: NextRequest) {
-  const body = await req.json()
-  const userInput = body.message?.trim() || ""
-  const sessionId = body.sessionId || "web-user"
+  try {
+    const body = await req.json()
+    const userInput = body.message?.trim() || ""
+    const sessionId = body.sessionId || "web-user"
 
-  let session = sessions.get(sessionId)
-  if (!session || (Date.now() - session.lastInteraction > 1000 * 60 * 60)) {
-    session = { state: "inicio", lastInteraction: Date.now() }
-    sessions.set(sessionId, session)
-  }
-  session.lastInteraction = Date.now()
+    let session = sessions.get(sessionId)
+    if (!session || (Date.now() - session.lastInteraction > 1000 * 60 * 60)) {
+      session = { state: "inicio", lastInteraction: Date.now() }
+      sessions.set(sessionId, session)
+    }
+    session.lastInteraction = Date.now()
 
-  const lowerInput = userInput.toLowerCase()
-  const avisos = await buscarAvisos()
+    const lowerInput = userInput.toLowerCase()
+    const avisos = await buscarAvisos()
 
-  // Comandos globais de saída
-  if (["obrigado", "tchau", "sair", "encerrar"].some(w => lowerInput.includes(w))) {
-    const tchau = await hevelynIA(session, userInput, "Despeça-se amigavelmente.")
-    sessions.delete(sessionId)
-    return NextResponse.json({ reply: tchau })
-  }
-
-  switch (session.state) {
-    case "inicio": {
-      const resp = await hevelynIA(session, userInput, "Dê as boas-vindas e peça o CPF para começar.")
-      session.state = "identificacao_cpf"
-      return NextResponse.json({ reply: resp })
+    if (["obrigado", "tchau", "sair", "encerrar"].some(w => lowerInput.includes(w))) {
+      const tchau = await hevelynIA(session, userInput, "Despeça-se amigavelmente.")
+      sessions.delete(sessionId)
+      return NextResponse.json({ reply: tchau })
     }
 
-    case "identificacao_cpf": {
-      const cpf = userInput.replace(/\D/g, "")
-      if (cpf.length >= 11) {
-        session.cpf = cpf
-        const memoria = await getMemoria(cpf)
+    switch (session.state) {
+      case "inicio": {
+        const resp = await hevelynIA(session, userInput, "Dê as boas-vindas e peça o CPF para começar.")
+        session.state = "identificacao_cpf"
+        sessions.set(sessionId, session)
+        return NextResponse.json({ reply: resp })
+      }
+
+      case "identificacao_cpf": {
+        const cleanCPF = userInput.replace(/\D/g, "")
+        
+        // CORREÇÃO: Validação de CPF acontece aqui, no input do usuário
+        const autorizado = await validarCPF(cleanCPF)
+        
+        if (!autorizado) {
+          return NextResponse.json({ reply: "Infelizmente não encontrei seu CPF na nossa base de colaboradores. Por favor, digite os 11 números corretamente ou entre em contato com o RH." })
+        }
+
+        session.cpf = cleanCPF
+        const memoria = await getMemoria(cleanCPF)
         
         if (memoria) {
           session.resumoHistorico = memoria
@@ -128,71 +159,81 @@ export async function POST(req: NextRequest) {
 
         if (session.nome) {
           session.state = "menu_principal"
-          const resp = await hevelynIA(session, userInput, "Dê as boas-vindas de volta pelo nome e mostre o menu: 1. Abrir Chamado, 2. Status, 3. Avisos.")
+          const resp = await hevelynIA(session, userInput, "Dê as boas-vindas de volta pelo nome e pergunte em que pode ajudar.") 
+          sessions.set(sessionId, session)
           return NextResponse.json({ reply: resp })
         } else {
           session.state = "identificacao_nome"
+          sessions.set(sessionId, session)
           return NextResponse.json({ reply: "CPF validado com sucesso! Como devo te chamar?" })
         }
       }
-      return NextResponse.json({ reply: "Ops, esse CPF parece inválido. Digite os 11 números, por favor." })
-    }
 
-    case "identificacao_nome": {
-      session.nome = userInput
-      session.state = "menu_principal"
-      const resp = await hevelynIA(session, userInput, "Apresente o menu principal: 1. Abrir Chamado, 2. Status, 3. Avisos.")
-      return NextResponse.json({ reply: resp })
-    }
-
-    case "menu_principal": {
-      if (userInput === "1") {
-        session.state = "coletar_motivo"
-        return NextResponse.json({ reply: "Tudo bem. Pode me descrever detalhadamente o que está acontecendo?" })
+      case "identificacao_nome": {
+        session.nome = userInput
+        session.state = "menu_principal"
+        const resp = await hevelynIA(session, userInput, "Pergunte em que pode ajudar")
+        sessions.set(sessionId, session)
+        return NextResponse.json({ reply: resp })
       }
-      if (userInput === "2") {
-        const status = await StatusChamado(session.cpf!)
-        if (status?.length) {
-          const lista = status.map((t: { ticket: string; status: string }) => `🎫 *${t.ticket}* - Status: ${t.status}`).join("\n")
-          return NextResponse.json({ reply: `Aqui estão seus chamados:\n\n${lista}` })
+
+      case "menu_principal": {
+        if (userInput === "1") {
+          session.state = "coletar_motivo"
+          sessions.set(sessionId, session)
+          return NextResponse.json({ reply: "Tudo bem. Pode me descrever detalhadamente o que está acontecendo?" })
         }
-        return NextResponse.json({ reply: "Não encontrei chamados abertos para você." })
+        if (userInput === "2") {
+          const status = await StatusChamado(session.cpf!)
+          if (status?.length) {
+            const lista = status.map((t:Chamado) => `🎫 *${t.ticket}* - Status: ${t.status}`).join("\n")
+            return NextResponse.json({ reply: `Aqui estão seus chamados:\n\n${lista}` })
+          }
+          return NextResponse.json({ reply: "Não encontrei chamados abertos para você." })
+        }
+        if (userInput === "3") {
+          return NextResponse.json({ reply: `Aqui estão os avisos recentes:\n\n${avisos}\n\nPosso ajudar em algo mais?` })
+        }
+        
+        const conversaLivre = await hevelynIA(session, userInput, "Responda a dúvida usando os avisos se possível, ou peça para escolher 1, 2 ou 3.", avisos)
+        return NextResponse.json({ reply: conversaLivre })
       }
-      if (userInput === "3") {
-        return NextResponse.json({ reply: `Aqui estão os avisos recentes:\n\n${avisos}\n\nPosso ajudar em algo mais?` })
+
+      case "coletar_motivo": {
+        session.motivoAtual = userInput
+        session.state = "escolher_abertura"
+        const confirma = await hevelynIA(session, userInput, "Confirme que entendeu o problema e pergunte se quer abrir o chamado agora.")
+        sessions.set(sessionId, session)
+        return NextResponse.json({ reply: `${confirma}\n\n1️⃣ Sim, abrir\n2️⃣ Não, cancelar` })
       }
-      
-      const conversaLivre = await hevelynIA(session, userInput, "Responda a dúvida usando os avisos se possível, ou peça para escolher 1, 2 ou 3.", avisos)
-      return NextResponse.json({ reply: conversaLivre })
-    }
 
-    case "coletar_motivo": {
-      session.motivoAtual = userInput
-      session.state = "escolher_abertura"
-      const confirma = await hevelynIA(session, userInput, "Confirme que entendeu o problema e pergunte se quer abrir o chamado agora.")
-      return NextResponse.json({ reply: `${confirma}\n\n1️⃣ Sim, abrir\n2️⃣ Não, cancelar` })
-    }
-
-    case "escolher_abertura": {
-      if (userInput === "1" || lowerInput.includes("sim")) {
-        session.state = "coletar_setor"
-        return NextResponse.json({ reply: `Perfeito. Para qual setor devemos enviar? \n(${SETORES.join(", ")})` })
+      case "escolher_abertura": {
+        if (userInput === "1" || lowerInput.includes("sim")) {
+          session.state = "coletar_setor"
+          sessions.set(sessionId, session)
+          return NextResponse.json({ reply: `Perfeito. Para qual setor devemos enviar? \n(${SETORES.join(", ")})` })
+        }
+        session.state = "menu_principal"
+        sessions.set(sessionId, session)
+        return NextResponse.json({ reply: "Sem problemas, chamado cancelado. Como posso ajudar agora? (1. Abrir, 2. Status, 3. Avisos)" })
       }
-      session.state = "menu_principal"
-      return NextResponse.json({ reply: "Sem problemas, chamado cancelado. Como posso ajudar agora? (1. Abrir, 2. Status, 3. Avisos)" })
+
+      case "coletar_setor": {
+        const setor = SETORES.find(s => lowerInput.includes(s.toLowerCase()))
+        if (!setor) return NextResponse.json({ reply: `Não reconheci esse setor. Escolha um destes: ${SETORES.join(", ")}` })
+
+        const ok = await enviarChamado(session.nome!, session.cpf!, setor, session.motivoAtual!)
+        session.state = "menu_principal"
+        sessions.set(sessionId, session)
+        return NextResponse.json({ 
+          reply: ok ? `✅ Tudo pronto! Seu chamado foi enviado para o setor ${setor}.` : "Erro ao criar chamado. Tente novamente mais tarde." 
+        })
+      }
     }
 
-    case "coletar_setor": {
-      const setor = SETORES.find(s => lowerInput.includes(s.toLowerCase()))
-      if (!setor) return NextResponse.json({ reply: `Não reconheci esse setor. Escolha um destes: ${SETORES.join(", ")}` })
-
-      const ok = await enviarChamado(session.nome!, session.cpf!, setor, session.motivoAtual!)
-      session.state = "menu_principal"
-      return NextResponse.json({ 
-        reply: ok ? `✅ Tudo pronto! Seu chamado foi enviado para o setor ${setor}.` : "Erro ao criar chamado. Tente novamente mais tarde." 
-      })
-    }
+    return NextResponse.json({ reply: "Desculpe, ocorreu um erro no fluxo. Como posso ajudar?" })
+  } catch (err) {
+    console.error(err)
+    return NextResponse.json({ reply: "Houve um erro interno. Tente novamente em alguns instantes." }, { status: 500 })
   }
-  
-  return NextResponse.json({ reply: "Desculpe, não entendi. Vamos tentar de novo?" })
 }
