@@ -72,7 +72,7 @@ export default function MobileHevelynChat() {
   return (
     <div className="h-screen w-screen flex flex-col bg-gray-50">
 
-      <header className="h-16 flex items-center justify-center border-b bg-white shadow-sm">
+      <header className="h-16 flex items-center justify-center border-b bg-white shadow-sm shrink-0">
         <span className="text-lg font-semibold text-gray-800">
           Hevelyn
         </span>
@@ -111,7 +111,7 @@ export default function MobileHevelynChat() {
 
       </main>
 
-      <footer className="p-3 bg-white border-t flex gap-2">
+      <footer className="shrink-0 p-3 bg-white border-t flex gap-2">
 
         <input
           className="flex-1 text-base px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-blue-500"
