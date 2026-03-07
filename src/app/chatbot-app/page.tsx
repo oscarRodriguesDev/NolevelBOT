@@ -120,7 +120,7 @@ export default function MobileHevelynChat() {
       >
 
         <input
-          className="flex-1 text-base px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-1 text-base text-black px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Digite sua mensagem"
           value={input}
           onFocus={() => setTyping(true)}
