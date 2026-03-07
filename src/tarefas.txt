@@ -8,31 +8,46 @@ criar a autenticação e aplicar iniciado mock - ok
 
 criar modo escuro e modo claro - feito 
 
-quando salvar os tickets fechados tem que pegar o texto de solução e colocar la
+quando salvar os tickets fechados tem que pegar o texto de solução e colocar la ok
 
 quando o bot consultar chamado deve permitir ver o status fechado (pensar melhor sobre isso)
 
-criar sidebar para navegação
-
-pesquisar onde hospedar meu sistema
-
 criar uma pagina para o usuario visualizar o status do chamado - feito
+
+melhorar layout colocar tudo responsivo feito
+
+atualizar all tickets quando voltar do modal feito
+
+na tela de subir cpfs melhorar o layout do botão de escolha de documentos feito
+
+tentar aplicar resposividade no projeto quando o v0 voltar feito
+
+criar sidebar para navegação (criar layout interno)
+
+aplicar autenticação (next auth)
+
+pesquisar onde hospedar meu sistema (containerizada)
 
 corrigir no bot redirecionametos para locais errados
 
-melhorar layout colocar tudo responsivo
+criar uma pagina de dashboard (v0)
 
-criar uma landing page
+criar backend dos dashboards
 
-criar uma pagina de dashboard
+criar pagina de cadastro (v0)
 
-atualizar all tickets quando voltar do modal
+criar back end da tela de cadastro
 
 verificar logica de criação do numero de tickets, pq quando vier do bot tem que ber como vai ser criado
 
-na tela de subir cpfs melhorar o layout do botão de escolha de documentos
+criar pagina de planos e assinatura V0
 
-tentar aplicar resposividade no projeto quando o v0 voltar
+futuro - integração com pagamentos
+
+preciso de uma forma de entregar os chamados por setor 
+
+construção do chatbot
+
 
 
 

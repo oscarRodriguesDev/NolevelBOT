@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { LuHardHat, LuCheck, LuLoader, LuArrowRight } from 'react-icons/lu'
+import {  LuCheck, LuLoader, LuArrowRight } from 'react-icons/lu'
 import { ThemeToggle } from '@/app/components/theme-toggle'
 import { Header } from '@/app/(atendimento)/components/header'
 
