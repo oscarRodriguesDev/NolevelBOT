@@ -17,6 +17,7 @@ type UserSession = {
 }
 
 const sessions = new Map<string, UserSession>()
+const empresa = 'Nolevel'
 
 
 function saudacao() {
@@ -51,14 +52,16 @@ function ticketNumber() {
 const LINK_PORTAL = `https://nolevel-bot.vercel.app/chamado;${ticketNumber()}`;
 
 // --- IA HUMANIZADA ---
-async function hevelynIA(session: UserSession, userInput: string, instrucaoEtapa: string, avisos: string = "") {
+async function hevelynIA(session: UserSession, userInput: string, instrucaoEtapa: string) {
+
+ const avisos = await buscarAvisos();
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
         {
           role: "system",
-          content: `Você é a Hevelyn, a assistente virtual inteligente e empática da Nolevel.
+          content: `Você é a Hevelyn, a assistente virtual inteligente e empática da ${empresa}.
            Sua missão principal é atuar como uma camada de suporte resolutiva, garantindo que os colaboradores obtenham 
            respostas rápidas e evitando a abertura de chamados desnecessários.
 
@@ -260,7 +263,7 @@ export async function POST(req: NextRequest) {
         } else if (userInput === "3") {
           await sendEvolutionText(instance, number, `Aqui estão os avisos recentes:\n${avisos}\n\nDeseja algo mais?`);
         } else {
-          const conversaLivre = await hevelynIA(session, userInput, "Responda a dúvida do usuário ou peça para ele escolher uma opção do menu (1, 2 ou 3).", avisos);
+          const conversaLivre = await hevelynIA(session, userInput, "Responda a dúvida do usuário ou peça para ele escolher uma opção do menu (1, 2 ou 3).");
           await sendEvolutionText(instance, number, conversaLivre);
         }
         break;

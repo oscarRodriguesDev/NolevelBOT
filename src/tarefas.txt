@@ -22,6 +22,10 @@ na tela de subir cpfs melhorar o layout do botão de escolha de documentos feito
 
 tentar aplicar resposividade no projeto quando o v0 voltar feito
 
+
+bot não esta verificando o cpf, vot esta se lembrando mas esta aceitando cpf fora da lista
+
+
 criar sidebar para navegação (criar layout interno)
 
 aplicar autenticação (next auth)

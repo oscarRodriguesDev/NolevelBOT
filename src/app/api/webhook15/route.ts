@@ -1,3 +1,4 @@
+import { Chamado } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
 
@@ -179,7 +180,7 @@ export async function POST(req: NextRequest) {
             const status = await StatusChamado(session.cpf);
             
             if (status && Array.isArray(status) && status.length > 0) {
-              const listaStatus = status.map((t: any) => `Ticket: ${t.ticket} - Status: ${t.status}`).join("\n");
+              const listaStatus = status.map((t: Chamado) => `Ticket: ${t.ticket} - Status: ${t.status}`).join("\n");
               await sendEvolutionText(instance, number, `Encontrei o seguinte:\n\n${listaStatus}\n\nVocê também pode consultar no portal: ${LINK_PORTAL}`);
             } else {
               await sendEvolutionText(instance, number, `Não encontrei chamados abertos para o seu CPF. Caso prefira, consulte o portal: ${LINK_PORTAL}`);

@@ -24,9 +24,9 @@ interface Colaborador {
   cpf: string;
 }
 
-// CORREÇÃO: URL Completa e lógica de busca
+
 async function validarCPF(cpfDigitado: string): Promise<boolean> {
-  try {
+      try {
 
     const response = await fetch(`https://nolevel-bot.vercel.app/api/cpfs`, { cache: 'no-store' });
     
@@ -66,6 +66,11 @@ async function getMemoria(cpf: string) {
     return res.ok ? (await res.json())?.resumo : null
   } catch { return null }
 }
+
+
+
+//validar cpfs:
+
 
 async function hevelynIA(session: UserSession, userInput: string, instrucaoEtapa: string, avisos: string = "") {
   try {
