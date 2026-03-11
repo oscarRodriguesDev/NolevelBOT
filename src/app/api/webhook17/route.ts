@@ -20,7 +20,7 @@ type UserSession = {
 const sessions = new Map<string, UserSession>()
 const empresa = 'Nolevel'
 
-const LINK_PORTAL = `https://nolevel-bot.vercel.app/chamado;${generateRandomTicket()}`;
+const LINK_PORTAL = `https://nolevel-bot.vercel.app`;
 
 async function hevelynIA(session: UserSession, userInput: string, instrucaoEtapa: string) {
   const avisos = await buscarAvisos();
@@ -132,12 +132,13 @@ export async function POST(req: NextRequest) {
             const status = await StatusChamado(session.cpf);
             if (status?.length) {
               const listaStatus = status.map((t: { ticket: string; status: string }) => `Ticket: ${t.ticket} - Status: ${t.status}`).join("\n");
-              await sendEvolutionText(instance, number, `Seus chamados:\n${listaStatus}\nConsulte no portal: ${LINK_PORTAL}`);
+              await sendEvolutionText(instance, number, `Seus chamados:\n${listaStatus}\n `);
             } else {
-              await sendEvolutionText(instance, number, `Nenhum chamado encontrado. Consulte no portal: ${LINK_PORTAL}`);
+              await sendEvolutionText(instance, number, `Nenhum chamado encontrado.`);
             }
           } else {
-            await sendEvolutionText(instance, number, `Consulte seus chamados no portal: ${LINK_PORTAL}`);
+            await sendEvolutionText(instance, number, `Não ha chamados para abrir acesse: ${LINK_PORTAL}/chamados - ou caso prefira eu posso fazer 
+              isso por vocé.`);
           }
         } else if (["3", "avisos"].includes(lowerInput)) {
           await sendEvolutionText(instance, number, `Avisos recentes:\n${avisos}\nDeseja mais alguma coisa?`);
