@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
+import { buscarAvisos, generateRandomTicket, getMemoria, saveMemoria, saudacao, StatusChamado, enviarChamado, sendEvolutionText } from "@/app/hooks/usedata";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
@@ -20,41 +21,15 @@ const sessions = new Map<string, UserSession>()
 const empresa = 'Nolevel'
 
 
-function saudacao() {
-  const hora = new Date().getHours();
-
-  if (hora >= 5 && hora < 12) return "Bom dia";
-  if (hora >= 12 && hora < 18) return "Boa tarde";
-  if (hora >= 18 || hora < 5) return "Boa noite";
-  
-  return "Olá"; // Fallback de segurança
-}
 
 
-async function buscarAvisos() {
-  try {
-    const res = await fetch(`/api/quadro-avisos`, { cache: 'no-store' });
-    type Aviso = { titulo: string; conteudo: string };
-    const data: Aviso[] = await res.json();
-    return data
-      .map(a => `📢 *${a.titulo}*: ${a.conteudo}`)
-      .join("\n") || "Sem avisos.";
-  } catch { return "Sem avisos no momento."; }
-}
+const LINK_PORTAL = `https://nolevel-bot.vercel.app/chamado;${generateRandomTicket}`;
 
 
-function ticketNumber() {
-  const timestamp = Date.now().toString(36).toUpperCase();
-  const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
-  return `TKT${timestamp}${randomPart}`;
-}
-
-const LINK_PORTAL = `https://nolevel-bot.vercel.app/chamado;${ticketNumber()}`;
-
-// --- IA HUMANIZADA ---
+//inteligencia artificial do bot
 async function hevelynIA(session: UserSession, userInput: string, instrucaoEtapa: string) {
 
- const avisos = await buscarAvisos();
+  const avisos = await buscarAvisos();
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
@@ -116,61 +91,7 @@ ou se a resposta for muito longa. Seja direto e objetivo, mas sem perder a empat
   } catch { return "Estou com uma instabilidade técnica, mas vamos continuar. Como posso ajudar?"; }
 }
 
-// --- INTEGRAÇÕES ---
-async function getMemoria(cpf: string) {
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://nolevel-bot.vercel.app";
-    const res = await fetch(`${baseUrl}/api/memories?cpf=${cpf}`, { cache: 'no-store' });
-    return res.ok ? (await res.json())?.resumo : null;
-  } catch { return null; }
-}
 
-async function saveMemoria(cpf: string, nome: string, resumo: string) {
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://nolevel-bot.vercel.app";
-    await fetch(`${baseUrl}/api/memories`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cpf, nome, resumo }),
-    });
-  } catch { console.error("Erro ao salvar memória"); }
-}
-
-async function enviarChamado(nome: string, cpf: string, setor: string, descricao: string) {
-  try {
-    const formData = new FormData();
-    formData.append('nome', nome);
-    formData.append('cpf', cpf);
-    formData.append('setor', setor);
-    formData.append('descricao', descricao);
-    const res = await fetch(`https://nolevel-bot.vercel.app/api/tickets`, { method: "POST", body: formData });
-    return res.ok;
-  } catch { return false; }
-}
-
-
-//buscar o status do chamdo pelo cpf
-async function StatusChamado(filtro: string) {
-  try {
-    const isTicket = filtro.toUpperCase().includes("TKT") || filtro.length > 11;
-    const param = isTicket ? `ticket=${filtro}` : `cpf=${filtro}`;
-    const url = `https://nolevel-bot.vercel.app/api/tickets?${param}`;
-    const response = await fetch(url, { method: "GET" });
-    if (!response.ok) return null;
-    return await response.json();
-  } catch (error) {
-    return null;
-  }
-}
-
-async function sendEvolutionText(instance: string, number: string, text: string) {
-  const typingDelay = Math.min(Math.max(1000, text.length * 20), 3000);
-  await fetch(`${process.env.EVOLUTION_API_URL}/message/sendText/${instance}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", apikey: process.env.EVOLUTION_API_KEY! },
-    body: JSON.stringify({ number: number.replace("@s.whatsapp.net", ""), text, options: { delay: typingDelay, presence: "composing" } })
-  });
-}
 
 // --- WEBHOOK ---
 export async function POST(req: NextRequest) {
@@ -205,7 +126,7 @@ export async function POST(req: NextRequest) {
     // --- FLUXO DE ESTADOS ---
     switch (session.state) {
       case "inicio":
-        const saudacao = await hevelynIA(session, userInput,` Dê boas-vindas e peça o CPF para iniciar`);
+        const saudacao = await hevelynIA(session, userInput, ` Dê boas-vindas e peça o CPF para iniciar`);
         await sendEvolutionText(instance, number, saudacao);
         session.state = "identificacao_cpf";
         break;
