@@ -42,6 +42,7 @@ Use todas as informações disponíveis:
 - Etapa atual do atendimento: ${session.state}
 - Instrução da etapa: ${instrucaoEtapa}
 - Saudação: ${saudacao}
+-cpf válido: ${validarCpf(session.cpf || "")}
 - Status dos chamados: ${await StatusChamado(session.cpf || "")}
 Seja direto, claro e ofereça sempre opções ou instruções claras.
 `
