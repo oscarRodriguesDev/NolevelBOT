@@ -33,7 +33,7 @@ function saudacao() {
 
 async function buscarAvisos() {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/quadro-avisos`, { cache: 'no-store' });
+    const res = await fetch(`/api/quadro-avisos`, { cache: 'no-store' });
     type Aviso = { titulo: string; conteudo: string };
     const data: Aviso[] = await res.json();
     return data
