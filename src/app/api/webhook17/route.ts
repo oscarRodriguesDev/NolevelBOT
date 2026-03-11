@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
-import { buscarAvisos, generateRandomTicket, getMemoria, saveMemoria, saudacao, StatusChamado, enviarChamado, sendEvolutionText } from "@/app/hooks/usedata";
+import { buscarAvisos, generateRandomTicket, getMemoria, saveMemoria, saudacao, StatusChamado, enviarChamado, sendEvolutionText,validarCpf } from "@/app/hooks/usedata";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
@@ -20,18 +20,9 @@ type UserSession = {
 const sessions = new Map<string, UserSession>()
 const empresa = 'Nolevel'
 
+const LINK_PORTAL = `https://nolevel-bot.vercel.app/chamado;${generateRandomTicket()}`;
 
-const prompt =``
-
-
-
-
-const LINK_PORTAL = `https://nolevel-bot.vercel.app/chamado;${generateRandomTicket}`;
-
-
-//inteligencia artificial do bot
 async function hevelynIA(session: UserSession, userInput: string, instrucaoEtapa: string) {
-
   const avisos = await buscarAvisos();
   try {
     const response = await openai.chat.completions.create({
@@ -39,28 +30,31 @@ async function hevelynIA(session: UserSession, userInput: string, instrucaoEtapa
       messages: [
         {
           role: "system",
-          content: `vc é uma atendende virtual da ${empresa} e precisa ajudar com os chamados e avisos da empresa. relacionados aos setores ${SETORES.join(', ')}.
-          vc precisa responder de forma humana, empática e natural, como se fosse uma atendente real.
-          utilize as seguintes informações para atender o usuario:
-          - Nome: ${session.nome || "Ainda nao identificado"}
-          - CPF: ${session.cpf || "Ainda nao identificado"}
-          - Avisos: ${avisos} 
-          - Etapa Atual: ${session.state}
-          - Missão Atual: ${instrucaoEtapa}
-          - sempre utilize a saudação adequada: ${saudacao}
-          `
+          content: `
+Você é um atendente virtual da empresa ${empresa}. 
+Seu objetivo é ajudar com chamados e avisos dos setores: ${SETORES.join(', ')}.
+Responda de forma humana, natural e empática.
+Use todas as informações disponíveis:
+- Nome: ${session.nome || "não identificado"}
+- CPF: ${session.cpf || "não identificado"}
+- Histórico resumido: ${session.resumoHistorico || "nenhum histórico disponível"}
+- Avisos recentes: ${avisos || "nenhum aviso"}
+- Etapa atual do atendimento: ${session.state}
+- Instrução da etapa: ${instrucaoEtapa}
+- Saudação: ${saudacao}
+Seja direto, claro e ofereça sempre opções ou instruções claras.
+`
         },
         { role: "user", content: userInput }
       ],
       temperature: 0.7
     });
     return response.choices[0].message.content || "Desculpe, pode repetir?";
-  } catch { return "Estou com uma instabilidade técnica, mas vamos continuar. Como posso ajudar?"; }
+  } catch {
+    return "Estou com uma instabilidade técnica, mas podemos continuar. Como posso ajudar?";
+  }
 }
 
-
-
-// --- WEBHOOK ---
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -80,7 +74,6 @@ export async function POST(req: NextRequest) {
     }
     session.lastInteraction = Date.now();
 
-    // Comandos de Encerramento
     if (["obrigado", "tchau", "encerrar", "sair"].some(word => lowerInput.includes(word))) {
       const resp = await hevelynIA(session, userInput, "Despeça-se amigavelmente e informe que a sessão foi encerrada.");
       await sendEvolutionText(instance, number, resp);
@@ -90,11 +83,10 @@ export async function POST(req: NextRequest) {
 
     const avisos = await buscarAvisos();
 
-    // --- FLUXO DE ESTADOS ---
     switch (session.state) {
       case "inicio":
-        const saudacao = await hevelynIA(session, userInput, ` Dê boas-vindas e peça o CPF para iniciar`);
-        await sendEvolutionText(instance, number, saudacao);
+        const saudacaoMsg = await hevelynIA(session, userInput, "Dê boas-vindas e peça o CPF do usuário.");
+        await sendEvolutionText(instance, number, saudacaoMsg);
         session.state = "identificacao_cpf";
         break;
 
@@ -111,47 +103,45 @@ export async function POST(req: NextRequest) {
 
           if (session.nome) {
             session.state = "menu_principal";
-            const resp = await hevelynIA(session, userInput, "Dê as boas-vindas de volta e apresente o Menu: 1. Abrir Chamado, 2. Ver Status, 3. Avisos.");
+            const resp = await hevelynIA(session, userInput, "Dê as boas-vindas de volta e apresente o menu principal: 1. Abrir Chamado, 2. Ver Status, 3. Avisos.");
             await sendEvolutionText(instance, number, resp);
           } else {
             session.state = "identificacao_nome";
-            await sendEvolutionText(instance, number, "CPF validado! Como posso te chamar?");
+            await sendEvolutionText(instance, number, "CPF validado! Como posso chamá-lo?");
           }
         } else {
-          await sendEvolutionText(instance, number, "O CPF informado é inválido. Por favor, digite os 11 números.");
+          await sendEvolutionText(instance, number, "CPF inválido. Digite os 11 números, sem pontos ou traços.");
         }
         break;
 
       case "identificacao_nome":
         session.nome = userInput;
         session.state = "menu_principal";
-        const menuInicial = await hevelynIA(session, userInput, "Apresente o menu principal: 1. Abrir Chamado, 2. Ver Status, 3. Avisos.");
-        await sendEvolutionText(instance, number, menuInicial);
+        const menuMsg = await hevelynIA(session, userInput, "Apresente o menu principal: 1. Abrir Chamado, 2. Ver Status, 3. Avisos.");
+        await sendEvolutionText(instance, number, menuMsg);
         break;
 
       case "menu_principal":
-        if (userInput === "1") {
+        if (["1", "abrir chamado"].includes(lowerInput)) {
           session.state = "coletar_motivo";
-          await sendEvolutionText(instance, number, "Entendido. Por favor, descreva detalhadamente o que está acontecendo.");
-        } else if (userInput === "2") {
-          // Lógica atualizada para buscar status pelo CPF da sessão
+          await sendEvolutionText(instance, number, "Descreva detalhadamente o que está acontecendo.");
+        } else if (["2", "ver status"].includes(lowerInput)) {
           if (session.cpf) {
-            await sendEvolutionText(instance, number, "Buscando o status dos seus chamados...");
+            await sendEvolutionText(instance, number, "Consultando seus chamados...");
             const status = await StatusChamado(session.cpf);
-
-            if (status && Array.isArray(status) && status.length > 0) {
+            if (status?.length) {
               const listaStatus = status.map((t: { ticket: string; status: string }) => `Ticket: ${t.ticket} - Status: ${t.status}`).join("\n");
-              await sendEvolutionText(instance, number, `Encontrei o seguinte:\n\n${listaStatus}\n\nVocê também pode consultar no portal: ${LINK_PORTAL}`);
+              await sendEvolutionText(instance, number, `Seus chamados:\n${listaStatus}\nConsulte no portal: ${LINK_PORTAL}`);
             } else {
-              await sendEvolutionText(instance, number, `Não encontrei chamados abertos para o seu CPF. Caso prefira, consulte o portal: ${LINK_PORTAL}`);
+              await sendEvolutionText(instance, number, `Nenhum chamado encontrado. Consulte no portal: ${LINK_PORTAL}`);
             }
           } else {
-            await sendEvolutionText(instance, number, `Você pode consultar seus chamados aqui: ${LINK_PORTAL}`);
+            await sendEvolutionText(instance, number, `Consulte seus chamados no portal: ${LINK_PORTAL}`);
           }
-        } else if (userInput === "3") {
-          await sendEvolutionText(instance, number, `Aqui estão os avisos recentes:\n${avisos}\n\nDeseja algo mais?`);
+        } else if (["3", "avisos"].includes(lowerInput)) {
+          await sendEvolutionText(instance, number, `Avisos recentes:\n${avisos}\nDeseja mais alguma coisa?`);
         } else {
-          const conversaLivre = await hevelynIA(session, userInput, "Responda a dúvida do usuário ou peça para ele escolher uma opção do menu (1, 2 ou 3).");
+          const conversaLivre = await hevelynIA(session, userInput, "Responda à dúvida do usuário ou peça que escolha uma opção do menu (1,2,3).");
           await sendEvolutionText(instance, number, conversaLivre);
         }
         break;
@@ -159,14 +149,14 @@ export async function POST(req: NextRequest) {
       case "coletar_motivo":
         session.motivoAtual = userInput;
         session.state = "escolher_abertura";
-        const perguntaAbertura = await hevelynIA(session, userInput, "O usuário explicou o problema. Pergunte se ele confirma a abertura do chamado agora.");
-        await sendEvolutionText(instance, number, `${perguntaAbertura}\n\n1️⃣ Sim, abrir chamado\n2️⃣ Não, voltar ao menu`);
+        const perguntaAbertura = await hevelynIA(session, userInput, "Confirme se o usuário deseja abrir o chamado agora.");
+        await sendEvolutionText(instance, number, `${perguntaAbertura}\n1️⃣ Sim, abrir chamado\n2️⃣ Não, voltar ao menu`);
         break;
 
       case "escolher_abertura":
-        if (userInput === "1" || lowerInput.includes("sim")) {
+        if (["1", "sim"].some(v => lowerInput.includes(v))) {
           session.state = "coletar_setor";
-          await sendEvolutionText(instance, number, `Para qual setor deseja enviar? \nOpções: ${SETORES.join(", ")}`);
+          await sendEvolutionText(instance, number, `Qual setor deve receber o chamado? Opções: ${SETORES.join(", ")}`);
         } else {
           session.state = "menu_principal";
           await sendEvolutionText(instance, number, "Chamado cancelado. Como posso ajudar agora? (1. Abrir, 2. Status, 3. Avisos)");
@@ -178,24 +168,22 @@ export async function POST(req: NextRequest) {
         if (setorAlvo) {
           await sendEvolutionText(instance, number, "Processando seu chamado... 🚀");
           const ok = await enviarChamado(session.nome!, session.cpf!, setorAlvo, session.motivoAtual!);
-
           if (ok) {
-            await sendEvolutionText(instance, number, `✅ Chamado aberto com sucesso para o setor ${setorAlvo}! Em breve alguém entrará em contato.`);
+            await sendEvolutionText(instance, number, `✅ Chamado aberto com sucesso para ${setorAlvo}. Em breve entraremos em contato.`);
             await saveMemoria(session.cpf!, session.nome!, `Nome: ${session.nome}. Último chamado: ${session.motivoAtual?.substring(0, 50)}...`);
           } else {
-            await sendEvolutionText(instance, number, `Infelizmente tive um erro ao criar seu ticket. Tente pelo portal: ${LINK_PORTAL}`);
+            await sendEvolutionText(instance, number, `Erro ao criar chamado. Tente pelo portal: ${LINK_PORTAL}`);
           }
           session.state = "menu_principal";
         } else {
-          await sendEvolutionText(instance, number, `Setor não reconhecido. Por favor, escolha um destes: ${SETORES.join(", ")}`);
+          await sendEvolutionText(instance, number, `Setor não reconhecido. Escolha entre: ${SETORES.join(", ")}`);
         }
         break;
     }
 
     sessions.set(number, session);
     return NextResponse.json({ ok: true });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ ok: true });
   }
 }
-
