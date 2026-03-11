@@ -12,7 +12,7 @@ export async function buscarAvisos() {
   } catch { return "Sem avisos no momento."; }
 }
 
-
+//gerador de tickets
 export function generateRandomTicket() {
   const now = new Date();
   const dd = String(now.getDate()).padStart(2, "0");
@@ -25,7 +25,7 @@ export function generateRandomTicket() {
   return `TKT-${dd}${mm}${yy}${hh}${min}${ss}${ms}`;
 }
 
-
+//buscar memoria do bot
 export async function getMemoria(cpf: string) {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://nolevel-bot.vercel.app";
@@ -34,6 +34,8 @@ export async function getMemoria(cpf: string) {
   } catch { return null; }
 }
 
+
+//salvar memoria do bot
 export async function saveMemoria(cpf: string, nome: string, resumo: string) {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://nolevel-bot.vercel.app";
@@ -45,6 +47,8 @@ export async function saveMemoria(cpf: string, nome: string, resumo: string) {
   } catch { console.error("Erro ao salvar memória"); }
 }
 
+
+//saudação de acordo com o horario
 export function saudacao() {
   const hora = new Date().getHours();
 
@@ -55,6 +59,8 @@ export function saudacao() {
   return "Olá"; 
 }
 
+
+//status dos chamados
 export async function StatusChamado(filtro: string) {
   try {
     const isTicket = filtro.toUpperCase().includes("TKT") || filtro.length > 11;
@@ -68,6 +74,8 @@ export async function StatusChamado(filtro: string) {
   }
 }
 
+
+//enviar o chamado
 export async function enviarChamado(nome: string, cpf: string, setor: string, descricao: string) {
   try {
     const formData = new FormData();
