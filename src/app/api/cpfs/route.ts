@@ -113,18 +113,54 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// Certifique-se de que o caminho do prisma está correto
+
 export async function GET(req: NextRequest) {
   try {
+    // Captura o parâmetro 'cpf' da URL (ex: ?cpf=12345678901)
+    const { searchParams } = new URL(req.url);
+    const cpfParaFiltrar = searchParams.get("cpf");
+
+    // Se um CPF foi passado, fazemos a busca específica (validação)
+    if (cpfParaFiltrar) {
+      const registro = await prisma.cpfs.findUnique({
+        where: {
+          cpf: cpfParaFiltrar,
+        },
+        select: {
+          nome: true,
+          cpf: true
+        }
+      });
+
+      if (!registro) {
+        return NextResponse.json({ 
+          valido: false, 
+          message: "CPF não encontrado no banco" 
+        }, { status: 404 });
+      }
+
+      return NextResponse.json({ 
+        valido: true, 
+        ...registro 
+      });
+    }
+
+    // Se NÃO informou CPF, traz todos os registros
     const todosCPFs = await prisma.cpfs.findMany({
       select: {
         nome: true,
         cpf: true
       }
-    })
+    });
 
-    return NextResponse.json(todosCPFs)
+    return NextResponse.json(todosCPFs);
+
   } catch (error) {
-    console.error(error)
-    return NextResponse.json({ error: "Erro ao buscar CPFs" }, { status: 500 })
+    console.error("Erro na rota GET CPFs:", error);
+    return NextResponse.json(
+      { error: "Erro interno ao processar requisição" }, 
+      { status: 500 }
+    );
   }
 }

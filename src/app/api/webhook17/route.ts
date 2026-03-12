@@ -1,29 +1,53 @@
-import { NextRequest, NextResponse } from "next/server"
-import OpenAI from "openai"
-import { buscarAvisos, generateRandomTicket, getMemoria, saveMemoria, saudacao, StatusChamado, enviarChamado, sendEvolutionText,validarCpf } from "@/app/hooks/usedata";
+import { NextRequest, NextResponse } from "next/server";
+import OpenAI from "openai";
+import { 
+  buscarAvisos, 
+  getMemoria, 
+  saveMemoria, 
+  saudacao, 
+  StatusChamado, 
+  enviarChamado, 
+  sendEvolutionText, 
+  validarCpf,
+  generateRandomTicket
+} from "@/app/hooks/usedata";
+import { Chamado } from "@prisma/client";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-const SETORES = ["RH", "TI", "Financeiro", "Comercial", "Vendas", "Suporte", "Manutenção", "Logística", "Medicina", "Segurança", "Limpeza", "Juridico"];
+const SETORES = ["RH", "TI", "Financeiro", "Comercial", "Vendas", "Suporte", "Manutenção", "Logística", "Medicina", "Segurança", "Limpeza", "Juridico"] as const;
 
-type FlowState = "inicio" | "identificacao_cpf" | "identificacao_nome" | "menu_principal" | "coletar_motivo" | "escolher_abertura" | "coletar_setor"
+const FlowState = {
+  INICIO: "inicio",
+  IDENTIFICACAO_CPF: "identificacao_cpf",
+  IDENTIFICACAO_NOME: "identificacao_nome",
+  MENU_PRINCIPAL: "menu_principal",
+  COLETAR_MOTIVO: "coletar_motivo",
+  ESCOLHER_ABERTURA: "escolher_abertura",
+  COLETAR_SETOR: "coletar_setor"
+} as const;
+
+type FlowStateValues = typeof FlowState[keyof typeof FlowState];
 
 type UserSession = {
-  state: FlowState
-  nome?: string
-  cpf?: string
-  resumoHistorico?: string
-  motivoAtual?: string
-  lastInteraction: number
-}
+  state: FlowStateValues;
+  nome?: string;
+  cpf?: string;
+  resumoHistorico?: string;
+  motivoAtual?: string;
+  lastInteraction: number;
+};
 
-const sessions = new Map<string, UserSession>()
-const empresa = 'Nolevel'
-
+const menuString = "1. Abrir Chamado, 2. Consultar Chamado, 3. Ver Avisos";
+const sessions = new Map<string, UserSession>();
+const empresa = 'Nolevel';
 const LINK_PORTAL = `https://nolevel-bot.vercel.app`;
 
 async function hevelynIA(session: UserSession, userInput: string, instrucaoEtapa: string) {
   const avisos = await buscarAvisos();
+  const statusAtual = session.cpf ? await StatusChamado(session.cpf) : "Nenhum CPF informado";
+  const cpfValido = session.cpf ? validarCpf(session.cpf) : false;
+
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
@@ -31,29 +55,29 @@ async function hevelynIA(session: UserSession, userInput: string, instrucaoEtapa
         {
           role: "system",
           content: `
-Você é um atendente virtual da empresa ${empresa}. 
-Seu objetivo é ajudar com chamados e avisos dos setores: ${SETORES.join(', ')}.
-Responda de forma humana, natural e empática.
-Use todas as informações disponíveis:
-- Nome: ${session.nome || "não identificado"}
-- CPF: ${session.cpf || "não identificado"}
-- Histórico resumido: ${session.resumoHistorico || "nenhum histórico disponível"}
-- Avisos recentes: ${avisos || "nenhum aviso"}
-- Etapa atual do atendimento: ${session.state}
-- Instrução da etapa: ${instrucaoEtapa}
-- Saudação: ${saudacao}
--cpf válido: ${validarCpf(session.cpf || "")}
-- Status dos chamados: ${await StatusChamado(session.cpf || "")}
-Seja direto, claro e ofereça sempre opções ou instruções claras.
-`
+            Você é a Hevelyn, atendente virtual da ${empresa}. 
+            REGRAS: Nunca saia do papel. Seja empática. Priorize o CPF.
+            CONTEXTO:
+            - Nome: ${session.nome || "Não identificado"}
+            - CPF: ${session.cpf || "Não identificado"}
+            - CPF Válido: ${cpfValido ? "Sim" : "Não"}
+            - Histórico: ${session.resumoHistorico || "Nenhum"}
+            - Avisos: ${avisos || "Nenhum"}
+            - Chamados: ${JSON.stringify(statusAtual)}
+            - Etapa Atual: ${session.state}
+            - Instrução: ${instrucaoEtapa}
+            - Menu: ${menuString}
+            - Saudação base: ${saudacao}
+          `
         },
         { role: "user", content: userInput }
       ],
-      temperature: 0.7
+      temperature: 0.5
     });
-    return response.choices[0].message.content || "Desculpe, pode repetir?";
-  } catch {
-    return "Estou com uma instabilidade técnica, mas podemos continuar. Como posso ajudar?";
+    return response.choices[0].message.content || "Poderia repetir?";
+  } catch (error) {
+    console.error("Erro OpenAI:", error);
+    return "Estou com uma instabilidade técnica, mas vamos continuar.";
   }
 }
 
@@ -61,6 +85,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     if (body.event !== "messages.upsert") return NextResponse.json({ ok: true });
+    
     const data = body.data;
     if (!data?.message || data.key?.fromMe) return NextResponse.json({ ok: true });
 
@@ -71,122 +96,118 @@ export async function POST(req: NextRequest) {
 
     let session = sessions.get(number);
     if (!session || (Date.now() - session.lastInteraction > 1000 * 60 * 60 * 2)) {
-      session = { state: "inicio", lastInteraction: Date.now() };
+      session = { state: FlowState.INICIO, lastInteraction: Date.now() };
       sessions.set(number, session);
     }
     session.lastInteraction = Date.now();
 
-    if (["obrigado", "tchau", "encerrar", "sair"].some(word => lowerInput.includes(word))) {
-      const resp = await hevelynIA(session, userInput, "Despeça-se amigavelmente e informe que a sessão foi encerrada.");
-      await sendEvolutionText(instance, number, resp);
+    if (["sair", "encerrar", "cancelar"].some(word => lowerInput === word)) {
+      await sendEvolutionText(instance, number, "Atendimento encerrado. 👋");
       sessions.delete(number);
       return NextResponse.json({ ok: true });
     }
 
-    const avisos = await buscarAvisos();
-
     switch (session.state) {
-      case "inicio":
-        const saudacaoMsg = await hevelynIA(session, userInput, "Dê boas-vindas e peça o CPF do usuário.");
-        await sendEvolutionText(instance, number, saudacaoMsg);
-        session.state = "identificacao_cpf";
+      case FlowState.INICIO:
+        const msgInicio = await hevelynIA(session, userInput, "Apresente-se e peça o CPF.");
+        await sendEvolutionText(instance, number, msgInicio);
+        session.state = FlowState.IDENTIFICACAO_CPF;
         break;
 
-      case "identificacao_cpf":
+      case FlowState.IDENTIFICACAO_CPF: {
         const cleanCPF = userInput.replace(/\D/g, "");
-        if (cleanCPF.length >= 11) {
+        const isCpfValido = await validarCpf(cleanCPF);
+
+        if (cleanCPF.length === 11 && isCpfValido) {
           session.cpf = cleanCPF;
           const memoria = await getMemoria(cleanCPF);
+          
           if (memoria) {
             session.resumoHistorico = memoria;
-            const nomeExtraido = memoria.match(/Nome: ([^.|\n]+)/);
-            session.nome = nomeExtraido ? nomeExtraido[1].trim() : undefined;
+            const nomeMatch = memoria.match(/Nome: ([^.|\n]+)/);
+            session.nome = nomeMatch ? nomeMatch[1].trim() : undefined;
           }
 
           if (session.nome) {
-            session.state = "menu_principal";
-            const resp = await hevelynIA(session, userInput, "Dê as boas-vindas de volta e apresente o menu principal: 1. Abrir Chamado, 2. Ver Status, 3. Avisos.");
+            session.state = FlowState.MENU_PRINCIPAL;
+            const resp = await hevelynIA(session, userInput, `Boas-vindas e menu: ${menuString}`);
             await sendEvolutionText(instance, number, resp);
           } else {
-            session.state = "identificacao_nome";
-            await sendEvolutionText(instance, number, "CPF validado! Como posso chamá-lo?");
+            session.state = FlowState.IDENTIFICACAO_NOME;
+            await sendEvolutionText(instance, number, "CPF validado! Como posso te chamar?");
           }
         } else {
-          await sendEvolutionText(instance, number, "CPF inválido. Digite os 11 números, sem pontos ou traços.");
+          await sendEvolutionText(instance, number, "O CPF informado é inválido. Por favor, digite os 11 números corretamente.");
         }
         break;
+      }
 
-      case "identificacao_nome":
+      case FlowState.IDENTIFICACAO_NOME:
         session.nome = userInput;
-        session.state = "menu_principal";
-        const menuMsg = await hevelynIA(session, userInput, "Apresente o menu principal: 1. Abrir Chamado, 2. Ver Status, 3. Avisos.");
-        await sendEvolutionText(instance, number, menuMsg);
+        session.state = FlowState.MENU_PRINCIPAL;
+        const msgNome = await hevelynIA(session, userInput, `Apresente o menu: ${menuString}`);
+        await sendEvolutionText(instance, number, msgNome);
         break;
 
-      case "menu_principal":
-        if (["1", "abrir chamado"].includes(lowerInput)) {
-          session.state = "coletar_motivo";
-          await sendEvolutionText(instance, number, "Descreva detalhadamente o que está acontecendo.");
-        } else if (["2", "ver status"].includes(lowerInput)) {
-          if (session.cpf) {
-            await sendEvolutionText(instance, number, "Consultando seus chamados...");
-            const status = await StatusChamado(session.cpf);
-            if (status?.length) {
-              const listaStatus = status.map((t: { ticket: string; status: string }) => `Ticket: ${t.ticket} - Status: ${t.status}`).join("\n");
-              await sendEvolutionText(instance, number, `Seus chamados:\n${listaStatus}\n `);
-            } else {
-              await sendEvolutionText(instance, number, `Nenhum chamado encontrado.`);
-            }
+      case FlowState.MENU_PRINCIPAL:
+        if (["1", "abrir"].some(v => lowerInput.includes(v))) {
+          session.state = FlowState.COLETAR_MOTIVO;
+          await sendEvolutionText(instance, number, "Descreva o motivo do chamado detalhadamente.");
+        } else if (["2", "status", "consultar"].some(v => lowerInput.includes(v))) {
+          const status = await StatusChamado(session.cpf || "");
+          if (status && status.length > 0) {
+            const lista = status.map((t: Chamado) => `🎫 Ticket: ${t.ticket}\n📊 Status: ${t.status}`).join("\n\n");
+            await sendEvolutionText(instance, number, `Seus chamados:\n\n${lista}`);
           } else {
-            await sendEvolutionText(instance, number, `Não ha chamados para abrir acesse: ${LINK_PORTAL}/chamados - ou caso prefira eu posso fazer 
-              isso por vocé.`);
+            await sendEvolutionText(instance, number, "Nenhum chamado encontrado para este CPF.");
           }
-        } else if (["3", "avisos"].includes(lowerInput)) {
-          await sendEvolutionText(instance, number, `Avisos recentes:\n${avisos}\nDeseja mais alguma coisa?`);
+        } else if (["3", "aviso"].some(v => lowerInput.includes(v))) {
+          const avisos = await buscarAvisos();
+          await sendEvolutionText(instance, number, `📢 Avisos:\n\n${avisos || "Sem avisos novos."}`);
         } else {
-          const conversaLivre = await hevelynIA(session, userInput, "Responda à dúvida do usuário ou peça que escolha uma opção do menu (1,2,3).");
-          await sendEvolutionText(instance, number, conversaLivre);
+          const respLivre = await hevelynIA(session, userInput, "Responda a dúvida e reforce o menu.");
+          await sendEvolutionText(instance, number, respLivre);
         }
         break;
 
-      case "coletar_motivo":
+      case FlowState.COLETAR_MOTIVO:
         session.motivoAtual = userInput;
-        session.state = "escolher_abertura";
-        const perguntaAbertura = await hevelynIA(session, userInput, "Confirme se o usuário deseja abrir o chamado agora.");
-        await sendEvolutionText(instance, number, `${perguntaAbertura}\n1️⃣ Sim, abrir chamado\n2️⃣ Não, voltar ao menu`);
+        session.state = FlowState.ESCOLHER_ABERTURA;
+        await sendEvolutionText(instance, number, "Deseja abrir o chamado agora?\n\n1. ✅ Sim\n2. ❌ Não (Voltar)");
         break;
 
-      case "escolher_abertura":
+      case FlowState.ESCOLHER_ABERTURA:
         if (["1", "sim"].some(v => lowerInput.includes(v))) {
-          session.state = "coletar_setor";
-          await sendEvolutionText(instance, number, `Qual setor deve receber o chamado? Opções: ${SETORES.join(", ")}`);
+          session.state = FlowState.COLETAR_SETOR;
+          await sendEvolutionText(instance, number, `Qual o setor? (${SETORES.join(", ")})`);
         } else {
-          session.state = "menu_principal";
-          await sendEvolutionText(instance, number, "Chamado cancelado. Como posso ajudar agora? (1. Abrir, 2. Status, 3. Avisos)");
+          session.state = FlowState.MENU_PRINCIPAL;
+          await sendEvolutionText(instance, number, "Voltando ao menu principal.");
         }
         break;
 
-      case "coletar_setor":
-        const setorAlvo = SETORES.find(s => lowerInput.includes(s.toLowerCase()));
-        if (setorAlvo) {
-          await sendEvolutionText(instance, number, "Processando seu chamado... 🚀");
-          const ok = await enviarChamado(session.nome!, session.cpf!, setorAlvo, session.motivoAtual!);
+      case FlowState.COLETAR_SETOR:
+        const setor = SETORES.find(s => lowerInput.includes(s.toLowerCase()));
+        if (setor) {
+          const ok = await enviarChamado(session.nome || "Usuário", session.cpf || "", setor, session.motivoAtual || "");
           if (ok) {
-            await sendEvolutionText(instance, number, `✅ Chamado aberto com sucesso para ${setorAlvo}. Em breve entraremos em contato.`);
-            await saveMemoria(session.cpf!, session.nome!, `Nome: ${session.nome}. Último chamado: ${session.motivoAtual?.substring(0, 50)}...`);
+            await sendEvolutionText(instance, number, `✅ Chamado para ${setor} aberto com sucesso!`);
+            await saveMemoria(session.cpf!, session.nome!, `Último chamado: ${session.motivoAtual}`);
           } else {
-            await sendEvolutionText(instance, number, `Erro ao criar chamado. Tente pelo portal: ${LINK_PORTAL}`);
+            const ticket = generateRandomTicket();
+            await sendEvolutionText(instance, number, `Erro ao registrar. Use o portal: ${LINK_PORTAL}/chamados/${ticket}`);
           }
-          session.state = "menu_principal";
+          session.state = FlowState.MENU_PRINCIPAL;
         } else {
-          await sendEvolutionText(instance, number, `Setor não reconhecido. Escolha entre: ${SETORES.join(", ")}`);
+          await sendEvolutionText(instance, number, `Setor não reconhecido. Opções: ${SETORES.join(", ")}`);
         }
         break;
     }
 
     sessions.set(number, session);
     return NextResponse.json({ ok: true });
-  } catch {
+  } catch (error) {
+    console.error("Erro crítico:", error);
     return NextResponse.json({ ok: true });
   }
 }
