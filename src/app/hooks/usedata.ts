@@ -1,18 +1,24 @@
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://nolevel-bot.vercel.app";
 
-
-//buscar os avisos no banco
+// 1. Buscar os avisos no banco
 export async function buscarAvisos() {
   try {
-    const res = await fetch(`https://nolevel-bot.vercel.app/api/quadro-avisos`);
+    const res = await fetch(`${baseUrl}/api/quadro-avisos`, { cache: 'no-store' });
+    if (!res.ok) return "Sem avisos no momento.";
+    
     type Aviso = { titulo: string; conteudo: string };
     const data: Aviso[] = await res.json();
+    
     return data
       .map(a => `📢 *${a.titulo}*: ${a.conteudo}`)
       .join("\n") || "Sem avisos.";
-  } catch { return "Sem avisos no momento."; }
+  } catch (error) {
+    console.error("Erro buscarAvisos:", error);
+    return "Sem avisos no momento.";
+  }
 }
 
-//gerador de tickets
+// 2. Gerador de tickets
 export function generateRandomTicket() {
   const now = new Date();
   const dd = String(now.getDate()).padStart(2, "0");
@@ -21,103 +27,119 @@ export function generateRandomTicket() {
   const hh = String(now.getHours()).padStart(2, "0");
   const min = String(now.getMinutes()).padStart(2, "0");
   const ss = String(now.getSeconds()).padStart(2, "0");
-  const ms = String(now.getMilliseconds()).padStart(3, "0"); // milissegundos
+  const ms = String(now.getMilliseconds()).padStart(3, "0");
   return `TKT-${dd}${mm}${yy}${hh}${min}${ss}${ms}`;
 }
 
-//buscar memoria do bot
+// 3. Buscar memória do bot
 export async function getMemoria(cpf: string) {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://nolevel-bot.vercel.app";
     const res = await fetch(`${baseUrl}/api/memories?cpf=${cpf}`, { cache: 'no-store' });
-    return res.ok ? (await res.json())?.resumo : null;
-  } catch { return null; }
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.resumo || null;
+  } catch (error) {
+    console.error("Erro getMemoria:", error);
+    return null;
+  }
 }
 
-
-//salvar memoria do bot
+// 4. Salvar memória do bot
 export async function saveMemoria(cpf: string, nome: string, resumo: string) {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://nolevel-bot.vercel.app";
     await fetch(`${baseUrl}/api/memories`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ cpf, nome, resumo }),
     });
-  } catch { console.error("Erro ao salvar memória"); }
+  } catch (error) {
+    console.error("Erro saveMemoria:", error);
+  }
 }
 
-
-//saudação de acordo com o horario
+// 5. Saudação (Corrigida a lógica de retorno)
 export function saudacao() {
   const hora = new Date().getHours();
-
   if (hora >= 5 && hora < 12) return "Bom dia";
   if (hora >= 12 && hora < 18) return "Boa tarde";
-  if (hora >= 18 || hora < 5) return "Boa noite";
-  
-  return "Olá"; 
+  return "Boa noite";
 }
 
-
-//status dos chamados
+// 6. Status dos chamados
 export async function StatusChamado(filtro: string) {
   try {
     const isTicket = filtro.toUpperCase().includes("TKT") || filtro.length > 11;
     const param = isTicket ? `ticket=${filtro}` : `cpf=${filtro}`;
-    const url = `https://nolevel-bot.vercel.app/api/tickets?${param}`;
-    const response = await fetch(url, { method: "GET" });
-    if (!response.ok) return null;
-    return await response.json();
+    const res = await fetch(`${baseUrl}/api/tickets?${param}`, { cache: 'no-store' });
+    if (!res.ok) return null;
+    return await res.json();
   } catch (error) {
+    console.error("Erro StatusChamado:", error);
     return null;
   }
 }
 
-
-//enviar o chamado
+// 7. Enviar o chamado (Ajustado FormData)
 export async function enviarChamado(nome: string, cpf: string, setor: string, descricao: string) {
   try {
+    // Se a sua API espera JSON em vez de FormData, mude aqui. 
+    // Como você usou FormData, mantive, mas adicionei o ticket caso sua API exija.
     const formData = new FormData();
     formData.append('nome', nome);
     formData.append('cpf', cpf);
     formData.append('setor', setor);
     formData.append('descricao', descricao);
-    const res = await fetch(`https://nolevel-bot.vercel.app/api/tickets`, { method: "POST", body: formData });
+    formData.append('ticket', generateRandomTicket());
+
+    const res = await fetch(`${baseUrl}/api/tickets`, { 
+      method: "POST", 
+      body: formData 
+    });
     return res.ok;
-  } catch { return false; }
+  } catch (error) {
+    console.error("Erro enviarChamado:", error);
+    return false;
+  }
 }
 
+// 8. Enviar Evolution (WhatsApp)
 export async function sendEvolutionText(instance: string, number: string, text: string) {
-  const typingDelay = Math.min(Math.max(1000, text.length * 20), 3000);
-  await fetch(`${process.env.EVOLUTION_API_URL}/message/sendText/${instance}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", apikey: process.env.EVOLUTION_API_KEY! },
-    body: JSON.stringify({ number: number.replace("@s.whatsapp.net", ""), text, options: { delay: typingDelay, presence: "composing" } })
-  });
+  try {
+    const typingDelay = Math.min(Math.max(1000, text.length * 20), 3000);
+    const cleanNumber = number.replace(/\D/g, ""); // Remove @s.whatsapp.net etc
+
+    await fetch(`${process.env.EVOLUTION_API_URL}/message/sendText/${instance}`, {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json", 
+        apikey: process.env.EVOLUTION_API_KEY || "" 
+      },
+      body: JSON.stringify({ 
+        number: cleanNumber, 
+        text, 
+        options: { delay: typingDelay, presence: "composing" } 
+      })
+    });
+  } catch (error) {
+    console.error("Erro sendEvolutionText:", error);
+  }
 }
 
-
-
+// 9. Validar CPF (Sua rota GET)
 export async function validarCpf(cpf: string) {
   try {
     const cpfLimpo = cpf.replace(/\D/g, "");
-    
-    // Faz a chamada para a API com o parâmetro de busca
-    const res = await fetch(`/api/cpfs?cpf=${cpfLimpo}`, { 
+    if (!cpfLimpo) return { valido: false };
+
+    const res = await fetch(`${baseUrl}/api/cpfs?cpf=${cpfLimpo}`, { 
       cache: 'no-store',
       method: 'GET'
     });
 
-    // Se a API retornar 404 ou erro, o CPF não existe ou deu erro no banco
-    if (!res.ok) {
-      return { valido: false };
-    }
+    if (!res.ok) return { valido: false };
 
-    // Agora o retorno é um objeto direto: { valido: true, nome: "...", cpf: "..." }
     const dados = await res.json();
 
-    // Verificamos o campo 'valido' que injetamos na rota GET
     if (dados && dados.valido) {
       return { 
         valido: true, 
@@ -125,11 +147,9 @@ export async function validarCpf(cpf: string) {
         cpf: dados.cpf 
       };
     }
-
     return { valido: false };
-
   } catch (err) {
-    console.error("Erro ao validar CPF:", err);
-    return { valido: false, error: "Erro ao acessar a API" };
+    console.error("Erro validarCpf:", err);
+    return { valido: false, error: "Erro de conexão" };
   }
 }
