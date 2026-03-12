@@ -117,6 +117,7 @@ export async function POST(req: NextRequest) {
       case FlowState.IDENTIFICACAO_CPF: {
         const cleanCPF = userInput.replace(/\D/g, "");
         const isCpfValido = await validarCpf(cleanCPF);
+      
 
         if (cleanCPF.length === 11 && isCpfValido) {
           session.cpf = cleanCPF;

@@ -1,4 +1,4 @@
-import { WithStringifiedURLs } from "next/dist/lib/metadata/types/metadata-interface";
+
 
 //buscar os avisos no banco
 export async function buscarAvisos() {
@@ -102,17 +102,32 @@ export async function sendEvolutionText(instance: string, number: string, text: 
 export async function validarCpf(cpf: string) {
   try {
     const cpfLimpo = cpf.replace(/\D/g, "");
-    const res = await fetch(`https://nolevel-bot.vercel.app/api/cpfs`);
-    if (!res.ok) return { valido: false };
+    
+    // Faz a chamada para a API com o parâmetro de busca
+    const res = await fetch(`/api/cpfs?cpf=${cpfLimpo}`, { 
+      cache: 'no-store',
+      method: 'GET'
+    });
 
-    const todosCPFs: { nome: string; cpf: string }[] = await res.json();
-    const registro = todosCPFs.find(r => r.cpf === cpfLimpo);
-
-    if (registro) {
-      return { valido: true, nome: registro.nome, cpf: registro.cpf };
-    } else {
+    // Se a API retornar 404 ou erro, o CPF não existe ou deu erro no banco
+    if (!res.ok) {
       return { valido: false };
     }
+
+    // Agora o retorno é um objeto direto: { valido: true, nome: "...", cpf: "..." }
+    const dados = await res.json();
+
+    // Verificamos o campo 'valido' que injetamos na rota GET
+    if (dados && dados.valido) {
+      return { 
+        valido: true, 
+        nome: dados.nome, 
+        cpf: dados.cpf 
+      };
+    }
+
+    return { valido: false };
+
   } catch (err) {
     console.error("Erro ao validar CPF:", err);
     return { valido: false, error: "Erro ao acessar a API" };
