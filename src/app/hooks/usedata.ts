@@ -1,5 +1,5 @@
-import { WithStringifiedURLs } from "next/dist/lib/metadata/types/metadata-interface";
 
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://nolevel-bot.vercel.app";
 //buscar os avisos no banco
 export async function buscarAvisos() {
   try {
@@ -28,7 +28,7 @@ export function generateRandomTicket() {
 //buscar memoria do bot
 export async function getMemoria(cpf: string) {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://nolevel-bot.vercel.app";
+    
     const res = await fetch(`${baseUrl}/api/memories?cpf=${cpf}`, { cache: 'no-store' });
     return res.ok ? (await res.json())?.resumo : null;
   } catch { return null; }
@@ -102,7 +102,7 @@ export async function sendEvolutionText(instance: string, number: string, text: 
 export async function validarCpf(cpf: string) {
   try {
     const cpfLimpo = cpf.replace(/\D/g, "");
-    const res = await fetch(`https://nolevel-bot.vercel.app/api/cpfs`);
+    const res = await fetch(`{baseUrl}/api/cpfs?cpf=${cpfLimpo}`);
     if (!res.ok) return { valido: false };
 
     const todosCPFs: { nome: string; cpf: string }[] = await res.json();
