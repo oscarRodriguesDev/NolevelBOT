@@ -46,7 +46,7 @@ const LINK_PORTAL = `https://nolevel-bot.vercel.app`;
 async function hevelynIA(session: UserSession, userInput: string, instrucaoEtapa: string) {
   const avisos = await buscarAvisos();
   const statusAtual = session.cpf ? await StatusChamado(session.cpf) : "Nenhum CPF informado";
-  const cpfValido = session.cpf ? validarCpf(session.cpf) : false;
+
 
   try {
     const response = await openai.chat.completions.create({
@@ -60,7 +60,7 @@ async function hevelynIA(session: UserSession, userInput: string, instrucaoEtapa
             CONTEXTO:
             - Nome: ${session.nome || "Não identificado"}
             - CPF: ${session.cpf || "Não identificado"}
-            - CPF Válido: ${cpfValido ? "Sim" : "Não"}
+            - CPF Válido: ${ await validarCpf(session.cpf || "") } //tentar validar assim
             - Histórico: ${session.resumoHistorico || "Nenhum"}
             - Avisos: ${avisos || "Nenhum"}
             - Chamados: ${JSON.stringify(statusAtual)}

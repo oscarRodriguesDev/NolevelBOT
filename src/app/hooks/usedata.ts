@@ -102,7 +102,7 @@ export async function sendEvolutionText(instance: string, number: string, text: 
 export async function validarCpf(cpf: string) {
   try {
     const cpfLimpo = cpf.replace(/\D/g, "");
-    const res = await fetch(`{baseUrl}/api/cpfs?cpf=${cpfLimpo}`);
+    const res = await fetch(`${baseUrl}/api/cpfs?cpf=${cpfLimpo}`);
     if (!res.ok) return { valido: false };
 
     const todosCPFs: { nome: string; cpf: string }[] = await res.json();
