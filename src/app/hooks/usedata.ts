@@ -100,6 +100,7 @@ export async function sendEvolutionText(instance: string, number: string, text: 
 
 
 export async function validarCpf(cpf: string) {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://nolevel-bot.vercel.app";
   try {
     const cpfLimpo = cpf.replace(/\D/g, "");
     const res = await fetch(`${baseUrl}/api/cpfs?cpf=${cpfLimpo}`);
@@ -109,8 +110,9 @@ export async function validarCpf(cpf: string) {
     const registro = todosCPFs.find(r => r.cpf === cpfLimpo);
 
     if (registro) {
-      return { valido: true, nome: registro.nome, cpf: registro.cpf };
+      return { valido: true, cpf: registro.cpf };
     } else {
+      console.log("cpf valido");
       return { valido: false };
     }
   } catch (err) {

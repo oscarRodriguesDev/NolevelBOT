@@ -46,10 +46,11 @@ const LINK_PORTAL = `https://nolevel-bot.vercel.app`;
 async function hevelynIA(session: UserSession, userInput: string, instrucaoEtapa: string) {
   const avisos = await buscarAvisos();
   const statusAtual = session.cpf ? await StatusChamado(session.cpf) : "Nenhum CPF informado";
-
+   const cpf_valido = session.cpf ? await validarCpf(session.cpf) : { valido: false };
 
   try {
     const response = await openai.chat.completions.create({
+    
       model: "gpt-3.5-turbo",
       messages: [
         {
@@ -57,10 +58,11 @@ async function hevelynIA(session: UserSession, userInput: string, instrucaoEtapa
           content: `
             Você é a Hevelyn, atendente virtual da ${empresa}. 
             REGRAS: Nunca saia do papel. Seja empática. Priorize o CPF.
+            
+            Se apresente como um humano faria, usando a saudação : ${saudacao}.
             CONTEXTO:
             - Nome: ${session.nome || "Não identificado"}
             - CPF: ${session.cpf || "Não identificado"}
-            - CPF Válido: ${ await validarCpf(session.cpf || "") } //tentar validar assim
             - Histórico: ${session.resumoHistorico || "Nenhum"}
             - Avisos: ${avisos || "Nenhum"}
             - Chamados: ${JSON.stringify(statusAtual)}
@@ -74,6 +76,7 @@ async function hevelynIA(session: UserSession, userInput: string, instrucaoEtapa
       ],
       temperature: 0.5
     });
+    if(!cpf_valido.valido) response.choices[0].message.content = 'CPF inválido. Por favor, informe um CPF válido.'
     return response.choices[0].message.content || "Poderia repetir?";
   } catch (error) {
     console.error("Erro OpenAI:", error);
