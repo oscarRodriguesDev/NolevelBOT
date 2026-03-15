@@ -181,133 +181,239 @@ export default function Dashboard() {
   }
 
   return (
-   <div className="p-10 space-y-10 text-gray-900 dark:text-gray-100">
+    <div
+      className="px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-8 transition-colors duration-300"
+      style={{
+        backgroundColor: "var(--background)",
+        color: "var(--foreground)",
+      }}
+    >
+      {/* Header */}
+      <div className="space-y-2">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold" style={{ color: "var(--primary)" }}>
+          Dashboard de Chamados
+        </h1>
+        <p className="text-sm opacity-70">Visualize métricas e análises de desempenho do seu sistema</p>
+      </div>
 
-  <div className="flex gap-4">
-    <button onClick={() => setPeriodo("dia")} className="border px-3 py-1 dark:border-gray-700">Dia</button>
-    <button onClick={() => setPeriodo("semana")} className="border px-3 py-1 dark:border-gray-700">Semana</button>
-    <button onClick={() => setPeriodo("mes")} className="border px-3 py-1 dark:border-gray-700">Mes</button>
-    <button onClick={() => setPeriodo("ano")} className="border px-3 py-1 dark:border-gray-700">Ano</button>
-
-    <button onClick={downloadCSV} className="bg-blue-600 text-white px-4 py-2">
-      CSV
-    </button>
-
-    <button onClick={downloadPDF} className="bg-green-600 text-white px-4 py-2">
-      PDF
-    </button>
-  </div>
-
-  <div className="text-xl">
-    Tempo médio de resolução: {tempoMedio} horas
-  </div>
-
-  <div className="grid md:grid-cols-2 gap-10">
-
-    <div className="h-80 bg-white dark:bg-zinc-900 p-4 shadow rounded">
-      <h2 className="mb-4">Chamados abertos por setor</h2>
-
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chamadosPorSetor}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgb(156 163 175 / 0.3)" />
-          <XAxis dataKey="setor" stroke="currentColor" />
-          <YAxis stroke="currentColor" />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "rgb(24 24 27)",
-              border: "none",
-              color: "#fff"
-            }}
-          />
-          <Bar dataKey="total" />
-        </BarChart>
-      </ResponsiveContainer>
-
-    </div>
-
-    <div className="h-80 bg-white dark:bg-zinc-900 p-4 shadow rounded">
-
-      <h2 className="mb-4">Chamados por {periodo}</h2>
-
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={chamadosPeriodo}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgb(156 163 175 / 0.3)" />
-          <XAxis dataKey="periodo" stroke="currentColor" />
-          <YAxis stroke="currentColor" />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "rgb(24 24 27)",
-              border: "none",
-              color: "#fff"
-            }}
-          />
-          <Line dataKey="total" strokeWidth={2} />
-        </LineChart>
-      </ResponsiveContainer>
-
-    </div>
-
-  </div>
-
-  <div className="grid md:grid-cols-2 gap-10">
-
-    <div className="h-80 bg-white dark:bg-zinc-900 p-4 shadow rounded">
-
-      <h2 className="mb-4">Motivos de chamados</h2>
-
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "rgb(24 24 27)",
-              border: "none",
-              color: "#fff"
-            }}
-          />
-          <Pie
-            data={motivosStats}
-            dataKey="total"
-            nameKey="motivo"
-            outerRadius={120}
-            label
-          >
-            {motivosStats.map((_, i) => (
-              <Cell key={i} />
-            ))}
-          </Pie>
-        </PieChart>
-      </ResponsiveContainer>
-
-    </div>
-
-    <div className="bg-white dark:bg-zinc-900 p-4 shadow rounded overflow-auto">
-
-      <h2 className="mb-4">Ranking motivos</h2>
-
-      <table className="w-full border border-gray-200 dark:border-gray-700">
-
-        <thead className="bg-gray-100 dark:bg-zinc-800">
-          <tr>
-            <th className="border p-2 dark:border-gray-700">Motivo</th>
-            <th className="border p-2 dark:border-gray-700">Total</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {motivosStats.map((m) => (
-            <tr key={m.motivo}>
-              <td className="border p-2 dark:border-gray-700">{m.motivo}</td>
-              <td className="border p-2 dark:border-gray-700">{m.total}</td>
-            </tr>
+      {/* Filtros de Período */}
+      <div className="flex flex-wrap gap-2 sm:gap-3">
+        <div className="flex gap-2 sm:gap-3">
+          {(['dia', 'semana', 'mes', 'ano'] as const).map((p) => (
+            <button
+              key={p}
+              onClick={() => setPeriodo(p)}
+              className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-all duration-300 capitalize text-xs sm:text-sm ${
+                periodo === p ? 'text-white' : ''
+              }`}
+              style={{
+                backgroundColor: periodo === p ? 'var(--primary)' : 'var(--surface)',
+                borderColor: 'var(--border-subtle)',
+                color: periodo === p ? 'white' : 'var(--foreground)',
+                border: '1px solid',
+              }}
+            >
+              {p}
+            </button>
           ))}
-        </tbody>
+        </div>
 
-      </table>
+        <div className="flex gap-2 sm:gap-3 ml-auto">
+          <button
+            onClick={downloadCSV}
+            className="px-3 sm:px-4 py-2 rounded-lg font-medium text-white transition-all duration-300 hover:scale-105 active:scale-95 text-xs sm:text-sm"
+            style={{ backgroundColor: "var(--status-completed)" }}
+          >
+            CSV
+          </button>
 
+          <button
+            onClick={downloadPDF}
+            className="px-3 sm:px-4 py-2 rounded-lg font-medium text-white transition-all duration-300 hover:scale-105 active:scale-95 text-xs sm:text-sm"
+            style={{ backgroundColor: "var(--status-in-progress)" }}
+          >
+            PDF
+          </button>
+        </div>
+      </div>
+
+      {/* Métrica Principal */}
+      <div
+        className="p-4 sm:p-6 rounded-2xl border shadow-lg"
+        style={{
+          backgroundColor: "var(--surface)",
+          borderColor: "var(--border-subtle)",
+        }}
+      >
+        <p className="text-xs sm:text-sm opacity-70 mb-2">Tempo Médio de Resolução</p>
+        <p className="text-2xl sm:text-3xl lg:text-4xl font-bold" style={{ color: "var(--primary)" }}>
+          {tempoMedio} <span className="text-base sm:text-lg opacity-70">horas</span>
+        </p>
+      </div>
+
+      {/* Gráficos Principais */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+        {/* Gráfico de Barras */}
+        <div
+          className="rounded-2xl border shadow-lg p-4 sm:p-6 transition-colors duration-300"
+          style={{
+            backgroundColor: "var(--surface)",
+            borderColor: "var(--border-subtle)",
+          }}
+        >
+          <h2 className="text-lg sm:text-xl font-bold mb-4" style={{ color: "var(--primary)" }}>
+            Chamados Abertos por Setor
+          </h2>
+
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={chamadosPorSetor}>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="var(--border-subtle)"
+              />
+              <XAxis dataKey="setor" stroke="var(--foreground)" style={{ fontSize: '12px' }} />
+              <YAxis stroke="var(--foreground)" style={{ fontSize: '12px' }} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "var(--surface-elevated)",
+                  border: "1px solid var(--border-subtle)",
+                  color: "var(--foreground)",
+                  borderRadius: '8px',
+                }}
+              />
+              <Bar dataKey="total" fill="var(--primary)" radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Gráfico de Linhas */}
+        <div
+          className="rounded-2xl border shadow-lg p-4 sm:p-6 transition-colors duration-300"
+          style={{
+            backgroundColor: "var(--surface)",
+            borderColor: "var(--border-subtle)",
+          }}
+        >
+          <h2 className="text-lg sm:text-xl font-bold mb-4" style={{ color: "var(--primary)" }}>
+            Chamados por {periodo === 'dia' ? 'Dia' : periodo === 'semana' ? 'Semana' : periodo === 'mes' ? 'Mês' : 'Ano'}
+          </h2>
+
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={chamadosPeriodo}>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="var(--border-subtle)"
+              />
+              <XAxis dataKey="periodo" stroke="var(--foreground)" style={{ fontSize: '12px' }} />
+              <YAxis stroke="var(--foreground)" style={{ fontSize: '12px' }} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "var(--surface-elevated)",
+                  border: "1px solid var(--border-subtle)",
+                  color: "var(--foreground)",
+                  borderRadius: '8px',
+                }}
+              />
+              <Line
+                dataKey="total"
+                stroke="var(--primary)"
+                strokeWidth={2}
+                dot={{ fill: "var(--primary)", r: 4 }}
+                activeDot={{ r: 6 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Gráfico de Pizza e Tabela */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+        {/* Gráfico de Pizza */}
+        <div
+          className="rounded-2xl border shadow-lg p-4 sm:p-6 transition-colors duration-300"
+          style={{
+            backgroundColor: "var(--surface)",
+            borderColor: "var(--border-subtle)",
+          }}
+        >
+          <h2 className="text-lg sm:text-xl font-bold mb-4" style={{ color: "var(--primary)" }}>
+            Motivos de Chamados
+          </h2>
+
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "var(--surface-elevated)",
+                  border: "1px solid var(--border-subtle)",
+                  color: "var(--foreground)",
+                  borderRadius: '8px',
+                }}
+              />
+              <Pie
+                data={motivosStats}
+                dataKey="total"
+                nameKey="motivo"
+                outerRadius={100}
+                label={{ fill: 'var(--foreground)', fontSize: 12 }}
+              >
+                {motivosStats.map((_, i) => (
+                  <Cell
+                    key={i}
+                    fill={[
+                      'var(--primary)',
+                      'var(--accent-secondary)',
+                      'var(--status-completed)',
+                      'var(--status-waiting)',
+                      'var(--status-in-progress)',
+                      'var(--status-new)',
+                    ][i % 6]}
+                  />
+                ))}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Tabela de Ranking */}
+        <div
+          className="rounded-2xl border shadow-lg p-4 sm:p-6 transition-colors duration-300 overflow-auto"
+          style={{
+            backgroundColor: "var(--surface)",
+            borderColor: "var(--border-subtle)",
+          }}
+        >
+          <h2 className="text-lg sm:text-xl font-bold mb-4" style={{ color: "var(--primary)" }}>
+            Ranking de Motivos
+          </h2>
+
+          <table className="w-full text-sm">
+            <thead>
+              <tr style={{ borderBottom: '2px solid var(--border-subtle)' }}>
+                <th className="text-left p-3 font-semibold">Motivo</th>
+                <th className="text-right p-3 font-semibold">Total</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {motivosStats.map((m, i) => (
+                <tr
+                  key={m.motivo}
+                  style={{
+                    borderBottom: '1px solid var(--border-subtle)',
+                    backgroundColor: i % 2 === 0 ? 'transparent' : 'var(--surface-elevated)',
+                  }}
+                >
+                  <td className="p-3">{m.motivo}</td>
+                  <td className="text-right p-3 font-semibold" style={{ color: "var(--primary)" }}>
+                    {m.total}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
-
-  </div>
-
-</div>
   )
 }
