@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { LuChevronDown, LuMenu, LuX, LuTickets, LuBell, LuUsers, LuHome } from 'react-icons/lu'
+import { LuChevronDown, LuMenu, LuX, LuTickets, LuBell, LuUsers, LuHouse } from 'react-icons/lu'
 
 export function Sidebar() {
   const pathname = usePathname()
@@ -13,7 +13,7 @@ export function Sidebar() {
     {
       label: 'Dashboard',
       href: '/',
-      icon: LuHome,
+      icon: LuHouse,
     },
     {
       label: 'Chamados',
