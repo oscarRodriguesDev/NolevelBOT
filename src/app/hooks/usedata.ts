@@ -98,25 +98,35 @@ export async function sendEvolutionText(instance: string, number: string, text: 
 }
 
 
-
 export async function validarCpf(cpf: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://nolevel-bot.vercel.app";
   try {
     const cpfLimpo = cpf.replace(/\D/g, "");
-    const res = await fetch(`${baseUrl}/api/cpfs?cpf=${cpfLimpo}`);
+    if (!cpfLimpo) return { valido: false };
+
+    const res = await fetch(`https://nolevel-bot.vercel.app/api/cpfs?cpf=${cpfLimpo}`);
+
     if (!res.ok) return { valido: false };
 
-    const todosCPFs: { nome: string; cpf: string }[] = await res.json();
-    const registro = todosCPFs.find(r => r.cpf === cpfLimpo);
+    const data = await res.json();
 
-    if (registro) {
-      return { valido: true, cpf: registro.cpf };
-    } else {
-      console.log("cpf valido");
-      return { valido: false };
+    // Lógica para lidar tanto com Array quanto com Objeto único
+    if (Array.isArray(data)) {
+      const registro = data.find(r => r.cpf.replace(/\D/g, "") === cpfLimpo);
+      if (registro) {
+        return { valido: true, nome: registro.nome, cpf: registro.cpf };
+      }
+    } else if (data && data.valido) {
+      // Se a API já retorna o objeto no formato {"valido": true, ...}
+      return {
+        valido: true,
+        nome: data.nome,
+        cpf: data.cpf
+      };
     }
+
+    return { valido: false };
   } catch (err) {
-    console.error("Erro ao validar CPF:", err);
-    return { valido: false, error: "Erro ao acessar a API" };
+    console.error("Erro ao validar CPF na API:", err);
+    return { valido: false };
   }
 }
