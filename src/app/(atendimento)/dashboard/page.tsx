@@ -1,6 +1,6 @@
 'use client'
 
-import { LuTrendingUp, LuClock, LuCheckCircle, LuAlertCircle } from 'react-icons/lu'
+import { LuTrendingUp, LuClock, LuCheck, LuAlertTriangle } from 'react-icons/lu'
 
 // Dados Mock
 const mockMetrics = {
@@ -93,13 +93,13 @@ export default function DashboardPage() {
         <KPICard
           title="Chamados Abertos"
           value={mockMetrics.openTickets}
-          icon={LuAlertCircle}
+          icon={LuAlertTriangle}
           color="var(--status-waiting)"
         />
         <KPICard
           title="Chamados Concluídos"
           value={mockMetrics.closedTickets}
-          icon={LuCheckCircle}
+          icon={LuCheck}
           color="var(--status-completed)"
         />
         <KPICard
