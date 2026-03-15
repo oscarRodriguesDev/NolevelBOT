@@ -12,7 +12,7 @@ export function Sidebar() {
   const menuItems = [
     {
       label: 'Dashboard',
-      href: '/',
+      href: '/dashboards',
       icon: LuHouse,
     },
     {

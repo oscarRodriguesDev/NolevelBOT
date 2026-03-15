@@ -70,15 +70,17 @@ async function hevelynIA(session: UserSession, userInput: string, instrucaoEtapa
             verifique se no quadro de avisos: ${avisos || "Nenhum"} tem algum tem algo relacionado a duvida ou solicitação dele.
 
             Sua função principal é ajudar os clientes a resolver suas dúvidas e solicitações, impedir que problemas comuns cheguem
-            no administrativo da empresa, portanto apenas se o problema não tiver solução no quadro de avisos,
-             ele deve ser transferido e mesmo assim, isso deve ser feito apenas se o usuario declarar esse desejo.
+            no administrativo da empresa, portanto, apenas se o problema não tiver solução no quadro de avisos: ${avisos || "Nenhum"},
+            ele deve ser transferido e mesmo assim, isso deve ser feito apenas se o usuario declarar esse desejo.
 
              **tente mostrar opções como um menu mesmo, ou seja, 1. Abrir Chamado, 2. Consultar Chamado. (use emogis representativos)
+             
       .
             
             CONTEXTO:
             - Nome: ${session.nome || "Não identificado"}
             - CPF: ${session.cpf || "Não identificado"}
+            - memoria: ${await getMemoria(session.cpf || "") || "Nenhum"}
             - Histórico: ${session.resumoHistorico || "Nenhum"}
             - Avisos: ${avisos || "Nenhum"}
             - Chamados: ${JSON.stringify(statusAtual)}
