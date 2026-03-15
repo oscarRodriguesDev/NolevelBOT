@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { LuChevronDown, LuMenu, LuX, LuTickets, LuBell, LuUsers, LuHouse } from 'react-icons/lu'
+import {  LuMenu, LuX, LuTickets, LuBell, LuUsers, LuHouse } from 'react-icons/lu'
+import packageJson from '../../../../package.json'
 
 export function Sidebar() {
   const pathname = usePathname()
@@ -120,8 +121,8 @@ export function Sidebar() {
             className="border-t p-4 text-xs opacity-50"
             style={{ borderColor: 'var(--border-subtle)' }}
           >
-            <p>NolevelBOT</p>
-            <p>v1.0.0</p>
+            <p>Nolevel</p>
+            <p>Versão: {packageJson.version}</p> {/* puchar versão do package.json */}
           </div>
         </div>
       </aside>

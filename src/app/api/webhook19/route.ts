@@ -140,28 +140,25 @@ export async function POST(req: NextRequest) {
       case FlowState.IDENTIFICACAO_CPF: {
         const cleanCPF = userInput.replace(/\D/g, "");
 
-        // Feedback visual para o usuário saber que está processando
         const resCpf = await validarCpf(cleanCPF);
 
         if (resCpf && resCpf.valido) {
           session.cpf = cleanCPF;
-          // Prioriza o nome vindo da API
           session.nome = resCpf.nome;
 
           if (session.nome) {
-            await sendEvolutionText(instance, number, `Que bom ter você de volta, *${session.nome}*!\n\nComo posso ajudar hoje?\n\n${menuString}`);
+            await sendEvolutionText(instance, number, `Ola, *${session.nome}*!\n\nComo posso ajudar hoje?\n\n${menuString}`);
             session.state = FlowState.MENU_PRINCIPAL;
           } else {
             await sendEvolutionText(instance, number, "CPF validado com sucesso! Como devo te chamar?");
             session.state = FlowState.IDENTIFICACAO_NOME;
           }
         } else {
-          // Se a API retornar falso, avisa o usuário
           await sendEvolutionText(instance, number, "❌ CPF não encontrado ou não cadastrado. Por favor, digite um CPF válido (apenas números):");
-          // Mantém o estado IDENTIFICACAO_CPF para ele tentar de novo
         }
         break;
       }
+
       case FlowState.IDENTIFICACAO_NOME:
         session.nome = userInput;
         session.state = FlowState.MENU_PRINCIPAL;
@@ -171,22 +168,58 @@ export async function POST(req: NextRequest) {
 
       case FlowState.MENU_PRINCIPAL:
         if (["1", "abrir"].some(v => lowerInput.includes(v))) {
+
+          const avisos = await buscarAvisos();
+
+          if (avisos && avisos.length > 0) {
+            const prompt = `
+O usuário deseja abrir um chamado.
+
+Mensagem do usuário:
+${userInput}
+
+Avisos atuais do sistema:
+${JSON.stringify(avisos)}
+
+Verifique se algum aviso pode estar relacionado ao possível problema do usuário. se sim informe sobre o aviso, 
+, pergunte se era so isso, e caso ele expresse literalmente desejo de abrir chamado faça-o para ele 
+`;
+
+            const analise = await openai.chat.completions.create({
+              model: "gpt-4.1-mini",
+              messages: [{ role: "user", content: prompt }]
+            });
+
+            const resposta = analise.choices[0].message.content || "";
+
+            if (!resposta.includes("SEM_AVISO")) {
+              await sendEvolutionText(
+                instance,
+                number,
+                `${resposta}\n\nCaso o problema continue, descreva o motivo do chamado para que eu possa ajudar.`
+              );
+            }
+          }
+
           session.state = FlowState.COLETAR_MOTIVO;
           await sendEvolutionText(instance, number, "Entendido. Descreva o motivo do chamado detalhadamente para que eu possa ajudar.");
+
         } else if (["2", "status", "consultar"].some(v => lowerInput.includes(v))) {
+
           const status = await StatusChamado(session.cpf || "");
+
           if (status && status.length > 0) {
             const lista = status.map((t: Chamado) => `🎫 Ticket: ${t.ticket}\n📊 Status: ${t.status}`).join("\n\n");
             await sendEvolutionText(instance, number, `Aqui estão seus chamados ativos:\n\n${lista}\n\nPosso ajudar em algo mais?`);
           } else {
             await sendEvolutionText(instance, number, "Não encontrei nenhum chamado aberto para você no momento.");
           }
-        } else if (["3", "aviso"].some(v => lowerInput.includes(v))) {
-          const avisos = await buscarAvisos();
-          await sendEvolutionText(instance, number, `📢 *Quadro de Avisos*:\n\n${avisos || "Sem avisos no momento."}\n\nO que mais deseja fazer?`);
+
         } else {
+
           const respLivre = await hevelynIA(session, userInput, "Responda a dúvida de forma empática e reforce as opções do menu.");
           await sendEvolutionText(instance, number, respLivre);
+
         }
         break;
 
@@ -208,8 +241,10 @@ export async function POST(req: NextRequest) {
 
       case FlowState.COLETAR_SETOR:
         const setor = SETORES.find(s => lowerInput.includes(s.toLowerCase()));
+
         if (setor) {
           const ok = await enviarChamado(session.nome || "Usuário", session.cpf || "", setor, session.motivoAtual || "");
+
           if (ok) {
             await sendEvolutionText(instance, number, `✅ Sucesso! Seu chamado para o setor *${setor}* foi registrado.`);
             await saveMemoria(session.cpf!, session.nome!, `Último chamado aberto para: ${setor}`);
@@ -217,15 +252,20 @@ export async function POST(req: NextRequest) {
             const ticketErr = generateRandomTicket();
             await sendEvolutionText(instance, number, `Houve um erro no sistema, mas você pode abrir direto pelo portal: ${LINK_PORTAL}/chamado/${ticketErr}`);
           }
+
           session.state = FlowState.MENU_PRINCIPAL;
+
         } else {
+
           await sendEvolutionText(instance, number, `Setor não reconhecido. Por favor, escolha um destes: ${SETORES.join(", ")}`);
+
         }
         break;
     }
 
     sessions.set(number, session);
     return NextResponse.json({ ok: true });
+
   } catch (error) {
     console.error("Erro crítico no webhook:", error);
     return NextResponse.json({ ok: true });
