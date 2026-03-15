@@ -12,7 +12,7 @@ export function Sidebar() {
   const menuItems = [
     {
       label: 'Dashboard',
-      href: '/',
+      href: '/dashboard',
       icon: LuHouse,
     },
     {
@@ -33,8 +33,7 @@ export function Sidebar() {
   ]
 
   const isActive = (href: string) => {
-    if (href === '/') return pathname === '/'
-    return pathname.includes(href)
+    return pathname.includes(href.replace('/', ''))
   }
 
   return (
