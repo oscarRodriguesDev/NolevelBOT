@@ -25,6 +25,7 @@ const FlowState = {
   IDENTIFICACAO_NOME: "identificacao_nome",
   MENU_PRINCIPAL: "menu_principal",
   COLETAR_MOTIVO: "coletar_motivo",
+  VERIFICAR_AVISOS: "verificar_aviso",
   ESCOLHER_ABERTURA: "escolher_abertura",
   COLETAR_SETOR: "coletar_setor"
 } as const;
@@ -100,10 +101,6 @@ async function hevelynIA(session: UserSession, userInput: string, instrucaoEtapa
   }
 }
 
-
-
-
-
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -114,32 +111,43 @@ export async function POST(req: NextRequest) {
 
     const number = data.key.remoteJid;
     const instance = body.instance;
-    const userInput = (data.message.conversation || data.message.extendedTextMessage?.text || "").trim();
+
+    const userInput = (
+      data.message.conversation ||
+      data.message.extendedTextMessage?.text ||
+      ""
+    ).trim();
+
     const lowerInput = userInput.toLowerCase();
 
     let session = sessions.get(number);
-    if (!session || (Date.now() - session.lastInteraction > 1000 * 60 * 60 * 2)) {
+
+    if (!session || Date.now() - session.lastInteraction > 1000 * 60 * 60 * 2) {
       session = { state: FlowState.INICIO, lastInteraction: Date.now() };
       sessions.set(number, session);
     }
+
     session.lastInteraction = Date.now();
 
-    if (["sair", "encerrar", "cancelar"].some(word => lowerInput === word)) {
-      await sendEvolutionText(instance, number, "Atendimento encerrado. 👋");
+    if (["sair", "encerrar", "cancelar"].includes(lowerInput)) {
+      await sendEvolutionText(instance, number, "Atendimento encerrado.");
       sessions.delete(number);
       return NextResponse.json({ ok: true });
     }
 
     switch (session.state) {
-      case FlowState.INICIO:
-        const msgInicio = await hevelynIA(session, userInput, "Apresente-se e peça o CPF.");
-        await sendEvolutionText(instance, number, msgInicio);
+      case FlowState.INICIO: {
+        await sendEvolutionText(
+          instance,
+          number,
+          "Olá! Eu sou a Hevelyn.\n\nPara começar, informe seu CPF."
+        );
         session.state = FlowState.IDENTIFICACAO_CPF;
         break;
+      }
 
       case FlowState.IDENTIFICACAO_CPF: {
         const cleanCPF = userInput.replace(/\D/g, "");
-
         const resCpf = await validarCpf(cleanCPF);
 
         if (resCpf && resCpf.valido) {
@@ -147,125 +155,166 @@ export async function POST(req: NextRequest) {
           session.nome = resCpf.nome;
 
           if (session.nome) {
-            await sendEvolutionText(instance, number, `Ola, *${session.nome}*!\n\nComo posso ajudar hoje?\n\n${menuString}`);
+            await sendEvolutionText(
+              instance,
+              number,
+              `Olá, *${session.nome}*!\n\n${menuString}`
+            );
             session.state = FlowState.MENU_PRINCIPAL;
           } else {
-            await sendEvolutionText(instance, number, "CPF validado com sucesso! Como devo te chamar?");
+            await sendEvolutionText(
+              instance,
+              number,
+              "CPF validado. Como devo te chamar?"
+            );
             session.state = FlowState.IDENTIFICACAO_NOME;
           }
         } else {
-          await sendEvolutionText(instance, number, "❌ CPF não encontrado ou não cadastrado. Por favor, digite um CPF válido (apenas números):");
+          await sendEvolutionText(
+            instance,
+            number,
+            "CPF não encontrado. Digite novamente apenas números."
+          );
         }
         break;
       }
 
-      case FlowState.IDENTIFICACAO_NOME:
+      case FlowState.IDENTIFICACAO_NOME: {
         session.nome = userInput;
+        await sendEvolutionText(
+          instance,
+          number,
+          `Prazer, *${session.nome}*.\n\n${menuString}`
+        );
         session.state = FlowState.MENU_PRINCIPAL;
-        const msgNome = await hevelynIA(session, userInput, `Apresente o menu e pergunte como ajudar: ${menuString}`);
-        await sendEvolutionText(instance, number, msgNome);
         break;
+      }
 
-      case FlowState.MENU_PRINCIPAL:
+      case FlowState.MENU_PRINCIPAL: {
         if (["1", "abrir"].some(v => lowerInput.includes(v))) {
-
-          const avisos = await buscarAvisos();
-
-          if (avisos && avisos.length > 0) {
-            const prompt = `
-O usuário deseja abrir um chamado.
-
-Mensagem do usuário:
-${userInput}
-
-Avisos atuais do sistema:
-${JSON.stringify(avisos)}
-
-Verifique se algum aviso pode estar relacionado ao possível problema do usuário. se sim informe sobre o aviso, 
-, pergunte se era so isso, e caso ele expresse literalmente desejo de abrir chamado faça-o para ele 
-`;
-
-            const analise = await openai.chat.completions.create({
-              model: "gpt-4.1-mini",
-              messages: [{ role: "user", content: prompt }]
-            });
-
-            const resposta = analise.choices[0].message.content || "";
-
-            if (!resposta.includes("SEM_AVISO")) {
-              await sendEvolutionText(
-                instance,
-                number,
-                `${resposta}\n\nCaso o problema continue, descreva o motivo do chamado para que eu possa ajudar.`
-              );
-            }
-          }
-
+          await sendEvolutionText(
+            instance,
+            number,
+            "Por favor, descreva o motivo do seu chamado da forma mais detalhada possível."
+          );
           session.state = FlowState.COLETAR_MOTIVO;
-          await sendEvolutionText(instance, number, "Entendido. Descreva o motivo do chamado detalhadamente para que eu possa ajudar.");
-
-        } else if (["2", "status", "consultar"].some(v => lowerInput.includes(v))) {
-
+        } 
+        else if (["2", "status", "consultar"].some(v => lowerInput.includes(v))) {
           const status = await StatusChamado(session.cpf || "");
-
           if (status && status.length > 0) {
-            const lista = status.map((t: Chamado) => `🎫 Ticket: ${t.ticket}\n📊 Status: ${t.status}`).join("\n\n");
-            await sendEvolutionText(instance, number, `Aqui estão seus chamados ativos:\n\n${lista}\n\nPosso ajudar em algo mais?`);
+            const lista = status
+              .map((t: any) => `*Ticket:* ${t.ticket}\n*Status:* ${t.status}`)
+              .join("\n\n");
+            await sendEvolutionText(instance, number, lista);
           } else {
-            await sendEvolutionText(instance, number, "Não encontrei nenhum chamado aberto para você no momento.");
+            await sendEvolutionText(instance, number, "Nenhum chamado encontrado.");
           }
-
-        } else {
-
-          const respLivre = await hevelynIA(session, userInput, "Responda a dúvida de forma empática e reforce as opções do menu.");
-          await sendEvolutionText(instance, number, respLivre);
-
-        }
-        break;
-
-      case FlowState.COLETAR_MOTIVO:
-        session.motivoAtual = userInput;
-        session.state = FlowState.ESCOLHER_ABERTURA;
-        await sendEvolutionText(instance, number, "Deseja que eu abra o chamado com essas informações agora?\n\n1. ✅ Sim, abrir agora\n2. ❌ Não, cancelar e voltar");
-        break;
-
-      case FlowState.ESCOLHER_ABERTURA:
-        if (["1", "sim"].some(v => lowerInput.includes(v))) {
-          session.state = FlowState.COLETAR_SETOR;
-          await sendEvolutionText(instance, number, `Certo! Para qual setor deseja enviar?\n\nOpções: ${SETORES.join(", ")}`);
-        } else {
           session.state = FlowState.MENU_PRINCIPAL;
-          await sendEvolutionText(instance, number, "Sem problemas. Chamado não foi aberto. Como posso te ajudar agora?");
+        } else {
+          await sendEvolutionText(instance, number, "Não entendi. Escolha uma das opções do menu.");
         }
         break;
+      }
 
-      case FlowState.COLETAR_SETOR:
+      case FlowState.COLETAR_MOTIVO: {
+        session.motivoAtual = userInput;
+
+        // --- VERIFICAÇÃO SILENCIOSA DE AVISOS ---
+        const avisos = await buscarAvisos();
+        let avisoEncontrado = false;
+
+        if (avisos && avisos.length > 0) {
+          const prompt = `
+            O usuário quer abrir um chamado com o seguinte relato: "${userInput}"
+            
+            Existem estes avisos internos no sistema:
+            ${JSON.stringify(avisos)}
+
+            Analise se algum aviso resolve ou explica o problema do usuário.
+            - Se houver relação: Explique o que está acontecendo de forma prestativa, aja como se você já soubesse da informação. Termine perguntando: "Mesmo assim, você ainda deseja abrir um novo chamado? (1. Sim / 2. Não)"
+            - Se NÃO houver relação: Responda apenas a palavra: SEM_AVISO
+            
+            IMPORTANTE: Nunca mencione "quadro de avisos", "sistema de alertas" ou "base de dados". Fale como se fosse um conhecimento seu.
+          `;
+
+          const analise = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [{ role: "user", content: prompt }]
+          });
+
+          const respostaIA = analise.choices[0].message.content || "";
+
+          if (!respostaIA.includes("SEM_AVISO")) {
+            await sendEvolutionText(instance, number, respostaIA);
+            session.state = FlowState.VERIFICAR_AVISOS;
+            avisoEncontrado = true;
+          }
+        }
+
+        // Se nenhum aviso foi relevante, segue o fluxo normal
+        if (!avisoEncontrado) {
+          await sendEvolutionText(
+            instance,
+            number,
+            `Entendido. Para qual setor deseja encaminhar este chamado?\n\n*Setores:* ${SETORES.join(", ")}`
+          );
+          session.state = FlowState.COLETAR_SETOR;
+        }
+        break;
+      }
+
+      case FlowState.VERIFICAR_AVISOS: {
+        // Se o usuário insistir após o aviso ou disser sim
+        if (["1", "sim", "quero"].some(v => lowerInput.includes(v))) {
+          await sendEvolutionText(
+            instance,
+            number,
+            `Ok, vamos prosseguir. Para qual setor deseja encaminhar?\n\n*Setores:* ${SETORES.join(", ")}`
+          );
+          session.state = FlowState.COLETAR_SETOR;
+        } else {
+          await sendEvolutionText(
+            instance,
+            number,
+            "Perfeito. Fico à disposição se precisar de algo mais!\n\n" + menuString
+          );
+          session.state = FlowState.MENU_PRINCIPAL;
+        }
+        break;
+      }
+
+      case FlowState.COLETAR_SETOR: {
         const setor = SETORES.find(s => lowerInput.includes(s.toLowerCase()));
 
         if (setor) {
-          const ok = await enviarChamado(session.nome || "Usuário", session.cpf || "", setor, session.motivoAtual || "");
+          const ok = await enviarChamado(
+            session.nome || "Usuário",
+            session.cpf || "",
+            setor,
+            session.motivoAtual || ""
+          );
 
           if (ok) {
-            await sendEvolutionText(instance, number, `✅ Sucesso! Seu chamado para o setor *${setor}* foi registrado.`);
-            await saveMemoria(session.cpf!, session.nome!, `Último chamado aberto para: ${setor}`);
+            await sendEvolutionText(instance, number, `✅ Chamado aberto com sucesso para o setor *${setor}*!`);
           } else {
             const ticketErr = generateRandomTicket();
-            await sendEvolutionText(instance, number, `Houve um erro no sistema, mas você pode abrir direto pelo portal: ${LINK_PORTAL}/chamado/${ticketErr}`);
+            await sendEvolutionText(instance, number, `Houve um problema na integração, mas seu protocolo manual é: ${ticketErr}`);
           }
-
           session.state = FlowState.MENU_PRINCIPAL;
-
+          await sendEvolutionText(instance, number, menuString);
         } else {
-
-          await sendEvolutionText(instance, number, `Setor não reconhecido. Por favor, escolha um destes: ${SETORES.join(", ")}`);
-
+          await sendEvolutionText(
+            instance,
+            number,
+            `Setor não reconhecido. Por favor, escolha um destes: ${SETORES.join(", ")}`
+          );
         }
         break;
+      }
     }
 
     sessions.set(number, session);
     return NextResponse.json({ ok: true });
-
   } catch (error) {
     console.error("Erro crítico no webhook:", error);
     return NextResponse.json({ ok: true });
