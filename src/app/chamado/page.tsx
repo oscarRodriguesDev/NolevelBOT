@@ -119,9 +119,16 @@ export default function TicketPageDirect() {
       <ThemeToggle />
       <Header />
 
-      <div className="max-w-md mx-auto px-4">
+      <div className="max-w-2xl mx-auto">
+        <div className="space-y-2 mb-8">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold" style={{ color: "var(--primary)" }}>
+            Criar Novo Chamado
+          </h2>
+          <p className="text-sm opacity-70">Preencha os campos abaixo para registrar uma solicitação</p>
+        </div>
+
         <div
-          className="rounded-3xl p-8 border shadow-2xl transition-colors duration-300"
+          className="rounded-2xl p-6 sm:p-8 border shadow-lg transition-colors duration-300"
           style={{
             backgroundColor: "var(--surface)",
             borderColor: "var(--border-subtle)",
@@ -129,8 +136,8 @@ export default function TicketPageDirect() {
         >
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-widest mb-2 opacity-75">
-                Nome
+              <label className="block text-sm font-semibold mb-2">
+                Nome Completo
               </label>
               <input
                 type="text"
@@ -138,18 +145,19 @@ export default function TicketPageDirect() {
                 value={formData.nome}
                 onChange={handleChange}
                 required
-                className="w-full px-5 py-4 border rounded-2xl outline-none transition-colors duration-300"
+                className="w-full px-4 py-3 border rounded-lg outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
                 style={{
                   backgroundColor: "var(--surface-elevated)",
                   borderColor: "var(--border-subtle)",
                   color: "var(--foreground)",
-                }}
+                  "--tw-ring-color": "var(--primary)",
+                } as any}
                 placeholder="Digite seu nome completo"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-widest mb-2 opacity-75">
+              <label className="block text-sm font-semibold mb-2">
                 CPF
               </label>
               <input
@@ -160,31 +168,33 @@ export default function TicketPageDirect() {
                 required
                 pattern="\d{11}"
                 maxLength={11}
-                className="w-full px-5 py-4 border rounded-2xl outline-none transition-colors duration-300"
+                className="w-full px-4 py-3 border rounded-lg outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
                 style={{
                   backgroundColor: "var(--surface-elevated)",
                   borderColor: "var(--border-subtle)",
                   color: "var(--foreground)",
-                }}
-                placeholder="Digite os 11 números do CPF"
+                  "--tw-ring-color": "var(--primary)",
+                } as any}
+                placeholder="00000000000"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-widest mb-2 opacity-75">
-                Setor
+              <label className="block text-sm font-semibold mb-2">
+                Local / Setor
               </label>
               <select
                 name="setor"
                 value={formData.setor}
                 onChange={handleChange}
                 required
-                className="w-full px-5 py-4 rounded-2xl outline-none transition-colors duration-300"
+                className="w-full px-4 py-3 rounded-lg outline-none transition-all duration-300 border focus:ring-2 focus:ring-opacity-50"
                 style={{
                   backgroundColor: "var(--surface-elevated)",
                   color: "var(--foreground)",
                   borderColor: "var(--border-subtle)",
-                }}
+                  "--tw-ring-color": "var(--primary)",
+                } as any}
               >
                 <option value="">Selecione seu local</option>
                 <option value="vitoria">Vitória - Matriz</option>
@@ -195,8 +205,8 @@ export default function TicketPageDirect() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-widest mb-2 opacity-75">
-                Descrição
+              <label className="block text-sm font-semibold mb-2">
+                Descrição do Problema
               </label>
               <textarea
                 name="descricao"
@@ -204,31 +214,33 @@ export default function TicketPageDirect() {
                 onChange={handleChange}
                 required
                 rows={4}
-                className="w-full px-5 py-4 border rounded-2xl outline-none transition-colors duration-300 resize-none"
+                className="w-full px-4 py-3 border rounded-lg outline-none transition-all duration-300 resize-none focus:ring-2 focus:ring-opacity-50"
                 style={{
                   backgroundColor: "var(--surface-elevated)",
                   borderColor: "var(--border-subtle)",
                   color: "var(--foreground)",
-                }}
-                placeholder="Descreva o problema"
+                  "--tw-ring-color": "var(--primary)",
+                } as any}
+                placeholder="Descreva o problema ou solicitação em detalhes..."
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-widest mb-2 opacity-75">
-                Anexo
+              <label className="block text-sm font-semibold mb-2">
+                Anexar Arquivo (Opcional)
               </label>
 
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/jpg"
                 onChange={handleFileChange}
-                className="w-full px-5 py-4 border rounded-2xl transition-colors duration-300"
+                className="w-full px-4 py-3 border rounded-lg transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
                 style={{
                   backgroundColor: "var(--surface-elevated)",
                   borderColor: "var(--border-subtle)",
                   color: "var(--foreground)",
-                }}
+                  "--tw-ring-color": "var(--primary)",
+                } as any}
               />
 
               {file && (
@@ -238,22 +250,22 @@ export default function TicketPageDirect() {
               )}
             </div>
 
-            <div className="pt-4">
+            <div className="pt-6">
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full font-black py-5 rounded-2xl disabled:opacity-50 flex items-center justify-center gap-3 uppercase text-sm text-white transition-all duration-300 hover:scale-105 active:scale-95"
+                className="w-full font-semibold py-3 rounded-lg disabled:opacity-50 flex items-center justify-center gap-2 text-sm sm:text-base text-white transition-all duration-300 hover:scale-105 active:scale-95 disabled:hover:scale-100"
                 style={{
                   backgroundColor: "var(--primary)",
                 }}
                 onMouseEnter={e => {
-                  if (e.target instanceof HTMLElement && !loading) {
-                    e.target.style.backgroundColor = "var(--primary-hover)";
+                  if (e.currentTarget instanceof HTMLElement && !loading) {
+                    e.currentTarget.style.backgroundColor = "var(--primary-hover)";
                   }
                 }}
                 onMouseLeave={e => {
-                  if (e.target instanceof HTMLElement) {
-                    e.target.style.backgroundColor = "var(--primary)";
+                  if (e.currentTarget instanceof HTMLElement) {
+                    e.currentTarget.style.backgroundColor = "var(--primary)";
                   }
                 }}
               >
