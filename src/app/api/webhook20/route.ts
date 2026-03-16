@@ -193,7 +193,9 @@ export async function POST(req: NextRequest) {
           
           await sendEvolutionText(instance, number, `Aqui estão seus chamados:\n\n${lista}\n\nPosso ajudar com algo mais?`);
         } else {
-          const resposta = await hevelynIA(session, userInput, "O usuário mandou algo fora do menu. Responda de forma curta e reapresente as opções.");
+          const resposta = await hevelynIA(session, userInput, `Tente identificar o que ele quer, caso não consiga encerre 
+          amigavelmente.Não faça suposições, apenas encerre o atendimento, ao finalizar não precisa dizer boa tarde, bom dia ou boa noite,
+          apenas encerre`)
           await sendEvolutionText(instance, number, resposta);
         }
         break;
