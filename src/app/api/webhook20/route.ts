@@ -34,7 +34,7 @@ const menuString = "1. Abrir Chamado, 2. Consultar Chamado";
 const sessions = new Map<string, UserSession>();
 const empresa = 'Nolevel';
 const LINK_PORTAL = `https://nolevel-bot.vercel.app`;
-const LINK_CHAMADOS = `${LINK_PORTAL}/chamados`;
+const LINK_CHAMADOS = `${LINK_PORTAL}/chamado`; 
 const lINK_CONSULTA = `${LINK_PORTAL}/consulta`;
 
 

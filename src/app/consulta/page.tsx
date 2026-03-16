@@ -1,8 +1,11 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 
 type Chamado = {
+  createdAt: string | number | Date
+  descricao: string
   ticket: string
   status: string
   setor: string
@@ -10,38 +13,38 @@ type Chamado = {
   abertura: string
 }
 
-const mockTickets: Chamado[] = [
-  {
-    ticket: "TK-1001",
-    status: "Aberto",
-    setor: "TI",
-    motivo: "Computador lento",
-    abertura: "2026-03-10"
-  },
-  {
-    ticket: "TK-1002",
-    status: "Em andamento",
-    setor: "RH",
-    motivo: "Atualização de cadastro",
-    abertura: "2026-03-09"
-  },
-  {
-    ticket: "TK-1003",
-    status: "Fechado",
-    setor: "Financeiro",
-    motivo: "Erro em reembolso",
-    abertura: "2026-03-05"
-  }
-]
-
 export default function ConsultaTickets() {
   const [cpf, setCpf] = useState("")
   const [tickets, setTickets] = useState<Chamado[]>([])
-  const [selecionado, setSelecionado] = useState<Chamado | null>(null)
+ // const [selecionado, setSelecionado] = useState<Chamado | null>(null)
+  const [loading, setLoading] = useState(false)
+  const route  = useRouter() 
 
-  function buscarTickets() {
+  async function buscarTickets() {
     if (!cpf) return
-    setTickets(mockTickets)
+
+    setLoading(true)
+
+    try {
+      const res = await fetch(`/api/tickets?cpf=${cpf}`)
+      const data = await res.json()
+
+      const chamados: Chamado[] = data.map((c:Chamado) => ({
+        ticket: c.ticket,
+        status: c.status,
+        setor: c.setor,
+        motivo: c.descricao,
+        abertura: new Date(c.createdAt).toLocaleDateString()
+      }))
+
+      setTickets(chamados)
+     
+    } catch (err) {
+      console.error(err)
+      setTickets([])
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -62,7 +65,7 @@ export default function ConsultaTickets() {
           onClick={buscarTickets}
           className="bg-blue-600 text-white px-4 py-2 rounded"
         >
-          Buscar chamados
+          {loading ? "Buscando..." : "Buscar chamados"}
         </button>
       </div>
 
@@ -84,7 +87,7 @@ export default function ConsultaTickets() {
                 <tr
                   key={t.ticket}
                   className="cursor-pointer hover:bg-gray-100"
-                  onClick={() => setSelecionado(t)}
+                  onClick={() => route.push(`consulta/${t.ticket}`)}
                 >
                   <td className="p-2 border">{t.ticket}</td>
                   <td className="p-2 border">{t.setor}</td>
@@ -98,20 +101,6 @@ export default function ConsultaTickets() {
         </div>
       )}
 
-      {selecionado && (
-        <div className="border rounded p-4 space-y-2">
-
-          <h2 className="text-xl font-semibold">
-            Ticket {selecionado.ticket}
-          </h2>
-
-          <p><strong>Status:</strong> {selecionado.status}</p>
-          <p><strong>Setor:</strong> {selecionado.setor}</p>
-          <p><strong>Motivo:</strong> {selecionado.motivo}</p>
-          <p><strong>Abertura:</strong> {selecionado.abertura}</p>
-
-        </div>
-      )}
 
     </div>
   )
