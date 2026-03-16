@@ -85,7 +85,7 @@ export default function ConsultaTickets() {
                 backgroundColor: "var(--surface-elevated)",
                 color: "var(--foreground)",
                 "--tw-ring-color": "var(--primary)",
-              } as any}
+              } as never}
             />
           </div>
 
