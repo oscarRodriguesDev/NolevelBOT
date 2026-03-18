@@ -145,14 +145,15 @@ export async function POST(req: NextRequest) {
     const lowerInput = userInput.toLowerCase()
 
     if (["obrigado", "tchau", "sair", "encerrar", "cancelar"].some(w => lowerInput.includes(w))) {
-      const tchau = await hevelynIA(session, userInput, "Despeça-se amigavelmente informando que o atendimento foi encerrado.")
+      const tchau = await hevelynIA(session, userInput, "Despeça-se amigavelmente, sem dizer boa noite, ou boa tarde, apenas  informando que o atendimento foi encerrado.")
       sessions.delete(sessionId)
       return NextResponse.json({ reply: tchau })
     }
 
     switch (session.state) {
       case "inicio": {
-        const resp = await hevelynIA(session, userInput, "O usuário acabou de chegar. Dê as boas-vindas e peça OBRIGATORIAMENTE o CPF para começar o atendimento.")
+        const resp = await hevelynIA(session, userInput, `O usuário acabou de chegar. 
+          Dê as boas-vindas se apresente,   e peça OBRIGATORIAMENTE o CPF para começar o atendimento.`)
         session.state = "identificacao_cpf"
         sessions.set(sessionId, session)
         return NextResponse.json({ reply: resp })

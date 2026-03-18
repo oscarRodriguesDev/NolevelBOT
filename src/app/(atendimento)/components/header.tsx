@@ -1,5 +1,5 @@
 'use client'
-import { LuHardHat,LuWorkflow } from 'react-icons/lu'
+import { LuWorkflow } from 'react-icons/lu'
 import { ThemeToggle } from '@/app/components/theme-toggle'
 
 export function Header() {
