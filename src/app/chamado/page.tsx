@@ -1,7 +1,6 @@
 'use client'
 import { useState } from 'react'
 import {  LuCheck, LuLoader, LuArrowRight } from 'react-icons/lu'
-import { ThemeToggle } from '@/app/components/theme-toggle'
 import { Header } from '@/app/(atendimento)/components/header'
 
 export default function TicketPageDirect() {
@@ -116,7 +115,7 @@ export default function TicketPageDirect() {
         color: "var(--foreground)",
       }}
     >
-      <ThemeToggle />
+ 
       <Header />
 
       <div className="max-w-2xl mx-auto">
@@ -151,7 +150,7 @@ export default function TicketPageDirect() {
                   borderColor: "var(--border-subtle)",
                   color: "var(--foreground)",
                   "--tw-ring-color": "var(--primary)",
-                } as any}
+                } as never}
                 placeholder="Digite seu nome completo"
               />
             </div>
@@ -174,7 +173,7 @@ export default function TicketPageDirect() {
                   borderColor: "var(--border-subtle)",
                   color: "var(--foreground)",
                   "--tw-ring-color": "var(--primary)",
-                } as any}
+                } as never}
                 placeholder="00000000000"
               />
             </div>
@@ -194,7 +193,7 @@ export default function TicketPageDirect() {
                   color: "var(--foreground)",
                   borderColor: "var(--border-subtle)",
                   "--tw-ring-color": "var(--primary)",
-                } as any}
+                } as never}
               >
                 <option value="">Selecione seu local</option>
                 <option value="vitoria">Vitória - Matriz</option>
@@ -220,7 +219,7 @@ export default function TicketPageDirect() {
                   borderColor: "var(--border-subtle)",
                   color: "var(--foreground)",
                   "--tw-ring-color": "var(--primary)",
-                } as any}
+                } as never}
                 placeholder="Descreva o problema ou solicitação em detalhes..."
               />
             </div>
@@ -240,7 +239,7 @@ export default function TicketPageDirect() {
                   borderColor: "var(--border-subtle)",
                   color: "var(--foreground)",
                   "--tw-ring-color": "var(--primary)",
-                } as any}
+                } as never}
               />
 
               {file && (

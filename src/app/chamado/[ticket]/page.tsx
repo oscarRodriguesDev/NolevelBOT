@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import {  LuCheck, LuLoader, LuArrowRight } from 'react-icons/lu'
-import { ThemeToggle } from '@/app/components/theme-toggle'
+
 import { Header } from '@/app/(atendimento)/components/header'
 
 export default function TicketPage() {
@@ -116,7 +116,7 @@ export default function TicketPage() {
         color: "var(--foreground)",
       }}
     >
-      <ThemeToggle />
+
       <Header />
 
       <div className="max-w-md mx-auto px-4">
