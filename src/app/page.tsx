@@ -2,95 +2,166 @@
 
 import Link from "next/link"
 import { ThemeToggle } from "./components/theme-toggle"
+import Image from "next/image"
+import dash from '../../public/landing/dash.png'
+import {
+  FiInbox,
+  FiCpu,
+  FiClock,
+  FiArchive,
+  FiBarChart2,
+  FiLink
+} from "react-icons/fi"
 
 export default function LandingPage() {
-  return (
-    <main className="overflow-hidden transition-colors duration-300" style={{ backgroundColor: "var(--background)", color: "var(--foreground)" }}>
 
+  const items = [
+    {
+      icon: FiInbox,
+      label: "Centralização de chamados",
+    },
+    {
+      icon: FiCpu,
+      label: "Automação inteligente",
+    },
+    {
+      icon: FiClock,
+      label: "Controle de SLA",
+    },
+    {
+      icon: FiArchive,
+      label: "Histórico completo",
+    },
+    {
+      icon: FiBarChart2,
+      label: "Relatórios em tempo real",
+    },
+    {
+      icon: FiLink,
+      label: "Integração via API",
+    },
+  ]
+  return (
+
+
+ <main 
+      className="min-h-screen overflow-hidden transition-colors duration-500 font-sans"
+      style={{ backgroundColor: "var(--background)", color: "var(--foreground)" }}
+    >
       <ThemeToggle />
 
-      {/* HERO */}
-      <section className="relative px-4 sm:px-6 lg:px-8 py-16 sm:py-24 lg:py-32 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
-          <div className="space-y-8">
-            <span className="inline-block px-4 py-1 text-sm rounded-full border" style={{ backgroundColor: "var(--surface)", borderColor: "var(--primary)", color: "var(--primary)" }}>
+      {/* --- HERO SECTION --- */}
+      <section className="relative px-6 pt-24 pb-16 sm:pt-32 lg:pt-48 max-w-7xl mx-auto">
+        {/* Efeito de brilho de fundo (Glow) */}
+        <div 
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[500px] opacity-20 blur-[120px] pointer-events-none"
+          style={{ background: "radial-gradient(circle, var(--primary) 0%, transparent 70%)" }}
+        />
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center relative z-10">
+          <div className="space-y-8 text-center lg:text-left">
+            <span 
+              className="inline-flex items-center px-4 py-1.5 text-xs sm:text-sm font-medium rounded-full border shadow-sm"
+              style={{ 
+                backgroundColor: "var(--surface)", 
+                borderColor: "var(--primary)", 
+                color: "var(--primary)" 
+              }}
+            >
+              <span className="w-2 h-2 rounded-full mr-2 animate-pulse" style={{ backgroundColor: "var(--primary)" }} />
               Plataforma inteligente de atendimento
             </span>
 
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight" style={{ color: "var(--primary)" }}>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.1] tracking-tight">
               Transforme seu atendimento em um sistema
-              <span className="block mt-2" style={{ color: "var(--accent-secondary)" }}>
-                rápido, inteligente e automatizado
+              <span className="block mt-2" style={{ color: "var(--primary)" }}>
+                rápido e automatizado
               </span>
             </h1>
 
-            <p className="text-base sm:text-lg max-w-xl opacity-75 leading-relaxed">
-              Centralize chamados, automatize processos e tenha total controle da operação com uma plataforma moderna, escalável e intuitiva.
+            <p className="text-lg sm:text-xl max-w-xl mx-auto lg:mx-0 opacity-80 leading-relaxed">
+              Centralize chamados, automatize processos e tenha total controle da operação com uma interface moderna e intuitiva.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               <Link
                 href="/login"
-                className="px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-semibold text-white text-center transition-all duration-300 hover:scale-105 active:scale-95"
-                style={{ backgroundColor: "var(--primary)" }}
+                className="px-8 py-4 rounded-2xl font-bold shadow-lg transition-all duration-300 hover:-translate-y-1 active:scale-95 text-center"
+                style={{ backgroundColor: "var(--primary)", color: "white" }}
               >
                 Acessar sistema
               </Link>
 
               <Link
                 href="/login"
-                className="px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-semibold text-center transition-all duration-300 border hover:opacity-80"
-                style={{ borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
+                className="px-8 py-4 rounded-2xl font-semibold border transition-all duration-300 hover:bg-opacity-10 text-center"
+                style={{ 
+                  borderColor: "var(--border-subtle)", 
+                  color: "var(--foreground)",
+                  backgroundColor: "rgba(var(--foreground-rgb), 0.05)" 
+                }}
               >
                 Saiba mais
               </Link>
             </div>
           </div>
 
-          <div className="relative hidden lg:block">
-            <div className="absolute -inset-10 blur-3xl opacity-20 rounded-full animate-pulse" style={{ backgroundColor: "var(--primary)" }} />
-            <div className="relative rounded-3xl border p-6 sm:p-8 shadow-2xl hover:scale-105 transition-all duration-500" style={{ backgroundColor: "var(--surface)", borderColor: "var(--border-subtle)" }}>
-              <div className="h-80 rounded-2xl flex items-center justify-center text-center opacity-50" style={{ backgroundColor: "var(--surface-elevated)" }}>
-                <div>
-                  <p className="text-lg font-semibold">Dashboard Preview</p>
-                  <p className="text-sm opacity-70 mt-2">Visualização da plataforma</p>
-                </div>
+          {/* Imagem/Mockup com Glassmorphism */}
+          <div className="relative group perspective-1000">
+            <div 
+              className="absolute -inset-4 blur-2xl opacity-10 rounded-full transition-opacity group-hover:opacity-20"
+              style={{ backgroundColor: "var(--primary)" }}
+            />
+            <div 
+              className="relative rounded-[2.5rem] border p-3 sm:p-4 shadow-2xl transition-transform duration-700 group-hover:rotate-1 group-hover:scale-[1.02]"
+              style={{ 
+                backgroundColor: "var(--surface)", 
+                borderColor: "var(--border-subtle)" 
+              }}
+            >
+              <div 
+                className="aspect-video lg:aspect-square xl:aspect-video rounded-[1.8rem] overflow-hidden relative"
+                style={{ backgroundColor: "var(--surface-elevated)" }}
+              >
+                <Image
+                  src={dash}
+                  alt="Dashboard Preview"
+                  fill
+                  className="object-cover"
+                />
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* BENEFÍCIOS */}
-      <section className="px-4 sm:px-6 lg:px-8 py-16 sm:py-24 lg:py-32" style={{ backgroundColor: "var(--surface)" }}>
+      {/* --- BENEFÍCIOS --- */}
+      <section className="py-24 px-6 mt-16" style={{ backgroundColor: "var(--surface)" }}>
         <div className="max-w-7xl mx-auto">
-          <div className="text-center space-y-4 mb-12 lg:mb-16">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold">
-              Tudo que você precisa para escalar seu suporte
-            </h2>
-            <p className="max-w-2xl mx-auto opacity-70">
-              Recursos pensados para empresas que precisam de organização, velocidade e controle.
-            </p>
+          <div className="text-center space-y-4 mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">Escalabilidade e Controle</h2>
+            <div className="w-16 h-1 mx-auto rounded-full" style={{ backgroundColor: "var(--primary)" }} />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-            {[
-              "Centralização de chamados",
-              "Automação inteligente",
-              "Controle de SLA",
-              "Histórico completo",
-              "Relatórios em tempo real",
-              "Integração via API"
-            ].map((item, i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {items.map((item, i) => (
               <div
                 key={i}
-                className="p-6 sm:p-8 rounded-2xl border hover:-translate-y-1 transition-all duration-300"
-                style={{ backgroundColor: "var(--background)", borderColor: "var(--border-subtle)" }}
+                className="p-8 rounded-[2rem] border transition-all duration-300 hover:shadow-xl hover:-translate-y-2 group"
+                style={{ 
+                  backgroundColor: "var(--background)", 
+                  borderColor: "var(--border-subtle)" 
+                }}
               >
-                <div className="w-10 h-10 mb-4 rounded-lg" style={{ backgroundColor: "var(--primary)" }} />
-                <h3 className="text-lg font-semibold mb-2">{item}</h3>
-                <p className="text-sm opacity-70">
-                  Estrutura organizada para garantir eficiência e controle total da operação.
+                <div
+                  className="w-12 h-12 mb-6 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 group-hover:rotate-3 shadow-md"
+                  style={{ backgroundColor: "var(--primary)" }}
+                >
+                  <item.icon className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-xl font-bold mb-3">{item.label}</h3>
+                <p className="text-sm opacity-70 leading-relaxed">
+                  Estrutura organizada para garantir eficiência e controle total da operação em tempo real.
                 </p>
               </div>
             ))}
@@ -98,25 +169,32 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CTA FINAL */}
-      <section className="px-4 sm:px-6 lg:px-8 py-16 sm:py-24 lg:py-32 text-center" style={{ backgroundColor: "var(--primary)" }}>
-        <div className="max-w-3xl mx-auto space-y-6">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white">
-            Pronto para elevar o nível do seu atendimento?
-          </h2>
-          <p className="text-white opacity-90">
-            Acesse o sistema de gestão de chamados Nolevel e comece a gerenciar suas operações agora.
-          </p>
-          <Link
-            href="/login"
-            className="inline-block px-6 sm:px-10 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-semibold text-white transition-all duration-300 hover:scale-105 active:scale-95"
-            style={{ backgroundColor: "var(--background)" }}
-          >
-            Acessar sistema
-          </Link>
+      {/* --- CTA FINAL --- */}
+      <section className="py-24 px-6 text-center">
+        <div 
+          className="max-w-5xl mx-auto rounded-[3rem] px-8 py-16 relative overflow-hidden shadow-2xl"
+          style={{ backgroundColor: "var(--primary)" }}
+        >
+          {/* Decoração interna do CTA */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl -mr-32 -mt-32" />
+          
+          <div className="relative z-10 space-y-8">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight">
+              Pronto para elevar o nível?
+            </h2>
+            <p className="text-white opacity-90 text-lg max-w-2xl mx-auto">
+              Acesse o sistema de gestão de chamados Nolevel e comece a gerenciar suas operações agora.
+            </p>
+            <Link
+              href="/login"
+              className="inline-block px-10 py-4 rounded-2xl font-bold transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95"
+              style={{ backgroundColor: "var(--background)", color: "var(--primary)" }}
+            >
+              Começar Agora
+            </Link>
+          </div>
         </div>
       </section>
-
     </main>
   )
 }
