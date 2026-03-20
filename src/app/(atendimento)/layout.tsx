@@ -7,6 +7,8 @@ export default function AtendimentoLayout({
   children: React.ReactNode
 }) {
   return (
+
+    <>
     <div className="flex min-h-screen transition-colors duration-300" style={{ backgroundColor: 'var(--background)' }}>
       {/* Sidebar */}
       <Sidebar />
@@ -17,10 +19,11 @@ export default function AtendimentoLayout({
         <Header />
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto">
           {children}
-        </main>
+        </div>
       </div>
     </div>
+    </>
   )
 }

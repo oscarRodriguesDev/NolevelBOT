@@ -41,6 +41,8 @@ export default function LandingPage() {
     },
   ];
   return (
+
+    
     <main
       className="min-h-screen overflow-hidden transition-colors duration-500 font-sans"
       style={{
@@ -234,5 +236,7 @@ export default function LandingPage() {
         </div>
       </section>
     </main>
+    
+ 
   );
 }
