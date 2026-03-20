@@ -42,7 +42,7 @@ export default function LandingPage() {
   ];
   return (
 
-    
+
     <main
       className="min-h-screen overflow-hidden transition-colors duration-500 font-sans"
       style={{
@@ -56,7 +56,7 @@ export default function LandingPage() {
 
       {/* --- HERO SECTION --- */}
       <section
-        className="relative px-6 pt-24 pb-16 sm:pt-32 lg:pt-48 max-w-7xl mx-auto bg-cover bg-center bg-no-repeat overflow-hidden"
+        className="relative w-full px-6 pt-24 pb-16 sm:pt-32 lg:pt-48 bg-cover bg-center bg-no-repeat overflow-hidden"
         style={{ backgroundImage: "url('/landing/fundo.png')" }}
       >
         {/* overlay escuro para legibilidade */}
@@ -236,7 +236,7 @@ export default function LandingPage() {
         </div>
       </section>
     </main>
-    
- 
+
+
   );
 }
