@@ -1,8 +1,7 @@
 'use client'
-import { LuWorkflow } from 'react-icons/lu'
+
 import { ThemeToggle } from '@/app/components/theme-toggle'
-import Image from 'next/image'
-import icone from '../../../../public/header/favicon.png'
+
 
 export function Header() {
 
@@ -24,7 +23,7 @@ export function Header() {
         className="text-[11px] sm:text-xs font-semibold tracking-wider uppercase opacity-70"
         style={{ color: "var(--primary)" }}
       >
-        Chamados organizados e direcionados automaticamente
+        Central de Chamados
       </p>
     </div>
 

@@ -34,6 +34,12 @@ export function Sidebar() {
       href: '/cpfs',
       icon: LuUsers,
     },
+
+    {
+      label: 'Gestão de Usuarios',
+      href: '/gestao-de-usuarios',
+      icon: LuUsers,
+    }
   ]
 
   const isActive = (href: string) => {

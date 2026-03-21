@@ -18,26 +18,38 @@ export default function LandingPage() {
     {
       icon: FiInbox,
       label: "Centralização de chamados",
+      description:
+        "Todos os chamados reunidos em um único lugar, com organização por status, setor e prioridade.",
     },
     {
       icon: FiCpu,
       label: "Automação inteligente",
+      description:
+        "Abertura e direcionamento automático via WhatsApp, reduzindo atendimento manual e erros de triagem.",
     },
     {
       icon: FiClock,
       label: "Controle de SLA",
+      description:
+        "Definição de prazos por tipo de chamado com acompanhamento em tempo real de atrasos e cumprimento.",
     },
     {
       icon: FiArchive,
       label: "Histórico completo",
+      description:
+        "Registro detalhado de cada chamado com interações, mudanças de status e responsáveis.",
     },
     {
       icon: FiBarChart2,
       label: "Relatórios em tempo real",
+      description:
+        "Indicadores atualizados da operação para análise de desempenho e tomada de decisão.",
     },
     {
       icon: FiLink,
       label: "Integração via API",
+      description:
+        "Conexão com outros sistemas da empresa para automatizar fluxos e sincronizar dados.",
     },
   ];
   return (
@@ -152,6 +164,7 @@ export default function LandingPage() {
       </section>
 
       {/* --- BENEFÍCIOS --- */}
+
       <section
         className="py-24 px-6 mt-16"
         style={{ backgroundColor: "var(--surface)" }}
@@ -159,12 +172,15 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center space-y-4 mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
-              Escalabilidade e Controle
+              Gestão completa dos chamados
             </h2>
             <div
               className="w-16 h-1 mx-auto rounded-full"
               style={{ backgroundColor: "var(--primary)" }}
             />
+            <p className="max-w-2xl mx-auto opacity-70">
+              Abertura via WhatsApp, triagem automática e acompanhamento em tempo real em um único fluxo.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -185,8 +201,7 @@ export default function LandingPage() {
                 </div>
                 <h3 className="text-xl font-bold mb-3">{item.label}</h3>
                 <p className="text-sm opacity-70 leading-relaxed">
-                  Estrutura organizada para garantir eficiência e controle total
-                  da operação em tempo real.
+                  {item.description}
                 </p>
               </div>
             ))}

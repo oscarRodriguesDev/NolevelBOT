@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/app/components/theme-toggle";
 import { LuMail, LuLock } from "react-icons/lu";
+import { signIn } from "next-auth/react"
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,28 +15,34 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const validEmail = "oscar@nolevel.com.br";
-  const validPassword = "12345678";
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
 
-    // Simular delay de autenticação
-    setTimeout(() => {
-      if (email === validEmail && password === validPassword) {
-        // Login bem-sucedido - redirecionar para página inicial
-        router.push("/all-tickets");
-      } else {
-        // Login falhou
-        setError("Email ou senha incorretos");
-        setPassword("");
-      }
-      setLoading(false);
-    }, 1000);
-  };
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  setError("")
+  setLoading(true)
 
+  try {
+    const result = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    })
+
+    if (result?.error) {
+      setError("Email ou senha incorretos")
+      setPassword("")
+      setLoading(false)
+      return
+    }
+
+    router.push("/all-tickets")
+  } catch (err) {
+    setError("Erro ao fazer login")
+  } finally {
+    setLoading(false)
+  }
+}
   return (
     <div
       className="min-h-screen w-full flex items-center justify-center px-4 sm:px-6 lg:px-8 transition-colors duration-300"
