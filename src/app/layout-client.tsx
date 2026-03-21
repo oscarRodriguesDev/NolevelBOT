@@ -8,11 +8,11 @@ export default function RootLayoutClient({ children }: { children: ReactNode }) 
   return (
     <>
       <ThemeProvider>
-        <SessionProvider>
+     <SessionProvider> 
 
         {children}
 
-        </SessionProvider>
+        </SessionProvider> 
       </ThemeProvider>
     </>
   );

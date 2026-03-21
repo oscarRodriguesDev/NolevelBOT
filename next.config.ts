@@ -1,10 +1,18 @@
-import type { NextConfig } from "next";
+// next.config.js ou next.config.ts
+import { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
-  turbopack: {
-    root: process.cwd(),
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "tcgvuhoyojgdnzobmxxl.supabase.co",
+        port: "",
+        pathname: "/storage/v1/object/public/**",
+      },
+    ],
   },
-  /* config options here */
-};
+  // outras configs...
+}
 
-export default nextConfig;
+export default nextConfig

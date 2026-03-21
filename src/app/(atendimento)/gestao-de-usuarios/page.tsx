@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
+import usuarios from "../../../../public/users/usuarios.png"
 
 export default function CriarUsuarioPage() {
   const [form, setForm] = useState({
@@ -82,39 +84,17 @@ export default function CriarUsuarioPage() {
           {/* Left Column - Image Area */}
           <div
             className="rounded-2xl border shadow-lg p-6 sm:p-8 flex items-center justify-center min-h-96 lg:min-h-full transition-colors duration-300"
-            style={{
-              backgroundColor: "var(--surface)",
-              borderColor: "var(--border-subtle)",
-            }}
-          >
-            <div className="text-center space-y-4">
-              <div
-                className="w-32 h-32 mx-auto rounded-lg flex items-center justify-center"
-                style={{
+               style={{
                   backgroundColor: "var(--surface-elevated)",
                   borderColor: "var(--border-subtle)",
-                  border: "2px dashed",
+                  border: "2px solid var(--border-subtle)",
+                  backgroundImage: `url(${usuarios.src})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  backgroundRepeat: "no-repeat",
                 }}
-              >
-                <svg
-                  className="w-16 h-16 opacity-50"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <p className="font-semibold opacity-75">Imagem do usuário</p>
-                <p className="text-xs opacity-50">Adicione uma imagem aqui</p>
-              </div>
-            </div>
+          >
+       
           </div>
 
           {/* Right Column - Form */}
@@ -141,7 +121,7 @@ export default function CriarUsuarioPage() {
                     backgroundColor: "var(--surface-elevated)",
                     color: "var(--foreground)",
                     "--tw-ring-color": "var(--primary)",
-                  } as any}
+                  } as never}
                 />
               </div>
 
@@ -161,7 +141,7 @@ export default function CriarUsuarioPage() {
                     backgroundColor: "var(--surface-elevated)",
                     color: "var(--foreground)",
                     "--tw-ring-color": "var(--primary)",
-                  } as any}
+                  } as never}
                 />
               </div>
 
@@ -180,7 +160,7 @@ export default function CriarUsuarioPage() {
                     backgroundColor: "var(--surface-elevated)",
                     color: "var(--foreground)",
                     "--tw-ring-color": "var(--primary)",
-                  } as any}
+                  } as never}
                 />
               </div>
 
@@ -200,7 +180,7 @@ export default function CriarUsuarioPage() {
                     backgroundColor: "var(--surface-elevated)",
                     color: "var(--foreground)",
                     "--tw-ring-color": "var(--primary)",
-                  } as any}
+                  } as never}
                 />
               </div>
 
@@ -218,7 +198,7 @@ export default function CriarUsuarioPage() {
                     backgroundColor: "var(--surface-elevated)",
                     color: "var(--foreground)",
                     "--tw-ring-color": "var(--primary)",
-                  } as any}
+                  } as never}
                 >
                   <option value="">Selecione um papel</option>
                   <option value="ADMIN">Administrador</option>
@@ -241,7 +221,7 @@ export default function CriarUsuarioPage() {
                     backgroundColor: "var(--surface-elevated)",
                     color: "var(--foreground)",
                     "--tw-ring-color": "var(--primary)",
-                  } as any}
+                  } as never}
                 />
               </div>
 

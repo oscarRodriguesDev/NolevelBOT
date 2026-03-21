@@ -34,10 +34,10 @@ export async function POST(req: NextRequest) {
       try {
         const fileExt = file.name.split(".").pop()
         const fileName = `${crypto.randomUUID()}.${fileExt}`
-        const filePath = `avatars/${fileName}`
+        const filePath = `/${fileName}`
 
         const { error: uploadError } = await supabase.storage
-          .from("avatars")
+          .from("profile")
           .upload(filePath, file, {
             cacheControl: "3600",
             upsert: false,
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 
         if (!uploadError) {
           const { data } = supabase.storage
-            .from("avatars")
+            .from("profile")
             .getPublicUrl(filePath)
 
           if (data?.publicUrl) {

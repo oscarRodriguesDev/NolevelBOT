@@ -1,22 +1,20 @@
-import { NextResponse } from "next/server"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/lib/nextauth" // Certifique-se de que o caminho está correto
 import { prisma } from "@/lib/prisma"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
-
-export const runtime = "nodejs"
+import { NextResponse } from "next/server"
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session) {
-      return NextResponse.json(
-        { error: "Não autorizado" },
-        { status: 401 }
-      )
+    // 1. Verificação de sessão
+    if (!session || !session.user?.id) {
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
     }
 
-    const users = await prisma.user.findMany({
+    // 2. Busca no banco
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
       select: {
         id: true,
         name: true,
@@ -25,14 +23,26 @@ export async function GET() {
         role: true,
         avatarUrl: true,
         setor: true,
-        chamados: true,
+        // Evite dar o select em 'password' por segurança, 
+        // mesmo que você não o tenha listado aqui.
+        chamados: {
+          orderBy: {
+            createdAt: 'desc' // Opcional: já traz os chamados ordenados
+          }
+        },
       },
     })
 
-    return NextResponse.json(users)
+    if (!user) {
+      return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
+    }
+
+    return NextResponse.json(user)
   } catch (error) {
+    // É uma boa prática logar o erro no servidor para debug
+    console.error("[USER_GET_ERROR]:", error)
     return NextResponse.json(
-      { error: "Erro ao buscar usuários" },
+      { error: "Erro interno no servidor" }, 
       { status: 500 }
     )
   }
