@@ -4,7 +4,8 @@ import {  LuCheck, LuLoader, LuArrowRight } from 'react-icons/lu'
 import { Header } from '@/app/(atendimento)/components/header'
 
 export default function TicketPageDirect() {
- 
+  
+  const SETORES = ["RH", "TI", "Financeiro", "Comercial", "Vendas", "Suporte", "Manutenção", "Logística", "Medicina", "Segurança", "Limpeza", "Juridico"]
 
   const [formData, setFormData] = useState({
     nome: '',
@@ -196,10 +197,12 @@ export default function TicketPageDirect() {
                 } as never}
               >
                 <option value="">Selecione seu local</option>
-                <option value="vitoria">Vitória - Matriz</option>
-                <option value="serra">Serra - Logística</option>
-                <option value="vale">Vale Tubarão</option>
-                <option value="arcelor">ArcelorMittal</option>
+                {SETORES.map(setor => (
+                  <option key={setor} value={setor}>
+                    {setor}
+                  </option>
+                ))}
+             
               </select>
             </div>
 

@@ -1,19 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
+
 import { prisma } from "@/lib/prisma"
 import { hash } from "bcryptjs"
 import { ROLE } from "@prisma/client"
+import { uploadFile } from "@/app/hooks/upload"
 
-export const runtime = "nodejs"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-if (!supabaseUrl || !serviceKey) {
-  throw new Error("Supabase env vars não definidas")
-}
-
-const supabase = createClient(supabaseUrl, serviceKey)
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,35 +20,12 @@ export async function POST(req: NextRequest) {
     const setor = formData.get("setor") as string
     const file = formData.get("avatar") as File | null
 
-    let avatarUrl: string | null =
-      "https://seu-dominio.com/default-avatar.png"
-
-    if (file) {
-      try {
-        const fileExt = file.name.split(".").pop()
-        const fileName = `${crypto.randomUUID()}.${fileExt}`
-        const filePath = `/${fileName}`
-
-        const { error: uploadError } = await supabase.storage
-          .from("profile")
-          .upload(filePath, file, {
-            cacheControl: "3600",
-            upsert: false,
-          })
-
-        if (!uploadError) {
-          const { data } = supabase.storage
-            .from("profile")
-            .getPublicUrl(filePath)
-
-          if (data?.publicUrl) {
-            avatarUrl = data.publicUrl
-          }
-        }
-      } catch (e) {
-        // ignora erro de upload
-      }
-    }
+    const avatarUrl = await uploadFile({
+      bucket: "profile",
+      folder: "",
+      file,
+      defaultUrl: "https://seu-dominio.com/default-avatar.png",
+    })
 
     const hashedPassword = await hash(password, 10)
 
@@ -73,11 +43,11 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(user)
   } catch (error) {
+    console.error(error)
     return NextResponse.json(
       { error: "Erro ao criar usuário" },
       { status: 500 }
     )
   }
 }
-
 
