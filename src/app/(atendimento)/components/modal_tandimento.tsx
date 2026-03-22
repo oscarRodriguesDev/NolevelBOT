@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useSession } from "next-auth/react"
 
 type HistoricoItem = {
   data: string
@@ -32,6 +33,8 @@ interface ModalChamadoProps {
 }
 
 export function ModalChamado({
+
+
   ticket,
   open,
   onClose,
@@ -43,6 +46,9 @@ export function ModalChamado({
   const [descricao, setDescricao] = useState("")
   const [historico, setHistorico] = useState<HistoricoItem[]>([])
   const [loading, setLoading] = useState(false)
+
+    const session = useSession()
+
 
   useEffect(() => {
     if (!ticket || !open) return
@@ -75,32 +81,28 @@ async function atualizarChamado() {
   if (!ticket || !novoStatus) return
   setLoading(true)
 
-  // Cria o novo item de histórico
   const novoHistoricoItem: HistoricoItem = {
     data: new Date().toISOString(),
     acao: novoStatus,
-    observacao, // mesmo que não exista no Prisma, é só para exibir no histórico
+    observacao,
   }
 
-  // Atualiza histórico local
   const historicoAtualizado = [...historico, novoHistoricoItem]
   setHistorico(historicoAtualizado)
 
-  // Atualiza descricao local concatenando a observação
   const descricaoAtualizada = descricao ? `${descricao}\n${observacao}` : observacao
   setDescricao(descricaoAtualizada)
 
-  // Envia apenas os campos que existem no Prisma
   await fetch(`/api/tickets?atendimento=${ticket}&estagio=${novoStatus}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       descricao: descricaoAtualizada,
       historico: JSON.stringify(historicoAtualizado),
+      userId: session.data?.user?.id,
     }),
   })
 
-  // Recarrega chamado atualizado
   const res = await fetch(`/api/tickets?ticket=${ticket}`)
   const data = await res.json()
   const atualizado = data[0]
@@ -111,18 +113,16 @@ async function atualizarChamado() {
   setLoading(false)
 }
 
+async function concluirChamado() {
+  if (!ticket) return
 
+  await fetch(`/api/tickets?atendimento=${ticket}`, {
+    method: "DELETE",
+  })
 
-  async function concluirChamado() {
-    if (!ticket) return
-
-    await fetch(`/api/tickets?atendimento=${ticket}`, {
-      method: "DELETE",
-    })
-
-    onConcluido(ticket)
-    onClose()
-  }
+  onConcluido(ticket)
+  onClose()
+}
 
   if (!open || !chamado) return null
 

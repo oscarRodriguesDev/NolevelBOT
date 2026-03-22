@@ -14,7 +14,8 @@ type Chamado = {
   descricao: string
   createdAt: string
   status: string
-  atendente?: string | null
+  atendente?:{name: string} 
+
 }
 
 export default function TicketsPage() {
@@ -327,7 +328,9 @@ export default function TicketsPage() {
                         {ticket.status}
                       </span>
                     </td>
-                    <td className="py-3 px-2">{ticket.atendente ?? "Não atribuído"}</td>
+                    <td className="py-3 px-2">
+                      {ticket.atendente?.name ?? "Não atribuído"}
+                    </td>
                     <td className="py-3 px-2">
                       {new Date(ticket.createdAt).toLocaleDateString("pt-BR")}
                     </td>

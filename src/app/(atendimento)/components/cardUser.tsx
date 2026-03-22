@@ -1,9 +1,9 @@
 "use client"
 
 import { Chamado } from "@prisma/client"
-import { useSession, signOut } from "next-auth/react" // Importando o signOut
+import { useSession, signOut } from "next-auth/react"
 import Image from "next/image"
-import { LogOut } from "lucide-react" // Sugestão: use o lucide-react para ícones
+import { LogOut } from "lucide-react"
 
 type User = {
   id: string
@@ -17,13 +17,26 @@ type User = {
   chamadosSetor?: Chamado[]
 }
 
-export default function UserCard() {
-  const { data: session, status } = useSession()
-  const user = session?.user as User | undefined
+type Props = {
+  name?: string
+  email?: string
+  role?: string
+  avatarUrl?: string
+}
 
-  // Função de logout
+export default function UserCard(props: Props) {
+  const { data: session, status } = useSession()
+  const sessionUser = session?.user as User | undefined
+
+  const user = sessionUser ?? {
+    name: props.name,
+    email: props.email,
+    role: props.role,
+    avatarUrl: props.avatarUrl,
+  }
+
   const handleLogout = () => {
-    signOut({ callbackUrl: "/login" }) // Redireciona para o login após sair
+    signOut({ callbackUrl: "/login" })
   }
 
   if (status === "loading") {
@@ -37,16 +50,9 @@ export default function UserCard() {
   if (!user) return null
 
   return (
-    <div
-      className="flex items-center justify-between gap-3 p-4 rounded-xl border shadow-sm transition-all"
-      style={{
-        backgroundColor: "var(--surface)",
-        borderColor: "var(--border-subtle)",
-      }}
-    >
+    <div className="flex items-center justify-between gap-3 p-4 rounded-xl border shadow-sm">
       <div className="flex items-center gap-3 overflow-hidden">
-        {/* Avatar Section */}
-        <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 border bg-neutral-200">
+        <div className="w-10 h-10 rounded-full overflow-hidden border bg-neutral-200">
           {user.avatarUrl ? (
             <Image
               src={user.avatarUrl}
@@ -56,18 +62,14 @@ export default function UserCard() {
               className="object-cover w-full h-full"
             />
           ) : (
-            <div
-              className="w-full h-full flex items-center justify-center text-sm font-bold"
-              style={{ backgroundColor: "var(--primary)", color: "#fff" }}
-            >
+            <div className="w-full h-full flex items-center justify-center text-sm font-bold bg-black text-white">
               {user.name?.charAt(0)?.toUpperCase() || "?"}
             </div>
           )}
         </div>
 
-        {/* Info Section */}
         <div className="flex flex-col overflow-hidden">
-          <span className="text-sm font-semibold truncate leading-none mb-1">
+          <span className="text-sm font-semibold truncate">
             {user.name || "Sem nome"}
           </span>
           <span className="text-xs opacity-60 truncate">
@@ -76,13 +78,8 @@ export default function UserCard() {
         </div>
       </div>
 
-      {/* Botão de Logout */}
-      <button
-        onClick={handleLogout}
-        className="p-2 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors group"
-        title="Sair do sistema"
-      >
-        <LogOut size={18} className="opacity-60 group-hover:opacity-100" />
+      <button onClick={handleLogout}>
+        <LogOut size={18} />
       </button>
     </div>
   )
