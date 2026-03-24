@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { LuMenu, LuX, LuTickets, LuBell, LuUsers, LuHouse, LuSettings } from 'react-icons/lu'
+import { LuMenu, LuX, LuTickets, LuBell, LuUsers, LuHouse } from 'react-icons/lu'
 import packageJson from '../../../../package.json'
 import Image from 'next/image'
 import icone from '../../../../public/header/favicon.png'
@@ -39,11 +39,6 @@ export function Sidebar() {
       label: 'Gestão de Usuarios',
       href: '/gestao-de-usuarios',
       icon: LuUsers,
-    },
-    {
-      label: 'Configurações',
-      href: '/configuracoes',
-      icon: LuSettings,
     }
   ]
 
