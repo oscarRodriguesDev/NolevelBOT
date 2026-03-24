@@ -39,6 +39,11 @@ export function Sidebar() {
       label: 'Gestão de Usuarios',
       href: '/gestao-de-usuarios',
       icon: LuUsers,
+    },
+    {
+      label: 'Empresas',
+      href: '/empresa',
+      icon: LuUsers,
     }
   ]
 
