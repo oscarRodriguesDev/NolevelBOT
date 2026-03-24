@@ -7,6 +7,7 @@ import type { Prisma } from '@prisma/client'
 import fs from 'fs'
 import { getServerSession } from 'next-auth'
 export const dynamic = 'force-dynamic'
+import { uploadFile } from '@/app/hooks/upload'
 
 // helper para validar sessão
 async function getSessionOrFail() {
@@ -34,33 +35,26 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData()
 
-    const nome = formData.get('nome') as string
-    const cpf = formData.get('cpf') as string
-    const setor = formData.get('setor') as string
-    const descricao = formData.get('descricao') as string
-    const prioridade = (formData.get('prioridade') as string) || 'normal'
-    const file = formData.get('anexo') as File | null
+    const nome = formData.get("nome") as string
+    const cpf = formData.get("cpf") as string
+    const setor = formData.get("setor") as string
+    const descricao = formData.get("descricao") as string
+    const prioridade = (formData.get("prioridade") as string) || "normal"
+    const file = formData.get("anexo") as File | null
 
     if (!nome || !cpf || !setor || !descricao) {
       return NextResponse.json(
-        { error: 'Campos obrigatórios não preenchidos' },
+        { error: "Campos obrigatórios não preenchidos" },
         { status: 400 }
       )
     }
 
-    let anexoUrl: string | null = null
-
-    if (file && file.size > 0) {
-      const bytes = await file.arrayBuffer()
-      const buffer = Buffer.from(bytes)
-
-      const fileName = `${Date.now()}-${file.name}`
-      const filePath = `uploads/${fileName}`
-
-      await fs.promises.writeFile(filePath, buffer)
-
-      anexoUrl = `/${filePath}`
-    }
+    const anexoUrl = await uploadFile({
+      bucket: "documents",
+      folder: cpf,
+      file,
+      defaultUrl:'',
+    })
 
     const ticket = `TKT-${Date.now()}`
 
@@ -78,8 +72,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(chamado, { status: 201 })
   } catch (error) {
+    console.error(error)
     return NextResponse.json(
-      { error: 'Erro ao criar chamado' },
+      { error: "Erro ao criar chamado" },
       { status: 500 }
     )
   }

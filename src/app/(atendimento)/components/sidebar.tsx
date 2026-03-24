@@ -41,9 +41,9 @@ export function Sidebar() {
       icon: LuUsers,
     },
     {
-      label: 'Configurações',
-      href: '/configuracoes',
-      icon: LuSettings,
+      label: 'Empresas',
+      href: '/empresa',
+      icon: LuUsers,
     }
   ]
 

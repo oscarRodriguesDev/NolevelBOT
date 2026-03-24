@@ -6,7 +6,7 @@ import { Header } from '@/app/(atendimento)/components/header'
 
 export default function TicketPage() {
  
-
+const SETORES = ["RH", "TI", "Financeiro", "Comercial", "Vendas", "Suporte", "Manutenção", "Logística", "Medicina", "Segurança", "Limpeza", "Juridico"]
   const [formData, setFormData] = useState({
     nome: '',
     cpf: '',
@@ -186,11 +186,13 @@ export default function TicketPage() {
                   borderColor: "var(--border-subtle)",
                 }}
               >
-                <option value="">Selecione seu local</option>
-                <option value="vitoria">Vitória - Matriz</option>
-                <option value="serra">Serra - Logística</option>
-                <option value="vale">Vale Tubarão</option>
-                <option value="arcelor">ArcelorMittal</option>
+                <option value="">O chamado sera enviado para qual setor?</option>
+                {SETORES.map(setor => (
+                  <option key={setor} value={setor}>
+                    {setor}
+                  </option>
+                ))}
+                
               </select>
             </div>
 

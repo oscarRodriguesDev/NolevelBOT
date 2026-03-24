@@ -14,6 +14,17 @@ enum ROLE {
   ATENDENTE
 }
 
+
+// prisma/schema.prisma
+model empresa {
+  id        String   @id @default(uuid())
+  nome      String   @unique
+  cnpj      String   @unique
+  setores   String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+//não precisa relacionar com os usuarios porque vai ser um banco por empresa
 model user {
   id        String    @id @default(uuid())
   email     String    @unique
