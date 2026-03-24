@@ -47,98 +47,162 @@ export default function CreateEmpresa() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50/50 py-12 px-4">
+    <main
+      className="min-h-screen px-4 sm:px-6 lg:px-8 py-6 sm:py-10 transition-colors duration-300"
+      style={{
+        backgroundColor: "var(--background)",
+        color: "var(--foreground)",
+      }}
+    >
       <div className="max-w-2xl mx-auto">
-        
         {/* Botão Voltar */}
         <Link 
           href="/empresa" 
-          className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-blue-600 transition-colors mb-8 group"
+          className="inline-flex items-center gap-2 text-sm mb-8 transition-colors duration-300 group"
+          style={{ color: "var(--foreground)", opacity: 0.7 }}
+          onMouseEnter={(e) => {
+            if (e.currentTarget instanceof HTMLElement) {
+              e.currentTarget.style.opacity = "1";
+              e.currentTarget.style.color = "var(--primary)";
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (e.currentTarget instanceof HTMLElement) {
+              e.currentTarget.style.opacity = "0.7";
+              e.currentTarget.style.color = "var(--foreground)";
+            }
+          }}
         >
           <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
           Voltar para a listagem
         </Link>
 
-        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+        {/* Card Principal */}
+        <div
+          className="rounded-2xl border shadow-lg overflow-hidden transition-colors duration-300"
+          style={{
+            backgroundColor: "var(--surface)",
+            borderColor: "var(--border-subtle)",
+          }}
+        >
           {/* Header do Form */}
-          <div className="bg-gray-50 border-b border-gray-100 p-8">
+          <div
+            className="border-b p-6 sm:p-8"
+            style={{
+              backgroundColor: "var(--surface-elevated)",
+              borderColor: "var(--border-subtle)",
+            }}
+          >
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-600 text-white rounded-xl">
+              <div
+                className="p-3 rounded-lg text-white"
+                style={{ backgroundColor: "var(--primary)" }}
+              >
                 <Building2 size={24} />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Cadastrar Empresa</h1>
-                <p className="text-gray-500 text-sm">Preencha as informações abaixo para o registro.</p>
+                <h1 className="text-xl sm:text-2xl font-bold" style={{ color: "var(--primary)" }}>
+                  Cadastrar Empresa
+                </h1>
+                <p className="text-xs sm:text-sm opacity-70">Preencha as informações abaixo para o registro</p>
               </div>
             </div>
           </div>
 
           {/* Formulário */}
-          <form onSubmit={handleSubmit} className="p-8 space-y-6">
-            <div className="space-y-4">
-              
-              {/* Nome */}
-              <div className="space-y-1.5">
-                <label htmlFor="nome" className="text-sm font-semibold text-gray-700">
-                  Nome Fantasia
-                </label>
-                <input
-                  id="nome"
-                  type="text"
-                  placeholder="Ex: Minha Empresa LTDA"
-                  value={nome}
-                  onChange={(e) => setNome(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all placeholder:text-gray-400"
-                  required
-                />
-              </div>
+          <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-6">
+            {/* Nome */}
+            <div className="space-y-2">
+              <label htmlFor="nome" className="block text-sm font-semibold">
+                Nome Fantasia
+              </label>
+              <input
+                id="nome"
+                type="text"
+                placeholder="Ex: Minha Empresa LTDA"
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                className="w-full px-4 py-3 border rounded-lg outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
+                style={{
+                  backgroundColor: "var(--surface-elevated)",
+                  borderColor: "var(--border-subtle)",
+                  color: "var(--foreground)",
+                  "--tw-ring-color": "var(--primary)",
+                } as any}
+                required
+              />
+            </div>
 
-              {/* CNPJ */}
-              <div className="space-y-1.5">
-                <label htmlFor="cnpj" className="text-sm font-semibold text-gray-700">
-                  CNPJ
-                </label>
-                <input
-                  id="cnpj"
-                  type="text"
-                  placeholder="00.000.000/0000-00"
-                  value={cnpj}
-                  onChange={(e) => setCnpj(formatCNPJ(e.target.value))}
-                  className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-mono"
-                  required
-                />
-              </div>
+            {/* CNPJ */}
+            <div className="space-y-2">
+              <label htmlFor="cnpj" className="block text-sm font-semibold">
+                CNPJ
+              </label>
+              <input
+                id="cnpj"
+                type="text"
+                placeholder="00.000.000/0000-00"
+                value={cnpj}
+                onChange={(e) => setCnpj(formatCNPJ(e.target.value))}
+                className="w-full px-4 py-3 border rounded-lg font-mono outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
+                style={{
+                  backgroundColor: "var(--surface-elevated)",
+                  borderColor: "var(--border-subtle)",
+                  color: "var(--foreground)",
+                  "--tw-ring-color": "var(--primary)",
+                } as any}
+                required
+              />
+            </div>
 
-              {/* Setores */}
-              <div className="space-y-1.5">
-                <label htmlFor="setores" className="text-sm font-semibold text-gray-700">
-                  Setores de Atuação
-                </label>
-                <input
-                  id="setores"
-                  type="text"
-                  placeholder="Tecnologia, Varejo, Educação..."
-                  value={setores}
-                  onChange={(e) => setSetores(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
-                />
-                <p className="text-[11px] text-gray-400 italic">Separe os setores utilizando vírgulas.</p>
-              </div>
-
+            {/* Setores */}
+            <div className="space-y-2">
+              <label htmlFor="setores" className="block text-sm font-semibold">
+                Setores de Atuação
+              </label>
+              <input
+                id="setores"
+                type="text"
+                placeholder="Tecnologia, Varejo, Educação..."
+                value={setores}
+                onChange={(e) => setSetores(e.target.value)}
+                className="w-full px-4 py-3 border rounded-lg outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
+                style={{
+                  backgroundColor: "var(--surface-elevated)",
+                  borderColor: "var(--border-subtle)",
+                  color: "var(--foreground)",
+                  "--tw-ring-color": "var(--primary)",
+                } as any}
+              />
+              <p className="text-xs opacity-70">Separe os setores utilizando vírgulas</p>
             </div>
 
             {/* Ações */}
-            <div className="pt-4 flex items-center gap-4">
+            <div className="pt-4 flex flex-col sm:flex-row gap-3">
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-blue-200"
+                className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-white transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
+                style={{ backgroundColor: "var(--primary)" }}
+                onMouseEnter={(e) => {
+                  if (e.currentTarget instanceof HTMLElement && !loading) {
+                    e.currentTarget.style.backgroundColor = "var(--primary-hover)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (e.currentTarget instanceof HTMLElement) {
+                    e.currentTarget.style.backgroundColor = "var(--primary)";
+                  }
+                }}
               >
                 {loading ? (
-                  <Loader2 className="animate-spin" size={20} />
+                  <>
+                    <Loader2 className="animate-spin" size={18} />
+                    Cadastrando...
+                  </>
                 ) : (
                   <>
-                    <CheckCircle2 size={20} />
+                    <CheckCircle2 size={18} />
                     Confirmar Cadastro
                   </>
                 )}
@@ -146,7 +210,21 @@ export default function CreateEmpresa() {
               
               <Link
                 href="/empresa"
-                className="px-6 py-3 text-gray-500 font-medium hover:bg-gray-100 rounded-xl transition-colors"
+                className="px-6 py-3 font-semibold rounded-lg transition-colors duration-300 text-center"
+                style={{
+                  backgroundColor: "var(--surface-elevated)",
+                  color: "var(--foreground)",
+                }}
+                onMouseEnter={(e) => {
+                  if (e.currentTarget instanceof HTMLElement) {
+                    e.currentTarget.style.backgroundColor = "var(--border-subtle)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (e.currentTarget instanceof HTMLElement) {
+                    e.currentTarget.style.backgroundColor = "var(--surface-elevated)";
+                  }
+                }}
               >
                 Cancelar
               </Link>
