@@ -128,7 +128,7 @@ export default function CreateEmpresa() {
                   borderColor: "var(--border-subtle)",
                   color: "var(--foreground)",
                   "--tw-ring-color": "var(--primary)",
-                } as any}
+                } as never}
                 required
               />
             </div>
@@ -150,7 +150,7 @@ export default function CreateEmpresa() {
                   borderColor: "var(--border-subtle)",
                   color: "var(--foreground)",
                   "--tw-ring-color": "var(--primary)",
-                } as any}
+                } as never}
                 required
               />
             </div>
@@ -172,7 +172,7 @@ export default function CreateEmpresa() {
                   borderColor: "var(--border-subtle)",
                   color: "var(--foreground)",
                   "--tw-ring-color": "var(--primary)",
-                } as any}
+                } as never}
               />
               <p className="text-xs opacity-70">Separe os setores utilizando vírgulas</p>
             </div>

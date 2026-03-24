@@ -94,7 +94,7 @@ export default function EmpresaPage() {
                 backgroundColor: "var(--surface)",
                 color: "var(--foreground)",
                 "--tw-ring-color": "var(--primary)",
-              } as any}
+              } as never}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>

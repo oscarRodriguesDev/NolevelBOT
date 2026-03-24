@@ -24,7 +24,12 @@ interface Chamado {
   historico?: string;
   status: string;
   prioridade: string;
-  atendente?: string;
+ atendente?: {
+  id: string
+  name: string
+  email: string
+  avatarUrl: string
+}
   createdAt: string;
 }
 
@@ -209,7 +214,7 @@ export default function TicketPage() {
           {chamado.atendente && (
             <div className="flex items-center gap-2">
               <FaUserTie style={{ opacity: 0.6 }} />
-              <span>Atendente: {chamado.atendente}</span>
+              <span>Atendente: {chamado.atendente.name}</span>
             </div>
           )}
         </div>
