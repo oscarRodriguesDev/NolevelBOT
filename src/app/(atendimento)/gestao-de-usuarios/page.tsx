@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Image from "next/image"
 import usuarios from "../../../../public/users/usuarios.png"
+import { useHeader } from "../layout"
 
 export default function CriarUsuarioPage() {
   const [form, setForm] = useState({
@@ -16,6 +17,16 @@ export default function CriarUsuarioPage() {
   })
 
   const [loading, setLoading] = useState(false)
+
+
+      const { setHeader } = useHeader()
+    
+      useEffect(() => {
+        setHeader({
+          titulo: 'Criar Novo Usuário',
+          descricao: 'Preencha os dados para registrar um novo usuário no sistema',
+        })
+      }, [])
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -71,13 +82,7 @@ export default function CriarUsuarioPage() {
       }}
     >
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="space-y-2 mb-10">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold" style={{ color: "var(--primary)" }}>
-            Criar Novo Usuário
-          </h1>
-          <p className="text-sm opacity-70">Preencha os dados para registrar um novo usuário no sistema</p>
-        </div>
+
 
         {/* Two Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">

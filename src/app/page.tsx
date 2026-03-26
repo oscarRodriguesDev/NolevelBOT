@@ -52,9 +52,8 @@ export default function LandingPage() {
         "Conexão com outros sistemas da empresa para automatizar fluxos e sincronizar dados.",
     },
   ];
+
   return (
-
-
     <main
       className="min-h-screen overflow-hidden transition-colors duration-500 font-sans"
       style={{
@@ -71,10 +70,8 @@ export default function LandingPage() {
         className="relative w-full px-6 pt-24 pb-16 sm:pt-32 lg:pt-48 bg-cover bg-center bg-no-repeat overflow-hidden"
         style={{ backgroundImage: "url('/landing/fundo.png')" }}
       >
-        {/* overlay escuro para legibilidade */}
         <div className="absolute inset-0 bg-black/60" />
 
-        {/* Efeito de brilho */}
         <div
           className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[500px] opacity-20 blur-[120px] pointer-events-none"
           style={{
@@ -112,17 +109,18 @@ export default function LandingPage() {
               da operação com uma interface moderna e intuitiva.
             </p>
 
+            {/* BOTÕES ATUALIZADOS */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               <Link
                 href="/login"
                 className="px-8 py-4 rounded-2xl font-bold shadow-lg transition-all duration-300 hover:-translate-y-1 active:scale-95 text-center"
                 style={{ backgroundColor: "var(--primary)", color: "white" }}
               >
-                Acessar sistema
+                Ja possui uma conta?
               </Link>
 
               <Link
-                href="/login"
+                href="/contact"
                 className="px-8 py-4 rounded-2xl font-semibold border transition-all duration-300 hover:bg-white/10 text-center"
                 style={{
                   borderColor: "rgba(255,255,255,0.2)",
@@ -164,7 +162,6 @@ export default function LandingPage() {
       </section>
 
       {/* --- BENEFÍCIOS --- */}
-
       <section
         className="py-24 px-6 mt-16"
         style={{ backgroundColor: "var(--surface)" }}
@@ -179,7 +176,8 @@ export default function LandingPage() {
               style={{ backgroundColor: "var(--primary)" }}
             />
             <p className="max-w-2xl mx-auto opacity-70">
-              Abertura via WhatsApp, triagem automática e acompanhamento em tempo real em um único fluxo.
+              Abertura via WhatsApp, triagem automática e acompanhamento em
+              tempo real em um único fluxo.
             </p>
           </div>
 
@@ -211,20 +209,20 @@ export default function LandingPage() {
 
       {/* --- CTA FINAL --- */}
       <section className="py-24 px-6 text-center relative overflow-hidden">
-        {/* background imagem */}
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{ backgroundImage: "url('/landing/footer.png')" }}
         />
 
-        {/* overlay para legibilidade */}
         <div className="absolute inset-0 bg-black/60" />
 
         <div
           className="max-w-5xl mx-auto rounded-[3rem] px-8 py-16 relative overflow-hidden shadow-2xl z-10"
-          style={{ backgroundColor: "rgba(var(--primary-rgb), 0.85)", backdropFilter: "blur(10px)" }}
+          style={{
+            backgroundColor: "rgba(var(--primary-rgb), 0.85)",
+            backdropFilter: "blur(10px)",
+          }}
         >
-          {/* Decoração interna */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl -mr-32 -mt-32" />
 
           <div className="relative z-10 space-y-8 text-white">
@@ -233,25 +231,34 @@ export default function LandingPage() {
             </h2>
 
             <p className="text-white/90 text-lg max-w-2xl mx-auto">
-              Acesse o sistema de gestão de chamados Nolevel e comece a
-              gerenciar suas operações agora.
+              Acesse o sistema ou entre em contato com nosso suporte especializado.
             </p>
 
-            <Link
-              href="/login"
-              className="inline-block px-10 py-4 rounded-2xl font-bold transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95"
-              style={{
-                backgroundColor: "var(--background)",
-                color: "var(--primary)"
-              }}
-            >
-              Começar Agora
-            </Link>
+            {/* BOTÕES ATUALIZADOS NO FOOTER */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="/login"
+                className="inline-block px-10 py-4 rounded-2xl font-bold transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95"
+                style={{
+                  backgroundColor: "var(--background)",
+                  color: "var(--primary)",
+                }}
+              >
+                Fazer Login
+              </Link>
+              <Link
+                href="/contact"
+                className="inline-block px-10 py-4 rounded-2xl font-bold border border-white/30 transition-all duration-300 hover:bg-white/10 active:scale-95"
+                style={{
+                  color: "white",
+                }}
+              >
+                Falar com Vendas
+              </Link>
+            </div>
           </div>
         </div>
       </section>
     </main>
-
-
   );
 }

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { Plus, Building2, MapPin, Search, ArrowRight } from 'lucide-react' // Opcional: instale lucide-react
+import { useHeader } from '../layout'
 
 interface Empresa {
   id: string
@@ -16,6 +17,16 @@ export default function EmpresaPage() {
   const [empresas, setEmpresas] = useState<Empresa[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+
+
+    const { setHeader } = useHeader()
+  
+    useEffect(() => {
+      setHeader({
+        titulo: 'Empresas',
+        descricao: 'Gerencie e visualize todas as empresas parceiras do sistema'
+      })
+    }, [])
 
   useEffect(() => {
     async function fetchEmpresas() {
@@ -49,12 +60,7 @@ export default function EmpresaPage() {
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 mb-8">
-          <div className="space-y-2">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold" style={{ color: "var(--primary)" }}>
-              Empresas
-            </h1>
-            <p className="text-sm opacity-70">Gerencie e visualize todas as empresas parceiras do sistema</p>
-          </div>
+    
 
           <Link
             href="/empresa/create"

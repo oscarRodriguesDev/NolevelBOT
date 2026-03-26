@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
+import Image from "next/image"
 
 type HistoricoItem = {
   data: string
@@ -22,7 +23,7 @@ type Chamado = {
   createdAt: string
   anexoUrl?: string | null
   historico?: string | null
-  atendente?: string | null 
+  atendente?: string | null
 }
 
 interface ModalChamadoProps {
@@ -46,8 +47,9 @@ export function ModalChamado({
   const [descricao, setDescricao] = useState("")
   const [historico, setHistorico] = useState<HistoricoItem[]>([])
   const [loading, setLoading] = useState(false)
+  const [doc, setDoc] = useState<string | null>(null)
 
-    const session = useSession()
+  const session = useSession()
 
 
   useEffect(() => {
@@ -77,52 +79,52 @@ export function ModalChamado({
     fetchChamado()
   }, [ticket, open])
 
-async function atualizarChamado() {
-  if (!ticket || !novoStatus) return
-  setLoading(true)
+  async function atualizarChamado() {
+    if (!ticket || !novoStatus) return
+    setLoading(true)
 
-  const novoHistoricoItem: HistoricoItem = {
-    data: new Date().toISOString(),
-    acao: novoStatus,
-    observacao,
+    const novoHistoricoItem: HistoricoItem = {
+      data: new Date().toISOString(),
+      acao: novoStatus,
+      observacao,
+    }
+
+    const historicoAtualizado = [...historico, novoHistoricoItem]
+    setHistorico(historicoAtualizado)
+
+    const descricaoAtualizada = descricao ? `${descricao}\n${observacao}` : observacao
+    setDescricao(descricaoAtualizada)
+
+    await fetch(`/api/tickets?atendimento=${ticket}&estagio=${novoStatus}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        descricao: descricaoAtualizada,
+        historico: JSON.stringify(historicoAtualizado),
+        userId: session.data?.user?.id,
+      }),
+    })
+
+    const res = await fetch(`/api/tickets?ticket=${ticket}`)
+    const data = await res.json()
+    const atualizado = data[0]
+
+    setChamado(atualizado)
+    setNovoStatus(atualizado.status)
+    setObservacao("")
+    setLoading(false)
   }
 
-  const historicoAtualizado = [...historico, novoHistoricoItem]
-  setHistorico(historicoAtualizado)
+  async function concluirChamado() {
+    if (!ticket) return
 
-  const descricaoAtualizada = descricao ? `${descricao}\n${observacao}` : observacao
-  setDescricao(descricaoAtualizada)
+    await fetch(`/api/tickets?atendimento=${ticket}`, {
+      method: "DELETE",
+    })
 
-  await fetch(`/api/tickets?atendimento=${ticket}&estagio=${novoStatus}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      descricao: descricaoAtualizada,
-      historico: JSON.stringify(historicoAtualizado),
-      userId: session.data?.user?.id,
-    }),
-  })
-
-  const res = await fetch(`/api/tickets?ticket=${ticket}`)
-  const data = await res.json()
-  const atualizado = data[0]
-
-  setChamado(atualizado)
-  setNovoStatus(atualizado.status)
-  setObservacao("")
-  setLoading(false)
-}
-
-async function concluirChamado() {
-  if (!ticket) return
-
-  await fetch(`/api/tickets?atendimento=${ticket}`, {
-    method: "DELETE",
-  })
-
-  onConcluido(ticket)
-  onClose()
-}
+    onConcluido(ticket)
+    onClose()
+  }
 
   if (!open || !chamado) return null
 
@@ -162,15 +164,26 @@ async function concluirChamado() {
           </div>
         </div>
 
-        {chamado.anexoUrl && (
+
+        {chamado.anexoUrl ? (
           <a
             href={chamado.anexoUrl}
             target="_blank"
-            className="inline-block text-xs sm:text-sm mb-6 transition-colors duration-200"
-            style={{ color: "var(--primary)" }}
+            rel="noopener noreferrer"
+            className="inline-block mb-6"
           >
-            Ver anexo
+            <Image
+              src={chamado.anexoUrl}
+              alt="Prévia do anexo"
+              width={100}
+              height={100}
+              className="object-cover rounded-md border"
+            />
           </a>
+        ) : (
+          <div className="text-xs sm:text-sm mb-6 text-gray-500">
+            Nenhum documento anexado
+          </div>
         )}
 
         {/* Descrição do Chamado */}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
   ResponsiveContainer,
   BarChart,
@@ -16,6 +16,7 @@ import {
   Cell
 } from "recharts"
 import jsPDF from "jspdf"
+import { useHeader } from "../layout"
 
 type Ticket = {
   id: number
@@ -141,6 +142,17 @@ export default function Dashboard() {
     return Math.round(total / count / 3600000)
   }, [])
 
+
+
+    const { setHeader } = useHeader()
+  
+    useEffect(() => {
+      setHeader({
+        titulo: 'Dashboards',
+        descricao: 'Visualize métricas e análises de desempenho do seu sistema'
+      })
+    }, [])
+
   function downloadCSV() {
     const header = "id,setor,motivo,status,abertura,fechamento\n"
 
@@ -188,13 +200,7 @@ export default function Dashboard() {
         color: "var(--foreground)",
       }}
     >
-      {/* Header */}
-      <div className="space-y-2">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold" style={{ color: "var(--primary)" }}>
-          Dashboard de Chamados
-        </h1>
-        <p className="text-sm opacity-70">Visualize métricas e análises de desempenho do seu sistema</p>
-      </div>
+
 
       {/* Filtros de Período */}
       <div className="flex flex-wrap gap-2 sm:gap-3">

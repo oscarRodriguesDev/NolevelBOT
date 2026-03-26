@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Building2, CheckCircle2, Loader2 } from 'lucide-react'
+import { useHeader } from '../../layout'
 
 export default function CreateEmpresa() {
   const router = useRouter()
@@ -12,6 +13,16 @@ export default function CreateEmpresa() {
   const [cnpj, setCnpj] = useState('')
   const [setores, setSetores] = useState('')
   const [loading, setLoading] = useState(false)
+
+
+      const { setHeader } = useHeader()
+    
+      useEffect(() => {
+        setHeader({
+          titulo: ' Cadastrar Empresa',
+          descricao: 'Preencha as informações abaixo para o registro de uma nova empresa',
+        })
+      }, [])
 
   // Função simples para formatar CNPJ enquanto digita
   const formatCNPJ = (value: string) => {
@@ -100,12 +111,7 @@ export default function CreateEmpresa() {
               >
                 <Building2 size={24} />
               </div>
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold" style={{ color: "var(--primary)" }}>
-                  Cadastrar Empresa
-                </h1>
-                <p className="text-xs sm:text-sm opacity-70">Preencha as informações abaixo para o registro</p>
-              </div>
+            
             </div>
           </div>
 

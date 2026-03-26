@@ -36,7 +36,7 @@ export default function UserCard(props: Props) {
   }
 
   const handleLogout = () => {
-    signOut({ callbackUrl: "/login" })
+    signOut({ callbackUrl: "/" })
   }
 
   if (status === "loading") {

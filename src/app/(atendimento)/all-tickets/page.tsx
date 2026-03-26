@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { ModalChamado } from "../components/modal_tandimento"
-
+import { useHeader } from '../layout'
 type Chamado = {
   id: string
   ticket: string
@@ -35,6 +35,25 @@ export default function TicketsPage() {
 
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
+
+//recuperando contexto da pagina
+
+
+
+  const { setHeader } = useHeader()
+
+  useEffect(() => {
+    setHeader({
+      titulo: 'Gerenciar Chamados',
+      descricao: 'Visualize e gerencie todos os seus chamados em um único lugar'
+    })
+  }, [])
+
+ 
+
+
+
+
 
   const fetchTickets = async () => {
     setLoading(true)
@@ -125,14 +144,7 @@ export default function TicketsPage() {
           borderColor: "var(--border-subtle)",
         }}
       >
-        <div className="space-y-2 mb-8">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold" style={{ color: "var(--primary)" }}>
-            Gerenciar Chamados
-          </h1>
-          <p className="opacity-70 text-sm sm:text-base">
-            Visualize e gerencie todos os seus chamados em um único lugar
-          </p>
-        </div>
+       
 
         {/* Filtros */}
         <div className="space-y-4">

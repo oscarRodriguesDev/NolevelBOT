@@ -1,11 +1,23 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useHeader } from "../layout"
 
 export default function CadastroCPFs() {
   const [nome, setNome] = useState("")
   const [cpf, setCpf] = useState("")
   const [file, setFile] = useState<File | null>(null)
+
+
+
+    const { setHeader } = useHeader()
+  
+    useEffect(() => {
+      setHeader({
+        titulo: 'Cadastro de CPFS',
+        descricao: 'Gerencie e importe CPFs autorizados'
+      })
+    }, [])
 
   async function cadastrarManual(e: React.FormEvent) {
     e.preventDefault()
@@ -79,12 +91,7 @@ export default function CadastroCPFs() {
           borderColor: "var(--border-subtle)",
         }}
       >
-        <div className="text-center space-y-2">
-          <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: "var(--primary)" }}>
-            Cadastro de CPFs
-          </h1>
-          <p className="text-sm opacity-70">Gerencie e importe CPFs autorizados</p>
-        </div>
+     
 
         <form onSubmit={cadastrarManual} className="space-y-4">
           <div>

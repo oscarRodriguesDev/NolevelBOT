@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useHeader } from "../layout"
 
 type Aviso = {
   id: string
@@ -18,6 +19,19 @@ export default function AvisosPage() {
   const [titulo, setTitulo] = useState("")
   const [conteudo, setConteudo] = useState("")
   const [setor, setSetor] = useState("")
+
+
+
+    const { setHeader } = useHeader()
+  
+    useEffect(() => {
+      setHeader({
+        titulo: 'Quadro de Avisos',
+        descricao: 'Comunicados importantes da sua empresa'
+      })
+    }, [])
+
+
 
   async function fetchAvisos() {
     const res = await fetch("/api/quadro-avisos")
@@ -97,14 +111,7 @@ export default function AvisosPage() {
     >
       <div className="max-w-5xl mx-auto">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 sm:mb-10">
-          <div className="space-y-2">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold" style={{ color: "var(--primary)" }}>
-              Quadro de Avisos
-            </h1>
-            <p className="text-sm opacity-70">
-              Comunicados internos do sistema
-            </p>
-          </div>
+
 
           <button
             onClick={() => {

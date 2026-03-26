@@ -2,8 +2,13 @@
 
 import { ThemeToggle } from '@/app/components/theme-toggle'
 
+interface Props {
+  titulo: string,
+  descricao: string
+}
 
-export function Header() {
+
+export function Header({titulo, descricao}: Props) {
 
     return (
       <div
@@ -17,13 +22,13 @@ export function Header() {
     
     <div className="min-w-0">
       <h1 className="text-base sm:text-lg lg:text-xl font-bold uppercase tracking-tight">
-        Nolevel • Atendimento Inteligente
+        Nolevel • {titulo}
       </h1>
       <p
         className="text-[11px] sm:text-xs font-semibold tracking-wider uppercase opacity-70"
         style={{ color: "var(--primary)" }}
       >
-        Central de Chamados
+        {descricao}
       </p>
     </div>
 
