@@ -10,7 +10,33 @@ export async function GET() {
       }
     })
 
-    return NextResponse.json(avisos)
+    const agora = new Date()
+
+    const validos = []
+    const vencidosIds: string[] = []
+
+    for (const aviso of avisos) {
+      if (!aviso.expiresAt) {
+        validos.push(aviso)
+        continue
+      }
+
+      if (agora > aviso.expiresAt) {
+        vencidosIds.push(aviso.id)
+      } else {
+        validos.push(aviso)
+      }
+    }
+
+    if (vencidosIds.length > 0) {
+      await prisma.avisos.deleteMany({
+        where: {
+          id: { in: vencidosIds }
+        }
+      })
+    }
+
+    return NextResponse.json(validos)
   } catch (error) {
     return NextResponse.json(
       { error: "Erro ao buscar avisos" },
@@ -19,11 +45,31 @@ export async function GET() {
   }
 }
 
+async function deletarFinalizado(id: string) {
+  const aviso = await prisma.avisos.findUnique({
+    where: { id }
+  })
+
+  if (!aviso || !aviso.duracao) return
+
+  const dias = Number(aviso.duracao)
+  if (isNaN(dias)) return
+
+  const dataExpiracao = new Date(aviso.createdAt)
+  dataExpiracao.setDate(dataExpiracao.getDate() + dias)
+
+  if (new Date() > dataExpiracao) {
+    await prisma.avisos.delete({
+      where: { id }
+    })
+  }
+}
+
 // POST - Criar novo aviso
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { titulo, conteudo, setor } = body
+    const { titulo, conteudo, setor, duracao } = body
 
     if (!titulo || !conteudo) {
       return NextResponse.json(
@@ -32,11 +78,24 @@ export async function POST(request: Request) {
       )
     }
 
+    let expiresAt: Date | null = null
+
+    if (duracao) {
+      const dias = Number(duracao)
+
+      if (!isNaN(dias)) {
+        const agora = new Date()
+        agora.setDate(agora.getDate() + dias)
+        expiresAt = agora
+      }
+    }
+
     const novoAviso = await prisma.avisos.create({
       data: {
         titulo,
         conteudo,
-        setor: setor || null
+        setor: setor || null,
+        expiresAt
       }
     })
 
@@ -49,11 +108,15 @@ export async function POST(request: Request) {
   }
 }
 
+
+
+
+
 // PUT - Editar aviso
 export async function PUT(request: Request) {
   try {
     const body = await request.json()
-    const { id, titulo, conteudo, setor } = body
+    const { id, titulo, conteudo, setor, expiresAt } = body
 
     if (!id) {
       return NextResponse.json(
@@ -62,12 +125,22 @@ export async function PUT(request: Request) {
       )
     }
 
+    let parsedExpiresAt: Date | null = null
+
+    if (expiresAt) {
+      const date = new Date(expiresAt)
+      if (!isNaN(date.getTime())) {
+        parsedExpiresAt = date
+      }
+    }
+
     const avisoAtualizado = await prisma.avisos.update({
       where: { id },
       data: {
         titulo,
         conteudo,
-        setor: setor ?? null
+        setor: setor ?? null,
+        expiresAt: parsedExpiresAt
       }
     })
 
@@ -90,6 +163,17 @@ export async function DELETE(request: Request) {
       return NextResponse.json(
         { error: "ID é obrigatório" },
         { status: 400 }
+      )
+    }
+
+    const existe = await prisma.avisos.findUnique({
+      where: { id }
+    })
+
+    if (!existe) {
+      return NextResponse.json(
+        { error: "Aviso não encontrado" },
+        { status: 404 }
       )
     }
 

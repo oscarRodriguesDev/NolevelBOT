@@ -1,7 +1,8 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {  LuCheck, LuLoader, LuArrowRight } from 'react-icons/lu'
-import { Header } from '@/app/(atendimento)/components/header'
+
+import { useHeader } from '../(atendimento)/layout'
 
 export default function TicketPageDirect() {
   
@@ -17,6 +18,9 @@ export default function TicketPageDirect() {
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+
+
+
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -117,7 +121,7 @@ export default function TicketPageDirect() {
       }}
     >
  
-      <Header />
+     
 
       <div className="max-w-2xl mx-auto">
         <div className="space-y-2 mb-8">

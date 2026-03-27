@@ -1,0 +1,105 @@
+// app/api/dashboard/route.ts
+
+import { NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
+
+function getWeek(date: Date) {
+  const first = new Date(date.getFullYear(), 0, 1)
+  const diff = (date.getTime() - first.getTime()) / 86400000
+  return Math.ceil((diff + first.getDay() + 1) / 7)
+}
+
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url)
+    const periodo = searchParams.get("periodo") || "mes"
+
+    const chamados = await prisma.chamado.findMany({
+      select: {
+        id: true,
+        setor: true,
+        descricao: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    })
+
+    // Chamados abertos por setor
+    const chamadosPorSetorMap: Record<string, number> = {}
+
+    chamados.forEach((c) => {
+      if (c.status !== "FECHADO") {
+        chamadosPorSetorMap[c.setor] =
+          (chamadosPorSetorMap[c.setor] || 0) + 1
+      }
+    })
+
+    const chamadosPorSetor = Object.entries(chamadosPorSetorMap).map(
+      ([setor, total]) => ({ setor, total })
+    )
+
+    // Chamados por período
+    const chamadosPeriodoMap: Record<string, number> = {}
+
+    chamados.forEach((c) => {
+      const d = new Date(c.createdAt)
+
+      let key = ""
+
+      if (periodo === "dia") key = d.toISOString().slice(0, 10)
+      if (periodo === "semana") key = `S${getWeek(d)}`
+      if (periodo === "mes") key = `${d.getMonth() + 1}/${d.getFullYear()}`
+      if (periodo === "ano") key = `${d.getFullYear()}`
+
+      chamadosPeriodoMap[key] =
+        (chamadosPeriodoMap[key] || 0) + 1
+    })
+
+    const chamadosPeriodo = Object.entries(chamadosPeriodoMap).map(
+      ([periodo, total]) => ({ periodo, total })
+    )
+
+    // Motivos (usando descricao como base)
+    const motivosMap: Record<string, number> = {}
+
+    chamados.forEach((c) => {
+      const motivo = c.descricao || "Outros"
+      motivosMap[motivo] = (motivosMap[motivo] || 0) + 1
+    })
+
+    const motivosStats = Object.entries(motivosMap)
+      .map(([motivo, total]) => ({ motivo, total }))
+      .sort((a, b) => b.total - a.total)
+
+    // Tempo médio (usando chamados fechados)
+    let totalTempo = 0
+    let count = 0
+
+    chamados.forEach((c) => {
+      if (c.status === "FECHADO") {
+        const inicio = new Date(c.createdAt).getTime()
+        const fim = new Date(c.updatedAt).getTime()
+
+        totalTempo += fim - inicio
+        count++
+      }
+    })
+
+    const tempoMedio = count
+      ? Math.round(totalTempo / count / 3600000)
+      : 0
+
+    return NextResponse.json({
+      chamadosPorSetor,
+      chamadosPeriodo,
+      motivosStats,
+      tempoMedio,
+    })
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Erro ao gerar dashboard" },
+      { status: 500 }
+    )
+  }
+}

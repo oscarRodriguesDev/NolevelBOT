@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import {
   ResponsiveContainer,
   BarChart,
@@ -11,413 +11,213 @@ import {
   LineChart,
   Line,
   CartesianGrid,
-  PieChart,
-  Pie,
   Cell
 } from "recharts"
 import jsPDF from "jspdf"
 import { useHeader } from "../layout"
 
-type Ticket = {
-  id: number
-  setor: string
-  motivo: string
-  status: "Aberto" | "Fechado"
-  abertura: string
-  fechamento?: string
-}
-
-const motivos = [
-  "Senha",
-  "Computador lento",
-  "Acesso sistema",
-  "Erro sistema",
-  "Internet",
-  "Equipamento"
-]
-
-const setores = ["TI", "RH", "Financeiro", "Comercial", "Logistica"]
-
-function randomDate(start: Date, end: Date) {
-  return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()))
-}
-
-function generateMock(): Ticket[] {
-  const arr: Ticket[] = []
-
-  for (let i = 1; i <= 200; i++) {
-    const abertura = randomDate(new Date(2026, 0, 1), new Date())
-    const fechado = Math.random() > 0.3
-
-    const fechamento = fechado
-      ? new Date(abertura.getTime() + Math.random() * 5 * 86400000)
-      : undefined
-
-    arr.push({
-      id: i,
-      setor: setores[Math.floor(Math.random() * setores.length)],
-      motivo: motivos[Math.floor(Math.random() * motivos.length)],
-      status: fechado ? "Fechado" : "Aberto",
-      abertura: abertura.toISOString(),
-      fechamento: fechamento?.toISOString()
-    })
-  }
-
-  return arr
-}
-
-const tickets = generateMock()
-
-function getWeek(date: Date) {
-  const first = new Date(date.getFullYear(), 0, 1)
-  const diff = (date.getTime() - first.getTime()) / 86400000
-  return Math.ceil((diff + first.getDay() + 1) / 7)
+// Tipagem para os dados que vêm da API (ajuste conforme seu backend)
+interface StatItem {
+  setor?: string;
+  motivo?: string;
+  periodo?: string;
+  total: number;
 }
 
 export default function Dashboard() {
   const [periodo, setPeriodo] = useState<"dia" | "semana" | "mes" | "ano">("mes")
+  const [chamadosPorSetor, setChamadosPorSetor] = useState<StatItem[]>([])
+  const [chamadosPeriodo, setChamadosPeriodo] = useState<StatItem[]>([])
+  const [motivosStats, setMotivosStats] = useState<StatItem[]>([])
+  const [tempoMedio, setTempoMedio] = useState(0)
+  const [isLoading, setIsLoading] = useState(true)
 
-  const chamadosPorSetor = useMemo(() => {
-    const map: Record<string, number> = {}
+  const { setHeader } = useHeader()
 
-    tickets.forEach((t) => {
-      if (t.status === "Aberto") {
-        map[t.setor] = (map[t.setor] || 0) + 1
-      }
+  // Cálculo do total geral baseado nos motivos recebidos
+  const totalGeral = useMemo(() => {
+    return motivosStats.reduce((acc, curr) => acc + curr.total, 0)
+  }, [motivosStats])
+
+  useEffect(() => {
+    setHeader({
+      titulo: "Dashboards",
+      descricao: "Visualize métricas e análises de desempenho do seu sistema"
     })
+  }, [setHeader])
 
-    return Object.entries(map).map(([setor, total]) => ({ setor, total }))
-  }, [])
-
-  const chamadosPeriodo = useMemo(() => {
-    const map: Record<string, number> = {}
-
-    tickets.forEach((t) => {
-      const d = new Date(t.abertura)
-
-      let key = ""
-
-      if (periodo === "dia") key = d.toISOString().slice(0, 10)
-      if (periodo === "semana") key = `S${getWeek(d)}`
-      if (periodo === "mes") key = `${d.getMonth() + 1}/${d.getFullYear()}`
-      if (periodo === "ano") key = `${d.getFullYear()}`
-
-      map[key] = (map[key] || 0) + 1
-    })
-
-    return Object.entries(map).map(([k, v]) => ({
-      periodo: k,
-      total: v
-    }))
+  useEffect(() => {
+    setIsLoading(true)
+    fetch(`/api/dashboards?periodo=${periodo}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setChamadosPorSetor(data.chamadosPorSetor || [])
+        setChamadosPeriodo(data.chamadosPeriodo || [])
+        setMotivosStats(data.motivosStats || [])
+        setTempoMedio(data.tempoMedio || 0)
+      })
+      .finally(() => setIsLoading(false))
   }, [periodo])
 
-  const motivosStats = useMemo(() => {
-    const map: Record<string, number> = {}
-
-    tickets.forEach((t) => {
-      map[t.motivo] = (map[t.motivo] || 0) + 1
-    })
-
-    return Object.entries(map)
-      .map(([motivo, total]) => ({ motivo, total }))
-      .sort((a, b) => b.total - a.total)
-  }, [])
-
-  const tempoMedio = useMemo(() => {
-    let total = 0
-    let count = 0
-
-    tickets.forEach((t) => {
-      if (t.fechamento) {
-        const a = new Date(t.abertura).getTime()
-        const f = new Date(t.fechamento).getTime()
-
-        total += f - a
-        count++
-      }
-    })
-
-    if (!count) return 0
-
-    return Math.round(total / count / 3600000)
-  }, [])
-
-
-
-    const { setHeader } = useHeader()
-  
-    useEffect(() => {
-      setHeader({
-        titulo: 'Dashboards',
-        descricao: 'Visualize métricas e análises de desempenho do seu sistema'
-      })
-    }, [])
-
   function downloadCSV() {
-    const header = "id,setor,motivo,status,abertura,fechamento\n"
-
-    const rows = tickets
-      .map(
-        (t) =>
-          `${t.id},${t.setor},${t.motivo},${t.status},${t.abertura},${t.fechamento ?? ""}`
-      )
-      .join("\n")
-
+    const header = "setor,total\n"
+    const rows = chamadosPorSetor.map((t) => `${t.setor},${t.total}`).join("\n")
     const blob = new Blob([header + rows], { type: "text/csv" })
     const url = URL.createObjectURL(blob)
-
     const a = document.createElement("a")
     a.href = url
-    a.download = "dashboard.csv"
+    a.download = `dashboard_${periodo}.csv`
     a.click()
   }
 
   function downloadPDF() {
     const pdf = new jsPDF()
-
-    pdf.text("Relatorio Dashboard Chamados", 10, 10)
-    pdf.text(`Tempo medio resolucao: ${tempoMedio} horas`, 10, 20)
-
-    let y = 40
-
-    tickets.slice(0, 40).forEach((t) => {
-      pdf.text(
-        `${t.id} | ${t.setor} | ${t.motivo} | ${t.status}`,
-        10,
-        y
-      )
-      y += 6
+    pdf.setFontSize(18)
+    pdf.text("Relatório de Chamados", 10, 20)
+    pdf.setFontSize(12)
+    pdf.text(`Período: ${periodo} | Total: ${totalGeral} | TM: ${tempoMedio}h`, 10, 30)
+    
+    let y = 50
+    chamadosPorSetor.forEach((t) => {
+      pdf.text(`${t.setor}: ${t.total} chamados`, 10, y)
+      y += 7
     })
-
     pdf.save("dashboard.pdf")
   }
 
   return (
     <div
-      className="px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-8 transition-colors duration-300"
-      style={{
-        backgroundColor: "var(--background)",
-        color: "var(--foreground)",
-      }}
+      className="min-h-screen px-4 py-8 space-y-6 transition-colors duration-300 max-w-[1600px] mx-auto select-none"
+      style={{ backgroundColor: "var(--background)", color: "var(--foreground)" }}
     >
-
-
-      {/* Filtros de Período */}
-      <div className="flex flex-wrap gap-2 sm:gap-3">
-        <div className="flex gap-2 sm:gap-3">
-          {(['dia', 'semana', 'mes', 'ano'] as const).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPeriodo(p)}
-              className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-all duration-300 capitalize text-xs sm:text-sm ${
-                periodo === p ? 'text-white' : ''
-              }`}
-              style={{
-                backgroundColor: periodo === p ? 'var(--primary)' : 'var(--surface)',
-                borderColor: 'var(--border-subtle)',
-                color: periodo === p ? 'white' : 'var(--foreground)',
-                border: '1px solid',
-              }}
-            >
-              {p}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex gap-2 sm:gap-3 ml-auto">
-          <button
-            onClick={downloadCSV}
-            className="px-3 sm:px-4 py-2 rounded-lg font-medium text-white transition-all duration-300 hover:scale-105 active:scale-95 text-xs sm:text-sm"
-            style={{ backgroundColor: "var(--status-completed)" }}
-          >
-            CSV
-          </button>
-
-          <button
-            onClick={downloadPDF}
-            className="px-3 sm:px-4 py-2 rounded-lg font-medium text-white transition-all duration-300 hover:scale-105 active:scale-95 text-xs sm:text-sm"
-            style={{ backgroundColor: "var(--status-in-progress)" }}
-          >
-            PDF
-          </button>
-        </div>
-      </div>
-
-      {/* Métrica Principal */}
-      <div
-        className="p-4 sm:p-6 rounded-2xl border shadow-lg"
-        style={{
-          backgroundColor: "var(--surface)",
-          borderColor: "var(--border-subtle)",
-        }}
-      >
-        <p className="text-xs sm:text-sm opacity-70 mb-2">Tempo Médio de Resolução</p>
-        <p className="text-2xl sm:text-3xl lg:text-4xl font-bold" style={{ color: "var(--primary)" }}>
-          {tempoMedio} <span className="text-base sm:text-lg opacity-70">horas</span>
-        </p>
-      </div>
-
-      {/* Gráficos Principais */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-        {/* Gráfico de Barras */}
-        <div
-          className="rounded-2xl border shadow-lg p-4 sm:p-6 transition-colors duration-300"
-          style={{
-            backgroundColor: "var(--surface)",
-            borderColor: "var(--border-subtle)",
-          }}
-        >
-          <h2 className="text-lg sm:text-xl font-bold mb-4" style={{ color: "var(--primary)" }}>
-            Chamados Abertos por Setor
-          </h2>
-
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chamadosPorSetor}>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="var(--border-subtle)"
-              />
-              <XAxis dataKey="setor" stroke="var(--foreground)" style={{ fontSize: '12px' }} />
-              <YAxis stroke="var(--foreground)" style={{ fontSize: '12px' }} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "var(--surface-elevated)",
-                  border: "1px solid var(--border-subtle)",
-                  color: "var(--foreground)",
-                  borderRadius: '8px',
+      {/* HEADER COMPACTO */}
+      <header className="flex flex-col md:flex-row justify-between items-center gap-4 bg-[var(--surface)] p-2 pl-4 rounded-2xl border border-[var(--border-subtle)] shadow-sm">
+        <span className="text-xs font-black uppercase tracking-[0.2em] opacity-50">Filtros</span>
+        
+        <div className="flex items-center gap-4">
+          <nav className="flex bg-[var(--background)] p-1 rounded-xl border border-[var(--border-subtle)]">
+            {(["dia", "semana", "mes", "ano"] as const).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriodo(p)}
+                className={`px-4 py-1.5 rounded-lg font-bold transition-all capitalize text-xs ${
+                  periodo === p ? "shadow-md scale-105" : "opacity-40 hover:opacity-100"
+                }`}
+                style={{
+                  backgroundColor: periodo === p ? "var(--primary)" : "transparent",
+                  color: periodo === p ? "white" : "var(--foreground)",
                 }}
-              />
-              <Bar dataKey="total" fill="var(--primary)" radius={[8, 8, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Gráfico de Linhas */}
-        <div
-          className="rounded-2xl border shadow-lg p-4 sm:p-6 transition-colors duration-300"
-          style={{
-            backgroundColor: "var(--surface)",
-            borderColor: "var(--border-subtle)",
-          }}
-        >
-          <h2 className="text-lg sm:text-xl font-bold mb-4" style={{ color: "var(--primary)" }}>
-            Chamados por {periodo === 'dia' ? 'Dia' : periodo === 'semana' ? 'Semana' : periodo === 'mes' ? 'Mês' : 'Ano'}
-          </h2>
-
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chamadosPeriodo}>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="var(--border-subtle)"
-              />
-              <XAxis dataKey="periodo" stroke="var(--foreground)" style={{ fontSize: '12px' }} />
-              <YAxis stroke="var(--foreground)" style={{ fontSize: '12px' }} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "var(--surface-elevated)",
-                  border: "1px solid var(--border-subtle)",
-                  color: "var(--foreground)",
-                  borderRadius: '8px',
-                }}
-              />
-              <Line
-                dataKey="total"
-                stroke="var(--primary)"
-                strokeWidth={2}
-                dot={{ fill: "var(--primary)", r: 4 }}
-                activeDot={{ r: 6 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Gráfico de Pizza e Tabela */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-        {/* Gráfico de Pizza */}
-        <div
-          className="rounded-2xl border shadow-lg p-4 sm:p-6 transition-colors duration-300"
-          style={{
-            backgroundColor: "var(--surface)",
-            borderColor: "var(--border-subtle)",
-          }}
-        >
-          <h2 className="text-lg sm:text-xl font-bold mb-4" style={{ color: "var(--primary)" }}>
-            Motivos de Chamados
-          </h2>
-
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "var(--surface-elevated)",
-                  border: "1px solid var(--border-subtle)",
-                  color: "var(--foreground)",
-                  borderRadius: '8px',
-                }}
-              />
-              <Pie
-                data={motivosStats}
-                dataKey="total"
-                nameKey="motivo"
-                outerRadius={100}
-                label={{ fill: 'var(--foreground)', fontSize: 12 }}
               >
-                {motivosStats.map((_, i) => (
-                  <Cell
-                    key={i}
-                    fill={[
-                      'var(--primary)',
-                      'var(--accent-secondary)',
-                      'var(--status-completed)',
-                      'var(--status-waiting)',
-                      'var(--status-in-progress)',
-                      'var(--status-new)',
-                    ][i % 6]}
-                  />
-                ))}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
+                {p}
+              </button>
+            ))}
+          </nav>
+
+          <div className="h-8 w-[1px] bg-[var(--border-subtle)] hidden md:block" />
+
+          <div className="flex gap-2">
+            <button onClick={downloadCSV} className="p-2 px-4 rounded-xl text-[10px] font-black text-white uppercase tracking-widest hover:brightness-110 transition-all" style={{ backgroundColor: "var(--status-completed)" }}>CSV</button>
+            <button onClick={downloadPDF} className="p-2 px-4 rounded-xl text-[10px] font-black text-white uppercase tracking-widest hover:brightness-110 transition-all" style={{ backgroundColor: "var(--status-in-progress)" }}>PDF</button>
+          </div>
+        </div>
+      </header>
+
+      {/* GRID PRINCIPAL */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        
+        {/* KPIs LATERAIS */}
+        <div className="lg:col-span-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
+          <div className="p-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] shadow-sm relative overflow-hidden group">
+             <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--primary)] opacity-[0.03] rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-500" />
+            <p className="text-[10px] font-black uppercase opacity-40 mb-2 tracking-widest">Tempo Médio</p>
+            <p className="text-4xl font-black" style={{ color: "var(--primary)" }}>
+              {isLoading ? "..." : tempoMedio}
+              <span className="text-sm opacity-40 ml-2 font-bold uppercase">h</span>
+            </p>
+          </div>
+
+          <div className="p-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] shadow-sm relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--status-completed)] opacity-[0.03] rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-500" />
+            <p className="text-[10px] font-black uppercase opacity-40 mb-2 tracking-widest">Total Geral</p>
+            <p className="text-4xl font-black" style={{ color: "var(--foreground)" }}>
+              {isLoading ? "..." : totalGeral}
+              <span className="text-sm opacity-40 ml-2 font-bold uppercase text-[var(--status-completed)]">un</span>
+            </p>
+          </div>
         </div>
 
-        {/* Tabela de Ranking */}
-        <div
-          className="rounded-2xl border shadow-lg p-4 sm:p-6 transition-colors duration-300 overflow-auto"
-          style={{
-            backgroundColor: "var(--surface)",
-            borderColor: "var(--border-subtle)",
-          }}
-        >
-          <h2 className="text-lg sm:text-xl font-bold mb-4" style={{ color: "var(--primary)" }}>
-            Ranking de Motivos
-          </h2>
+        {/* GRÁFICO DE BARRAS CENTRAL */}
+        <div className="lg:col-span-3 bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-xs font-black uppercase tracking-[0.2em] opacity-70">Chamados por Setor</h2>
+            <div className="flex gap-1">
+                <div className="w-2 h-2 rounded-full" style={{backgroundColor: 'var(--primary)'}} />
+                <div className="w-2 h-2 rounded-full opacity-20" style={{backgroundColor: 'var(--primary)'}} />
+            </div>
+          </div>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chamadosPorSetor}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" opacity={0.5} />
+                <XAxis dataKey="setor" axisLine={false} tickLine={false} fontSize={10} fontWeight="bold" stroke="var(--foreground)" opacity={0.5} dy={10} />
+                <YAxis axisLine={false} tickLine={false} fontSize={10} stroke="var(--foreground)" opacity={0.5} />
+                <Tooltip cursor={{fill: 'var(--background)', opacity: 0.4}} contentStyle={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }} />
+                <Bar dataKey="total" fill="var(--primary)" radius={[6, 6, 0, 0]} barSize={32} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
 
-          <table className="w-full text-sm">
-            <thead>
-              <tr style={{ borderBottom: '2px solid var(--border-subtle)' }}>
-                <th className="text-left p-3 font-semibold">Motivo</th>
-                <th className="text-right p-3 font-semibold">Total</th>
-              </tr>
-            </thead>
+        {/* EVOLUÇÃO TEMPORAL */}
+        <div className="lg:col-span-2 bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
+          <h2 className="text-xs font-black uppercase tracking-[0.2em] mb-8 opacity-70">Evolução Temporal</h2>
+          <div className="h-[250px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chamadosPeriodo}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" opacity={0.5} />
+                <XAxis dataKey="periodo" axisLine={false} tickLine={false} fontSize={10} fontWeight="bold" opacity={0.5} />
+                <YAxis axisLine={false} tickLine={false} fontSize={10} opacity={0.5} />
+                <Tooltip contentStyle={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: '12px' }} />
+                <Line type="monotone" dataKey="total" stroke="var(--primary)" strokeWidth={4} dot={{ r: 4, fill: 'var(--primary)', strokeWidth: 2, stroke: 'var(--surface)' }} activeDot={{ r: 6, strokeWidth: 0 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
 
-            <tbody>
-              {motivosStats.map((m, i) => (
-                <tr
-                  key={m.motivo}
-                  style={{
-                    borderBottom: '1px solid var(--border-subtle)',
-                    backgroundColor: i % 2 === 0 ? 'transparent' : 'var(--surface-elevated)',
-                  }}
-                >
-                  <td className="p-3">{m.motivo}</td>
-                  <td className="text-right p-3 font-semibold" style={{ color: "var(--primary)" }}>
-                    {m.total}
-                  </td>
+        {/* RANKING TABLE */}
+        <div className="lg:col-span-2 bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] shadow-sm overflow-hidden flex flex-col">
+          <div className="p-5 border-b border-[var(--border-subtle)] bg-[var(--background)] bg-opacity-20 flex justify-between items-center">
+            <h2 className="text-xs font-black uppercase tracking-[0.2em] opacity-70">Top Motivos</h2>
+            <span className="text-[10px] font-bold opacity-40">RANKING</span>
+          </div>
+          <div className="flex-1 overflow-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-left opacity-30 border-b border-[var(--border-subtle)]">
+                  <th className="px-6 py-3 font-black tracking-widest text-[9px]">MOTIVO</th>
+                  <th className="px-6 py-3 font-black tracking-widest text-right text-[9px]">TOTAL</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-[var(--border-subtle)]">
+                {motivosStats.length > 0 ? (
+                  motivosStats.slice(0, 6).map((m, i) => (
+                    <tr key={i} className="hover:bg-[var(--background)] hover:bg-opacity-40 transition-colors group">
+                      <td className="px-6 py-4 font-bold opacity-80 group-hover:opacity-100">{m.motivo}</td>
+                      <td className="px-6 py-4 text-right">
+                        <span className="bg-[var(--background)] px-3 py-1 rounded-lg font-black" style={{ color: "var(--primary)" }}>
+                          {m.total}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={2} className="p-10 text-center opacity-30 font-bold uppercase tracking-widest">Nenhum dado encontrado</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

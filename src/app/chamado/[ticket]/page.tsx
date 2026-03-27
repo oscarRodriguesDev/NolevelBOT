@@ -117,7 +117,7 @@ const SETORES = ["RH", "TI", "Financeiro", "Comercial", "Vendas", "Suporte", "Ma
       }}
     >
 
-      <Header />
+  
 
       <div className="max-w-md mx-auto px-4">
         <div
