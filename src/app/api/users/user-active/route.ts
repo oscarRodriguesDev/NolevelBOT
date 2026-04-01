@@ -1,7 +1,11 @@
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/nextauth" // Certifique-se de que o caminho está correto
+import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { NextResponse } from "next/server"
+import bcrypt from "bcryptjs"
+import { Prisma } from "@prisma/client"
+import { uploadFile } from "@/app/hooks/upload"
+
 
 export async function GET() {
   try {
@@ -47,3 +51,57 @@ export async function GET() {
     )
   }
 }
+
+
+export async function PUT(req: NextRequest) {
+  try {
+    const body = await req.json()
+    const { userId, password, avatarUrl } = body
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: "userId é obrigatório" },
+        { status: 400 }
+      )
+    }
+
+    if (!password && avatarUrl === undefined) {
+      return NextResponse.json(
+        { error: "Nenhum dado para atualização" },
+        { status: 400 }
+      )
+    }
+
+    const dataToUpdate: Prisma.userUpdateInput = {}
+
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10)
+      dataToUpdate.password = hashedPassword
+    }
+
+    if (avatarUrl !== undefined) {
+      dataToUpdate.avatarUrl = avatarUrl
+    }
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: dataToUpdate,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        avatarUrl: true,
+        updatedAt: true,
+      },
+    })
+
+    return NextResponse.json(user)
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Erro ao atualizar usuário" },
+      { status: 500 }
+    )
+  }
+}
+
+//alteração de imagem ainda não disponivel nessa versão

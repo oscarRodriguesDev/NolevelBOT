@@ -2,12 +2,31 @@
 import { useEffect, useState } from 'react'
 import {  LuCheck, LuLoader, LuArrowRight } from 'react-icons/lu'
 
-import { useHeader } from '../(atendimento)/layout'
 
 export default function TicketPageDirect() {
-  
-  const SETORES = ["RH", "TI", "Financeiro", "Comercial", "Vendas", "Suporte", "Manutenção", "Logística", "Medicina", "Segurança", "Limpeza", "Juridico"]
 
+  //buscar setores por empresa
+   const [SETORES, setSetores] = useState<string[]>([])
+
+  useEffect(() => {
+    async function fetchSetores() {
+      try {
+        const response = await fetch(`/api/empresa?cnpj=${process.env.NEXT_PUBLIC_CNPJ}`) // cnpj da empresa deve ser definida em variavel de ambiente
+        const data = await response.json()
+
+        if (response.ok) {
+          setSetores(data.setores || [])
+        }
+      } catch (error) {
+        console.error('Erro ao buscar setores', error)
+      }
+    }
+
+    fetchSetores()
+  }, [])
+
+
+ 
   const [formData, setFormData] = useState({
     nome: '',
     cpf: '',

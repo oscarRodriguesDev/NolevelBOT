@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/app/components/theme-toggle";
 import { LuMail, LuLock } from "react-icons/lu";
 import { signIn } from "next-auth/react"
+import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,32 +18,32 @@ export default function LoginPage() {
 
 
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault()
-  setError("")
-  setLoading(true)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError("")
+    setLoading(true)
 
-  try {
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    })
+    try {
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      })
 
-    if (result?.error) {
-      setError("Email ou senha incorretos")
-      setPassword("")
+      if (result?.error) {
+        setError("Email ou senha incorretos")
+        setPassword("")
+        setLoading(false)
+        return
+      }
+
+      router.push("/all-tickets")
+    } catch (err) {
+      setError("Erro ao fazer login")
+    } finally {
       setLoading(false)
-      return
     }
-
-    router.push("/all-tickets")
-  } catch (err) {
-    setError("Erro ao fazer login")
-  } finally {
-    setLoading(false)
   }
-}
   return (
     <div
       className="min-h-screen w-full flex items-center justify-center px-4 sm:px-6 lg:px-8 transition-colors duration-300"
@@ -60,7 +61,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       >
         {/* Lado esquerdo - imagem */}
         <div className="hidden md:block relative">
-         
+
           <img
             src="/login/login.png"
             alt="Sistema Nolevel"
@@ -74,9 +75,9 @@ const handleSubmit = async (e: React.FormEvent) => {
             <h2 className="text-3xl font-bold mb-2">
               Gestão inteligente de chamados
             </h2>
-            
+
             <p className="font-bold text-white/80 ">
-           Elimine gargalos, automatize processos e aumente a eficiência.
+              Elimine gargalos, automatize processos e aumente a eficiência.
             </p>
           </div>
         </div>
@@ -180,6 +181,9 @@ const handleSubmit = async (e: React.FormEvent) => {
               {loading ? "Entrando..." : "Entrar"}
             </button>
           </form>
+          <Link href="/contact" className="text-sm opacity-70 hover:underline">
+            Não possui uma conta?
+          </Link>
         </div>
       </div>
     </div>

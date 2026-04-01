@@ -16,17 +16,29 @@ export default function CriarUsuarioPage() {
     avatarFile: null as File | null,
   })
 
+  function resetForm() {
+    setForm({
+      name: "",
+       email: "", 
+       cpf: "", 
+       password: "", 
+       role: "",
+        setor: "", 
+        avatarFile: null as File | null,
+    })
+  }
+
   const [loading, setLoading] = useState(false)
 
 
-      const { setHeader } = useHeader()
-    
-      useEffect(() => {
-        setHeader({
-          titulo: 'Criar Novo Usuário',
-          descricao: 'Preencha os dados para registrar um novo usuário no sistema',
-        })
-      }, [])
+  const { setHeader } = useHeader()
+
+  useEffect(() => {
+    setHeader({
+      titulo: 'Criar Novo Usuário',
+      descricao: 'Preencha os dados para registrar um novo usuário no sistema',
+    })
+  }, [])
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -64,6 +76,10 @@ export default function CriarUsuarioPage() {
       })
 
       const data = await response.json()
+      if(response.ok) {
+        resetForm()
+        alert("Usuário criado com sucesso!")
+      }
 
       console.log(data)
     } catch (error) {
@@ -72,6 +88,14 @@ export default function CriarUsuarioPage() {
       setLoading(false)
     }
   }
+
+
+  const ROLES = [
+    { value: "GOD", label: "System Admin" },
+    { value: "ADMIN", label: "Administrador" },
+    { value: "GESTOR", label: "Gestor" },
+    { value: "ATENDENTE", label: "Atendente" },
+  ]
 
   return (
     <div
@@ -89,17 +113,17 @@ export default function CriarUsuarioPage() {
           {/* Left Column - Image Area */}
           <div
             className="rounded-2xl border shadow-lg p-6 sm:p-8 flex items-center justify-center min-h-96 lg:min-h-full transition-colors duration-300"
-               style={{
-                  backgroundColor: "var(--surface-elevated)",
-                  borderColor: "var(--border-subtle)",
-                  border: "2px solid var(--border-subtle)",
-                  backgroundImage: `url(${usuarios.src})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                  backgroundRepeat: "no-repeat",
-                }}
+            style={{
+              backgroundColor: "var(--surface-elevated)",
+              borderColor: "var(--border-subtle)",
+              border: "2px solid var(--border-subtle)",
+              backgroundImage: `url(${usuarios.src})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              backgroundRepeat: "no-repeat",
+            }}
           >
-       
+
           </div>
 
           {/* Right Column - Form */}
@@ -190,6 +214,7 @@ export default function CriarUsuarioPage() {
               </div>
 
               {/* Papel / Role */}
+              {/* Papel / Role */}
               <div>
                 <label className="block text-sm font-semibold mb-2">Papel</label>
                 <select
@@ -206,8 +231,11 @@ export default function CriarUsuarioPage() {
                   } as never}
                 >
                   <option value="">Selecione um papel</option>
-                  <option value="ADMIN">Administrador</option>
-                  <option value="USER">Usuário</option>
+                  {ROLES.map((role) => (
+                    <option key={role.value} value={role.value}>
+                      {role.label}
+                    </option>
+                  ))}
                 </select>
               </div>
 

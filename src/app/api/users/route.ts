@@ -20,6 +20,15 @@ export async function POST(req: NextRequest) {
     const setor = formData.get("setor") as string
     const file = formData.get("avatar") as File | null
 
+    const allowedRoles: ROLE[] = ["GOD", "ADMIN", "GESTOR", "ATENDENTE"]
+
+    if (!allowedRoles.includes(role as ROLE)) {
+      return NextResponse.json(
+        { error: "Role inválida" },
+        { status: 400 }
+      )
+    }
+
     const avatarUrl = await uploadFile({
       bucket: "profile",
       folder: "",
@@ -50,4 +59,3 @@ export async function POST(req: NextRequest) {
     )
   }
 }
-
