@@ -1,15 +1,18 @@
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/nextauth" // Certifique-se de que o caminho está correto
+
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import { Prisma } from "@prisma/client"
-import { uploadFile } from "@/app/hooks/upload"
+import { getSessionOrFail } from "@/util/permission"
 
 
 export async function GET() {
+  const session = await getSessionOrFail()
+  if(!session) {
+    return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
+  }
+
   try {
-    const session = await getServerSession(authOptions)
 
     // 1. Verificação de sessão
     if (!session || !session.user?.id) {
@@ -54,6 +57,12 @@ export async function GET() {
 
 
 export async function PUT(req: NextRequest) {
+    const session = await getSessionOrFail()
+  if(!session) {
+    return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
+  }
+
+
   try {
     const body = await req.json()
     const { userId, password, avatarUrl } = body
@@ -105,3 +114,5 @@ export async function PUT(req: NextRequest) {
 }
 
 //alteração de imagem ainda não disponivel nessa versão
+
+//criar a forma de deletar o usuario, caso o mesomo deseje

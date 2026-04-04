@@ -3,13 +3,10 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
 import { getSessionOrFail } from '@/util/permission';
-
-function limparCPF(cpf: string) {
-  return cpf.replace(/\D/g, "")
-}
+import { limparCPF } from "@/util/limparcpfs";
 
 export async function POST(req: NextRequest) {
-  const session = await getSessionOrFail()
+  const session = await getSessionOrFail(["GOD", "ADMIN", "GESTOR"])
 
   if (!session || !session.user) {
     return NextResponse.json({ error: "Acesso negado" }, { status: 403 })
@@ -171,8 +168,6 @@ export async function GET(req: NextRequest) {
     );
   }
 }
-
-
 
 
 export async function DELETE(req: NextRequest) {

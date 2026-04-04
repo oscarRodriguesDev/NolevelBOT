@@ -1,9 +1,14 @@
 // app/api/empresa/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getSessionOrFail } from '@/util/permission'
 
 // CREATE
 export async function POST(req: NextRequest) {
+  const session = await getSessionOrFail(["GOD"])
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
   try {
     const body = await req.json()
 
