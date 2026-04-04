@@ -2,23 +2,81 @@
 
 import { useEffect, useState } from "react"
 import { useHeader } from "../layout"
+import { FaTrash } from "react-icons/fa"
 
 export default function CadastroCPFs() {
   const [nome, setNome] = useState("")
   const [cpf, setCpf] = useState("")
   const [file, setFile] = useState<File | null>(null)
+  const [cpfs, setCpfs] = useState<{ id: string; nome: string; cpf: string }[]>([])
+  const { setHeader } = useHeader()
+
+
+//use efect para buscar os cpfs cadastrados
+  useEffect(() => {
+    async function fetchCpfs() {
+      try {
+        const res = await fetch("/api/cpfs")
+        const data = await res.json()
+        setCpfs(data)
+      } catch (error) {
+        console.error("Erro ao buscar CPFs")
+      }
+    }
+
+    fetchCpfs()
+  }, [])
 
 
 
-    const { setHeader } = useHeader()
-  
-    useEffect(() => {
-      setHeader({
-        titulo: 'Cadastro de CPFS',
-        descricao: 'Gerencie e importe CPFs autorizados'
+  //deleta cpf selecionado
+  async function handleDelete(cpf: string) {
+    try {
+      const res = await fetch("/api/cpfs", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ cpf }),
       })
-    }, [])
 
+      const data = await res.json()
+
+      //busca de cpss atualizada após modificação
+      try {
+        const res2 = await fetch("/api/cpfs")
+        const data = await res2.json()
+        setCpfs(data)
+      } catch (error) {
+        console.error("Erro ao buscar CPFs")
+      }
+    
+    
+
+      if (!res.ok) {
+        alert(data.error || "Erro ao deletar")
+        return
+      }
+
+      setCpfs(prev => prev.filter(item => item.cpf !== cpf))
+      alert("CPF deletado com sucesso")
+    } catch (error) {
+      alert("Erro ao deletar CPF")
+    }
+  }
+
+
+ 
+//apresentação do header
+  useEffect(() => {
+    setHeader({
+      titulo: 'Cadastro de CPFS',
+      descricao: 'Gerencie e importe CPFs autorizados'
+    })
+  }, [])
+
+
+//cadastro manual de cpf
   async function cadastrarManual(e: React.FormEvent) {
     e.preventDefault()
 
@@ -35,8 +93,19 @@ export default function CadastroCPFs() {
         alert(data.error || "Erro ao cadastrar")
         return
       }
+       
+
+      //busca de cpss atualizada após modificação
+      try {
+        const res2 = await fetch("/api/cpfs")
+        const data = await res2.json()
+        setCpfs(data)
+      } catch (error) {
+        console.error("Erro ao buscar CPFs")
+      }
 
       alert("CPF cadastrado com sucesso")
+
       setNome("")
       setCpf("")
     } catch {
@@ -44,6 +113,9 @@ export default function CadastroCPFs() {
     }
   }
 
+
+
+//cadastro em lote de cpfs via arquivo
   async function enviarArquivo(e: React.FormEvent) {
     e.preventDefault()
 
@@ -63,6 +135,17 @@ export default function CadastroCPFs() {
 
       const data = await res.json()
 
+
+      //busca de cpss atualizada após modificação
+      try {
+        const res2 = await fetch("/api/cpfs")
+        const data = await res2.json()
+        setCpfs(data)
+      } catch (error) {
+        console.error("Erro ao buscar CPFs")
+      }
+
+
       if (!res.ok) {
         alert(data.error || "Erro ao importar")
         return
@@ -76,14 +159,18 @@ export default function CadastroCPFs() {
     }
   }
 
+
+
   return (
     <div
-      className="flex items-center justify-center px-4 sm:px-6 lg:px-8 py-10 transition-colors duration-300"
+      className="flex items-start justify-center gap-8 px-4 sm:px-6 lg:px-8 py-10 transition-colors duration-300"
       style={{
         backgroundColor: "var(--background)",
         color: "var(--foreground)",
       }}
     >
+
+      {/* cadastro de cpfs */}
       <div
         className="w-full max-w-lg p-6 sm:p-8 rounded-2xl shadow-lg space-y-8 border transition-colors duration-300"
         style={{
@@ -91,8 +178,6 @@ export default function CadastroCPFs() {
           borderColor: "var(--border-subtle)",
         }}
       >
-     
-
         <form onSubmit={cadastrarManual} className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-2">Nome</label>
@@ -200,6 +285,57 @@ export default function CadastroCPFs() {
           </form>
         </div>
       </div>
+
+
+      {/* cpfs cadastrados */}
+      <div
+        className="w-full max-w-md p-6 rounded-2xl shadow-lg border"
+        style={{
+          backgroundColor: "var(--surface)",
+          borderColor: "var(--border-subtle)",
+        }}
+      >
+        <h3 className="text-lg font-semibold mb-4">CPFs cadastrados</h3>
+
+        <input
+          placeholder="Buscar por CPF"
+          onChange={(e) => {
+            const value = e.target.value
+            setCpfs(prev =>
+              prev.filter(item =>
+                item.cpf.toLowerCase().includes(value.toLowerCase())
+              )
+            )
+          }}
+          className="w-full p-2 mb-4 rounded-lg border outline-none"
+          style={{
+            backgroundColor: "var(--surface-elevated)",
+            borderColor: "var(--border-subtle)",
+            color: "var(--foreground)",
+          }}
+        />
+
+        <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+          {cpfs.map(item => (
+            <div
+              key={item.id}
+              className="p-3 rounded-lg border flex justify-between items-start"
+              style={{
+                borderColor: "var(--border-subtle)",
+                backgroundColor: "var(--surface-elevated)",
+              }}
+            >
+              <div>
+                <p className="text-sm font-medium">{item.nome}</p>
+                <p className="text-xs opacity-70">{item.cpf}</p>
+              </div>
+
+              <span className="text-xs cursor-pointer"><FaTrash onClick={() => handleDelete(item.cpf)} /></span>
+            </div>
+          ))}
+        </div>
+      </div>
+
     </div>
   )
 }
