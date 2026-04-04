@@ -90,29 +90,54 @@ export default function MobileHevelynChat() {
     </header>
 
     <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-5">
-      {messages.map((msg) => (
-        <div
-          key={msg.id}
-          className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-        >
+      {messages.map((msg) => {
+        const renderContent = (text: string) => {
+          const urlRegex = /(https?:\/\/[^\s]+)/g
+          const parts = text.split(urlRegex)
+
+          return parts.map((part, index) => {
+            if (part.match(urlRegex)) {
+              return (
+                <a
+                  key={index}
+                  href={part}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                  style={{ color: "var(--primary)" }}
+                >
+                  {part}
+                </a>
+              )
+            }
+            return <span key={index}>{part}</span>
+          })
+        }
+
+        return (
           <div
-            className="max-w-xs sm:max-w-md md:max-w-lg px-4 sm:px-5 py-3 rounded-2xl text-base sm:text-lg leading-relaxed shadow-md transition-colors duration-300"
-            style={{
-              backgroundColor:
-                msg.role === 'user' ? 'var(--primary)' : 'var(--surface)',
-              color:
-                msg.role === 'user' ? '#fff' : 'var(--foreground)',
-              borderColor:
-                msg.role === 'user'
-                  ? 'transparent'
-                  : 'var(--border-subtle)',
-              border: msg.role === 'user' ? 'none' : '1px solid',
-            }}
+            key={msg.id}
+            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            {msg.content}
+            <div
+              className="max-w-xs sm:max-w-md md:max-w-lg px-4 sm:px-5 py-3 rounded-2xl text-base sm:text-lg leading-relaxed shadow-md transition-colors duration-300"
+              style={{
+                backgroundColor:
+                  msg.role === 'user' ? 'var(--primary)' : 'var(--surface)',
+                color:
+                  msg.role === 'user' ? '#fff' : 'var(--foreground)',
+                borderColor:
+                  msg.role === 'user'
+                    ? 'transparent'
+                    : 'var(--border-subtle)',
+                border: msg.role === 'user' ? 'none' : '1px solid',
+              }}
+            >
+              {renderContent(msg.content)}
+            </div>
           </div>
-        </div>
-      ))}
+        )
+      })}
 
       {loading && (
         <div

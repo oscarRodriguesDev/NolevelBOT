@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
 
         const resposta = await botIA(session, userInput, `Tente identificar o que ele quer, caso não consiga encerre 
           amigavelmente.Não faça suposições, apenas encerre o atendimento, ao finalizar não precisa dizer boa tarde, bom dia ou boa noite,
-          apenas encerre`)
+          apenas encerre o atendimento de forma cordial.`)
         return NextResponse.json({ reply: resposta })
       }
 

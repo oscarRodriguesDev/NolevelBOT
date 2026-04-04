@@ -14,8 +14,7 @@ const FlowState = {
   ESCOLHER_ABERTURA: "escolher_abertura",
   COLETAR_SETOR: "coletar_setor"
 } as const;
-const menuString = "1. Abrir Chamado, 2. Consultar Chamado";
-const sessions = new Map<string, UserSession>();
+
 const empresa = 'Nolevel';
 const LINK_PORTAL = `https://nolevel-bot.vercel.app`;
 const LINK_CHAMADOS = `${LINK_PORTAL}/chamado`; 
@@ -62,6 +61,9 @@ export async function botIA(session: UserSession, userInput: string, instrucaoEt
             
             ETAPA ATUAL: ${session.state}
             INSTRUÇÃO ESPECÍFICA: ${instrucaoEtapa}
+
+           se na etapa de coleta de motivo, perceber que o usuario precisa fazer upload de qualquer documento ou arquivo, 
+           diga a ele de forma clara e direta exatamente a seguinte frase: Para enviar o documento, acesse : ${LINK_CHAMADOS}.
 
             ENCERRAMENTO E LINKS (IMPORTANTE):
             - Sempre que encerrar ou oferecer ajuda extra, apresente os links de forma clara e direta.

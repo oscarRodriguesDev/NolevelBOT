@@ -2,23 +2,14 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { authOptions } from "@/lib/nextauth"
 import type { Prisma } from '@prisma/client'
-import fs from 'fs'
-import { getServerSession } from 'next-auth'
 export const dynamic = 'force-dynamic'
 import { uploadFile } from '@/app/hooks/upload'
+import { getSessionOrFail } from '@/util/permission';
+
 
 // helper para validar sessão
-async function getSessionOrFail() {
-  const session = await getServerSession(authOptions)
 
-  if (!session || !session.user) {
-    return null
-  }
-
-  return session
-}
 
 
 //buscar o user da session
@@ -81,8 +72,18 @@ export async function POST(req: NextRequest) {
 }
 
 
+
+
 export async function GET(req: NextRequest) {
   try {
+    const session = await getSessionOrFail()
+
+    if (!session || !session.user) {
+      return NextResponse.json({ error: "Usuário não autenticado" }, { status: 401 })
+    }
+
+    const userSetor = session.user.setor
+
     const { searchParams } = new URL(req.url)
 
     const ticket = searchParams.get('ticket')
@@ -97,11 +98,16 @@ export async function GET(req: NextRequest) {
 
     const where: Prisma.ChamadoWhereInput = {}
 
+    where.setor = userSetor
+
     if (ticket) where.ticket = ticket
-    if (setor) where.setor = setor
     if (cpf) where.cpf = cpf
     if (status) where.status = status
     if (prioridade) where.prioridade = prioridade
+
+    if (setor && setor === userSetor) {
+      where.setor = setor
+    }
 
     if (nome) {
       where.nome = {
@@ -156,10 +162,8 @@ export async function GET(req: NextRequest) {
 }
 
 
-
-
 export async function PUT(req: NextRequest) {
-  getSessionOrFail()
+getSessionOrFail()
 
   try {
     const { searchParams } = new URL(req.url)
