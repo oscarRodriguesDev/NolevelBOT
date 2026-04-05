@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { LuCheck, LuLoader, LuArrowRight } from 'react-icons/lu'
 import { ThemeToggle } from '../components/theme-toggle'
+import { FileUpload } from '../components/fileInput'
 
 
 export default function TicketPageDirect() {
@@ -256,6 +257,8 @@ export default function TicketPageDirect() {
               />
             </div>
 
+{/* 
+
             <div>
               <label className="block text-sm font-semibold mb-2">
                 Anexar Arquivo (Opcional)
@@ -280,6 +283,10 @@ export default function TicketPageDirect() {
                 </p>
               )}
             </div>
+
+             */}
+
+             <FileUpload file={file} setFile={setFile} handleFileChange={handleFileChange} />
 
             <div className="pt-6">
               <button
