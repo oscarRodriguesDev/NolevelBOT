@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import { Prisma } from "@prisma/client"
 import { getSessionOrFail } from "@/util/permission"
+import { uploadFile } from "@/app/hooks/upload"
+import { authOptions } from "@/lib/nextauth"
+import { getServerSession } from "next-auth"
 
 
 export async function GET() {
@@ -57,41 +60,51 @@ export async function GET() {
 
 
 export async function PUT(req: NextRequest) {
-    const session = await getSessionOrFail()
-  if(!session) {
+  const logado = await getServerSession(authOptions)
+
+  // 1. Verificação de Segurança
+  if (!logado?.user?.id) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
   }
 
-
   try {
-    const body = await req.json()
-    const { userId, password, avatarUrl } = body
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: "userId é obrigatório" },
-        { status: 400 }
-      )
-    }
-
-    if (!password && avatarUrl === undefined) {
-      return NextResponse.json(
-        { error: "Nenhum dado para atualização" },
-        { status: 400 }
-      )
-    }
+    // IMPORTANTE: Use formData() em vez de json() para aceitar arquivos
+    const formData = await req.formData()
+    
+    const userId = logado.user.id
+    const password = formData.get("password") as string | null
+    const file = formData.get("avatarFile") as File | null // Nome deve bater com o front
 
     const dataToUpdate: Prisma.userUpdateInput = {}
 
-    if (password) {
+    // 2. Hash da Senha
+    if (password && password.trim() !== "") {
       const hashedPassword = await bcrypt.hash(password, 10)
       dataToUpdate.password = hashedPassword
     }
 
-    if (avatarUrl !== undefined) {
-      dataToUpdate.avatarUrl = avatarUrl
+    // 3. Upload do Arquivo (Se houver)
+    if (file && file.size > 0) {
+      const uploadedUrl = await uploadFile({
+        bucket: "profile",
+        folder: "",
+        file: file,
+      })
+      
+      if (uploadedUrl) {
+        dataToUpdate.avatarUrl = uploadedUrl
+      }
     }
 
+    // 4. Validação de alteração
+    if (Object.keys(dataToUpdate).length === 0) {
+      return NextResponse.json(
+        { error: "Nenhum dado para atualizar" },
+        { status: 400 }
+      )
+    }
+
+    // 5. Update no Banco
     const user = await prisma.user.update({
       where: { id: userId },
       data: dataToUpdate,
@@ -105,14 +118,12 @@ export async function PUT(req: NextRequest) {
     })
 
     return NextResponse.json(user)
+
   } catch (error) {
+    console.error("ERRO NO PUT:", error)
     return NextResponse.json(
-      { error: "Erro ao atualizar usuário" },
+      { error: "Erro interno ao atualizar" },
       { status: 500 }
     )
   }
 }
-
-//alteração de imagem ainda não disponivel nessa versão
-
-//criar a forma de deletar o usuario, caso o mesomo deseje

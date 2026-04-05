@@ -38,9 +38,10 @@ export default function UserCard(props: Props) {
     role: props.role,
     avatarUrl: props.avatarUrl,
   }
+  const url = process.env.NEXTAUTH_URL|| "http://localhost:3001"
 
   const handleLogout = () => {
-    signOut({ callbackUrl: "/" })
+    signOut({ callbackUrl: url })
   }
 
   if (status === "loading") {

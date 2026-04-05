@@ -1,23 +1,14 @@
+import { uploadFile } from "@/app/hooks/upload"
+import { prisma } from "@/lib/prisma"
+import { ROLE } from "@prisma/client"
+import { hash } from "bcryptjs"
 import { NextRequest, NextResponse } from "next/server"
 
-import { prisma } from "@/lib/prisma"
-import { hash } from "bcryptjs"
-import { ROLE } from "@prisma/client"
-import { uploadFile } from "@/app/hooks/upload"
-import { getSessionOrFail } from "@/util/permission"
-
-
-
-
-
 export async function POST(req: NextRequest) {
-  // 1. Liberamos a rota para quem tem poder de criação
-  // Note que ATENDENTE ficou de fora pois ele não cria ninguém.
-  const session = await getSessionOrFail(["GOD", "ADMIN", "GESTOR"])
-
   try {
     const formData = await req.formData()
-    const roleFromFront = formData.get("role") as string 
+
+    const roleFromFront = formData.get("role") as string
 
     const roleMap: Record<string, ROLE> = {
       "XX!": "GOD",
@@ -32,30 +23,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Papel inválido" }, { status: 400 })
     }
 
-    // --- LÓGICA DE HIERARQUIA ---
-    const userRole = session?.user.role // Role de quem está LOGADO
-
-    let canCreate = false
-
-    if (userRole === "GOD") {
-      // GOD cria qualquer um (inclusive outro GOD e ADMIN)
-      canCreate = true
-    } else if (userRole === "ADMIN") {
-      // ADMIN cria ADMIN, GESTOR e ATENDENTE (não cria GOD)
-      if (finalRole !== "GOD") canCreate = true
-    } else if (userRole === "GESTOR") {
-      // GESTOR cria apenas ATENDENTE
-      if (finalRole === "ATENDENTE") canCreate = true
-    }
-
-    if (!canCreate) {
-      return NextResponse.json(
-        { error: `Um ${userRole} não tem permissão para criar um ${finalRole}` },
-        { status: 403 }
-      )
-    }
-
-    // --- PROCESSAMENTO ---
     const name = formData.get("name") as string
     const email = formData.get("email") as string
     const cpf = formData.get("cpf") as string
@@ -67,7 +34,7 @@ export async function POST(req: NextRequest) {
       bucket: "profile",
       folder: "",
       file,
-      defaultUrl: "../../../../public/users/default-avatar.png",
+      defaultUrl: "https://tcgvuhoyojgdnzobmxxl.supabase.co/storage/v1/object/public/profile/cfa70ab9-e566-4bc4-ae53-97c83f24e7e9.jpeg",
     })
 
     const hashedPassword = await hash(password, 10)
@@ -90,4 +57,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Erro interno" }, { status: 500 })
   }
 }
-

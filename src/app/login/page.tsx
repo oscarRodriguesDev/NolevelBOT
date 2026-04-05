@@ -7,6 +7,8 @@ import { ThemeToggle } from "@/app/components/theme-toggle";
 import { LuMail, LuLock } from "react-icons/lu";
 import { signIn } from "next-auth/react"
 import Link from "next/link";
+import { BtnVoltar } from "../components/back";
+
 
 export default function LoginPage() {
   const router = useRouter();
@@ -49,6 +51,8 @@ export default function LoginPage() {
       className="min-h-screen w-full flex items-center justify-center px-4 sm:px-6 lg:px-8 transition-colors duration-300"
       style={{ backgroundImage: "url('/landing/footer.png')" }}
     >
+        <BtnVoltar />
+
       <div className="absolute right-4 top-4 z-50">
         <ThemeToggle />
       </div>

@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { ThemeToggle } from "../components/theme-toggle"
+import { BtnVoltar } from "../components/back"
 
 
 export default function ContatoForm() {
@@ -50,6 +51,9 @@ export default function ContatoForm() {
       className="min-h-screen flex items-center justify-center p-4 transition-colors duration-300"
       style={{ backgroundColor: "var(--background)" }}
     >
+
+      <BtnVoltar />
+
       <div className="absolute right-4 top-4 z-50">
         <ThemeToggle />
       </div>

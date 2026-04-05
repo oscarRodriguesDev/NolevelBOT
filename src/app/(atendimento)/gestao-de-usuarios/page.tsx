@@ -238,7 +238,7 @@ export default function CriarUsuarioPage() {
                     } as never}
                   >
                     <option value="">Selecione um papel</option>
-                   {/*  <option value="XX!">Master</option> {/* GOD */} 
+                   <option value="XX!">Master</option> {/* GOD */} 
                     <option value="X1X">Admin</option> {/* ADMIN */}
                     <option value="1XX">Gestor</option> {/* GESTOR */}
                     <option value="X11">Atendente</option> {/* ATENDENTE */}
