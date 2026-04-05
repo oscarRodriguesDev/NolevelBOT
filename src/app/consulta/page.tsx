@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { ThemeToggle } from "../components/theme-toggle"
 
 type Chamado = {
   createdAt: string | number | Date
@@ -16,9 +17,9 @@ type Chamado = {
 export default function ConsultaTickets() {
   const [cpf, setCpf] = useState("")
   const [tickets, setTickets] = useState<Chamado[]>([])
- // const [selecionado, setSelecionado] = useState<Chamado | null>(null)
+  // const [selecionado, setSelecionado] = useState<Chamado | null>(null)
   const [loading, setLoading] = useState(false)
-  const route  = useRouter() 
+  const route = useRouter()
 
   async function buscarTickets() {
     if (!cpf) return
@@ -29,7 +30,7 @@ export default function ConsultaTickets() {
       const res = await fetch(`/api/tickets?cpf=${cpf}`)
       const data = await res.json()
 
-      const chamados: Chamado[] = data.map((c:Chamado) => ({
+      const chamados: Chamado[] = data.map((c: Chamado) => ({
         ticket: c.ticket,
         status: c.status,
         setor: c.setor,
@@ -38,7 +39,7 @@ export default function ConsultaTickets() {
       }))
 
       setTickets(chamados)
-     
+
     } catch (err) {
       console.error(err)
       setTickets([])
@@ -55,6 +56,9 @@ export default function ConsultaTickets() {
         color: "var(--foreground)",
       }}
     >
+      <div className="absolute right-4 top-4 z-50">
+        <ThemeToggle />
+      </div>
       <div className="max-w-2xl mx-auto space-y-8">
         {/* Header */}
         <div className="space-y-2">
@@ -154,9 +158,9 @@ export default function ConsultaTickets() {
                           style={{
                             backgroundColor:
                               t.status === "CONCLUIDO" ? "var(--status-completed)"
-                              : t.status === "ABERTO" ? "var(--status-new)"
-                              : t.status === "EM_ANDAMENTO" ? "var(--status-in-progress)"
-                              : "var(--status-waiting)",
+                                : t.status === "ABERTO" ? "var(--status-new)"
+                                  : t.status === "EM_ANDAMENTO" ? "var(--status-in-progress)"
+                                    : "var(--status-waiting)",
                             color: "#fff",
                           }}
                         >

@@ -1,12 +1,13 @@
 'use client'
 import { useEffect, useState } from 'react'
-import {  LuCheck, LuLoader, LuArrowRight } from 'react-icons/lu'
+import { LuCheck, LuLoader, LuArrowRight } from 'react-icons/lu'
+import { ThemeToggle } from '../components/theme-toggle'
 
 
 export default function TicketPageDirect() {
 
   //buscar setores por empresa
-   const [SETORES, setSetores] = useState<string[]>([])
+  const [SETORES, setSetores] = useState<string[]>([])
 
   useEffect(() => {
     async function fetchSetores() {
@@ -26,7 +27,7 @@ export default function TicketPageDirect() {
   }, [])
 
 
- 
+
   const [formData, setFormData] = useState({
     nome: '',
     cpf: '',
@@ -93,6 +94,9 @@ export default function TicketPageDirect() {
         className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 transition-colors duration-300"
         style={{ backgroundColor: "var(--background)" }}
       >
+        <div className="absolute right-4 top-4 z-50">
+          <ThemeToggle />
+        </div>
         <div
           className="rounded-3xl shadow-2xl p-6 sm:p-8 max-w-sm w-full text-center border transition-colors duration-300"
           style={{
@@ -139,8 +143,10 @@ export default function TicketPageDirect() {
         color: "var(--foreground)",
       }}
     >
- 
-     
+      <div className="absolute right-4 top-4 z-50">
+        <ThemeToggle />
+      </div>
+
 
       <div className="max-w-2xl mx-auto">
         <div className="space-y-2 mb-8">
@@ -204,7 +210,7 @@ export default function TicketPageDirect() {
 
             <div>
               <label className="block text-sm font-semibold mb-2">
-                Local / Setor
+               Setor
               </label>
               <select
                 name="setor"
@@ -219,13 +225,13 @@ export default function TicketPageDirect() {
                   "--tw-ring-color": "var(--primary)",
                 } as never}
               >
-                <option value="">Selecione seu local</option>
+                <option value="">Esse chamado é para qual setor?</option>
                 {SETORES.map(setor => (
                   <option key={setor} value={setor}>
                     {setor}
                   </option>
                 ))}
-             
+
               </select>
             </div>
 

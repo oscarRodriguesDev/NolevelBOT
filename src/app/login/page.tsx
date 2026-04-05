@@ -49,7 +49,7 @@ export default function LoginPage() {
       className="min-h-screen w-full flex items-center justify-center px-4 sm:px-6 lg:px-8 transition-colors duration-300"
       style={{ backgroundImage: "url('/landing/footer.png')" }}
     >
-      <div className="absolute top-4 right-4 z-50">
+      <div className="absolute right-4 top-4 z-50">
         <ThemeToggle />
       </div>
 

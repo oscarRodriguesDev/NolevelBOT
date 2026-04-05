@@ -24,12 +24,12 @@ interface Chamado {
   historico?: string;
   status: string;
   prioridade: string;
- atendente?: {
-  id: string
-  name: string
-  email: string
-  avatarUrl: string
-}
+  atendente?: {
+    id: string
+    name: string
+    email: string
+    avatarUrl: string
+  }
   createdAt: string;
 }
 
@@ -74,6 +74,9 @@ export default function TicketPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center transition-colors duration-300" style={{ backgroundColor: "var(--background)" }}>
+        <div className="absolute right-4 top-4 z-50">
+          <ThemeToggle />
+        </div>
         <div className="text-center space-y-4">
           <svg className="w-8 h-8 animate-spin mx-auto" style={{ color: "var(--primary)" }} fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -88,6 +91,9 @@ export default function TicketPage() {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center transition-colors duration-300" style={{ backgroundColor: "var(--background)" }}>
+        <div className="absolute right-4 top-4 z-50">
+          <ThemeToggle />
+        </div>
         <div className="text-center space-y-4" style={{ color: "var(--status-cancelled)" }}>
           <p className="text-lg font-semibold">{error}</p>
         </div>
@@ -98,6 +104,10 @@ export default function TicketPage() {
   if (!chamado) {
     return (
       <div className="min-h-screen flex items-center justify-center transition-colors duration-300" style={{ backgroundColor: "var(--background)" }}>
+        <div className="absolute right-4 top-4 z-50">
+          <ThemeToggle />
+        </div>
+
         <div className="text-center space-y-4" style={{ color: "var(--foreground)" }}>
           <p className="text-lg">Chamado não encontrado</p>
         </div>
@@ -109,8 +119,8 @@ export default function TicketPage() {
     chamado.status === "CONCLUIDO"
       ? "bg-green-600"
       : chamado.status === "EM_ANDAMENTO"
-      ? "bg-yellow-500"
-      : "bg-blue-600";
+        ? "bg-yellow-500"
+        : "bg-blue-600";
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -138,7 +148,9 @@ export default function TicketPage() {
         color: "var(--foreground)",
       }}
     >
-      <ThemeToggle />
+      <div className="absolute right-4 top-4 z-50">
+        <ThemeToggle />
+      </div>
       <div
         className="w-full max-w-2xl rounded-2xl shadow-2xl border p-6 sm:p-8 space-y-6 transition-colors duration-300"
         style={{

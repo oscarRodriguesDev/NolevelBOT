@@ -1,12 +1,14 @@
 'use client'
-import { useState } from 'react'
-import {  LuCheck, LuLoader, LuArrowRight } from 'react-icons/lu'
-
-import { Header } from '@/app/(atendimento)/components/header'
+import { useEffect, useState } from 'react'
+import { LuCheck, LuLoader, LuArrowRight } from 'react-icons/lu'
+import { ThemeToggle } from '@/app/components/theme-toggle'
 
 export default function TicketPage() {
- 
-const SETORES = ["RH", "TI", "Financeiro", "Comercial", "Vendas", "Suporte", "Manutenção", "Logística", "Medicina", "Segurança", "Limpeza", "Juridico"]
+
+
+
+  
+  
   const [formData, setFormData] = useState({
     nome: '',
     cpf: '',
@@ -17,6 +19,28 @@ const SETORES = ["RH", "TI", "Financeiro", "Comercial", "Vendas", "Suporte", "Ma
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [SETORES, setSetores] = useState<string[]>([])
+
+  useEffect(() => {
+    async function fetchSetores() {
+      try {
+        const response = await fetch(`/api/empresa?cnpj=${process.env.NEXT_PUBLIC_CNPJ}`) // cnpj da empresa deve ser definida em variavel de ambiente
+        const data = await response.json()
+
+        if (response.ok) {
+          setSetores(data.setores || [])
+        }
+      } catch (error) {
+        console.error('Erro ao buscar setores', error)
+      }
+    }
+
+    fetchSetores()
+  }, [])
+
+
+
+
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -65,11 +89,14 @@ const SETORES = ["RH", "TI", "Financeiro", "Comercial", "Vendas", "Suporte", "Ma
   }
 
   if (submitted) {
-    return (
+ return (
       <div
         className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 transition-colors duration-300"
         style={{ backgroundColor: "var(--background)" }}
       >
+        <div className="absolute right-4 top-4 z-50">
+          <ThemeToggle />
+        </div>
         <div
           className="rounded-3xl shadow-2xl p-6 sm:p-8 max-w-sm w-full text-center border transition-colors duration-300"
           style={{
@@ -116,12 +143,21 @@ const SETORES = ["RH", "TI", "Financeiro", "Comercial", "Vendas", "Suporte", "Ma
         color: "var(--foreground)",
       }}
     >
+      <div className="absolute right-4 top-4 z-50">
+        <ThemeToggle />
+      </div>
 
-  
 
-      <div className="max-w-md mx-auto px-4">
+      <div className="max-w-2xl mx-auto">
+        <div className="space-y-2 mb-8">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold" style={{ color: "var(--primary)" }}>
+            Criar Novo Chamado
+          </h2>
+          <p className="text-sm opacity-70">Preencha os campos abaixo para registrar uma solicitação</p>
+        </div>
+
         <div
-          className="rounded-3xl p-8 border shadow-2xl transition-colors duration-300"
+          className="rounded-2xl p-6 sm:p-8 border shadow-lg transition-colors duration-300"
           style={{
             backgroundColor: "var(--surface)",
             borderColor: "var(--border-subtle)",
@@ -129,8 +165,8 @@ const SETORES = ["RH", "TI", "Financeiro", "Comercial", "Vendas", "Suporte", "Ma
         >
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-widest mb-2 opacity-75">
-                Nome
+              <label className="block text-sm font-semibold mb-2">
+                Nome Completo
               </label>
               <input
                 type="text"
@@ -138,18 +174,19 @@ const SETORES = ["RH", "TI", "Financeiro", "Comercial", "Vendas", "Suporte", "Ma
                 value={formData.nome}
                 onChange={handleChange}
                 required
-                className="w-full px-5 py-4 border rounded-2xl outline-none transition-colors duration-300"
+                className="w-full px-4 py-3 border rounded-lg outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
                 style={{
                   backgroundColor: "var(--surface-elevated)",
                   borderColor: "var(--border-subtle)",
                   color: "var(--foreground)",
-                }}
+                  "--tw-ring-color": "var(--primary)",
+                } as never}
                 placeholder="Digite seu nome completo"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-widest mb-2 opacity-75">
+              <label className="block text-sm font-semibold mb-2">
                 CPF
               </label>
               <input
@@ -160,45 +197,47 @@ const SETORES = ["RH", "TI", "Financeiro", "Comercial", "Vendas", "Suporte", "Ma
                 required
                 pattern="\d{11}"
                 maxLength={11}
-                className="w-full px-5 py-4 border rounded-2xl outline-none transition-colors duration-300"
+                className="w-full px-4 py-3 border rounded-lg outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
                 style={{
                   backgroundColor: "var(--surface-elevated)",
                   borderColor: "var(--border-subtle)",
                   color: "var(--foreground)",
-                }}
-                placeholder="Digite os 11 números do CPF"
+                  "--tw-ring-color": "var(--primary)",
+                } as never}
+                placeholder="00000000000"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-widest mb-2 opacity-75">
-                Setor
+              <label className="block text-sm font-semibold mb-2">
+               Setor
               </label>
               <select
                 name="setor"
                 value={formData.setor}
                 onChange={handleChange}
                 required
-                className="w-full px-5 py-4 rounded-2xl outline-none transition-colors duration-300"
+                className="w-full px-4 py-3 rounded-lg outline-none transition-all duration-300 border focus:ring-2 focus:ring-opacity-50"
                 style={{
                   backgroundColor: "var(--surface-elevated)",
                   color: "var(--foreground)",
                   borderColor: "var(--border-subtle)",
-                }}
+                  "--tw-ring-color": "var(--primary)",
+                } as never}
               >
-                <option value="">O chamado sera enviado para qual setor?</option>
+                <option value="">Esse chamado é para qual setor?</option>
                 {SETORES.map(setor => (
                   <option key={setor} value={setor}>
                     {setor}
                   </option>
                 ))}
-                
+
               </select>
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-widest mb-2 opacity-75">
-                Descrição
+              <label className="block text-sm font-semibold mb-2">
+                Descrição do Problema
               </label>
               <textarea
                 name="descricao"
@@ -206,31 +245,33 @@ const SETORES = ["RH", "TI", "Financeiro", "Comercial", "Vendas", "Suporte", "Ma
                 onChange={handleChange}
                 required
                 rows={4}
-                className="w-full px-5 py-4 border rounded-2xl outline-none transition-colors duration-300 resize-none"
+                className="w-full px-4 py-3 border rounded-lg outline-none transition-all duration-300 resize-none focus:ring-2 focus:ring-opacity-50"
                 style={{
                   backgroundColor: "var(--surface-elevated)",
                   borderColor: "var(--border-subtle)",
                   color: "var(--foreground)",
-                }}
-                placeholder="Descreva o problema"
+                  "--tw-ring-color": "var(--primary)",
+                } as never}
+                placeholder="Descreva o problema ou solicitação em detalhes..."
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-widest mb-2 opacity-75">
-                Anexo
+              <label className="block text-sm font-semibold mb-2">
+                Anexar Arquivo (Opcional)
               </label>
 
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/jpg"
                 onChange={handleFileChange}
-                className="w-full px-5 py-4 border rounded-2xl transition-colors duration-300"
+                className="w-full px-4 py-3 border rounded-lg transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
                 style={{
                   backgroundColor: "var(--surface-elevated)",
                   borderColor: "var(--border-subtle)",
                   color: "var(--foreground)",
-                }}
+                  "--tw-ring-color": "var(--primary)",
+                } as never}
               />
 
               {file && (
@@ -240,22 +281,22 @@ const SETORES = ["RH", "TI", "Financeiro", "Comercial", "Vendas", "Suporte", "Ma
               )}
             </div>
 
-            <div className="pt-4">
+            <div className="pt-6">
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full font-black py-5 rounded-2xl disabled:opacity-50 flex items-center justify-center gap-3 uppercase text-sm text-white transition-all duration-300 hover:scale-105 active:scale-95"
+                className="w-full font-semibold py-3 rounded-lg disabled:opacity-50 flex items-center justify-center gap-2 text-sm sm:text-base text-white transition-all duration-300 hover:scale-105 active:scale-95 disabled:hover:scale-100"
                 style={{
                   backgroundColor: "var(--primary)",
                 }}
                 onMouseEnter={e => {
-                  if (e.target instanceof HTMLElement && !loading) {
-                    e.target.style.backgroundColor = "var(--primary-hover)";
+                  if (e.currentTarget instanceof HTMLElement && !loading) {
+                    e.currentTarget.style.backgroundColor = "var(--primary-hover)";
                   }
                 }}
                 onMouseLeave={e => {
-                  if (e.target instanceof HTMLElement) {
-                    e.target.style.backgroundColor = "var(--primary)";
+                  if (e.currentTarget instanceof HTMLElement) {
+                    e.currentTarget.style.backgroundColor = "var(--primary)";
                   }
                 }}
               >
