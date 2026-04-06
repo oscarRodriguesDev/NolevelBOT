@@ -76,8 +76,9 @@ export function UserProfileModal({ open, onClose }: Props) {
       setAvatarFile(null)
       onClose()
       window.location.reload()
-    } catch (error: any) {
-      alert(error.message || "Falha ao atualizar perfil.")
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Falha ao atualizar perfil."
+      alert(message)
     } finally {
       setLoading(false)
     }

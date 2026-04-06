@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { ModalChamado } from "../components/modal_tandimento"
 import { useHeader } from '../layout'
+
 type Chamado = {
   id: string
   ticket: string
@@ -14,8 +15,7 @@ type Chamado = {
   descricao: string
   createdAt: string
   status: string
-  atendente?:{name: string} 
-
+  atendente?: { name: string }
 }
 
 export default function TicketsPage() {
@@ -36,10 +36,6 @@ export default function TicketsPage() {
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
 
-//recuperando contexto da pagina
-
-
-
   const { setHeader } = useHeader()
 
   useEffect(() => {
@@ -47,20 +43,18 @@ export default function TicketsPage() {
       titulo: 'Gerenciar Chamados',
       descricao: 'Visualize e gerencie todos os seus chamados em um único lugar'
     })
-  }, [])
+  }, [setHeader])
 
- 
-
-
-
-
-
-  const fetchTickets = async () => {
+  // Função de busca principal
+  const fetchTickets = useCallback(async (currentFilters: typeof filters) => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value) params.append(key, value)
+      
+      Object.entries(currentFilters).forEach(([key, value]) => {
+        if (value && value.trim() !== "") {
+          params.append(key, value.trim().toLowerCase())
+        }
       })
 
       const response = await fetch(`/api/tickets?${params.toString()}`)
@@ -69,16 +63,36 @@ export default function TicketsPage() {
       const data = await response.json()
       setTickets(data)
     } catch (error) {
-      console.error(error)
+      console.error("Erro na busca:", error)
       setTickets([])
     } finally {
       setLoading(false)
     }
-  }
-
-  useEffect(() => {
-    fetchTickets()
   }, [])
+
+  // EFEITO DE ATUALIZAÇÃO AUTOMÁTICA COM DEBOUNCE
+  useEffect(() => {
+    // Define um atraso de 500ms antes de disparar a busca
+    const delayDebounceFn = setTimeout(() => {
+      fetchTickets(filters)
+    }, 500)
+
+    // Limpa o timeout se o usuário digitar algo antes dos 500ms acabarem
+    return () => clearTimeout(delayDebounceFn)
+  }, [filters, fetchTickets])
+
+  const clearFilters = () => {
+    setFilters({
+      nome: "",
+      cpf: "",
+      setor: "",
+      ticket: "",
+      prioridade: "",
+      status: "",
+      startDate: "",
+      endDate: ""
+    })
+  }
 
   const abrirModal = (ticket: string) => {
     setSelectedTicket(ticket)
@@ -86,8 +100,7 @@ export default function TicketsPage() {
   }
 
   const fecharModal = () => {
-    //atualizar pagina para refletir mudanças
-    fetchTickets()
+    fetchTickets(filters)
     setModalOpen(false)
     setSelectedTicket(null)
   }
@@ -97,265 +110,123 @@ export default function TicketsPage() {
   }
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "NOVO":
-        return "var(--status-new)";
-      case "EM_ANDAMENTO":
-        return "var(--status-in-progress)";
-      case "AGUARDANDO":
-        return "var(--status-waiting)";
-      case "CONCLUIDO":
-      case "FINALIZADO":
-        return "var(--status-completed)";
-      case "CANCELADO":
-        return "var(--status-cancelled)";
-      default:
-        return "var(--primary)";
-    }
+    const s = status?.toUpperCase() || "";
+    if (s.includes("NOVO")) return "var(--status-new)";
+    if (s.includes("ATENDIMENTO") || s.includes("ANDAMENTO")) return "var(--status-in-progress)";
+    if (s.includes("AGUARDANDO")) return "var(--status-waiting)";
+    if (s.includes("CONCLUIDO") || s.includes("FINALIZADO")) return "var(--status-completed)";
+    if (s.includes("CANCELADO")) return "var(--status-cancelled)";
+    return "#6b7280";
   };
 
   const getPriorityColor = (prioridade: string) => {
-    switch (prioridade) {
-      case "BAIXA":
-        return "var(--status-completed)";
-      case "MEDIA":
-        return "var(--status-in-progress)";
-      case "ALTA":
-        return "var(--status-waiting)";
-      case "CRITICA":
-        return "var(--status-cancelled)";
-      default:
-        return "var(--primary)";
-    }
+    const p = prioridade?.toUpperCase() || "";
+    if (p.includes("BAIXA")) return "#10b981";
+    if (p.includes("NORMAL") || p.includes("MEDIA")) return "var(--status-in-progress)";
+    if (p.includes("ALTA")) return "#ef4444";
+    if (p.includes("CRITICA")) return "#7f1d1d";
+    return "var(--primary)";
   };
 
   return (
-    <div
-      className="py-10 px-4 transition-colors duration-300"
-      style={{
-        backgroundColor: "var(--background)",
-        color: "var(--foreground)",
-      }}
-    >
-      <div
-        className="max-w-7xl mx-auto shadow-lg rounded-2xl border p-6 sm:p-8 lg:p-10 space-y-6 transition-colors duration-300"
-        style={{
-          backgroundColor: "var(--surface)",
-          borderColor: "var(--border-subtle)",
-        }}
-      >
-       
-
-        {/* Filtros */}
+    <div className="py-10 px-4 transition-colors duration-300" style={{ backgroundColor: "var(--background)", color: "var(--foreground)" }}>
+      <div className="max-w-7xl mx-auto shadow-lg rounded-2xl border p-6 sm:p-8 lg:p-10 space-y-6" style={{ backgroundColor: "var(--surface)", borderColor: "var(--border-subtle)" }}>
+        
         <div className="space-y-4">
-          <details className="group">
-            <summary className="flex items-center gap-2 cursor-pointer font-semibold hover:opacity-80 transition-opacity">
-              <svg className="w-5 h-5 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-              </svg>
-              Filtros avançados
-            </summary>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4 pt-4 border-t" style={{ borderColor: "var(--border-subtle)" }}>
-              <input
-                placeholder="Nome"
-                value={filters.nome}
-                onChange={e => setFilters({ ...filters, nome: e.target.value })}
-                className="border p-3 rounded-lg transition-colors duration-300"
-                style={{
-                  borderColor: "var(--border-subtle)",
-                  backgroundColor: "var(--surface-elevated)",
-                  color: "var(--foreground)",
-                }}
-              />
-              <input
-                placeholder="CPF"
-                value={filters.cpf}
-                onChange={e => setFilters({ ...filters, cpf: e.target.value })}
-                className="border p-3 rounded-lg transition-colors duration-300"
-                style={{
-                  borderColor: "var(--border-subtle)",
-                  backgroundColor: "var(--surface-elevated)",
-                  color: "var(--foreground)",
-                }}
-              />
-              <input
-                placeholder="Setor"
-                value={filters.setor}
-                onChange={e => setFilters({ ...filters, setor: e.target.value })}
-                className="border p-3 rounded-lg transition-colors duration-300"
-                style={{
-                  borderColor: "var(--border-subtle)",
-                  backgroundColor: "var(--surface-elevated)",
-                  color: "var(--foreground)",
-                }}
-              />
-              <input
-                placeholder="Número do Ticket"
-                value={filters.ticket}
-                onChange={e => setFilters({ ...filters, ticket: e.target.value })}
-                className="border p-3 rounded-lg transition-colors duration-300"
-                style={{
-                  borderColor: "var(--border-subtle)",
-                  backgroundColor: "var(--surface-elevated)",
-                  color: "var(--foreground)",
-                }}
-              />
-              <select
-                value={filters.prioridade}
-                onChange={e => setFilters({ ...filters, prioridade: e.target.value })}
-                className="border p-3 rounded-lg transition-colors duration-300"
-                style={{
-                  borderColor: "var(--border-subtle)",
-                  backgroundColor: "var(--surface-elevated)",
-                  color: "var(--foreground)",
-                }}
-              >
-                <option value="">Prioridade</option>
-                <option value="BAIXA">Baixa</option>
-                <option value="MEDIA">Média</option>
-                <option value="ALTA">Alta</option>
-                <option value="CRITICA">Crítica</option>
-              </select>
-              <select
-                value={filters.status}
-                onChange={e => setFilters({ ...filters, status: e.target.value })}
-                className="border p-3 rounded-lg transition-colors duration-300"
-                style={{
-                  borderColor: "var(--border-subtle)",
-                  backgroundColor: "var(--surface-elevated)",
-                  color: "var(--foreground)",
-                }}
-              >
-                <option value="">Status</option>
-                <option value="NOVO">NOVO</option>
-                <option value="ABERTO">ABERTO</option>
-                <option value="EM_ANDAMENTO">EM_ANDAMENTO</option>
-                <option value="FINALIZADO">FINALIZADO</option>
-                <option value="CONCLUIDO">CONCLUIDO</option>
-              </select>
-              <input
-                type="date"
-                value={filters.startDate}
-                onChange={e => setFilters({ ...filters, startDate: e.target.value })}
-                className="border p-3 rounded-lg transition-colors duration-300"
-                style={{
-                  borderColor: "var(--border-subtle)",
-                  backgroundColor: "var(--surface-elevated)",
-                  color: "var(--foreground)",
-                }}
-              />
-              <input
-                type="date"
-                value={filters.endDate}
-                onChange={e => setFilters({ ...filters, endDate: e.target.value })}
-                className="border p-3 rounded-lg transition-colors duration-300"
-                style={{
-                  borderColor: "var(--border-subtle)",
-                  backgroundColor: "var(--surface-elevated)",
-                  color: "var(--foreground)",
-                }}
-              />
-              <button
-                onClick={fetchTickets}
-                className="sm:col-span-2 lg:col-span-4 px-6 py-3 rounded-lg font-medium text-white transition-all duration-300 hover:scale-105 active:scale-95"
-                style={{
-                  backgroundColor: "var(--primary)",
-                }}
-                onMouseEnter={e => {
-                  if (e.target instanceof HTMLElement) {
-                    e.target.style.backgroundColor = "var(--primary-hover)";
-                  }
-                }}
-                onMouseLeave={e => {
-                  if (e.target instanceof HTMLElement) {
-                    e.target.style.backgroundColor = "var(--primary)";
-                  }
-                }}
-              >
-                Aplicar Filtros
-              </button>
-            </div>
-          </details>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+               Filtros em tempo real
+               {loading && <span className="text-sm font-normal opacity-50 animate-pulse">(Atualizando...)</span>}
+            </h2>
+            <button type="button" onClick={clearFilters} className="text-sm text-[var(--primary)] hover:underline">
+              Limpar todos
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-[var(--border-subtle)]">
+            <input
+              placeholder="Filtrar por nome..."
+              value={filters.nome}
+              onChange={e => setFilters({ ...filters, nome: e.target.value })}
+              className="border p-3 rounded-lg bg-[var(--surface-elevated)] border-[var(--border-subtle)] focus:ring-2 focus:ring-[var(--primary)] outline-none"
+            />
+            <input
+              placeholder="Número do Ticket"
+              value={filters.ticket}
+              onChange={e => setFilters({ ...filters, ticket: e.target.value })}
+              className="border p-3 rounded-lg bg-[var(--surface-elevated)] border-[var(--border-subtle)] focus:ring-2 focus:ring-[var(--primary)] outline-none"
+            />
+            
+            <select
+              value={filters.prioridade}
+              onChange={e => setFilters({ ...filters, prioridade: e.target.value })}
+              className="border p-3 rounded-lg bg-[var(--surface-elevated)] border-[var(--border-subtle)] outline-none"
+            >
+              <option value="">Prioridade (Todas)</option>
+              <option value="baixa">Baixa</option>
+              <option value="normal">Normal</option>
+              <option value="alta">Alta</option>
+            </select>
+
+            <select
+              value={filters.status}
+              onChange={e => setFilters({ ...filters, status: e.target.value })}
+              className="border p-3 rounded-lg bg-[var(--surface-elevated)] border-[var(--border-subtle)] outline-none"
+            >
+              <option value="">Status (Todos)</option>
+              <option value="novo">Novo</option>
+              <option value="em_atendimento">Em Atendimento</option>
+              <option value="aguardando">Aguardando</option>
+              <option value="concluido">Concluído</option>
+            </select>
+          </div>
         </div>
 
-        {/* Tabela Responsiva */}
-        <div className="overflow-x-auto rounded-xl border" style={{ borderColor: "var(--border-subtle)" }}>
+        <div className="overflow-x-auto rounded-xl border border-[var(--border-subtle)]">
           <table className="w-full text-sm">
             <thead>
-              <tr
-                className="text-left border-b transition-colors duration-300"
-                style={{
-                  borderColor: "var(--border-subtle)",
-                  backgroundColor: "var(--surface-elevated)",
-                }}
-              >
-                <th className="py-3 px-2">Ticket</th>
-                <th className="py-3 px-2">Nome</th>
-                <th className="py-3 px-2">Setor</th>
-                <th className="py-3 px-2">Prioridade</th>
-                <th className="py-3 px-2">Status</th>
-                <th className="py-3 px-2">Atendente</th>
-                <th className="py-3 px-2">Data</th>
+              <tr className="text-left border-b bg-[var(--surface-elevated)] border-[var(--border-subtle)]">
+                <th className="py-3 px-4">Ticket</th>
+                <th className="py-3 px-4">Nome</th>
+                <th className="py-3 px-4">Setor</th>
+                <th className="py-3 px-4">Prioridade</th>
+                <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4">Atendente</th>
+                <th className="py-3 px-4">Data</th>
               </tr>
             </thead>
             <tbody>
-              {loading && (
-                <tr>
-                  <td colSpan={7} className="text-center py-6">
-                    Carregando...
-                  </td>
-                </tr>
-              )}
-
-              {!loading &&
+              {tickets.length === 0 && !loading ? (
+                <tr><td colSpan={7} className="text-center py-10 opacity-50">Nenhum chamado encontrado.</td></tr>
+              ) : (
                 tickets.map(ticket => (
                   <tr
-                    key={ticket.id}
+                    key={ticket.id || ticket.ticket}
                     onClick={() => abrirModal(ticket.ticket)}
-                    className="hover:opacity-80 transition cursor-pointer border-b"
-                    style={{
-                      borderColor: "var(--border-subtle)",
-                    }}
+                    className={`hover:bg-[var(--surface-elevated)] transition cursor-pointer border-b last:border-0 border-[var(--border-subtle)] ${loading ? 'opacity-50' : ''}`}
                   >
-                    <td className="py-3 px-2 font-medium">{ticket.ticket}</td>
-                    <td className="py-3 px-2">{ticket.nome}</td>
-                    <td className="py-3 px-2">{ticket.setor}</td>
-                    <td className="py-3 px-2">
-                      <span
-                        className="px-3 py-1 rounded-full text-xs font-semibold text-white"
-                        style={{
-                          backgroundColor: getPriorityColor(ticket.prioridade),
-                        }}
-                      >
+                    <td className="py-4 px-4 font-bold text-[var(--primary)]">{ticket.ticket}</td>
+                    <td className="py-4 px-4">{ticket.nome}</td>
+                    <td className="py-4 px-4">{ticket.setor}</td>
+                    <td className="py-4 px-4">
+                      <span className="px-3 py-1 rounded-full text-[10px] font-bold text-white uppercase" style={{ backgroundColor: getPriorityColor(ticket.prioridade) }}>
                         {ticket.prioridade}
                       </span>
                     </td>
-                    <td className="py-3 px-2">
-                      <span
-                        className="px-3 py-1 rounded-full text-xs font-semibold text-white"
-                        style={{
-                          backgroundColor: getStatusColor(ticket.status),
-                        }}
-                      >
-                        {ticket.status}
+                    <td className="py-4 px-4">
+                      <span className="px-3 py-1 rounded-full text-[10px] font-bold text-white uppercase" style={{ backgroundColor: getStatusColor(ticket.status) }}>
+                        {ticket.status?.replace('_', ' ')}
                       </span>
                     </td>
-                    <td className="py-3 px-2">
-                      {ticket.atendente?.name ?? "Não atribuído"}
+                    <td className="py-4 px-4">
+                      {typeof ticket.atendente === 'string' ? ticket.atendente : (ticket.atendente?.name || "Pendente")}
                     </td>
-                    <td className="py-3 px-2">
-                      {new Date(ticket.createdAt).toLocaleDateString("pt-BR")}
-                    </td>
+                    <td className="py-4 px-4">{new Date(ticket.createdAt).toLocaleDateString("pt-BR")}</td>
                   </tr>
-                ))}
+                ))
+              )}
             </tbody>
           </table>
-
-          {!loading && tickets.length === 0 && (
-            <div className="text-center py-6 opacity-75">
-              Nenhum chamado encontrado
-            </div>
-          )}
         </div>
       </div>
 
