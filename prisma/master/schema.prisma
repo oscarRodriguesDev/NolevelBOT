@@ -14,7 +14,6 @@ model empresa {
   cnpj        String   @unique
   databaseUrl String
   setores     String[]
-
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

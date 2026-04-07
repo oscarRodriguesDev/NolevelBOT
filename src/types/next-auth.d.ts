@@ -13,6 +13,11 @@ declare module "next-auth" {
       setor: string
       chamados: Chamado[]
       chamadosSetor: Chamado[]
+      empresa: {
+        id: string
+        nome: string
+        slug: string
+      }
     }
   }
 
@@ -26,6 +31,11 @@ declare module "next-auth" {
     setor: string
     chamados: Chamado[]
     chamadosSetor: Chamado[]
+    empresa: {
+      id: string
+      nome: string
+      slug: string
+    }
   }
 }
 

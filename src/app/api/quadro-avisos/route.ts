@@ -1,15 +1,49 @@
 import { NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
 import { getSessionOrFail } from "@/util/permission"
+import { cookies } from "next/headers"
 
+// master
+import { prismaMaster } from "@/lib/prisma/masterClient"
 
+// tenant
+import { PrismaClient } from "@prisma/client"
+import { PrismaPg } from "@prisma/adapter-pg"
+import { Pool } from "pg"
 
+export const dynamic = "force-dynamic"
 
-// GET - Buscar todos os avisos
+async function getTenantPrisma() {
+  const cookieStore = await cookies()
+  const tenantSlug = cookieStore.get("tenant")?.value
+
+  if (!tenantSlug) throw new Error("Tenant não identificado")
+
+  const empresa = await prismaMaster.empresa.findFirst({
+    where: { slug: tenantSlug },
+  })
+
+  if (!empresa) throw new Error("Empresa não encontrada")
+
+  const pool = new Pool({
+    connectionString: empresa.databaseUrl,
+  })
+
+  const adapter = new PrismaPg(pool)
+
+  const prisma = new PrismaClient({
+    adapter,
+  } as any)
+
+  return prisma
+}
+
+// GET
 export async function GET() {
   try {
+    const prisma = await getTenantPrisma()
+
     const avisos = await prisma.avisos.findMany({
-      orderBy: { createdAt: "desc" }
+      orderBy: { createdAt: "desc" },
     })
 
     const agora = new Date()
@@ -42,8 +76,8 @@ export async function GET() {
     if (vencidosIds.length > 0) {
       await prisma.avisos.deleteMany({
         where: {
-          id: { in: vencidosIds }
-        }
+          id: { in: vencidosIds },
+        },
       })
     }
 
@@ -56,14 +90,16 @@ export async function GET() {
   }
 }
 
-
-// POST - Criar novo aviso
+// POST
 export async function POST(request: Request) {
-    const session = await getSessionOrFail(["ADMIN", "GESTOR", "GOD"])// Apenas usuários autenticados podem criar avisos
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+  const session = await getSessionOrFail(["ADMIN", "GESTOR", "GOD"])
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   try {
+    const prisma = await getTenantPrisma()
+
     const body = await request.json()
     const { titulo, conteudo, setor, duracao } = body
 
@@ -92,8 +128,8 @@ export async function POST(request: Request) {
         conteudo,
         duracao,
         setor: setor || null,
-        expiresAt
-      }
+        expiresAt,
+      },
     })
 
     return NextResponse.json(novoAviso, { status: 201 })
@@ -105,17 +141,18 @@ export async function POST(request: Request) {
   }
 }
 
-
-// PUT - Editar aviso
+// PUT
 export async function PUT(request: Request) {
-   const session = await getSessionOrFail(["ADMIN", "GESTOR", "GOD"])// Apenas usuários autenticados podem editar avisos
- 
+  const session = await getSessionOrFail(["ADMIN", "GESTOR", "GOD"])
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+
   try {
+    const prisma = await getTenantPrisma()
+
     const body = await request.json()
-    const { id, titulo, conteudo, setor,duracao, expiresAt } = body
+    const { id, titulo, conteudo, setor, duracao, expiresAt } = body
 
     if (!id) {
       return NextResponse.json(
@@ -140,8 +177,8 @@ export async function PUT(request: Request) {
         conteudo,
         duracao,
         setor: setor ?? null,
-        expiresAt: parsedExpiresAt
-      }
+        expiresAt: parsedExpiresAt,
+      },
     })
 
     return NextResponse.json(avisoAtualizado)
@@ -153,13 +190,16 @@ export async function PUT(request: Request) {
   }
 }
 
-// DELETE - Deletar aviso
+// DELETE
 export async function DELETE(request: Request) {
-  const session = await getSessionOrFail(["ADMIN", "GESTOR", "GOD"])// Apenas usuários autenticados podem deletar avisos
+  const session = await getSessionOrFail(["ADMIN", "GESTOR", "GOD"])
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+
   try {
+    const prisma = await getTenantPrisma()
+
     const { searchParams } = new URL(request.url)
     const id = searchParams.get("id")
 
@@ -171,7 +211,7 @@ export async function DELETE(request: Request) {
     }
 
     const existe = await prisma.avisos.findUnique({
-      where: { id }
+      where: { id },
     })
 
     if (!existe) {
@@ -182,7 +222,7 @@ export async function DELETE(request: Request) {
     }
 
     await prisma.avisos.delete({
-      where: { id }
+      where: { id },
     })
 
     return NextResponse.json({ message: "Aviso deletado com sucesso" })

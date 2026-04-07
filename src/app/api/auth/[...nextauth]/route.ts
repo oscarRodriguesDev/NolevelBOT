@@ -1,8 +1,26 @@
 import NextAuth, { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { prisma } from "@/lib/prisma"
 import { compare } from "bcryptjs"
 import { Chamado, ROLE } from "@prisma/client"
+import { cookies } from "next/headers"
+
+// master
+import { PrismaClient as PrismaMaster } from "@/lib/prisma/master"
+import { PrismaPg } from "@prisma/adapter-pg"
+import { Pool } from "pg"
+
+// tenant
+import { PrismaClient } from "@prisma/client"
+
+const poolMaster = new Pool({
+  connectionString: process.env.DATABASE_URL,
+})
+
+const adapterMaster = new PrismaPg(poolMaster)
+
+const prismaMaster = new PrismaMaster({
+  adapter: adapterMaster,
+})
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -15,27 +33,46 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null
 
-        const user = await prisma.user.findUnique({
+        const cookieStore = await cookies()
+        const tenantSlug = cookieStore.get("tenant")?.value
+
+        if (!tenantSlug) return null
+
+        const empresa = await prismaMaster.empresa.findFirst({
+          where: { slug: tenantSlug },
+        })
+
+        if (!empresa) return null
+
+        const poolTenant = new Pool({
+          connectionString: empresa.databaseUrl,
+        })
+
+        const adapterTenant = new PrismaPg(poolTenant)
+
+        const prismaTenant = new PrismaClient({
+          adapter: adapterTenant,
+        } as any)
+
+        const user = await prismaTenant.user.findUnique({
           where: { email: credentials.email },
           include: {
             chamados: true,
           },
         })
 
-        // Verifica se usuário existe e se a senha (hash) está presente
         if (!user || !user.password) return null
 
         const isValid = await compare(credentials.password, user.password)
         if (!isValid) return null
 
-        const chamadosSetor = await prisma.chamado.findMany({
+        const chamadosSetor = await prismaTenant.chamado.findMany({
           where: {
             setor: user.setor,
             status: "ABERTO",
           },
         })
 
-        // O objeto retornado aqui vai para o callback JWT na primeira vez
         return {
           id: user.id,
           email: user.email,
@@ -57,7 +94,6 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async jwt({ token, user }) {
-      // Se o 'user' existir, é o momento do login. Salvamos os dados no token.
       if (user) {
         token.id = user.id
         token.cpf = user.cpf
@@ -71,7 +107,6 @@ export const authOptions: NextAuthOptions = {
     },
 
     async session({ session, token }) {
-      // Passamos os dados do token para a sessão
       if (token && session.user) {
         session.user.id = token.id as string
         session.user.cpf = token.cpf as string
@@ -87,7 +122,7 @@ export const authOptions: NextAuthOptions = {
   },
 
   pages: {
-    signIn: '/login', // Recomendado definir sua página de login
+    signIn: "/login",
   },
 
   secret: process.env.NEXTAUTH_SECRET,
