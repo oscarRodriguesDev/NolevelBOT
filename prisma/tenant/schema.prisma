@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../src/lib/prisma/tenant"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+enum ROLE {
+  GOD
+  ADMIN
+  GESTOR
+  ATENDENTE
+}
+
+model user {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  cpf       String    @unique
+  name      String
+  role      ROLE
+  avatarUrl String?
+  setor     String
+  resumo    String?
+  password  String
+  chamados  Chamado[] @relation("AtendenteChamados")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Chamado {
+  id          String   @id @default(uuid())
+  ticket      String   @unique
+  nome        String
+  cpf         String
+  setor       String
+  descricao   String
+  historico   String?
+  status      String   @default("NOVO")
+  prioridade  String   @default("normal")
+  anexoUrl    String?
+
+  atendenteId String?
+  atendente   user? @relation("AtendenteChamados", fields: [atendenteId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model cpfs {
+  id        String   @id @default(uuid())
+  cpf       String   @unique
+  nome      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model tickets_fechados {
+  id           String   @id @default(uuid())
+  ticket       String   @unique
+  nome         String
+  cpf          String
+  setor        String
+  historico    String?
+  prioridade   String
+  anexoUrl     String?
+  atendente    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model avisos {
+  id        String   @id @default(uuid())
+  titulo    String
+  conteudo  String
+  setor     String?
+  duracao   String?
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model resumoPersona {
+  id        String   @id @default(uuid())
+  cpf       String   @unique
+  nome      String
+  resumo    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

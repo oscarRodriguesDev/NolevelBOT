@@ -1,12 +1,33 @@
 'use client'
 import { useEffect, useState } from 'react'
-import {  LuCheck, LuLoader, LuArrowRight } from 'react-icons/lu'
+import { LuCheck, LuLoader, LuArrowRight } from 'react-icons/lu'
+import { ThemeToggle } from '../components/theme-toggle'
+import { FileUpload } from '../components/fileInput'
 
-import { useHeader } from '../(atendimento)/layout'
 
 export default function TicketPageDirect() {
-  
-  const SETORES = ["RH", "TI", "Financeiro", "Comercial", "Vendas", "Suporte", "Manutenção", "Logística", "Medicina", "Segurança", "Limpeza", "Juridico"]
+
+  //buscar setores por empresa
+  const [SETORES, setSetores] = useState<string[]>([])
+
+  useEffect(() => {
+    async function fetchSetores() {
+      try {
+        const response = await fetch(`/api/empresa?cnpj=${process.env.NEXT_PUBLIC_CNPJ}`) // cnpj da empresa deve ser definida em variavel de ambiente
+        const data = await response.json()
+
+        if (response.ok) {
+          setSetores(data.setores || [])
+        }
+      } catch (error) {
+        console.error('Erro ao buscar setores', error)
+      }
+    }
+
+    fetchSetores()
+  }, [])
+
+
 
   const [formData, setFormData] = useState({
     nome: '',
@@ -74,6 +95,9 @@ export default function TicketPageDirect() {
         className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 transition-colors duration-300"
         style={{ backgroundColor: "var(--background)" }}
       >
+        <div className="absolute right-4 top-4 z-50">
+          <ThemeToggle />
+        </div>
         <div
           className="rounded-3xl shadow-2xl p-6 sm:p-8 max-w-sm w-full text-center border transition-colors duration-300"
           style={{
@@ -120,8 +144,10 @@ export default function TicketPageDirect() {
         color: "var(--foreground)",
       }}
     >
- 
-     
+      <div className="absolute right-4 top-4 z-50">
+        <ThemeToggle />
+      </div>
+
 
       <div className="max-w-2xl mx-auto">
         <div className="space-y-2 mb-8">
@@ -185,7 +211,7 @@ export default function TicketPageDirect() {
 
             <div>
               <label className="block text-sm font-semibold mb-2">
-                Local / Setor
+               Setor
               </label>
               <select
                 name="setor"
@@ -200,13 +226,13 @@ export default function TicketPageDirect() {
                   "--tw-ring-color": "var(--primary)",
                 } as never}
               >
-                <option value="">Selecione seu local</option>
+                <option value="">Esse chamado é para qual setor?</option>
                 {SETORES.map(setor => (
                   <option key={setor} value={setor}>
                     {setor}
                   </option>
                 ))}
-             
+
               </select>
             </div>
 
@@ -230,6 +256,8 @@ export default function TicketPageDirect() {
                 placeholder="Descreva o problema ou solicitação em detalhes..."
               />
             </div>
+
+{/* 
 
             <div>
               <label className="block text-sm font-semibold mb-2">
@@ -255,6 +283,10 @@ export default function TicketPageDirect() {
                 </p>
               )}
             </div>
+
+             */}
+
+             <FileUpload file={file} setFile={setFile} handleFileChange={handleFileChange} />
 
             <div className="pt-6">
               <button

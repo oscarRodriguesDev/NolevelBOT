@@ -1,0 +1,128 @@
+//mesmo se parecendo com o prisma de todas as empresas esse sera o master
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+enum ROLE {
+  GOD // USUARIO COM PODERES DE DEUS NO SISTEMA
+  ADMIN
+  GESTOR
+  ATENDENTE
+}
+
+
+// prisma/schema.prisma
+model empresa {
+  id        String   @id @default(uuid())
+  nome      String   @unique
+  cnpj      String   @unique
+  setores   String[]
+  databaseUrl String?   // URL de conexão específica para esta empresa
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+} 
+//não precisa relacionar com os usuarios porque vai ser um banco por empresa
+model user {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  cpf       String    @unique
+  name      String
+  role      ROLE
+  avatarUrl String?
+  setor     String
+  resumo    String?
+  password  String
+  chamados  Chamado[] @relation("AtendenteChamados")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Chamado {
+  id          String   @id @default(uuid())
+  ticket      String   @unique
+  nome        String
+  cpf         String
+  setor       String
+  descricao   String
+  historico   String?
+  status      String   @default("NOVO")
+  prioridade  String   @default("normal")
+  anexoUrl    String?
+
+  atendenteId String?
+  atendente   user? @relation("AtendenteChamados", fields: [atendenteId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+
+
+// Modelo para armazenar CPFs e nomes dos usuários autorizados a usar o chatbot
+model cpfs{
+  id        String   @id @default(uuid())
+  cpf       String   @unique
+  nome      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//para gerar os dashboards de chamados fechados, para não poluir a tabela principal
+model tickets_fechados{
+  id           String   @id @default(uuid())
+  ticket       String   @unique
+  nome         String
+  cpf          String
+  setor        String
+  historico    String? 
+  prioridade   String   
+  anexoUrl     String?
+  atendente    String? 
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+//representa o quadro de avisos da empresa
+model avisos {
+  id        String   @id @default(uuid())
+  titulo    String
+  conteudo  String
+  setor     String?
+  duracao   String?
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+
+model resumoPersona{
+  id        String   @id @default(uuid())
+  cpf       String   @unique
+  nome      String
+  resumo    String //resumo da persona gerado pelo gpt, para ele se lembrar da personalidade do usuário
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Configurações da empresa
+model CompanyConfig {
+  id        String   @id @default(uuid())
+  // URLs e Endpoints
+  databaseUrl    String
+  aiProvider     String @default("gpt") // "gpt" ou "gemini"
+  aiModel        String? // modelo específico (ex: gpt-4, gemini-pro)
+  aiApiKey       String?
+  
+  // Informações gerais
+  companyName    String?
+  companyLogo    String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

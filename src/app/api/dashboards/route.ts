@@ -2,6 +2,7 @@
 
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { getSessionOrFail } from "@/util/permission"
 
 function getWeek(date: Date) {
   const first = new Date(date.getFullYear(), 0, 1)
@@ -9,7 +10,15 @@ function getWeek(date: Date) {
   return Math.ceil((diff + first.getDay() + 1) / 7)
 }
 
+
+//esse dashboad deve ser visto apenas por usuarios admin e gestor
 export async function GET(req: Request) {
+  const session = await getSessionOrFail(["ADMIN", "GESTOR","GOD"])
+
+  if (!session) {
+    return NextResponse.json({ error: "Acesso negado" }, { status: 403 })
+  }
+
   try {
     const { searchParams } = new URL(req.url)
     const periodo = searchParams.get("periodo") || "mes"

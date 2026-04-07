@@ -130,3 +130,5 @@ export async function validarCpf(cpf: string) {
     return { valido: false };
   }
 }
+ 
+

@@ -1,9 +1,16 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import Image from "next/image"
 import usuarios from "../../../../public/users/usuarios.png"
 import { useHeader } from "../layout"
+
+// Interface para tipar os dados da empresa vindos da API
+interface Empresa {
+  id: string
+  nome: string
+  cnpj: string
+  setores: string[] // Ajuste para string[] ou objeto conforme seu Prisma
+}
 
 export default function CriarUsuarioPage() {
   const [form, setForm] = useState({
@@ -16,17 +23,44 @@ export default function CriarUsuarioPage() {
     avatarFile: null as File | null,
   })
 
+  const [setoresDisponiveis, setSetoresDisponiveis] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
+  const [loadingSetores, setLoadingSetores] = useState(true)
 
+  const { setHeader } = useHeader()
 
-      const { setHeader } = useHeader()
-    
-      useEffect(() => {
-        setHeader({
-          titulo: 'Criar Novo Usuário',
-          descricao: 'Preencha os dados para registrar um novo usuário no sistema',
-        })
-      }, [])
+  // 1. useEffect para o Header
+  useEffect(() => {
+    setHeader({
+      titulo: 'Criar Novo Usuário',
+      descricao: 'Preencha os dados para registrar um novo usuário no sistema',
+    })
+  }, [setHeader])
+
+  // 2. useEffect para buscar os setores da API
+  useEffect(() => {
+    async function fetchSetores() {
+      try {
+        setLoadingSetores(true)
+        const response = await fetch("/api/empresa")
+        const data = await response.json()
+
+        if (Array.isArray(data) && data.length > 0) {
+          // Se retornar array, pegamos os setores da primeira empresa
+          // Se você tiver o CNPJ em mãos, pode usar fetch(`/api/empresas?cnpj=${cnpj}`)
+          setSetoresDisponiveis(data[0].setores || [])
+        } else if (data.setores) {
+          setSetoresDisponiveis(data.setores)
+        }
+      } catch (error) {
+        console.error("Erro ao carregar setores:", error)
+      } finally {
+        setLoadingSetores(false)
+      }
+    }
+
+    fetchSetores()
+  }, [])
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -46,7 +80,6 @@ export default function CriarUsuarioPage() {
 
     try {
       const formData = new FormData()
-
       formData.append("name", form.name)
       formData.append("email", form.email)
       formData.append("cpf", form.cpf)
@@ -63,11 +96,16 @@ export default function CriarUsuarioPage() {
         body: formData,
       })
 
-      const data = await response.json()
-
-      console.log(data)
+      if (response.ok) {
+        alert("Usuário criado com sucesso!")
+        // Opcional: resetar form ou redirecionar
+      } else {
+        const errorData = await response.json()
+        alert(`Erro: ${errorData.error}`)
+      }
     } catch (error) {
       console.error(error)
+      alert("Erro ao conectar com o servidor.")
     } finally {
       setLoading(false)
     }
@@ -82,27 +120,23 @@ export default function CriarUsuarioPage() {
       }}
     >
       <div className="max-w-6xl mx-auto">
-
-
-        {/* Two Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-          {/* Left Column - Image Area */}
+          
+          {/* Coluna Esquerda - Imagem */}
           <div
             className="rounded-2xl border shadow-lg p-6 sm:p-8 flex items-center justify-center min-h-96 lg:min-h-full transition-colors duration-300"
-               style={{
-                  backgroundColor: "var(--surface-elevated)",
-                  borderColor: "var(--border-subtle)",
-                  border: "2px solid var(--border-subtle)",
-                  backgroundImage: `url(${usuarios.src})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                  backgroundRepeat: "no-repeat",
-                }}
-          >
-       
-          </div>
+            style={{
+              backgroundColor: "var(--surface-elevated)",
+              borderColor: "var(--border-subtle)",
+              border: "2px solid var(--border-subtle)",
+              backgroundImage: `url(${usuarios.src})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              backgroundRepeat: "no-repeat",
+            }}
+          />
 
-          {/* Right Column - Form */}
+          {/* Coluna Direita - Formulário */}
           <div
             className="rounded-2xl border shadow-lg p-6 sm:p-8 transition-colors duration-300"
             style={{
@@ -130,43 +164,41 @@ export default function CriarUsuarioPage() {
                 />
               </div>
 
-              {/* Email */}
-              <div>
-                <label className="block text-sm font-semibold mb-2">Email</label>
-                <input
-                  name="email"
-                  type="email"
-                  placeholder="exemplo@email.com"
-                  value={form.email}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 border rounded-lg outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
-                  style={{
-                    borderColor: "var(--border-subtle)",
-                    backgroundColor: "var(--surface-elevated)",
-                    color: "var(--foreground)",
-                    "--tw-ring-color": "var(--primary)",
-                  } as never}
-                />
-              </div>
-
-              {/* CPF */}
-              <div>
-                <label className="block text-sm font-semibold mb-2">CPF</label>
-                <input
-                  name="cpf"
-                  placeholder="00000000000"
-                  value={form.cpf}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 border rounded-lg outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
-                  style={{
-                    borderColor: "var(--border-subtle)",
-                    backgroundColor: "var(--surface-elevated)",
-                    color: "var(--foreground)",
-                    "--tw-ring-color": "var(--primary)",
-                  } as never}
-                />
+              {/* Email e CPF */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Email</label>
+                  <input
+                    name="email"
+                    type="email"
+                    placeholder="exemplo@email.com"
+                    value={form.email}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 border rounded-lg outline-none"
+                    style={{
+                      borderColor: "var(--border-subtle)",
+                      backgroundColor: "var(--surface-elevated)",
+                      color: "var(--foreground)",
+                    } as never}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-2">CPF</label>
+                  <input
+                    name="cpf"
+                    placeholder="000.000.000-00"
+                    value={form.cpf}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 border rounded-lg outline-none"
+                    style={{
+                      borderColor: "var(--border-subtle)",
+                      backgroundColor: "var(--surface-elevated)",
+                      color: "var(--foreground)",
+                    } as never}
+                  />
+                </div>
               </div>
 
               {/* Senha */}
@@ -175,64 +207,75 @@ export default function CriarUsuarioPage() {
                 <input
                   name="password"
                   type="password"
-                  placeholder="Digite uma senha segura"
+                  placeholder="Digite uma senha"
                   value={form.password}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border rounded-lg outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
+                  className="w-full px-4 py-3 border rounded-lg outline-none"
                   style={{
                     borderColor: "var(--border-subtle)",
                     backgroundColor: "var(--surface-elevated)",
                     color: "var(--foreground)",
-                    "--tw-ring-color": "var(--primary)",
                   } as never}
                 />
               </div>
 
-              {/* Papel / Role */}
-              <div>
-                <label className="block text-sm font-semibold mb-2">Papel</label>
-                <select
-                  name="role"
-                  value={form.role}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 border rounded-lg outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
-                  style={{
-                    borderColor: "var(--border-subtle)",
-                    backgroundColor: "var(--surface-elevated)",
-                    color: "var(--foreground)",
-                    "--tw-ring-color": "var(--primary)",
-                  } as never}
-                >
-                  <option value="">Selecione um papel</option>
-                  <option value="ADMIN">Administrador</option>
-                  <option value="USER">Usuário</option>
-                </select>
-              </div>
+              {/* Grid para Seletores (Papel e Setor) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Papel */}
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Papel</label>
+                  <select
+                    name="role"
+                    value={form.role}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 border rounded-lg outline-none"
+                    style={{
+                      borderColor: "var(--border-subtle)",
+                      backgroundColor: "var(--surface-elevated)",
+                      color: "var(--foreground)",
+                    } as never}
+                  >
+                    <option value="">Selecione um papel</option>
+                   <option value="XX!">Master</option> {/* GOD */} 
+                    <option value="X1X">Admin</option> {/* ADMIN */}
+                    <option value="1XX">Gestor</option> {/* GESTOR */}
+                    <option value="X11">Atendente</option> {/* ATENDENTE */}
+                  </select>
+                </div>
 
-              {/* Setor */}
-              <div>
-                <label className="block text-sm font-semibold mb-2">Setor</label>
-                <input
-                  name="setor"
-                  placeholder="Digite o setor"
-                  value={form.setor}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 border rounded-lg outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
-                  style={{
-                    borderColor: "var(--border-subtle)",
-                    backgroundColor: "var(--surface-elevated)",
-                    color: "var(--foreground)",
-                    "--tw-ring-color": "var(--primary)",
-                  } as never}
-                />
+                {/* Setor DINÂMICO */}
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Setor</label>
+                  <select
+                    name="setor"
+                    value={form.setor}
+                    onChange={handleChange}
+                    required
+                    disabled={loadingSetores}
+                    className="w-full px-4 py-3 border rounded-lg outline-none disabled:opacity-50"
+                    style={{
+                      borderColor: "var(--border-subtle)",
+                      backgroundColor: "var(--surface-elevated)",
+                      color: "var(--foreground)",
+                    } as never}
+                  >
+                    <option value="">
+                      {loadingSetores ? "Carregando setores..." : "Selecione o setor"}
+                    </option>
+                    {setoresDisponiveis.map((setor, index) => (
+                      <option key={index} value={setor}>
+                        {setor}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* Foto de Perfil */}
               <div
-                className="border rounded-lg p-4 transition-colors duration-300"
+                className="border rounded-lg p-4"
                 style={{
                   borderColor: "var(--border-subtle)",
                   backgroundColor: "var(--surface-elevated)",
@@ -244,34 +287,16 @@ export default function CriarUsuarioPage() {
                   accept="image/*"
                   onChange={handleFileChange}
                   className="w-full text-sm"
-                  style={{
-                    color: "var(--foreground)",
-                  }}
                 />
-                {form.avatarFile && (
-                  <p className="text-xs mt-3 opacity-70">
-                    ✓ {form.avatarFile.name}
-                  </p>
-                )}
               </div>
 
               {/* Submit Button */}
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 rounded-lg font-semibold text-white transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
+                className="w-full py-3 rounded-lg font-semibold text-white transition-all duration-300 hover:scale-[1.02] active:scale-95 disabled:opacity-50"
                 style={{
                   backgroundColor: "var(--primary)",
-                }}
-                onMouseEnter={(e) => {
-                  if (e.currentTarget instanceof HTMLElement && !loading) {
-                    e.currentTarget.style.backgroundColor = "var(--primary-hover)";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (e.currentTarget instanceof HTMLElement) {
-                    e.currentTarget.style.backgroundColor = "var(--primary)";
-                  }
                 }}
               >
                 {loading ? "Criando usuário..." : "Criar Usuário"}

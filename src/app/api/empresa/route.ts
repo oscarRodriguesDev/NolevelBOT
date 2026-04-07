@@ -1,9 +1,14 @@
 // app/api/empresa/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getSessionOrFail } from '@/util/permission'
 
 // CREATE
 export async function POST(req: NextRequest) {
+  const session = await getSessionOrFail(["GOD"])
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
   try {
     const body = await req.json()
 
@@ -22,14 +27,46 @@ export async function POST(req: NextRequest) {
 }
 
 // READ ALL
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const empresas = await prisma.empresa.findMany({
-      orderBy: { createdAt: 'desc' },
+    const { searchParams } = new URL(request.url)
+    const cnpj = searchParams.get("cnpj")
+
+    if (!cnpj) {
+      const empresas = await prisma.empresa.findMany({
+        select: {
+          id: true,
+          nome: true,
+          cnpj: true,
+          setores: true,
+        },
+      })
+
+      return NextResponse.json(empresas)
+    }
+
+    const empresa = await prisma.empresa.findUnique({
+      where: { cnpj },
+      select: {
+        id: true,
+        nome: true,
+        cnpj: true,
+        setores: true,
+      },
     })
 
-    return NextResponse.json(empresas)
+    if (!empresa) {
+      return NextResponse.json(
+        { error: "Empresa não encontrada" },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json(empresa)
   } catch (error) {
-    return NextResponse.json({ error: 'Erro ao buscar empresas' }, { status: 500 })
+    return NextResponse.json(
+      { error: "Erro ao buscar empresa" },
+      { status: 500 }
+    )
   }
 }
