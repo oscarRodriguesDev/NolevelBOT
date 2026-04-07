@@ -20,32 +20,39 @@ export default function LoginPage() {
 
 
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    setLoading(true)
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  setError("")
+  setLoading(true)
 
-    try {
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      })
+  try {
+    // pega o subdomínio atual
+    const host = window.location.host // ex: empresa1.nolevel.com.br
+    const slug = host.split(".")[0]   // "empresa1"
 
-      if (result?.error) {
-        setError("Email ou senha incorretos")
-        setPassword("")
-        setLoading(false)
-        return
-      }
+    const result = await signIn("credentials", {
+      email,
+      password,
+      slug,           // envia o slug junto
+      redirect: false,
+    })
 
-      router.push("/all-tickets")
-    } catch (err) {
-      setError("Erro ao fazer login")
-    } finally {
+    if (result?.error) {
+      setError("Email ou senha incorretos")
+      setPassword("")
       setLoading(false)
+      return
     }
+
+    router.push("/all-tickets")  // ou rota protegida pelo tenant
+  } catch (err) {
+    setError("Erro ao fazer login")
+  } finally {
+    setLoading(false)
   }
+}
+
+
   return (
     <div
       className="min-h-screen w-full flex items-center justify-center px-4 sm:px-6 lg:px-8 transition-colors duration-300"

@@ -1,8 +1,16 @@
 // app/api/dashboard/route.ts
 
-import { NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
+import { NextRequest, NextResponse } from "next/server"
 import { getSessionOrFail } from "@/util/permission"
+import { cookies } from "next/headers"
+
+import { PrismaClient as PrismaMaster } from "@/lib/prisma/master"
+import { PrismaPg } from "@prisma/adapter-pg"
+import { Pool } from "pg"
+
+import { PrismaClient } from "@prisma/client"
+
+export const dynamic = "force-dynamic"
 
 function getWeek(date: Date) {
   const first = new Date(date.getFullYear(), 0, 1)
@@ -10,16 +18,54 @@ function getWeek(date: Date) {
   return Math.ceil((diff + first.getDay() + 1) / 7)
 }
 
+// ===== MASTER =====
+const poolMaster = new Pool({
+  connectionString: process.env.DATABASE_URL,
+})
 
-//esse dashboad deve ser visto apenas por usuarios admin e gestor
-export async function GET(req: Request) {
-  const session = await getSessionOrFail(["ADMIN", "GESTOR","GOD"])
+const adapterMaster = new PrismaPg(poolMaster)
+
+const prismaMaster = new PrismaMaster({
+  adapter: adapterMaster,
+})
+
+// ===== TENANT HELPER =====
+async function getTenantPrisma() {
+  const cookieStore = await cookies()
+  const tenantSlug = cookieStore.get("tenant")?.value
+
+  if (!tenantSlug) throw new Error("Tenant não identificado")
+
+  const empresa = await prismaMaster.empresa.findFirst({
+    where: { slug: tenantSlug },
+  })
+
+  if (!empresa) throw new Error("Empresa não encontrada")
+
+  const poolTenant = new Pool({
+    connectionString: empresa.databaseUrl,
+  })
+
+  const adapterTenant = new PrismaPg(poolTenant)
+
+  const prisma = new PrismaClient({
+    adapter: adapterTenant,
+  } as any)
+
+  return prisma
+}
+
+// ===== GET =====
+export async function GET(req: NextRequest) {
+  const session = await getSessionOrFail(["ADMIN", "GESTOR", "GOD"])
 
   if (!session) {
     return NextResponse.json({ error: "Acesso negado" }, { status: 403 })
   }
 
   try {
+    const prisma = await getTenantPrisma()
+
     const { searchParams } = new URL(req.url)
     const periodo = searchParams.get("periodo") || "mes"
 
@@ -34,7 +80,6 @@ export async function GET(req: Request) {
       },
     })
 
-    // Chamados abertos por setor
     const chamadosPorSetorMap: Record<string, number> = {}
 
     chamados.forEach((c) => {
@@ -48,12 +93,10 @@ export async function GET(req: Request) {
       ([setor, total]) => ({ setor, total })
     )
 
-    // Chamados por período
     const chamadosPeriodoMap: Record<string, number> = {}
 
     chamados.forEach((c) => {
       const d = new Date(c.createdAt)
-
       let key = ""
 
       if (periodo === "dia") key = d.toISOString().slice(0, 10)
@@ -69,7 +112,6 @@ export async function GET(req: Request) {
       ([periodo, total]) => ({ periodo, total })
     )
 
-    // Motivos (usando descricao como base)
     const motivosMap: Record<string, number> = {}
 
     chamados.forEach((c) => {
@@ -81,7 +123,6 @@ export async function GET(req: Request) {
       .map(([motivo, total]) => ({ motivo, total }))
       .sort((a, b) => b.total - a.total)
 
-    // Tempo médio (usando chamados fechados)
     let totalTempo = 0
     let count = 0
 
@@ -105,7 +146,7 @@ export async function GET(req: Request) {
       motivosStats,
       tempoMedio,
     })
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Erro ao gerar dashboard" },
       { status: 500 }

@@ -7,7 +7,7 @@ export async function GET() {
       nome: "Empresa Teste",
       slug: "empresa1",
       cnpj: "00000000000000",
-      databaseUrl: "SUA_URL_DO_BANCO"
+      databaseUrl: "postgresql://postgres.tcgvuhoyojgdnzobmxxl:asdfasdfasdfasdqwerwer2@aws-1-sa-east-1.pooler.supabase.com:5432/postgres?pgbouncer=true"
     }
   })
 
