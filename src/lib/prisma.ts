@@ -1,23 +1,25 @@
 import { PrismaClient } from "@prisma/client"
-import { PrismaPg } from "@prisma/adapter-pg"
 import { Pool } from "pg"
+import { PrismaPg } from "@prisma/adapter-pg"
 
-const connectionString = process.env.DATABASE_URL!
-
+// Pool de conexão com PostgreSQL (baixo nível)
+// Isso é o que o Prisma vai usar por baixo com o novo engine
 const pool = new Pool({
-  connectionString,
+  connectionString: process.env.DATABASE_URL,
 })
 
+// Adapter que conecta o Prisma ao driver pg
 const adapter = new PrismaPg(pool)
 
-const globalForPrisma = global as unknown as {
+const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    adapter,
+    adapter, // obrigatório no novo engine "client"
+    log: ["error", "warn"],
   })
 
 if (process.env.NODE_ENV !== "production") {
