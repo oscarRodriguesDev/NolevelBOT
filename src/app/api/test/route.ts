@@ -1,21 +1,16 @@
-import { NextResponse } from "next/server"
-import { chamadoService } from "@/services/chamado.service"
-import { getRequestContext } from "@/lib/request-context"
+import { resolveTenant } from "@/lib/tenant"
+import { getTenantPrisma } from "@/lib/prisma-tenant"
 
 export async function GET() {
-  try {
-    const ctx = await getRequestContext()
+  const tenant = await resolveTenant()
 
-    // Exemplo de uso (debug inicial)
-    console.log("IP:", ctx.ip)
-
-    const chamados = await chamadoService.listarChamados()
-
-    return NextResponse.json(chamados)
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Erro ao buscar chamados" },
-      { status: 500 }
-    )
+  if (!tenant.databaseUrl) {
+    return Response.json({ error: "Empresa sem databaseUrl" })
   }
+
+  const prisma = getTenantPrisma(tenant.databaseUrl)
+
+  const chamados = await prisma.chamado.findMany()
+
+  return Response.json(chamados)
 }

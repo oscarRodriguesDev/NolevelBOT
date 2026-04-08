@@ -1,18 +1,17 @@
-// app/api/chamados/route.ts
+// /src/app/api/chamados/route.ts
 
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import type { Prisma } from '@prisma/client'
-export const dynamic = 'force-dynamic'
-import { uploadFile } from '@/app/hooks/upload'
-import { getSessionOrFail } from '@/util/permission';
+import { NextRequest, NextResponse } from "next/server"
+import type { Prisma } from "@prisma/client"
 
+import { resolveTenant } from "@/lib/tenant"
+import { getTenantPrisma } from "@/lib/prisma-tenant"
 
-// helper para validar sessão
+import { chamadoRepository } from "@/repositories/chamado.repository"
 
+import { uploadFile } from "@/app/hooks/upload"
+import { getSessionOrFail } from "@/util/permission"
 
-
-//buscar o user da session
+export const dynamic = "force-dynamic"
 
 type HistoricoItem = {
   data: string
@@ -21,9 +20,22 @@ type HistoricoItem = {
   atendente?: string
 }
 
+// helper para obter prisma correto (tenant ou fallback)
+async function getPrismaFromTenant() {
+  const tenant = await resolveTenant()
 
+  if (tenant.databaseUrl) {
+    return getTenantPrisma(tenant.databaseUrl)
+  }
+
+  return undefined // fallback para prisma padrão dentro do repository
+}
+
+// ================= POST =================
 export async function POST(req: NextRequest) {
   try {
+    const prisma = await getPrismaFromTenant()
+
     const formData = await req.formData()
 
     const nome = formData.get("nome") as string
@@ -44,14 +56,11 @@ export async function POST(req: NextRequest) {
       bucket: "documents",
       folder: cpf,
       file,
-      defaultUrl:'',
+      defaultUrl: "",
     })
 
-    const ticket = `TKT-${Date.now()}`
-
-    const chamado = await prisma.chamado.create({
-      data: {
-        ticket,
+    const chamado = await chamadoRepository.create(
+      {
         nome,
         cpf,
         setor,
@@ -59,7 +68,8 @@ export async function POST(req: NextRequest) {
         prioridade,
         anexoUrl,
       },
-    })
+      prisma
+    )
 
     return NextResponse.json(chamado, { status: 201 })
   } catch (error) {
@@ -71,30 +81,33 @@ export async function POST(req: NextRequest) {
   }
 }
 
-
-
-
+// ================= GET =================
 export async function GET(req: NextRequest) {
   try {
+    const prisma = await getPrismaFromTenant()
+
     const session = await getSessionOrFail()
 
-    if (!session || !session.user) {
-      return NextResponse.json({ error: "Usuário não autenticado" }, { status: 401 })
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: "Usuário não autenticado" },
+        { status: 401 }
+      )
     }
 
     const userSetor = session.user.setor
 
     const { searchParams } = new URL(req.url)
 
-    const ticket = searchParams.get('ticket')
-    const setor = searchParams.get('setor')
-    const cpf = searchParams.get('cpf')
-    const status = searchParams.get('status')
-    const nome = searchParams.get('nome')
-    const descricao = searchParams.get('descricao')
-    const prioridade = searchParams.get('prioridade')
-    const startDate = searchParams.get('startDate')
-    const endDate = searchParams.get('endDate')
+    const ticket = searchParams.get("ticket")
+    const setor = searchParams.get("setor")
+    const cpf = searchParams.get("cpf")
+    const status = searchParams.get("status")
+    const nome = searchParams.get("nome")
+    const descricao = searchParams.get("descricao")
+    const prioridade = searchParams.get("prioridade")
+    const startDate = searchParams.get("startDate")
+    const endDate = searchParams.get("endDate")
 
     const where: Prisma.ChamadoWhereInput = {}
 
@@ -112,34 +125,27 @@ export async function GET(req: NextRequest) {
     if (nome) {
       where.nome = {
         contains: nome,
-        mode: 'insensitive',
+        mode: "insensitive",
       }
     }
 
     if (descricao) {
       where.descricao = {
         contains: descricao,
-        mode: 'insensitive',
+        mode: "insensitive",
       }
     }
 
     if (startDate || endDate) {
       where.createdAt = {}
 
-      if (startDate) {
-        where.createdAt.gte = new Date(startDate)
-      }
-
-      if (endDate) {
-        where.createdAt.lte = new Date(endDate)
-      }
+      if (startDate) where.createdAt.gte = new Date(startDate)
+      if (endDate) where.createdAt.lte = new Date(endDate)
     }
 
-    const chamados = await prisma.chamado.findMany({
+    const chamados = await (prisma ?? chamadoRepository).chamado.findMany?.({
       where,
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: { createdAt: "desc" },
       include: {
         atendente: {
           select: {
@@ -155,37 +161,41 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(chamados, { status: 200 })
   } catch (error) {
     return NextResponse.json(
-      { error: 'Erro ao buscar chamados' },
+      { error: "Erro ao buscar chamados" },
       { status: 500 }
     )
   }
 }
 
-
+// ================= PUT =================
 export async function PUT(req: NextRequest) {
-getSessionOrFail()
-
   try {
+    const prisma = await getPrismaFromTenant()
+
+    await getSessionOrFail()
+
     const { searchParams } = new URL(req.url)
     const ticketNumber = searchParams.get("atendimento")
     const estagio = searchParams.get("estagio")
 
-    if (!ticketNumber) {
-      return NextResponse.json({ error: "Número do ticket não fornecido" }, { status: 400 })
-    }
-
-    if (!estagio) {
-      return NextResponse.json({ error: "Estágio não fornecido" }, { status: 400 })
+    if (!ticketNumber || !estagio) {
+      return NextResponse.json(
+        { error: "Parâmetros inválidos" },
+        { status: 400 }
+      )
     }
 
     const body = await req.json()
     const { descricao, historico, userId } = body
 
     if (!userId) {
-      return NextResponse.json({ error: "Usuário não identificado" }, { status: 401 })
+      return NextResponse.json(
+        { error: "Usuário não identificado" },
+        { status: 401 }
+      )
     }
 
-    const chamadoExistente = await prisma.chamado.findFirst({
+    const chamadoExistente = await prisma!.chamado.findFirst({
       where: {
         ticket: {
           equals: ticketNumber.trim(),
@@ -195,27 +205,36 @@ getSessionOrFail()
     })
 
     if (!chamadoExistente) {
-      return NextResponse.json({ error: "Chamado não encontrado" }, { status: 404 })
+      return NextResponse.json(
+        { error: "Chamado não encontrado" },
+        { status: 404 }
+      )
     }
 
     const historicoExistente: HistoricoItem[] = chamadoExistente.historico
       ? JSON.parse(chamadoExistente.historico)
       : []
 
-    const novosItens: HistoricoItem[] = historico ? JSON.parse(historico) : []
+    const novosItens: HistoricoItem[] = historico
+      ? JSON.parse(historico)
+      : []
 
-    const itensFiltrados = novosItens.filter((novo) =>
-      !historicoExistente.some(
-        (antigo) =>
-          antigo.data === novo.data &&
-          antigo.acao === novo.acao &&
-          antigo.observacao === novo.observacao
-      )
+    const itensFiltrados = novosItens.filter(
+      (novo) =>
+        !historicoExistente.some(
+          (antigo) =>
+            antigo.data === novo.data &&
+            antigo.acao === novo.acao &&
+            antigo.observacao === novo.observacao
+        )
     )
 
-    const novoHistorico: HistoricoItem[] = [...historicoExistente, ...itensFiltrados]
+    const novoHistorico = [
+      ...historicoExistente,
+      ...itensFiltrados,
+    ]
 
-    const chamadoAtualizado = await prisma.chamado.update({
+    const chamadoAtualizado = await prisma!.chamado.update({
       where: { ticket: ticketNumber.trim() },
       data: {
         status: estagio,
@@ -238,24 +257,31 @@ getSessionOrFail()
     return NextResponse.json(chamadoAtualizado, { status: 200 })
   } catch (error) {
     console.error(error)
-    return NextResponse.json({ error: "Erro ao atualizar chamado" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Erro ao atualizar chamado" },
+      { status: 500 }
+    )
   }
 }
 
-
-
+// ================= DELETE =================
 export async function DELETE(req: NextRequest) {
-
-  getSessionOrFail()
   try {
+    const prisma = await getPrismaFromTenant()
+
+    await getSessionOrFail()
+
     const { searchParams } = new URL(req.url)
     const ticketNumber = searchParams.get("atendimento")
 
     if (!ticketNumber) {
-      return NextResponse.json({ error: "Número do ticket não fornecido" }, { status: 400 })
+      return NextResponse.json(
+        { error: "Número do ticket não fornecido" },
+        { status: 400 }
+      )
     }
 
-    const chamado = await prisma.chamado.findFirst({
+    const chamado = await prisma!.chamado.findFirst({
       where: {
         ticket: {
           equals: ticketNumber.trim(),
@@ -264,18 +290,19 @@ export async function DELETE(req: NextRequest) {
       },
       include: {
         atendente: {
-          select: {
-            name: true,
-          },
+          select: { name: true },
         },
       },
     })
 
     if (!chamado) {
-      return NextResponse.json({ error: "Chamado não encontrado" }, { status: 404 })
+      return NextResponse.json(
+        { error: "Chamado não encontrado" },
+        { status: 404 }
+      )
     }
 
-    await prisma.tickets_fechados.create({
+    await prisma!.tickets_fechados.create({
       data: {
         ticket: chamado.ticket,
         nome: chamado.nome,
@@ -289,7 +316,7 @@ export async function DELETE(req: NextRequest) {
       },
     })
 
-    await prisma.chamado.delete({
+    await prisma!.chamado.delete({
       where: { id: chamado.id },
     })
 
@@ -299,6 +326,9 @@ export async function DELETE(req: NextRequest) {
     )
   } catch (error) {
     console.error(error)
-    return NextResponse.json({ error: "Erro ao mover chamado" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Erro ao mover chamado" },
+      { status: 500 }
+    )
   }
 }
