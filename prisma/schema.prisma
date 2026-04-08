@@ -21,7 +21,7 @@ model Empresa {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
-  @@table("empresa")
+  @@map("empresa")
 }
 
 // ============================================
@@ -43,7 +43,7 @@ model Usuario {
   
   tickets   Ticket[]
   
-  @@table("usuario")
+  @@map("usuario")
 }
 
 model Ticket {
@@ -62,7 +62,7 @@ model Ticket {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
-  @@table("ticket")
+  @@map("ticket")
 }
 
 model resumoPersona {
@@ -73,7 +73,7 @@ model resumoPersona {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
-  @@table("resumo_persona")
+  @@map("resumo_persona")
 }
 
 model CompanyConfig {
@@ -88,5 +88,5 @@ model CompanyConfig {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
-  @@table("company_config")
+  @@map("company_config")
 }
