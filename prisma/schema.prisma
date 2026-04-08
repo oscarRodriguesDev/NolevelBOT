@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// MODELOS MASTER (Multi-tenant)
+// ============================================
+
+model Empresa {
+  id        String   @id @default(uuid())
+  slug      String   @unique
+  nome      String
+  cnpj      String   @unique
+  databaseUrl String
+  setores   String[] @default([])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@table("empresa")
+}
+
+// ============================================
+// MODELOS TENANT (Dados específicos por empresa)
+// ============================================
+
+model Usuario {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  cpf       String   @unique
+  password  String
+  role      String   @default("USER")
+  setor     String?
+  avatarFile String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  tickets   Ticket[]
+  
+  @@table("usuario")
+}
+
+model Ticket {
+  id        String   @id @default(uuid())
+  ticket    String   @unique
+  nome      String
+  cpf       String
+  setor     String
+  descricao String   @db.Text
+  status    String   @default("ABERTO")
+  priority  String   @default("NORMAL")
+  
+  userId    String?
+  user      Usuario? @relation(fields: [userId], references: [id])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@table("ticket")
+}
+
+model resumoPersona {
+  id        String   @id @default(uuid())
+  cpf       String   @unique
+  nome      String
+  resumo    String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@table("resumo_persona")
+}
+
+model CompanyConfig {
+  id              String   @id @default(uuid())
+  databaseUrl     String
+  aiProvider      String   @default("gpt")
+  aiModel         String?
+  aiApiKey        String?
+  companyName     String?
+  companyLogo     String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@table("company_config")
+}
