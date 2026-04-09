@@ -1,7 +1,7 @@
 // app/api/dashboard/route.ts
 
 import { NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
+import { getPrisma } from "@/lib/prisma-context"
 import { getSessionOrFail } from "@/util/permission"
 
 function getWeek(date: Date) {
@@ -10,16 +10,17 @@ function getWeek(date: Date) {
   return Math.ceil((diff + first.getDay() + 1) / 7)
 }
 
-
 //esse dashboad deve ser visto apenas por usuarios admin e gestor
 export async function GET(req: Request) {
-  const session = await getSessionOrFail(["ADMIN", "GESTOR","GOD"])
+  const session = await getSessionOrFail(["ADMIN", "GESTOR", "GOD"])
 
   if (!session) {
     return NextResponse.json({ error: "Acesso negado" }, { status: 403 })
   }
 
   try {
+    const prisma = await getPrisma()
+
     const { searchParams } = new URL(req.url)
     const periodo = searchParams.get("periodo") || "mes"
 
@@ -34,7 +35,6 @@ export async function GET(req: Request) {
       },
     })
 
-    // Chamados abertos por setor
     const chamadosPorSetorMap: Record<string, number> = {}
 
     chamados.forEach((c) => {
@@ -48,7 +48,6 @@ export async function GET(req: Request) {
       ([setor, total]) => ({ setor, total })
     )
 
-    // Chamados por período
     const chamadosPeriodoMap: Record<string, number> = {}
 
     chamados.forEach((c) => {
@@ -69,7 +68,6 @@ export async function GET(req: Request) {
       ([periodo, total]) => ({ periodo, total })
     )
 
-    // Motivos (usando descricao como base)
     const motivosMap: Record<string, number> = {}
 
     chamados.forEach((c) => {
@@ -81,7 +79,6 @@ export async function GET(req: Request) {
       .map(([motivo, total]) => ({ motivo, total }))
       .sort((a, b) => b.total - a.total)
 
-    // Tempo médio (usando chamados fechados)
     let totalTempo = 0
     let count = 0
 

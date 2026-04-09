@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
+import { getPrisma } from "@/lib/prisma-context"
 import { getSessionOrFail } from "@/util/permission"
-
-
-
 
 // GET - Buscar todos os avisos
 export async function GET() {
   try {
+    const prisma = await getPrisma()
+
     const avisos = await prisma.avisos.findMany({
       orderBy: { createdAt: "desc" }
     })
@@ -56,14 +55,16 @@ export async function GET() {
   }
 }
 
-
 // POST - Criar novo aviso
 export async function POST(request: Request) {
-    const session = await getSessionOrFail(["ADMIN", "GESTOR", "GOD"])// Apenas usuários autenticados podem criar avisos
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+  const session = await getSessionOrFail(["ADMIN", "GESTOR", "GOD"])
+
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   try {
+    const prisma = await getPrisma()
     const body = await request.json()
     const { titulo, conteudo, setor, duracao } = body
 
@@ -105,17 +106,18 @@ export async function POST(request: Request) {
   }
 }
 
-
 // PUT - Editar aviso
 export async function PUT(request: Request) {
-   const session = await getSessionOrFail(["ADMIN", "GESTOR", "GOD"])// Apenas usuários autenticados podem editar avisos
- 
+  const session = await getSessionOrFail(["ADMIN", "GESTOR", "GOD"])
+
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+
   try {
+    const prisma = await getPrisma()
     const body = await request.json()
-    const { id, titulo, conteudo, setor,duracao, expiresAt } = body
+    const { id, titulo, conteudo, setor, duracao, expiresAt } = body
 
     if (!id) {
       return NextResponse.json(
@@ -155,11 +157,14 @@ export async function PUT(request: Request) {
 
 // DELETE - Deletar aviso
 export async function DELETE(request: Request) {
-  const session = await getSessionOrFail(["ADMIN", "GESTOR", "GOD"])// Apenas usuários autenticados podem deletar avisos
+  const session = await getSessionOrFail(["ADMIN", "GESTOR", "GOD"])
+
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+
   try {
+    const prisma = await getPrisma()
     const { searchParams } = new URL(request.url)
     const id = searchParams.get("id")
 

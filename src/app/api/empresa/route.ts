@@ -1,14 +1,15 @@
-// app/api/empresa/route.ts
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { getSessionOrFail } from '@/util/permission'
+import { NextRequest, NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma";
+import { getSessionOrFail } from "@/util/permission"
 
 // CREATE
 export async function POST(req: NextRequest) {
   const session = await getSessionOrFail(["GOD"])
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+  if(!session) {
+    return NextResponse.json({ error: "Acesso negado" }, { status: 403 })
   }
+
   try {
     const body = await req.json()
 
@@ -17,17 +18,29 @@ export async function POST(req: NextRequest) {
         nome: body.nome,
         cnpj: body.cnpj,
         setores: body.setores || [],
+        databaseUrl: 'postgresql://user:password@host:port/dbname', // Placeholder, deve ser gerada dinamicamente
       },
     })
 
     return NextResponse.json(empresa)
   } catch (error) {
-    return NextResponse.json({ error: 'Erro ao criar empresa' }, { status: 500 })
+    console.error(error)
+    return NextResponse.json(
+      { error: "Erro ao criar empresa" },
+      { status: 500 }
+    )
   }
 }
 
-// READ ALL
+// READ ALL / READ BY CNPJ
 export async function GET(request: Request) {
+ const session = await getSessionOrFail(["GOD"])
+
+
+  if(!session) {
+    return NextResponse.json({ error: "Acesso negado" }, { status: 403 })
+  }
+console.log('rota de empresas precisa configurar para colocar o banco de dados via front end')
   try {
     const { searchParams } = new URL(request.url)
     const cnpj = searchParams.get("cnpj")
@@ -39,6 +52,7 @@ export async function GET(request: Request) {
           nome: true,
           cnpj: true,
           setores: true,
+          databaseUrl: true,
         },
       })
 
@@ -52,6 +66,7 @@ export async function GET(request: Request) {
         nome: true,
         cnpj: true,
         setores: true,
+        databaseUrl: true,
       },
     })
 
@@ -64,6 +79,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(empresa)
   } catch (error) {
+    console.error(error)
     return NextResponse.json(
       { error: "Erro ao buscar empresa" },
       { status: 500 }

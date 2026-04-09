@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-
-import { prisma } from "@/lib/prisma"
+import { getPrisma } from "@/lib/prisma-context"
 import { hash } from "bcryptjs"
 import { ROLE } from "@prisma/client"
 import { uploadFile } from "@/app/hooks/upload"
@@ -8,14 +7,12 @@ import { getSessionOrFail } from "@/util/permission"
 
 
 
-
-
 export async function POST(req: NextRequest) {
-  // 1. Liberamos a rota para quem tem poder de criação
-  // Note que ATENDENTE ficou de fora pois ele não cria ninguém.
   const session = await getSessionOrFail(["GOD", "ADMIN", "GESTOR"])
 
   try {
+    const prisma = await getPrisma()
+
     const formData = await req.formData()
     const roleFromFront = formData.get("role") as string 
 
@@ -32,19 +29,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Papel inválido" }, { status: 400 })
     }
 
-    // --- LÓGICA DE HIERARQUIA ---
-    const userRole = session?.user.role // Role de quem está LOGADO
+    const userRole = session?.user.role
 
     let canCreate = false
 
     if (userRole === "GOD") {
-      // GOD cria qualquer um (inclusive outro GOD e ADMIN)
       canCreate = true
     } else if (userRole === "ADMIN") {
-      // ADMIN cria ADMIN, GESTOR e ATENDENTE (não cria GOD)
       if (finalRole !== "GOD") canCreate = true
     } else if (userRole === "GESTOR") {
-      // GESTOR cria apenas ATENDENTE
       if (finalRole === "ATENDENTE") canCreate = true
     }
 
@@ -55,7 +48,6 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // --- PROCESSAMENTO ---
     const name = formData.get("name") as string
     const email = formData.get("email") as string
     const cpf = formData.get("cpf") as string
@@ -79,7 +71,7 @@ export async function POST(req: NextRequest) {
         cpf,
         password: hashedPassword,
         role: finalRole,
-        setor,
+        setor : setor || 'Atendente', //corrigir envio do setor no front end
         avatarUrl,
       },
     })
@@ -90,4 +82,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Erro interno" }, { status: 500 })
   }
 }
-

@@ -1,9 +1,9 @@
 // app/api/cpfs/route.ts
 import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
-import { getSessionOrFail } from '@/util/permission';
-import { limparCPF } from "@/util/limparcpfs";
+import { getSessionOrFail } from '@/util/permission'
+import { limparCPF } from "@/util/limparcpfs"
+import { getPrisma } from "@/lib/prisma-context"
 
 export async function POST(req: NextRequest) {
   const session = await getSessionOrFail(["GOD", "ADMIN", "GESTOR"])
@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    const prisma = await getPrisma()
     const contentType = req.headers.get("content-type") || ""
 
     if (contentType.includes("multipart/form-data")) {
@@ -27,7 +28,6 @@ export async function POST(req: NextRequest) {
 
       let registros: { nome: string; cpf: string }[] = []
 
-      // ================= TXT / CSV =================
       if (nomeArquivo.endsWith(".txt") || nomeArquivo.endsWith(".csv")) {
         const text = await file.text()
 
@@ -53,7 +53,6 @@ export async function POST(req: NextRequest) {
           .filter((r): r is { nome: string; cpf: string } => Boolean(r))
       }
 
-      // ================= EXCEL =================
       else if (nomeArquivo.endsWith(".xlsx")) {
         const buffer = Buffer.from(await file.arrayBuffer())
         const workbook = XLSX.read(buffer, { type: "buffer" })
@@ -64,7 +63,7 @@ export async function POST(req: NextRequest) {
         const json: (string | number)[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 })
 
         registros = json
-          .slice(1) // ignora possível cabeçalho
+          .slice(1)
           .map((row: (string | number | boolean | null)[]) => {
             if (!row[0] || !row[1]) return null
 
@@ -97,7 +96,6 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // ================= CADASTRO MANUAL =================
     const body = await req.json()
     const nome = body?.nome?.trim()
     const cpf = limparCPF(body?.cpf || "")
@@ -117,15 +115,12 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Certifique-se de que o caminho do prisma está correto
-
 export async function GET(req: NextRequest) {
   try {
-    // Captura o parâmetro 'cpf' da URL (ex: ?cpf=12345678901)
-    const { searchParams } = new URL(req.url);
-    const cpfParaFiltrar = searchParams.get("cpf");
+    const prisma = await getPrisma()
+    const { searchParams } = new URL(req.url)
+    const cpfParaFiltrar = searchParams.get("cpf")
 
-    // Se um CPF foi passado, fazemos a busca específica (validação)
     if (cpfParaFiltrar) {
       const registro = await prisma.cpfs.findUnique({
         where: {
@@ -135,40 +130,38 @@ export async function GET(req: NextRequest) {
           nome: true,
           cpf: true
         }
-      });
+      })
 
       if (!registro) {
         return NextResponse.json({ 
           valido: false, 
           message: "CPF não encontrado no banco" 
-        }, { status: 404 });
+        }, { status: 404 })
       }
 
       return NextResponse.json({ 
         valido: true, 
         ...registro 
-      });
+      })
     }
 
-    // Se NÃO informou CPF, traz todos os registros
     const todosCPFs = await prisma.cpfs.findMany({
       select: {
         nome: true,
         cpf: true
       }
-    });
+    })
 
-    return NextResponse.json(todosCPFs);
+    return NextResponse.json(todosCPFs)
 
   } catch (error) {
-    console.error("Erro na rota GET CPFs:", error);
+    console.error("Erro na rota GET CPFs:", error)
     return NextResponse.json(
       { error: "Erro interno ao processar requisição" }, 
       { status: 500 }
-    );
+    )
   }
 }
-
 
 export async function DELETE(req: NextRequest) {
   const session = await getSessionOrFail(["GESTOR", "ADMIN","GOD"])
@@ -176,7 +169,9 @@ export async function DELETE(req: NextRequest) {
   if (!session ) {  
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
   }
+
   try {
+    const prisma = await getPrisma()
     const { cpf } = await req.json()
 
     if (!cpf) {

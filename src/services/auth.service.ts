@@ -29,7 +29,6 @@ export const authService = {
       role: user.role,
       avatarUrl: user.avatarUrl,
       setor: user.setor,
-      chamados: user.chamados,
       chamadosSetor: chamadosDoSetor,
     }
   },

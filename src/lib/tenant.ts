@@ -17,7 +17,7 @@ export async function resolveTenant() {
 
   if (host.includes("localhost")) {
     // Ambiente dev → define um tenant fixo
-    slug = "NoLevel"
+    slug = "dev-teste"
   } else {
     const parts = host.split(".")
 

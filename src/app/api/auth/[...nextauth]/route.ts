@@ -1,7 +1,12 @@
+// /src/app/api/auth/[...nextauth]/route.ts
+
 import NextAuth, { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
+import { compare } from "bcryptjs"
 import { Chamado, ROLE } from "@prisma/client"
-import { authService } from "@/services/auth.service"
+
+import { resolveTenant } from "@/lib/tenant"
+import { getTenantPrisma } from "@/lib/prisma-tenant"
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -12,11 +17,60 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        // Validação básica de entrada
         if (!credentials?.email || !credentials?.password) return null
 
-        // Toda a lógica de login agora está centralizada no service
-        return authService.login(credentials.email, credentials.password)
+        const tenant = await resolveTenant()
+        console.log("TENANT:", tenant)
+
+        if (!tenant?.databaseUrl) {
+          console.log("SEM DATABASE URL")
+          return null
+        }
+
+        const prisma = getTenantPrisma(tenant.databaseUrl)
+
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email },
+          include: {
+            chamados: true,
+          },
+        })
+
+        console.log("USER:", user?.email)
+
+        if (!user || !user.password) {
+          console.log("USER NÃO ENCONTRADO OU SEM SENHA")
+          return null
+        }
+
+        const isValid = await compare(credentials.password, user.password)
+
+        console.log("PASSWORD VALID:", isValid)
+
+        if (!isValid){
+          console.log("senha invalida")
+        }else{
+          console.log("senha correta")
+        }
+
+        const chamadosSetor = await prisma.chamado.findMany({
+          where: {
+            setor: user.setor,
+            status: "ABERTO",
+          },
+        })
+
+        return {
+          id: user.id,
+          email: user.email,
+          cpf: user.cpf,
+          name: user.name,
+          role: user.role,
+          avatarUrl: user.avatarUrl,
+          setor: user.setor,
+          chamados: user.chamados,
+          chamadosSetor,
+        }
       },
     }),
   ],
@@ -27,7 +81,6 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async jwt({ token, user }) {
-      // Executa no login
       if (user) {
         token.id = user.id
         token.cpf = user.cpf
@@ -37,12 +90,10 @@ export const authOptions: NextAuthOptions = {
         token.chamados = user.chamados
         token.chamadosSetor = user.chamadosSetor
       }
-
       return token
     },
 
     async session({ session, token }) {
-      // Injeta dados do token na sessão
       if (token && session.user) {
         session.user.id = token.id as string
         session.user.cpf = token.cpf as string

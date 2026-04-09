@@ -62,7 +62,7 @@ model Chamado {
   updatedAt   DateTime @updatedAt
 }
 
-
+ 
 
 // Modelo para armazenar CPFs e nomes dos usuários autorizados a usar o chatbot
 model cpfs{

@@ -3,9 +3,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import type { Prisma } from "@prisma/client"
 
-import { resolveTenant } from "@/lib/tenant"
-import { getTenantPrisma } from "@/lib/prisma-tenant"
-
+import { getPrisma } from "@/lib/prisma-context"
 import { chamadoRepository } from "@/repositories/chamado.repository"
 
 import { uploadFile } from "@/app/hooks/upload"
@@ -20,21 +18,10 @@ type HistoricoItem = {
   atendente?: string
 }
 
-// helper para obter prisma correto (tenant ou fallback)
-async function getPrismaFromTenant() {
-  const tenant = await resolveTenant()
-
-  if (tenant.databaseUrl) {
-    return getTenantPrisma(tenant.databaseUrl)
-  }
-
-  return undefined // fallback para prisma padrão dentro do repository
-}
-
 // ================= POST =================
 export async function POST(req: NextRequest) {
   try {
-    const prisma = await getPrismaFromTenant()
+    const prisma = await getPrisma()
 
     const formData = await req.formData()
 
@@ -66,7 +53,7 @@ export async function POST(req: NextRequest) {
         setor,
         descricao,
         prioridade,
-        anexoUrl,
+        anexoUrl: anexoUrl || undefined,
       },
       prisma
     )
@@ -84,7 +71,7 @@ export async function POST(req: NextRequest) {
 // ================= GET =================
 export async function GET(req: NextRequest) {
   try {
-    const prisma = await getPrismaFromTenant()
+    const prisma = await getPrisma()
 
     const session = await getSessionOrFail()
 
@@ -143,7 +130,7 @@ export async function GET(req: NextRequest) {
       if (endDate) where.createdAt.lte = new Date(endDate)
     }
 
-    const chamados = await (prisma ?? chamadoRepository).chamado.findMany?.({
+    const chamados = await prisma.chamado.findMany({
       where,
       orderBy: { createdAt: "desc" },
       include: {
@@ -170,7 +157,7 @@ export async function GET(req: NextRequest) {
 // ================= PUT =================
 export async function PUT(req: NextRequest) {
   try {
-    const prisma = await getPrismaFromTenant()
+    const prisma = await getPrisma()
 
     await getSessionOrFail()
 
@@ -195,7 +182,7 @@ export async function PUT(req: NextRequest) {
       )
     }
 
-    const chamadoExistente = await prisma!.chamado.findFirst({
+    const chamadoExistente = await prisma.chamado.findFirst({
       where: {
         ticket: {
           equals: ticketNumber.trim(),
@@ -234,7 +221,7 @@ export async function PUT(req: NextRequest) {
       ...itensFiltrados,
     ]
 
-    const chamadoAtualizado = await prisma!.chamado.update({
+    const chamadoAtualizado = await prisma.chamado.update({
       where: { ticket: ticketNumber.trim() },
       data: {
         status: estagio,
@@ -267,7 +254,7 @@ export async function PUT(req: NextRequest) {
 // ================= DELETE =================
 export async function DELETE(req: NextRequest) {
   try {
-    const prisma = await getPrismaFromTenant()
+    const prisma = await getPrisma()
 
     await getSessionOrFail()
 
@@ -281,7 +268,7 @@ export async function DELETE(req: NextRequest) {
       )
     }
 
-    const chamado = await prisma!.chamado.findFirst({
+    const chamado = await prisma.chamado.findFirst({
       where: {
         ticket: {
           equals: ticketNumber.trim(),
@@ -302,7 +289,7 @@ export async function DELETE(req: NextRequest) {
       )
     }
 
-    await prisma!.tickets_fechados.create({
+    await prisma.tickets_fechados.create({
       data: {
         ticket: chamado.ticket,
         nome: chamado.nome,
@@ -316,7 +303,7 @@ export async function DELETE(req: NextRequest) {
       },
     })
 
-    await prisma!.chamado.delete({
+    await prisma.chamado.delete({
       where: { id: chamado.id },
     })
 
