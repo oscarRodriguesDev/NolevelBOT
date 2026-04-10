@@ -7,8 +7,8 @@ export async function resolveTenant() {
   let host = headersList.get("host") || ""
 
   // remove porta se existir (ex: :3000)
-  host = host.split(":")[0]
-
+  //host = host.split(":")[0]
+host = 'https://dev-teste.nolevel.hiskra.com.br/login'
   let slug: string | null = null
 
   if (host.includes("localhost")) {
@@ -21,6 +21,7 @@ export async function resolveTenant() {
       // pega sempre o primeiro nível como tenant
       slug = parts[0] // aqui vai vir o http tambem, então precisa remover o http:// ou https://
       slug = slug.replace("http://", "").replace("https://", "")
+      console.log('Slug:', slug)
     }
   }
 
@@ -35,6 +36,8 @@ export async function resolveTenant() {
   if (!empresa) {
     throw new Error(`Empresa não encontrada para o tenant: ${slug}`)
   }
+
+  console.log(empresa.databaseUrl)
 
   return {
     slug,
