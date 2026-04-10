@@ -15,10 +15,12 @@ export async function resolveTenant() {
     slug = "dev-teste"
   } else {
     const parts = host.split(".")
+    console.log('Host parts:', parts[0])
 
     if (parts.length >= 3) {
       // pega sempre o primeiro nível como tenant
-      slug = parts[0]
+      slug = parts[0] // aqui vai vir o http tambem, então precisa remover o http:// ou https://
+      slug = slug.replace("http://", "").replace("https://", "")
     }
   }
 
