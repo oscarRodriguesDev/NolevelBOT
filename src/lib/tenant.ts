@@ -11,9 +11,9 @@ export async function resolveTenant() {
   // =========================
   // Em produção o host NÃO vem com protocolo nem path
   // Exemplo real: dev-teste.nolevel.hiskra.com.br
-  if (process.env.NODE_ENV === "development") {
+/*   if (process.env.NODE_ENV === "development") {
     host = "dev-teste.nolevel.hiskra.com.br"
-  }
+  } */
 
   // remove porta (ex: :3000)
   host = host.split(":")[0]
