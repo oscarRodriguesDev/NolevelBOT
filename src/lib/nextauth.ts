@@ -1,8 +1,10 @@
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { prisma } from "@/lib/prisma"
 import { compare } from "bcryptjs"
 import { Chamado, ROLE } from "@prisma/client"
+
+import { resolveTenant } from "@/lib/tenant"
+import { getTenantPrisma } from "@/lib/prisma-tenant"
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -12,45 +14,87 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Senha", type: "password" },
       },
+
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            console.log("CREDENCIAIS INVÁLIDAS")
+            return null
+          }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-          include: {
-            chamados: true,
-          },
-        })
+          // =========================
+          // RESOLVE TENANT
+          // =========================
+          const tenant = await resolveTenant()
+          console.log("TENANT:", tenant?.slug)
 
-        if (!user || !user.password) return null
+          if (!tenant?.databaseUrl) {
+            console.log("SEM DATABASE URL")
+            return null
+          }
 
-        const isValid = await compare(credentials.password, user.password)
-        if (!isValid) return null
+          console.log("DATABASE URL:", tenant.databaseUrl)
 
-        const chamadosSetor = await prisma.chamado.findMany({
-          where: {
-            setor: user.setor,
-            status: "ABERTO",
-          },
-        })
+          // =========================
+          // PRISMA DO TENANT
+          // =========================
+          const prisma = getTenantPrisma(tenant.databaseUrl)
 
-        // Retorno para o Callback JWT
-        return {
-          id: user.id,
-          email: user.email ?? "",
-          cpf: user.cpf ?? "",
-          name: user.name ?? "",
-          role: user.role,
-          avatarUrl: user.avatarUrl ?? null,
-          setor: user.setor ?? "",
-          chamados: user.chamados ?? [],
-          chamadosSetor: chamadosSetor ?? [],
+          // =========================
+          // BUSCA USUÁRIO
+          // =========================
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email },
+            include: {
+              chamados: true,
+            },
+          })
+
+          console.log("USER:", user?.email)
+
+          if (!user || !user.password) {
+            console.log("USER NÃO ENCONTRADO")
+            return null
+          }
+
+          // =========================
+          // VALIDA SENHA
+          // =========================
+          const isValid = await compare(credentials.password, user.password)
+
+          console.log("PASSWORD VALID:", isValid)
+
+          if (!isValid) return null
+
+          // =========================
+          // CHAMADOS DO SETOR
+          // =========================
+          const chamadosSetor = await prisma.chamado.findMany({
+            where: {
+              setor: user.setor,
+              status: "ABERTO",
+            },
+          })
+
+          return {
+            id: user.id,
+            email: user.email ?? "",
+            cpf: user.cpf ?? "",
+            name: user.name ?? "",
+            role: user.role,
+            avatarUrl: user.avatarUrl ?? null,
+            setor: user.setor ?? "",
+            chamados: user.chamados ?? [],
+            chamadosSetor: chamadosSetor ?? [],
+          }
+        } catch (error) {
+          console.error("AUTH ERROR:", error)
+          return null
         }
       },
     }),
   ],
-  
-  // ESSENCIAL: Persistir os dados do authorize no Token e na Sessão
+
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
@@ -64,6 +108,7 @@ export const authOptions: NextAuthOptions = {
       }
       return token
     },
+
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string
@@ -81,10 +126,10 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
   },
-  
+
   pages: {
-    signIn: '/login', // Redireciona para sua página customizada se houver erro
+    signIn: "/login",
   },
-  
+
   secret: process.env.NEXTAUTH_SECRET,
 }
