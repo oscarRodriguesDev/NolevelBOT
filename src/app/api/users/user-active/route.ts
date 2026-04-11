@@ -9,7 +9,7 @@ import { getPrisma } from "@/lib/prisma-context"
 
 export async function GET() {
   const session = await getSessionOrFail()
-
+  
   if (!session || !session.user?.id) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
   }
@@ -49,10 +49,14 @@ export async function GET() {
   }
 }
 
-export async function PUT(req: NextRequest) {
-  const logado = await getServerSession(authOptions)
 
-  if (!logado?.user?.id) {
+
+
+export async function PUT(req: NextRequest) {
+  const session = await getServerSession(authOptions)
+  console.log("SESSION:", session)
+
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
   }
 
@@ -61,9 +65,19 @@ export async function PUT(req: NextRequest) {
 
     const formData = await req.formData()
 
-    const userId = logado.user.id
+    console.log("FORMDATA KEYS:", Array.from(formData.keys()))
+
+    const userId = session.user.id
+    const tenantSlug = "dev-teste" // ajustar depois
+
     const password = formData.get("password") as string | null
-    const file = formData.get("avatarFile") as File | null
+
+    const file =
+      (formData.get("avatarFile") as File | null) ||
+      (formData.get("avatar") as File | null)
+
+    console.log("FILE:", file)
+    console.log("FILE SIZE:", file?.size)
 
     const dataToUpdate: Prisma.userUpdateInput = {}
 
@@ -74,14 +88,24 @@ export async function PUT(req: NextRequest) {
 
     if (file && file.size > 0) {
       const uploadedUrl = await uploadFile({
-        bucket: "profile",
-        folder: "",
-        file: file,
+        tenantSlug,
+        folder: "avatars",
+        file,
+        fileName: `user-${userId}`,
+        upsert: true,
+        defaultUrl: "",
       })
 
-      if (uploadedUrl) {
-        dataToUpdate.avatarUrl = uploadedUrl
+      console.log("UPLOADED URL:", uploadedUrl)
+
+      if (!uploadedUrl || uploadedUrl === "") {
+        return NextResponse.json(
+          { error: "Erro ao fazer upload da imagem" },
+          { status: 500 }
+        )
       }
+
+      dataToUpdate.avatarUrl = uploadedUrl
     }
 
     if (Object.keys(dataToUpdate).length === 0) {
@@ -104,6 +128,7 @@ export async function PUT(req: NextRequest) {
     })
 
     return NextResponse.json(user)
+
   } catch (error) {
     console.error("ERRO NO PUT:", error)
     return NextResponse.json(

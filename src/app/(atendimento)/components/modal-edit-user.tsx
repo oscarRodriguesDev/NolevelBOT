@@ -55,6 +55,9 @@ export function UserProfileModal({ open, onClose }: Props) {
     return () => observer.disconnect()
   }, [open])
 
+
+/* 
+
   const handleSubmit = async () => {
     setLoading(true)
     try {
@@ -83,6 +86,52 @@ export function UserProfileModal({ open, onClose }: Props) {
       setLoading(false)
     }
   }
+
+ */
+
+const handleSubmit = async () => {
+  setLoading(true)
+
+  try {
+    const formData = new FormData()
+
+    if (password && password.trim() !== "") {
+      formData.append("password", password)
+    }
+
+    if (avatarFile instanceof File) {
+      formData.append("avatarFile", avatarFile)
+    }
+
+    console.log("avatarFile:", avatarFile)
+    console.log("password:", password)
+    console.log("formData:", [...formData.entries()])
+
+    const res = await fetch("/api/users/user-active", {
+      method: "PUT",
+      body: formData,
+    })
+
+    if (!res.ok) {
+      const errorData = await res.json()
+      throw new Error(errorData.error || "Erro ao atualizar perfil")
+    }
+
+    setPassword("")
+    setAvatarFile(null)
+    onClose()
+    window.location.reload()
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Falha ao atualizar perfil."
+    alert(message)
+  } finally {
+    setLoading(false)
+  }
+}
+
 
   if (!open || !mounted) return null
 
