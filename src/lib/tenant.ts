@@ -11,7 +11,7 @@ export async function resolveTenant() {
   // =========================
   // SIMULAÇÃO (DEBUG)
   // =========================
-  host = "https://dev-teste.nolevel.hiskra.com.br/login"
+ // host = "https://dev-teste.nolevel.hiskra.com.br/login"
   console.log("SIMULATED HOST:", host)
 
   // remove protocolo
