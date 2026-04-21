@@ -19,8 +19,8 @@ jobs:
           script: |
             set -e
 
-            mkdir -p /var/www/nolevel-app-dev
-            cd /var/www/nolevel-app-dev
+            mkdir -p /var/www/dev/nolevel-app-dev
+            cd /var/www/dev/nolevel-app-dev
 
             if [ ! -d ".git" ]; then
               git clone -b dev https://github.com/oscarRodriguesDev/NolevelBOT.git .
