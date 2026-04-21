@@ -17,16 +17,21 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            cd /var/www/nolevel-app-dev || mkdir -p /var/www/nolevel-app-dev
+            set -e
 
+            mkdir -p /var/www/nolevel-app-dev
             cd /var/www/nolevel-app-dev
 
             if [ ! -d ".git" ]; then
-              git clone https://github.com/oscarRodriguesDev/NolevelBOT.git .
-              git checkout dev
+              git clone -b dev https://github.com/oscarRodriguesDev/NolevelBOT.git .
             else
               git fetch origin
               git reset --hard origin/dev
+              git clean -fd
+            fi
+
+            if [ ! -f ".env" ]; then
+              cp .env.dev .env || echo "sem .env.dev encontrado"
             fi
 
             docker compose down
