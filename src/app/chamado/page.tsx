@@ -226,7 +226,8 @@ export default function TicketPageDirect() {
                   "--tw-ring-color": "var(--primary)",
                 } as never}
               >
-                <option value="">Esse chamado é para qual setor?</option>
+                <option value="RH">Esse chamado é para qual setor?</option>{/* apenas pra testar */}
+                
                 {SETORES.map(setor => (
                   <option key={setor} value={setor}>
                     {setor}
@@ -257,34 +258,6 @@ export default function TicketPageDirect() {
               />
             </div>
 
-{/* 
-
-            <div>
-              <label className="block text-sm font-semibold mb-2">
-                Anexar Arquivo (Opcional)
-              </label>
-
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/jpg"
-                onChange={handleFileChange}
-                className="w-full px-4 py-3 border rounded-lg transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
-                style={{
-                  backgroundColor: "var(--surface-elevated)",
-                  borderColor: "var(--border-subtle)",
-                  color: "var(--foreground)",
-                  "--tw-ring-color": "var(--primary)",
-                } as never}
-              />
-
-              {file && (
-                <p className="text-xs mt-2 font-mono" style={{ color: "var(--primary)" }}>
-                  Arquivo selecionado: {file.name}
-                </p>
-              )}
-            </div>
-
-             */}
 
              <FileUpload file={file} setFile={setFile} handleFileChange={handleFileChange} />
 

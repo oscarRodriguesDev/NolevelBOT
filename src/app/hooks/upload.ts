@@ -17,31 +17,30 @@ export async function uploadFile({
   bucket,
   folder = "",
   file,
-  defaultUrl = '',
+  defaultUrl = "",
   upsert = false,
 }: UploadOptions): Promise<string | null> {
   if (!file) return defaultUrl
 
-  try {
-    const fileExt = file.name.split(".").pop()
-    const fileName = `${crypto.randomUUID()}.${fileExt}`
-    const filePath = folder ? `${folder}/${fileName}` : fileName
+  const fileExt = file.name.split(".").pop()
+  const fileName = `${crypto.randomUUID()}.${fileExt}`
+  const filePath = folder ? `${folder}/${fileName}` : fileName
 
-    const { error } = await supabase.storage
-      .from(bucket)
-      .upload(filePath, file, {
-        cacheControl: "3600",
-        upsert,
-      })
+  const { error } = await supabase.storage
+    .from(bucket)
+    .upload(filePath, file, {
+      cacheControl: "3600",
+      upsert,
+    })
 
-    if (error) return defaultUrl
-
-    const { data } = supabase.storage
-      .from(bucket)
-      .getPublicUrl(filePath)
-
-    return data?.publicUrl || defaultUrl
-  } catch {
-    return defaultUrl
+  if (error) {
+    console.error("UPLOAD ERROR:", error)
+    throw error
   }
+
+  const { data } = supabase.storage
+    .from(bucket)
+    .getPublicUrl(filePath)
+
+  return data.publicUrl
 }

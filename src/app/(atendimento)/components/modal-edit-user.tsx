@@ -55,35 +55,48 @@ export function UserProfileModal({ open, onClose }: Props) {
     return () => observer.disconnect()
   }, [open])
 
-  const handleSubmit = async () => {
-    setLoading(true)
-    try {
-      const formData = new FormData()
-      if (password.trim()) formData.append("password", password)
-      if (avatarFile) formData.append("avatarFile", avatarFile)
+const handleSubmit = async () => {
+  setLoading(true)
 
-      const res = await fetch("/api/users/user-active", {
-        method: "PUT",
-        body: formData,
-      })
+  try {
+    const formData = new FormData()
+    console.log("Dados do formulário:", {
+      name: user?.name,
+      email: user?.email,
+      password,
+      avatarFile,
+    })
 
-      if (!res.ok) {
-        const errorData = await res.json()
-        throw new Error(errorData.error || "Erro ao atualizar perfil")
-      }
-
-      setPassword("")
-      setAvatarFile(null)
-      onClose()
-      window.location.reload()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Falha ao atualizar perfil."
-      alert(message)
-    } finally {
-      setLoading(false)
+    if (password.trim()) {
+      formData.append("password", password)
     }
-  }
 
+    if (avatarFile) {
+      formData.append("avatarFile", avatarFile)
+    }
+
+    const res = await fetch("/api/users/user-active", {
+      method: "PUT",
+      body: formData,
+      credentials: "include",
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      throw new Error(data?.error || "Erro ao atualizar perfil")
+    }
+
+    setPassword("")
+    setAvatarFile(null)
+    onClose()
+    window.location.reload()
+  } catch (error) {
+    alert(error instanceof Error ? error.message : "Falha ao atualizar perfil")
+  } finally {
+    setLoading(false)
+  }
+}
   if (!open || !mounted) return null
 
   return createPortal(

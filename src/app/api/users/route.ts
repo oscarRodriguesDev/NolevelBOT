@@ -5,22 +5,31 @@ import { hash } from "bcryptjs"
 import { ROLE } from "@prisma/client"
 import { uploadFile } from "@/app/hooks/upload"
 import { getSessionOrFail } from "@/util/permission"
+import { getServerSession } from "next-auth"
+
+
+//puxar a sessao do usuario para imputar a empresaid do mesmo no user que esta sendo criado, garantindo que o usuario criado fique atrelado a empresa do criador
 
 
 
 
 
 export async function POST(req: NextRequest) {
+
+  const userLogado = await getServerSession()
+  const empresaID = userLogado?.user.empresaId
   // 1. Liberamos a rota para quem tem poder de criação
   // Note que ATENDENTE ficou de fora pois ele não cria ninguém.
   const session = await getSessionOrFail(["GOD", "ADMIN", "GESTOR"])
 
+
+
   try {
     const formData = await req.formData()
-    const roleFromFront = formData.get("role") as string 
+    const roleFromFront = formData.get("role") as string
 
     const roleMap: Record<string, ROLE> = {
-      "XX!": "GOD",
+      // "XX!": "GOD",
       "X1X": "ADMIN",
       "1XX": "GESTOR",
       "X11": "ATENDENTE"
@@ -33,24 +42,31 @@ export async function POST(req: NextRequest) {
     }
 
     // --- LÓGICA DE HIERARQUIA ---
-    const userRole = session?.user.role // Role de quem está LOGADO
+    const userRole = session?.user.role
 
     let canCreate = false
 
-    if (userRole === "GOD") {
-      // GOD cria qualquer um (inclusive outro GOD e ADMIN)
-      canCreate = true
-    } else if (userRole === "ADMIN") {
-      // ADMIN cria ADMIN, GESTOR e ATENDENTE (não cria GOD)
-      if (finalRole !== "GOD") canCreate = true
+    if (userRole === "ADMIN") {
+      canCreate =
+        finalRole === "ADMIN" ||
+        finalRole === "GESTOR" ||
+        finalRole === "ATENDENTE"
     } else if (userRole === "GESTOR") {
-      // GESTOR cria apenas ATENDENTE
-      if (finalRole === "ATENDENTE") canCreate = true
+      canCreate = finalRole === "ATENDENTE"
+    } else {
+      // GOD ou qualquer outro papel não pode criar aqui
+      canCreate = false
     }
 
+    if (!canCreate&& userRole === "GOD") {
+      return NextResponse.json(
+        { error: `Atenção GOD, a rota para criação mudou, favor consultar a documentação!` },
+        { status: 403 }
+      )
+    }
     if (!canCreate) {
       return NextResponse.json(
-        { error: `Um ${userRole} não tem permissão para criar um ${finalRole}` },
+        { error: `Usuário não tem permissão para criar um ${finalRole}` },
         { status: 403 }
       )
     }
@@ -62,6 +78,10 @@ export async function POST(req: NextRequest) {
     const password = formData.get("password") as string
     const setor = formData.get("setor") as string
     const file = formData.get("avatar") as File | null
+    const empresaId = formData.get(empresaID as string) as string
+
+    /*nessa rota somente usuarios da empresa podem ser criados, então god não cria aqui
+    */
 
     const avatarUrl = await uploadFile({
       bucket: "profile",
@@ -76,6 +96,7 @@ export async function POST(req: NextRequest) {
       data: {
         name,
         email,
+        empresaId: empresaId, // Certifique-se de que o ID da empresa seja passado corretamente
         cpf,
         password: hashedPassword,
         role: finalRole,

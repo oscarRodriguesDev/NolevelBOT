@@ -6,6 +6,7 @@ declare module "next-auth" {
     user: {
       id: string
       email: string
+      empresaId: string
       cpf: string
       name: string
       role: ROLE
@@ -20,6 +21,7 @@ declare module "next-auth" {
     id: string
     email: string
     cpf: string
+    empresaId: string
     name: string
     role: ROLE
     avatarUrl: string | null
@@ -34,6 +36,7 @@ declare module "next-auth/jwt" {
     id?: string
     email?: string
     cpf?: string
+    empresaId?: string
     name?: string
     role?: ROLE
     avatarUrl?: string | null

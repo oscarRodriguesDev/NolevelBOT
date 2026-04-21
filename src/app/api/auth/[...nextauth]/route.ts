@@ -39,6 +39,7 @@ export const authOptions: NextAuthOptions = {
         return {
           id: user.id,
           email: user.email,
+          empresaId: user.empresaId,
           cpf: user.cpf,
           name: user.name,
           role: user.role,
@@ -61,6 +62,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id
         token.cpf = user.cpf
+        token.empresaId = user.empresaId
         token.role = user.role
         token.avatarUrl = user.avatarUrl
         token.setor = user.setor
@@ -75,6 +77,7 @@ export const authOptions: NextAuthOptions = {
       if (token && session.user) {
         session.user.id = token.id as string
         session.user.cpf = token.cpf as string
+        session.user.empresaId = token.empresaId as string
         session.user.role = token.role as ROLE
         session.user.avatarUrl = token.avatarUrl as string | null
         session.user.setor = token.setor as string

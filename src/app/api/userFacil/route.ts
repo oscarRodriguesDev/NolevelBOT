@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
       "XX!": "GOD",
       "X1X": "ADMIN",
       "1XX": "GESTOR",
-      "X11": "ATENDENTE"
+      "X11": "ATENDENTE",
     }
 
     const finalRole = roleMap[roleFromFront]
@@ -28,13 +28,22 @@ export async function POST(req: NextRequest) {
     const cpf = formData.get("cpf") as string
     const password = formData.get("password") as string
     const setor = formData.get("setor") as string
+    const empresaId = formData.get("empresaId") as string
     const file = formData.get("avatar") as File | null
+
+    if (!empresaId) {
+      return NextResponse.json(
+        { error: "empresaId é obrigatório" },
+        { status: 400 }
+      )
+    }
 
     const avatarUrl = await uploadFile({
       bucket: "profile",
       folder: "",
       file,
-      defaultUrl: "https://tcgvuhoyojgdnzobmxxl.supabase.co/storage/v1/object/public/profile/cfa70ab9-e566-4bc4-ae53-97c83f24e7e9.jpeg",
+      defaultUrl:
+        "https://tcgvuhoyojgdnzobmxxl.supabase.co/storage/v1/object/public/profile/cfa70ab9-e566-4bc4-ae53-97c83f24e7e9.jpeg",
     })
 
     const hashedPassword = await hash(password, 10)
@@ -44,6 +53,7 @@ export async function POST(req: NextRequest) {
         name,
         email,
         cpf,
+        empresaId,
         password: hashedPassword,
         role: finalRole,
         setor,

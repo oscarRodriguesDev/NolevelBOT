@@ -11,6 +11,8 @@ export default function CreateUserFacil() {
   const [role, setRole] = useState("X11")
   const [avatar, setAvatar] = useState<File | null>(null)
 
+  const idEmpresa = "2e935cbd-eba2-4eab-a805-fbf296457b90"
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
@@ -21,20 +23,29 @@ export default function CreateUserFacil() {
     formData.append("password", password)
     formData.append("setor", setor)
     formData.append("role", role)
+    formData.append("empresaId", idEmpresa)
+
     if (avatar) formData.append("avatar", avatar)
 
-    await fetch("/api/userFacil", {
-      method: "POST",
-      body: formData,
-    })
+    try {
+      await fetch("/api/userFacil", {
+        method: "POST",
+        body: formData,
+      })
 
-    setName("")
-    setEmail("")
-    setCpf("")
-    setPassword("")
-    setSetor("")
-    setRole("X11")
-    setAvatar(null)
+      setName("")
+      setEmail("")
+      setCpf("")
+      setPassword("")
+      setSetor("")
+      setRole("X11")
+      setAvatar(null)
+    } catch (error) {
+      alert(
+        "Erro ao criar usuário: " +
+          (error instanceof Error ? error.message : "Erro desconhecido")
+      )
+    }
   }
 
   return (
@@ -42,20 +53,57 @@ export default function CreateUserFacil() {
       <h2 className="text-lg font-semibold">Criar usuário</h2>
 
       <form onSubmit={handleSubmit} className="space-y-3">
-        <input placeholder="Nome" value={name} onChange={e => setName(e.target.value)} className="w-full border p-2 rounded" />
-        <input placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border p-2 rounded" />
-        <input placeholder="CPF" value={cpf} onChange={e => setCpf(e.target.value)} className="w-full border p-2 rounded" />
-        <input type="password" placeholder="Senha" value={password} onChange={e => setPassword(e.target.value)} className="w-full border p-2 rounded" />
-        <input placeholder="Setor" value={setor} onChange={e => setSetor(e.target.value)} className="w-full border p-2 rounded" />
+        <input
+          placeholder="Nome"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="w-full border p-2 rounded"
+        />
 
-        <select value={role} onChange={e => setRole(e.target.value)} className="w-full border p-2 rounded">
+        <input
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full border p-2 rounded"
+        />
+
+        <input
+          placeholder="CPF"
+          value={cpf}
+          onChange={(e) => setCpf(e.target.value)}
+          className="w-full border p-2 rounded"
+        />
+
+        <input
+          type="password"
+          placeholder="Senha"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="w-full border p-2 rounded"
+        />
+
+        <input
+          placeholder="Setor"
+          value={setor}
+          onChange={(e) => setSetor(e.target.value)}
+          className="w-full border p-2 rounded"
+        />
+
+        <select
+          value={role}
+          onChange={(e) => setRole(e.target.value)}
+          className="w-full border p-2 rounded"
+        >
           <option value="XX!">GOD</option>
           <option value="X1X">ADMIN</option>
           <option value="1XX">GESTOR</option>
           <option value="X11">ATENDENTE</option>
         </select>
 
-        <input type="file" onChange={e => setAvatar(e.target.files?.[0] || null)} />
+        <input
+          type="file"
+          onChange={(e) => setAvatar(e.target.files?.[0] || null)}
+        />
 
         <button type="submit" className="w-full bg-black text-white p-2 rounded">
           Criar

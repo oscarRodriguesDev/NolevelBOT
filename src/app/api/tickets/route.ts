@@ -6,6 +6,7 @@ import type { Prisma } from '@prisma/client'
 export const dynamic = 'force-dynamic'
 import { uploadFile } from '@/app/hooks/upload'
 import { getSessionOrFail } from '@/util/permission';
+import { getServerSession } from 'next-auth'
 
 
 // helper para validar sessão
@@ -21,7 +22,7 @@ type HistoricoItem = {
   atendente?: string
 }
 
-
+/* 
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData()
@@ -71,34 +72,102 @@ export async function POST(req: NextRequest) {
   }
 }
 
+ */
 
+export async function POST(req: NextRequest) {
+  try {
+    const formData = await req.formData()
 
+    const nome = formData.get("nome") as string
+    const cpf = formData.get("cpf") as string
+    const setor = formData.get("setor") as string
+    const descricao = formData.get("descricao") as string
+    const prioridade = (formData.get("prioridade") as string) || "normal"
+    const file = formData.get("anexo") as File | null
+
+    if (!nome || !cpf || !setor || !descricao) {
+      return NextResponse.json(
+        { error: "Campos obrigatórios não preenchidos" },
+        { status: 400 }
+      )
+    }
+
+    // 1. Buscar CPF na base
+    const cpfRecord = await prisma.cpfs.findFirst({
+      where: { cpf },
+    })
+
+    if (!cpfRecord) {
+      return NextResponse.json(
+        { error: "CPF não encontrado na empresa" },
+        { status: 404 }
+      )
+    }
+
+    const empresaId = cpfRecord.empresaId
+
+    // 2. Upload anexo
+    const anexoUrl = await uploadFile({
+      bucket: "documents",
+      folder: cpf,
+      file,
+      defaultUrl: "",
+    })
+
+    const ticket = `TKT-${Date.now()}`
+
+    // 3. Criar chamado vinculado à empresa
+    const chamado = await prisma.chamado.create({
+      data: {
+        ticket,
+        nome,
+        cpf,
+        setor,
+        descricao,
+        prioridade,
+        anexoUrl,
+        empresaId, // 🔒 vínculo multi-tenant
+      },
+    })
+
+    return NextResponse.json(chamado, { status: 201 })
+  } catch (error) {
+    console.error(error)
+    return NextResponse.json(
+      { error: "Erro ao criar chamado" },
+      { status: 500 }
+    )
+  }
+}
 
 export async function GET(req: NextRequest) {
   try {
     const session = await getSessionOrFail()
 
-    if (!session || !session.user) {
-      return NextResponse.json({ error: "Usuário não autenticado" }, { status: 401 })
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: "Usuário não autenticado" },
+        { status: 401 }
+      )
     }
 
     const userSetor = session.user.setor
-
+    const empresaId = session.user.empresaId
     const { searchParams } = new URL(req.url)
+    const ticket = searchParams.get("ticket")
+    const setor = searchParams.get("setor")
+    const cpf = searchParams.get("cpf")
+    const status = searchParams.get("status")
+    const nome = searchParams.get("nome")
+    const descricao = searchParams.get("descricao")
+    const prioridade = searchParams.get("prioridade")
+    const startDate = searchParams.get("startDate")
+    const endDate = searchParams.get("endDate")
 
-    const ticket = searchParams.get('ticket')
-    const setor = searchParams.get('setor')
-    const cpf = searchParams.get('cpf')
-    const status = searchParams.get('status')
-    const nome = searchParams.get('nome')
-    const descricao = searchParams.get('descricao')
-    const prioridade = searchParams.get('prioridade')
-    const startDate = searchParams.get('startDate')
-    const endDate = searchParams.get('endDate')
-
-    const where: Prisma.ChamadoWhereInput = {}
-
-    where.setor = userSetor
+    const where: Prisma.ChamadoWhereInput = {
+      empresaId,
+      setor: userSetor,
+    }
 
     if (ticket) where.ticket = ticket
     if (cpf) where.cpf = cpf
@@ -112,34 +181,27 @@ export async function GET(req: NextRequest) {
     if (nome) {
       where.nome = {
         contains: nome,
-        mode: 'insensitive',
+        mode: "insensitive",
       }
     }
 
     if (descricao) {
       where.descricao = {
         contains: descricao,
-        mode: 'insensitive',
+        mode: "insensitive",
       }
     }
 
     if (startDate || endDate) {
       where.createdAt = {}
 
-      if (startDate) {
-        where.createdAt.gte = new Date(startDate)
-      }
-
-      if (endDate) {
-        where.createdAt.lte = new Date(endDate)
-      }
+      if (startDate) where.createdAt.gte = new Date(startDate)
+      if (endDate) where.createdAt.lte = new Date(endDate)
     }
 
     const chamados = await prisma.chamado.findMany({
       where,
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: { createdAt: "desc" },
       include: {
         atendente: {
           select: {
@@ -152,14 +214,15 @@ export async function GET(req: NextRequest) {
       },
     })
 
-    return NextResponse.json(chamados, { status: 200 })
+    return NextResponse.json(chamados)
   } catch (error) {
     return NextResponse.json(
-      { error: 'Erro ao buscar chamados' },
+      { error: "Erro ao buscar chamados" },
       { status: 500 }
     )
   }
 }
+
 
 
 export async function PUT(req: NextRequest) {
