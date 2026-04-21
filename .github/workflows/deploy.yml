@@ -20,7 +20,7 @@ jobs:
             cd /var/www/nolevel-app || mkdir -p /var/www/nolevel-app && cd /var/www/nolevel-app
 
             if [ ! -d ".git" ]; then
-              git clone https://github.com/SEU_USUARIO/SEU_REPO.git .
+              git clone https://github.com/oscarRodriguesDev/NolevelBOT.git .
             else
               git pull origin main
             fi
