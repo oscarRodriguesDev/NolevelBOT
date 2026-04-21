@@ -1,0 +1,29 @@
+name: Deploy VPS
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cd /var/www/homologa-nolevel-app || mkdir -p /var/www/homooga-nolevel-app && cd /var/www/homologa-nolevel-app
+
+            if [ ! -d ".git" ]; then
+              git clone https://github.com/oscarRodriguesDev/NolevelBOT.git .
+            else
+              git pull origin dev
+            fi
+
+            docker compose down
+            docker compose up -d --build

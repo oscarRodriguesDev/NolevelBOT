@@ -155,71 +155,57 @@ export async function POST(req: NextRequest) {
 
 
 // Certifique-se de que o caminho do prisma está correto
-
+//aqui é rota onde os bots buscam por isso não filtra por empresa, tem que pensar melhor no que fazer
 export async function GET(req: NextRequest) {
   try {
-    const session = await getSessionOrFail()
-    const empresaId = session?.user?.empresaId
+    // Captura o parâmetro 'cpf' da URL (ex: ?cpf=12345678901)
+    const { searchParams } = new URL(req.url);
+    const cpfParaFiltrar = searchParams.get("cpf");
 
-    if (!empresaId) {
-      return NextResponse.json(
-        { error: "Empresa não encontrada na sessão" },
-        { status: 400 }
-      )
-    }
-
-    const { searchParams } = new URL(req.url)
-    const cpfParaFiltrar = searchParams.get("cpf")
-
-    // ================= BUSCA ESPECÍFICA =================
+    // Se um CPF foi passado, fazemos a busca específica (validação)
     if (cpfParaFiltrar) {
-      const registro = await prisma.cpfs.findFirst({
+      const registro = await prisma.cpfs.findUnique({
         where: {
           cpf: cpfParaFiltrar,
-          empresaId, // 🔒 isolamento obrigatório
         },
         select: {
           nome: true,
-          cpf: true,
-        },
-      })
+          cpf: true
+        }
+      });
 
       if (!registro) {
-        return NextResponse.json(
-          {
-            valido: false,
-            message: "CPF não encontrado nesta empresa",
-          },
-          { status: 404 }
-        )
+        return NextResponse.json({ 
+          valido: false, 
+          message: "CPF não encontrado no banco" 
+        }, { status: 404 });
       }
 
-      return NextResponse.json({
-        valido: true,
-        ...registro,
-      })
+      return NextResponse.json({ 
+        valido: true, 
+        ...registro 
+      });
     }
 
-    // ================= LISTAGEM GERAL =================
+    // Se NÃO informou CPF, traz todos os registros
     const todosCPFs = await prisma.cpfs.findMany({
-      where: {
-        empresaId, // 🔒 isolamento obrigatório
-      },
       select: {
         nome: true,
-        cpf: true,
-      },
-    })
+        cpf: true
+      }
+    });
 
-    return NextResponse.json(todosCPFs)
+    return NextResponse.json(todosCPFs);
+
   } catch (error) {
-    console.error("Erro na rota GET CPFs:", error)
+    console.error("Erro na rota GET CPFs:", error);
     return NextResponse.json(
-      { error: "Erro interno ao processar requisição" },
+      { error: "Erro interno ao processar requisição" }, 
       { status: 500 }
-    )
+    );
   }
 }
+
 
 export async function DELETE(req: NextRequest) {
   const session = await getSessionOrFail(["GESTOR", "ADMIN","GOD"])
