@@ -61,7 +61,7 @@ export default function LandingPage() {
         color: "var(--foreground)",
       }}
     >
-      <div className="absolute top-1 z-50">
+      <div className="absolute right-4 top-4 z-50">
         <ThemeToggle />
       </div>
 

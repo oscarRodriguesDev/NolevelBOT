@@ -1,3 +1,5 @@
+//mesmo se parecendo com o prisma de todas as empresas esse sera o master
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -21,14 +23,20 @@ model empresa {
   nome      String   @unique
   cnpj      String   @unique
   setores   String[]
+  users     User[] 
+  chammados  Chamado[]
+  cpfs      cpfs[]
+  databaseUrl String?   // URL de conexão específica para esta empresa
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
+} 
 //não precisa relacionar com os usuarios porque vai ser um banco por empresa
-model user {
-  id        String    @id @default(uuid())
-  email     String    @unique
-  cpf       String    @unique
+model User {
+  id        String   @id @default(uuid())
+  empresaId String 
+  Empresa   empresa  @relation(fields: [empresaId], references: [id])
+  email     String   @unique
+  cpf       String   @unique
   name      String
   role      ROLE
   avatarUrl String?
@@ -40,8 +48,11 @@ model user {
   updatedAt DateTime @updatedAt
 }
 
+
 model Chamado {
   id          String   @id @default(uuid())
+  Empresa     empresa  @relation(fields: [empresaId], references: [id])
+  empresaId   String
   ticket      String   @unique
   nome        String
   cpf         String
@@ -51,10 +62,8 @@ model Chamado {
   status      String   @default("NOVO")
   prioridade  String   @default("normal")
   anexoUrl    String?
-
   atendenteId String?
-  atendente   user? @relation("AtendenteChamados", fields: [atendenteId], references: [id])
-
+  atendente   User? @relation("AtendenteChamados", fields: [atendenteId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -65,6 +74,8 @@ model Chamado {
 model cpfs{
   id        String   @id @default(uuid())
   cpf       String   @unique
+  empresaId String
+  Empresa   empresa  @relation(fields: [empresaId], references: [id])
   nome      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

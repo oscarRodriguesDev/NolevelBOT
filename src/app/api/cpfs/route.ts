@@ -2,12 +2,19 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
+import { getSessionOrFail } from '@/util/permission';
+import { limparCPF } from "@/util/limparcpfs";
 
-function limparCPF(cpf: string) {
-  return cpf.replace(/\D/g, "")
-}
+
 
 export async function POST(req: NextRequest) {
+  const session = await getSessionOrFail(["GOD", "ADMIN", "GESTOR"])
+  const empresaId = session?.user?.empresaId
+
+  if (!session || !session.user) {
+    return NextResponse.json({ error: "Acesso negado" }, { status: 403 })
+  }
+
   try {
     const contentType = req.headers.get("content-type") || ""
 
@@ -113,6 +120,11 @@ export async function POST(req: NextRequest) {
   }
 }
 
+
+
+
+
+
 // Certifique-se de que o caminho do prisma está correto
 
 export async function GET(req: NextRequest) {
@@ -162,5 +174,34 @@ export async function GET(req: NextRequest) {
       { error: "Erro interno ao processar requisição" }, 
       { status: 500 }
     );
+  }
+}
+
+
+export async function DELETE(req: NextRequest) {
+  const session = await getSessionOrFail(["GESTOR", "ADMIN","GOD"])
+  
+  if (!session ) {  
+    return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
+  }
+  try {
+    const { cpf } = await req.json()
+
+    if (!cpf) {
+      return NextResponse.json({ error: "CPF é obrigatório" }, { status: 400 })
+    }
+
+    const registro = await prisma.cpfs.delete({
+      where: {
+        cpf,
+      },
+    })
+
+    return NextResponse.json(registro)
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Erro ao deletar CPF" },
+      { status: 500 }
+    )
   }
 }

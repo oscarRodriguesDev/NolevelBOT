@@ -11,6 +11,7 @@ type User = {
   id: string
   name: string
   email: string
+  empresaId?: string
   cpf?: string
   role?: string
   avatarUrl?: string | null
@@ -32,11 +33,11 @@ export default function UserCard(props: Props) {
 
   const [openModal, setOpenModal] = useState(false)
 
-  const user = sessionUser ?? {
-    name: props.name,
-    email: props.email,
-    role: props.role,
-    avatarUrl: props.avatarUrl,
+  const user = sessionUser || {
+    name: props.name || "",
+    email: props.email || "",
+    role: props.role || "",
+    avatarUrl: props.avatarUrl || null,
   }
 
   const handleLogout = () => {
@@ -51,7 +52,7 @@ export default function UserCard(props: Props) {
     )
   }
 
-  if (!user) return null
+  if (!sessionUser) return null
 
   return (
     <>
@@ -78,7 +79,7 @@ export default function UserCard(props: Props) {
               {user.name || "Sem nome"}
             </span>
             <span className="text-xs opacity-60 truncate">
-              {user.email}
+              {user.email || ""}
             </span>
           </div>
         </div>

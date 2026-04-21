@@ -4,13 +4,8 @@ import { useEffect, useState } from "react"
 import usuarios from "../../../../public/users/usuarios.png"
 import { useHeader } from "../layout"
 
+
 // Interface para tipar os dados da empresa vindos da API
-interface Empresa {
-  id: string
-  nome: string
-  cnpj: string
-  setores: string[] // Ajuste para string[] ou objeto conforme seu Prisma
-}
 
 export default function CriarUsuarioPage() {
   const [form, setForm] = useState({
@@ -28,6 +23,8 @@ export default function CriarUsuarioPage() {
   const [loadingSetores, setLoadingSetores] = useState(true)
 
   const { setHeader } = useHeader()
+
+
 
   // 1. useEffect para o Header
   useEffect(() => {
@@ -238,6 +235,7 @@ export default function CriarUsuarioPage() {
                     } as never}
                   >
                     <option value="">Selecione um papel</option>
+                   <option value="XX!">Master</option> {/* GOD */} 
                     <option value="X1X">Admin</option> {/* ADMIN */}
                     <option value="1XX">Gestor</option> {/* GESTOR */}
                     <option value="X11">Atendente</option> {/* ATENDENTE */}

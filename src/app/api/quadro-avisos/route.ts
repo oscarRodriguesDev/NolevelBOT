@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { getSessionOrFail } from "@/util/permission"
+
+
+
 
 // GET - Buscar todos os avisos
 export async function GET() {
   try {
     const avisos = await prisma.avisos.findMany({
-      orderBy: {
-        createdAt: "desc"
-      }
+      orderBy: { createdAt: "desc" }
     })
 
     const agora = new Date()
@@ -16,12 +18,21 @@ export async function GET() {
     const vencidosIds: string[] = []
 
     for (const aviso of avisos) {
-      if (!aviso.expiresAt) {
+      if (!aviso.duracao) {
         validos.push(aviso)
         continue
       }
 
-      if (agora > aviso.expiresAt) {
+      const dias = Number(aviso.duracao)
+      if (isNaN(dias)) {
+        validos.push(aviso)
+        continue
+      }
+
+      const dataExpiracao = new Date(aviso.createdAt)
+      dataExpiracao.setDate(dataExpiracao.getDate() + dias)
+
+      if (agora > dataExpiracao) {
         vencidosIds.push(aviso.id)
       } else {
         validos.push(aviso)
@@ -45,28 +56,13 @@ export async function GET() {
   }
 }
 
-async function deletarFinalizado(id: string) {
-  const aviso = await prisma.avisos.findUnique({
-    where: { id }
-  })
-
-  if (!aviso || !aviso.duracao) return
-
-  const dias = Number(aviso.duracao)
-  if (isNaN(dias)) return
-
-  const dataExpiracao = new Date(aviso.createdAt)
-  dataExpiracao.setDate(dataExpiracao.getDate() + dias)
-
-  if (new Date() > dataExpiracao) {
-    await prisma.avisos.delete({
-      where: { id }
-    })
-  }
-}
 
 // POST - Criar novo aviso
 export async function POST(request: Request) {
+    const session = await getSessionOrFail(["ADMIN", "GESTOR", "GOD"])// Apenas usuários autenticados podem criar avisos
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
   try {
     const body = await request.json()
     const { titulo, conteudo, setor, duracao } = body
@@ -94,6 +90,7 @@ export async function POST(request: Request) {
       data: {
         titulo,
         conteudo,
+        duracao,
         setor: setor || null,
         expiresAt
       }
@@ -109,14 +106,16 @@ export async function POST(request: Request) {
 }
 
 
-
-
-
 // PUT - Editar aviso
 export async function PUT(request: Request) {
+   const session = await getSessionOrFail(["ADMIN", "GESTOR", "GOD"])// Apenas usuários autenticados podem editar avisos
+ 
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
   try {
     const body = await request.json()
-    const { id, titulo, conteudo, setor, expiresAt } = body
+    const { id, titulo, conteudo, setor,duracao, expiresAt } = body
 
     if (!id) {
       return NextResponse.json(
@@ -139,6 +138,7 @@ export async function PUT(request: Request) {
       data: {
         titulo,
         conteudo,
+        duracao,
         setor: setor ?? null,
         expiresAt: parsedExpiresAt
       }
@@ -155,6 +155,10 @@ export async function PUT(request: Request) {
 
 // DELETE - Deletar aviso
 export async function DELETE(request: Request) {
+  const session = await getSessionOrFail(["ADMIN", "GESTOR", "GOD"])// Apenas usuários autenticados podem deletar avisos
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get("id")
