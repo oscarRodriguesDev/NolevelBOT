@@ -15,6 +15,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Acesso negado" }, { status: 403 })
   }
 
+  if (!empresaId) {
+    return NextResponse.json(
+      { error: "Empresa não encontrada na sessão" },
+      { status: 400 }
+    )
+  }
+
   try {
     const contentType = req.headers.get("content-type") || ""
 
@@ -23,7 +30,10 @@ export async function POST(req: NextRequest) {
       const file = formData.get("file")
 
       if (!file || !(file instanceof File)) {
-        return NextResponse.json({ error: "Arquivo não enviado" }, { status: 400 })
+        return NextResponse.json(
+          { error: "Arquivo não enviado" },
+          { status: 400 }
+        )
       }
 
       const nomeArquivo = file.name.toLowerCase()
@@ -64,12 +74,13 @@ export async function POST(req: NextRequest) {
         const sheetName = workbook.SheetNames[0]
         const sheet = workbook.Sheets[sheetName]
 
-        const json: (string | number)[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 })
+        const json: (string | number | boolean | null)[][] =
+          XLSX.utils.sheet_to_json(sheet, { header: 1 })
 
         registros = json
-          .slice(1) // ignora possível cabeçalho
-          .map((row: (string | number | boolean | null)[]) => {
-            if (!row[0] || !row[1]) return null
+          .slice(1)
+          .map((row) => {
+            if (!row?.[0] || !row?.[1]) return null
 
             const nome = String(row[0]).trim()
             const cpf = limparCPF(String(row[1]).trim())
@@ -79,48 +90,65 @@ export async function POST(req: NextRequest) {
             return { nome, cpf }
           })
           .filter((r): r is { nome: string; cpf: string } => Boolean(r))
-      }
-
-      else {
-        return NextResponse.json({ error: "Formato não suportado" }, { status: 400 })
+      } else {
+        return NextResponse.json(
+          { error: "Formato não suportado" },
+          { status: 400 }
+        )
       }
 
       if (registros.length === 0) {
-        return NextResponse.json({ error: "Nenhum registro válido encontrado" }, { status: 400 })
+        return NextResponse.json(
+          { error: "Nenhum registro válido encontrado" },
+          { status: 400 }
+        )
       }
 
       const result = await prisma.cpfs.createMany({
-        data: registros,
-        skipDuplicates: true
+        data: registros.map((r) => ({
+          nome: r.nome,
+          cpf: r.cpf,
+          empresaId,
+        })),
+        skipDuplicates: true,
       })
 
       return NextResponse.json({
         message: "Importação concluída",
-        inseridos: result.count
+        inseridos: result.count,
       })
     }
 
     // ================= CADASTRO MANUAL =================
     const body = await req.json()
+
     const nome = body?.nome?.trim()
     const cpf = limparCPF(body?.cpf || "")
 
     if (!nome || !cpf) {
-      return NextResponse.json({ error: "Nome e CPF obrigatórios" }, { status: 400 })
+      return NextResponse.json(
+        { error: "Nome e CPF obrigatórios" },
+        { status: 400 }
+      )
     }
 
     const novo = await prisma.cpfs.create({
-      data: { nome, cpf }
+      data: {
+        nome,
+        cpf,
+        empresaId,
+      },
     })
 
     return NextResponse.json(novo)
   } catch (error) {
     console.error(error)
-    return NextResponse.json({ error: "Erro ao processar requisição" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Erro ao processar requisição" },
+      { status: 500 }
+    )
   }
 }
-
-
 
 
 
