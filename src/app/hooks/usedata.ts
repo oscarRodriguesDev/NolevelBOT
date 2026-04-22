@@ -1,9 +1,9 @@
 
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://nolevel-bot.vercel.app";
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
 //buscar os avisos no banco
 export async function buscarAvisos() {
   try {
-    const res = await fetch(`https://nolevel-bot.vercel.app/api/quadro-avisos`);
+    const res = await fetch(`${baseUrl}/api/quadro-avisos`);
     type Aviso = { titulo: string; conteudo: string };
     const data: Aviso[] = await res.json();
     return data
@@ -38,7 +38,7 @@ export async function getMemoria(cpf: string) {
 //salvar memoria do bot
 export async function saveMemoria(cpf: string, nome: string, resumo: string) {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://nolevel-bot.vercel.app";
+   
     await fetch(`${baseUrl}/api/memories`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -83,11 +83,13 @@ export async function enviarChamado(nome: string, cpf: string, setor: string, de
     formData.append('cpf', cpf);
     formData.append('setor', setor);
     formData.append('descricao', descricao);
-    const res = await fetch(`https://nolevel-bot.vercel.app/api/tickets`, { method: "POST", body: formData });
+    const res = await fetch(`${baseUrl}/api/tickets`, { method: "POST", body: formData });
     return res.ok;
   } catch { return false; }
 }
 
+
+//envio de mensagem para o whatsapp esta ok
 export async function sendEvolutionText(instance: string, number: string, text: string) {
   const typingDelay = Math.min(Math.max(1000, text.length * 20), 3000);
   await fetch(`${process.env.EVOLUTION_API_URL}/message/sendText/${instance}`, {
@@ -98,12 +100,13 @@ export async function sendEvolutionText(instance: string, number: string, text: 
 }
 
 
+//cpf funcionando corretamente
 export async function validarCpf(cpf: string) {
   try {
     const cpfLimpo = cpf.replace(/\D/g, "");
     if (!cpfLimpo) return { valido: false };
 
-    const res = await fetch(`https://nolevel-bot.vercel.app/api/cpfs?cpf=${cpfLimpo}`);
+    const res = await fetch(`${baseUrl}/api/cpfs/cpf_no_filter?cpf=${cpfLimpo}`);
 
     if (!res.ok) return { valido: false };
 
