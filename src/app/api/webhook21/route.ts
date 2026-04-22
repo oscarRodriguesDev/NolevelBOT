@@ -96,14 +96,14 @@ export async function POST(req: NextRequest) {
           // Se já tem o nome, saúda e manda o menu. Se não, pergunta o nome.
           const instrucao = session.nome 
             ? `CPF ${cleanCPF} validado. O nome dele é ${session.nome}. Saude-o e apresente as opções: ${menuString}`
-            : `CPF ${cleanCPF} validado. Pergunte como o usuário gostaria de ser chamado.`;
+            : `CPF ${cleanCPF} encontrado. Pergunte como o usuário gostaria de ser chamado.`;
           
           const resposta = await botIA(session, userInput, instrucao);
           await sendEvolutionText(instance, number, resposta);
           
           session.state = session.nome ? FlowState.MENU_PRINCIPAL : FlowState.IDENTIFICACAO_NOME;
         } else {
-          await sendEvolutionText(instance, number, "Não encontrei esse CPF na nossa base. Pode digitar novamente?");
+          await sendEvolutionText(instance, number, "Hum, não consegui validar esse CPF! Por favor, tente novamente.");
         }
         break;
       }
