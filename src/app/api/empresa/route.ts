@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionOrFail } from '@/util/permission'
+import { getSetores } from '@/app/hooks/setores'
 
 // CREATE
 export async function POST(req: NextRequest) {
@@ -30,9 +31,9 @@ export async function POST(req: NextRequest) {
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
-    const cnpj = searchParams.get("cnpj")
+    const cpf = searchParams.get('cpf')
 
-    if (!cnpj) {
+    if (!cpf) {
       const empresas = await prisma.empresa.findMany({
         select: {
           id: true,
@@ -45,24 +46,29 @@ export async function GET(request: Request) {
       return NextResponse.json(empresas)
     }
 
-    const empresa = await prisma.empresa.findUnique({
-      where: { cnpj },
+    const registro = await prisma.cpfs.findUnique({
+      where: { cpf },
       select: {
-        id: true,
-        nome: true,
-        cnpj: true,
-        setores: true,
-      },
+        Empresa: {
+          select: {
+            id: true,
+            nome: true,
+            cnpj: true,
+            setores: true,
+          }
+        }
+      }
     })
 
-    if (!empresa) {
+    if (!registro?.Empresa) {
       return NextResponse.json(
-        { error: "Empresa não encontrada" },
+        { error: "Empresa não encontrada para este CPF" },
         { status: 404 }
       )
     }
 
-    return NextResponse.json(empresa)
+    return NextResponse.json(registro.Empresa)
+
   } catch (error) {
     return NextResponse.json(
       { error: "Erro ao buscar empresa" },

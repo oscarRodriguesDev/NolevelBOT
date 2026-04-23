@@ -10,10 +10,12 @@ export default function TicketPageDirect() {
   //buscar setores por empresa
   const [SETORES, setSetores] = useState<string[]>([])
 
-  useEffect(() => {
-    async function fetchSetores() {
+ 
+
+  //buscar setores depois que informar o cpf
+    async function fetchSetores(cpf:string) {
       try {
-        const response = await fetch(`/api/empresa?cnpj=${process.env.NEXT_PUBLIC_CNPJ}`) // cnpj da empresa deve ser definida em variavel de ambiente
+        const response = await fetch(`/api/empresa?cpf=${cpf}`) // cnpj da empresa deve ser definida em variavel de ambiente
         const data = await response.json()
 
         if (response.ok) {
@@ -24,8 +26,8 @@ export default function TicketPageDirect() {
       }
     }
 
-    fetchSetores()
-  }, [])
+   
+
 
 
 
@@ -195,6 +197,7 @@ export default function TicketPageDirect() {
                 name="cpf"
                 value={formData.cpf}
                 onChange={handleChange}
+                onBlur={()=>{fetchSetores(formData.cpf)}}
                 required
                 pattern="\d{11}"
                 maxLength={11}
@@ -226,7 +229,7 @@ export default function TicketPageDirect() {
                   "--tw-ring-color": "var(--primary)",
                 } as never}
               >
-                <option value="RH">Esse chamado é para qual setor?</option>{/* apenas pra testar */}
+                
                 
                 {SETORES.map(setor => (
                   <option key={setor} value={setor}>
