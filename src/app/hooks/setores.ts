@@ -1,18 +1,25 @@
 import { prisma } from "@/lib/prisma"
 
-//tem que alterar para buscar o setor da empresa usando o cnpj da mesma,podemos usar uma key ou uma autenticaçaço
-export async function getSetores(cnpj: string) {
+
+export async function getSetores(cpf: string) {
   try {
-    if (!cnpj) {
-      throw new Error("CNPJ é obrigatório")
+    if (!cpf) {
+      throw new Error("CPF é obrigatório")
     }
 
-    const empresa = await prisma.empresa.findUnique({
-      where: { cnpj },
-      select: { setores: true }
+    const registro = await prisma.cpfs.findUnique({
+      where: { cpf },
+      select: {
+        Empresa: {
+          select: {
+            setores: true
+          }
+        }
+      }
     })
 
-    return empresa?.setores || []
+    return registro?.Empresa?.setores || []
+
   } catch (error) {
     console.error(error)
     return []

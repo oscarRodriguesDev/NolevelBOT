@@ -3,8 +3,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { getSetores } from "@/app/hooks/setores"
 import { botIA } from "@/app/hooks/useIA";
 import { validarCpf, getMemoria, StatusChamado, enviarChamado } from "@/app/hooks/usedata";
+import { User } from "lucide-react";
 
-const SETORES = await getSetores(process.env.NEXT_PUBLIC_CNPJ!) //recupera os setores da empresa usando o cnpj da mesma,podemos usar uma key ou uma autenticaçaço
+//recupera os setores da empresa usando o cnpj da mesma,podemos usar uma key ou uma autenticaçaço
 
 
 type FlowState = "inicio" | "identificacao_cpf" | "identificacao_nome" | "menu_principal" | "coletar_motivo" | "verificar_aviso" | "escolher_abertura" | "coletar_setor"
@@ -117,7 +118,12 @@ export async function POST(req: NextRequest) {
         if (analiseIA.includes("PROSSEGUIR_FLUXO")) {
           session.state = "coletar_setor"
           sessions.set(sessionId, session)
-          return NextResponse.json({ reply: `Entendido. Para qual setor devo enviar?\n\n📍 *Setores:* ${SETORES.join(", ")}` })
+          //busca os setores da empresa usando o cpf do usuário, para apresentar as opções de setor 
+          // para o qual ele pode enviar o chamado
+          const setores = await getSetores(session.cpf || '')
+          return NextResponse.json({
+            reply: `Entendido. Para qual setor devo enviar?\n\n📍 *Setores:* ${setores.join(", ")}`
+          })
         } else {
           session.state = "verificar_aviso"
           sessions.set(sessionId, session)
@@ -129,7 +135,12 @@ export async function POST(req: NextRequest) {
         if (["1", "sim", "quero", "continuar", "prosseguir"].some(v => lowerInput.includes(v))) {
           session.state = "coletar_setor"
           sessions.set(sessionId, session)
-          return NextResponse.json({ reply: `Perfeito, vou dar seguimento. Para qual setor deseja enviar?\n\n📍 *Setores:* ${SETORES.join(", ")}` })
+          //busca os setores da empresa usando o cpf do usuário, para apresentar as opções de setor 
+          // para o qual ele pode enviar o chamado
+          const setores = await getSetores(session.cpf || '')
+          return NextResponse.json({
+            reply: `Entendido. Para qual setor devo enviar?\n\n📍 *Setores:* ${setores.join(", ")}`
+          })
         } else {
           session.state = "menu_principal"
           sessions.set(sessionId, session)
@@ -138,16 +149,26 @@ export async function POST(req: NextRequest) {
       }
 
       case "coletar_setor": {
-        const setor = SETORES.find(s => lowerInput.includes(s.toLowerCase()))
-        if (!setor) return NextResponse.json({ reply: `Não reconheci esse setor. Escolha um destes: ${SETORES.join(", ")}` })
+        const setores = await getSetores(session.cpf || '')
+        const setor = setores.find(s => lowerInput.includes(s.toLowerCase()))
+
+        if (!setor) {
+          return NextResponse.json({
+            reply: `Não reconheci esse setor. Escolha um destes: ${setores.join(", ")}`
+          })
+        }
 
         const ok = await enviarChamado(session.nome!, session.cpf!, setor, session.motivoAtual!)
         session.state = "menu_principal"
         sessions.set(sessionId, session)
+
         return NextResponse.json({
-          reply: ok ? `✅ Tudo pronto! Seu chamado para *${setor}* foi registrado. Deseja tratar de mais algum assunto?` : "Erro ao criar chamado. Tente novamente mais tarde."
+          reply: ok
+            ? `✅ Tudo pronto! Seu chamado para *${setor}* foi registrado. Deseja tratar de mais algum assunto?`
+            : "Erro ao criar chamado. Tente novamente mais tarde."
         })
       }
+
     }
 
     return NextResponse.json({ reply: "Desculpe, ocorreu um erro no fluxo. Como posso ajudar?" })

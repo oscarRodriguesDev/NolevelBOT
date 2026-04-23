@@ -4,6 +4,7 @@ import OpenAI from "openai";
 
 //tudo abaixo precisa começar a ser informado na rota, para que a função hevelynIA fique mais limpa e focada apenas em gerar a resposta da IA, recebendo o contexto já processado.
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
 const FlowState = {
   INICIO: "inicio",
   IDENTIFICACAO_CPF: "identificacao_cpf",
@@ -15,8 +16,8 @@ const FlowState = {
   COLETAR_SETOR: "coletar_setor"
 } as const;
 
-const empresa = 'Nolevel';
-const LINK_PORTAL = `https://nolevel-bot.vercel.app`;
+const empresa = 'Nolevel'; //buscar o nome da empresa no bd
+const LINK_PORTAL = process.env.BASE_URL
 const LINK_CHAMADOS = `${LINK_PORTAL}/chamado`; 
 const lINK_CONSULTA = `${LINK_PORTAL}/consulta`;
 
