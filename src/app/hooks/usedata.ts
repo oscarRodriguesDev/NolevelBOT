@@ -106,7 +106,7 @@ export async function validarCpf(cpf: string) {
     const cpfLimpo = cpf.replace(/\D/g, "");
     if (!cpfLimpo) return { valido: false };
 
-    const res = await fetch(`${baseUrl}/api/cpfs/cpf_no_filter?cpf=${cpfLimpo}`);
+    const res = await fetch(`${baseUrl}/api/cpfs/general_cpf?cpf=${cpfLimpo}`);
 
     if (!res.ok) return { valido: false };
 
@@ -126,7 +126,6 @@ export async function validarCpf(cpf: string) {
         cpf: data.cpf
       };
     }
-
     return { valido: false };
   } catch (err) {
     console.error("Erro ao validar CPF na API:", err);
