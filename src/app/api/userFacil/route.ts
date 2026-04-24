@@ -3,8 +3,17 @@ import { prisma } from "@/lib/prisma"
 import { ROLE } from "@prisma/client"
 import { hash } from "bcryptjs"
 import { NextRequest, NextResponse } from "next/server"
+import { getSessionOrFail } from "@/util/permission";
 
+
+//assim posso criar usuario para qualquer empresa, preciso validar se
+//  o empresaId existe mesmo, ou se o usuario tem acesso a ele, para evitar que um usuario
+//  crie conta em uma empresa que ele não tem acesso
 export async function POST(req: NextRequest) {
+  const session = await getSessionOrFail(['GOD'])
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
   try {
     const formData = await req.formData()
 

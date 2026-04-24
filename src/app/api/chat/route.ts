@@ -2,10 +2,12 @@ import { Chamado } from "@prisma/client"
 import { NextRequest, NextResponse } from "next/server"
 import { getSetores } from "@/app/hooks/setores"
 import { botIA } from "@/app/hooks/useIA";
-import { validarCpf, getMemoria, StatusChamado, enviarChamado } from "@/app/hooks/usedata";
+import { validarCpf, getMemoria, StatusChamado, enviarChamado,buscarAvisos } from "@/app/hooks/usedata";
 import { User } from "lucide-react";
 
 //recupera os setores da empresa usando o cnpj da mesma,podemos usar uma key ou uma autenticaçaço
+
+
 
 
 type FlowState = "inicio" | "identificacao_cpf" | "identificacao_nome" | "menu_principal" | "coletar_motivo" | "verificar_aviso" | "escolher_abertura" | "coletar_setor"
@@ -24,6 +26,7 @@ const sessions = new Map<string, UserSession>()
 
 
 export async function POST(req: NextRequest) {
+  const avisos = await buscarAvisos(req)
 
   try {
     const body = await req.json()
@@ -40,7 +43,7 @@ export async function POST(req: NextRequest) {
     const lowerInput = userInput.toLowerCase()
 
     if (["obrigado", "tchau", "sair", "encerrar", "cancelar"].some(w => lowerInput.includes(w))) {
-      const tchau = await botIA(session, userInput, "Despeça-se amigavelmente, sem dizer boa noite, ou boa tarde, apenas  informando que o atendimento foi encerrado.")
+      const tchau = await botIA(session, userInput, "Despeça-se amigavelmente, sem dizer boa noite, ou boa tarde, apenas  informando que o atendimento foi encerrado.",avisos)
       sessions.delete(sessionId)
       return NextResponse.json({ reply: tchau })
     }
@@ -48,7 +51,7 @@ export async function POST(req: NextRequest) {
     switch (session.state) {
       case "inicio": {
         const resp = await botIA(session, userInput, `O usuário acabou de chegar. 
-          Dê as boas-vindas se apresente,   e peça OBRIGATORIAMENTE o CPF para começar o atendimento.`)
+          Dê as boas-vindas se apresente,   e peça OBRIGATORIAMENTE o CPF para começar o atendimento.`,avisos)
         session.state = "identificacao_cpf"
         sessions.set(sessionId, session)
         return NextResponse.json({ reply: resp })
@@ -70,7 +73,7 @@ export async function POST(req: NextRequest) {
             ? `CPF ${cleanCPF} validado. O nome dele é ${session.nome}. Saude-o e apresente as opções: 1. Abrir Chamado, 2. Consultar Chamado`
             : `CPF ${cleanCPF} validado. Pergunte como o usuário gostaria de ser chamado.`;
 
-          const resposta = await botIA(session, userInput, instrucao);
+          const resposta = await botIA(session, userInput, instrucao,avisos);
           session.state = session.nome ? "menu_principal" : "identificacao_nome";
           sessions.set(sessionId, session)
           return NextResponse.json({ reply: resposta })
@@ -82,7 +85,7 @@ export async function POST(req: NextRequest) {
       case "identificacao_nome": {
         session.nome = userInput
         session.state = "menu_principal"
-        const resp = await botIA(session, userInput, "Agora que já sabe o nome, apresente as opções: 1. Abrir Chamado, 2. Consultar Chamado")
+        const resp = await botIA(session, userInput, "Agora que já sabe o nome, apresente as opções: 1. Abrir Chamado, 2. Consultar Chamado",avisos)
         sessions.set(sessionId, session)
         return NextResponse.json({ reply: resp })
       }
@@ -94,7 +97,7 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ reply: "Com certeza! Me conta o que está acontecendo? (Pode descrever o problema detalhadamente)" })
         }
         if (["2", "status", "consultar"].some(v => lowerInput.includes(v))) {
-          const status = await StatusChamado(session.cpf!)
+          const status = await StatusChamado(session.cpf||'',req)
           const lista = status.length > 0
             ? status.map((t: Chamado) => `🎫 *Ticket:* ${t.ticket} - Status: ${t.status}`).join("\n")
             : "Não encontrei chamados abertos para você."
@@ -103,7 +106,7 @@ export async function POST(req: NextRequest) {
 
         const resposta = await botIA(session, userInput, `Tente identificar o que ele quer, caso não consiga encerre 
           amigavelmente.Não faça suposições, apenas encerre o atendimento, ao finalizar não precisa dizer boa tarde, bom dia ou boa noite,
-          apenas encerre o atendimento de forma cordial.`)
+          apenas encerre o atendimento de forma cordial.`,avisos)
         return NextResponse.json({ reply: resposta })
       }
 
@@ -112,7 +115,7 @@ export async function POST(req: NextRequest) {
         const analiseIA = await botIA(
           session,
           userInput,
-          "INSTRUÇÃO: Verifique se o problema relatado bate com os 'Avisos' do sistema. Se bater, explique o aviso e pergunte se quer abrir o chamado mesmo assim. Se NÃO bater, responda apenas: PROSSEGUIR_FLUXO"
+          "INSTRUÇÃO: Verifique se o problema relatado bate com os 'Avisos' do sistema. Se bater, explique o aviso e pergunte se quer abrir o chamado mesmo assim. Se NÃO bater, responda apenas: Não consegui entender!",avisos
         );
 
         if (analiseIA.includes("PROSSEGUIR_FLUXO")) {

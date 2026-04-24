@@ -36,11 +36,14 @@ type UserSession = {
 };
 
 
+export async function GET(req: NextRequest) {
+  return NextResponse.json({ ok: 'Webhook 21 esta desativado' });
+}
 
 
 
 // --- WEBHOOK POST ---
-export async function POST(req: NextRequest) {
+/* export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     if (body.event !== "messages.upsert") return NextResponse.json({ ok: true });
@@ -195,4 +198,4 @@ export async function POST(req: NextRequest) {
     console.error("Erro crítico no webhook:", error);
     return NextResponse.json({ ok: true });
   }
-}
+} */

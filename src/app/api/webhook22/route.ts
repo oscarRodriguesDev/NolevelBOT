@@ -5,7 +5,8 @@ import {
   StatusChamado,
   enviarChamado,
   sendEvolutionText,
-  generateRandomTicket
+  generateRandomTicket,
+  buscarAvisos
 } from "@/app/hooks/usedata";
 import { Chamado } from "@prisma/client";
 import { getSetores } from "@/app/hooks/setores";
@@ -41,6 +42,8 @@ type UserSession = {
 
 // --- WEBHOOK POST ---
 export async function POST(req: NextRequest) {
+
+  const avisos = await buscarAvisos(req)
   try {
     const body = await req.json();
     if (body.event !== "messages.upsert") return NextResponse.json({ ok: true });
@@ -73,7 +76,7 @@ export async function POST(req: NextRequest) {
     switch (session.state) {
       case FlowState.INICIO: {
         // Força a IA a pedir o CPF no primeiro "Oi"
-        const resposta = await botIA(session, userInput, "O usuário acabou de chegar. Dê as boas-vindas e peça OBRIGATORIAMENTE o CPF para começar o atendimento.");
+        const resposta = await botIA(session, userInput, "O usuário acabou de chegar. Dê as boas-vindas e peça OBRIGATORIAMENTE o CPF para começar o atendimento.",avisos);
         await sendEvolutionText(instance, number, resposta);
         session.state = FlowState.IDENTIFICACAO_CPF;
         break;
@@ -98,7 +101,7 @@ export async function POST(req: NextRequest) {
             ? `CPF ${cleanCPF} validado. O nome dele é ${session.nome}. Saude-o e apresente as opções: ${menuString}`
             : `CPF ${cleanCPF} encontrado. Pergunte como o usuário gostaria de ser chamado.`;
 
-          const resposta = await botIA(session, userInput, instrucao);
+          const resposta = await botIA(session, userInput, instrucao,avisos);
           await sendEvolutionText(instance, number, resposta);
 
           session.state = session.nome ? FlowState.MENU_PRINCIPAL : FlowState.IDENTIFICACAO_NOME;
@@ -110,7 +113,7 @@ export async function POST(req: NextRequest) {
 
       case FlowState.IDENTIFICACAO_NOME: {
         session.nome = userInput;
-        const resposta = await botIA(session, userInput, `Agora que já sabe o nome (${userInput}), apresente o menu: ${menuString}`);
+        const resposta = await botIA(session, userInput, `Agora que já sabe o nome (${userInput}), apresente o menu: ${menuString}`,avisos);
         await sendEvolutionText(instance, number, resposta);
         session.state = FlowState.MENU_PRINCIPAL;
         break;
@@ -131,7 +134,7 @@ export async function POST(req: NextRequest) {
         } else {
           const resposta = await botIA(session, userInput, `Tente identificar o que ele quer, caso não consiga encerre 
           amigavelmente.Não faça suposições, apenas encerre o atendimento, ao finalizar não precisa dizer boa tarde, bom dia ou boa noite,
-          apenas encerre`)
+          apenas encerre`,avisos)
           await sendEvolutionText(instance, number, resposta);
         }
         break;
@@ -144,7 +147,7 @@ export async function POST(req: NextRequest) {
         const analiseIA = await botIA(
           session,
           userInput,
-          "INSTRUÇÃO: Verifique se o problema relatado bate com os 'Avisos' do sistema. Se bater, explique o aviso e pergunte se quer abrir o chamado mesmo assim. Se NÃO bater, responda apenas: PROSSEGUIR_FLUXO"
+          "INSTRUÇÃO: Verifique se o problema relatado bate com os 'Avisos' do sistema. Se bater, explique o aviso e pergunte se quer abrir o chamado mesmo assim. Se NÃO bater, responda apenas: Não consegui entender.", avisos
         );
 
         if (analiseIA.includes("PROSSEGUIR_FLUXO")) {

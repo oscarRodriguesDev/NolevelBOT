@@ -6,7 +6,7 @@ import type { Prisma } from '@prisma/client'
 export const dynamic = 'force-dynamic'
 import { uploadFile } from '@/app/hooks/upload'
 import { getSessionOrFail } from '@/util/permission';
-import { getServerSession } from 'next-auth'
+
 
 
 // helper para validar sessão

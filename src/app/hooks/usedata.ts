@@ -1,7 +1,7 @@
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
 //buscar os avisos no banco
-export async function buscarAvisos() {
+/* export async function buscarAvisos() {
   try {
     const res = await fetch(`${baseUrl}/api/quadro-avisos`);
     type Aviso = { titulo: string; conteudo: string };
@@ -11,7 +11,28 @@ export async function buscarAvisos() {
       .join("\n") || "Sem avisos.";
   } catch { return "Sem avisos no momento."; }
 }
+ */
 
+export async function buscarAvisos(req?: Request) {
+  try {
+    const res = await fetch(`${baseUrl}/api/quadro-avisos`, {
+      headers: {
+        cookie: req?.headers.get("cookie") || "",
+      },
+    });
+
+    if (!res.ok) return "Sem avisos no momento.";
+
+    type Aviso = { titulo: string; conteudo: string };
+    const data: Aviso[] = await res.json();
+
+    return data.length > 0
+      ? data.map(a => `📢 *${a.titulo}*: ${a.conteudo}`).join("\n")
+      : "Sem avisos.";
+  } catch {
+    return "Sem avisos no momento.";
+  }
+}
 //gerador de tickets
 export function generateRandomTicket() {
   const now = new Date();
@@ -61,16 +82,24 @@ export function saudacao() {
 
 
 //status dos chamados
-export async function StatusChamado(filtro: string) {
+export async function StatusChamado(filtro: string, req?: Request) {
   try {
     const isTicket = filtro.toUpperCase().includes("TKT") || filtro.length > 11;
     const param = isTicket ? `ticket=${filtro}` : `cpf=${filtro}`;
     const url = `${baseUrl}/api/tickets?${param}`;
-    const response = await fetch(url, { method: "GET" });
-    if (!response.ok) return null;
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        cookie: req?.headers.get("cookie") || "",
+      },
+    });
+
+    if (!response.ok) return [];
+
     return await response.json();
   } catch (error) {
-    return null;
+    return [];
   }
 }
 

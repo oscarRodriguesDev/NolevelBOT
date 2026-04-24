@@ -17,7 +17,7 @@ const FlowState = {
 } as const;
 
 const empresa = 'Nolevel'; //buscar o nome da empresa no bd
-const LINK_PORTAL = process.env.BASE_URL
+const LINK_PORTAL = process.env.NEXT_PUBLIC_BASE_URL
 const LINK_CHAMADOS = `${LINK_PORTAL}/chamado`; 
 const lINK_CONSULTA = `${LINK_PORTAL}/consulta`;
 
@@ -36,8 +36,8 @@ type UserSession = {
 
 
 
-export async function botIA(session: UserSession, userInput: string, instrucaoEtapa: string) {
-  const avisos = await buscarAvisos();
+export async function botIA(session: UserSession, userInput: string, instrucaoEtapa: string,avisos:string) {
+
   const statusAtual = session.cpf ? await StatusChamado(session.cpf) : "Nenhum CPF informado";
   
   try {
@@ -64,7 +64,8 @@ export async function botIA(session: UserSession, userInput: string, instrucaoEt
             INSTRUÇÃO ESPECÍFICA: ${instrucaoEtapa}
 
            se na etapa de coleta de motivo, perceber que o usuario precisa fazer upload de qualquer documento ou arquivo, 
-           diga a ele de forma clara e direta exatamente a seguinte frase: Para enviar o documento, acesse : ${LINK_CHAMADOS}.
+           diga a ele de forma clara e direta exatamente a seguinte frase: Para enviar o documento, acesse : ${LINK_CHAMADOS} 
+            e clique em "Registrar Novo Chamado". Lá você poderá preencher os dados e anexar o arquivo necessário.
 
             ENCERRAMENTO E LINKS (IMPORTANTE):
             - Sempre que encerrar ou oferecer ajuda extra, apresente os links de forma clara e direta.
