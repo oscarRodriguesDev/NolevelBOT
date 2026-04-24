@@ -65,7 +65,7 @@ export async function StatusChamado(filtro: string) {
   try {
     const isTicket = filtro.toUpperCase().includes("TKT") || filtro.length > 11;
     const param = isTicket ? `ticket=${filtro}` : `cpf=${filtro}`;
-    const url = `https://nolevel-bot.vercel.app/api/tickets?${param}`;
+    const url = `${baseUrl}/api/tickets?${param}`;
     const response = await fetch(url, { method: "GET" });
     if (!response.ok) return null;
     return await response.json();
