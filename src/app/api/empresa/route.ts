@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionOrFail } from '@/util/permission'
-import { getSetores } from '@/app/hooks/setores'
+import { getSetores } from '@/lib/setores'
 
 // CREATE
 export async function POST(req: NextRequest) {

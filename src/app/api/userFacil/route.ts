@@ -1,4 +1,4 @@
-import { uploadFile } from "@/app/hooks/upload"
+import { uploadFile } from "@/lib/upload"
 import { prisma } from "@/lib/prisma"
 import { ROLE } from "@prisma/client"
 import { hash } from "bcryptjs"

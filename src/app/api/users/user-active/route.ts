@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import { Prisma } from "@prisma/client"
 import { getSessionOrFail } from "@/util/permission"
-import { uploadFile } from "@/app/hooks/upload"
+import { uploadFile } from "@/lib/upload"
 import { authOptions } from "@/lib/nextauth"
 import { getServerSession } from "next-auth"
 

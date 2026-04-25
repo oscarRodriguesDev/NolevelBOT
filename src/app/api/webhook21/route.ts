@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { botIA } from "@/app/hooks/useIA";
+import { botIA } from "@/lib/useIA";
 import {
   validarCpf,
   StatusChamado,
   enviarChamado,
   sendEvolutionText,
   generateRandomTicket
-} from "@/app/hooks/usedata";
+} from "@/lib/usedata";
 import { Chamado } from "@prisma/client";
-import { getSetores } from "@/app/hooks/setores";
+import { getSetores } from "@/lib/setores";
 
 const SETORES = await getSetores(process.env.NEXT_PUBLIC_CNPJ!)
 

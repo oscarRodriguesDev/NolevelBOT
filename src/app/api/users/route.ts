@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { hash } from "bcryptjs"
 import { ROLE } from "@prisma/client"
-import { uploadFile } from "@/app/hooks/upload"
+import { uploadFile } from "@/lib/upload"
 import { getSessionOrFail } from "@/util/permission"
 import { getServerSession } from "next-auth"
 

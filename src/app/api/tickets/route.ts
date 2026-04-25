@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import type { Prisma } from '@prisma/client'
 export const dynamic = 'force-dynamic'
-import { uploadFile } from '@/app/hooks/upload'
+import { uploadFile } from '@/lib/upload'
 import { getSessionOrFail } from '@/util/permission';
 
 

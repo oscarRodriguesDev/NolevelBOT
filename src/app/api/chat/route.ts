@@ -1,8 +1,8 @@
 import { Chamado } from "@prisma/client"
 import { NextRequest, NextResponse } from "next/server"
-import { getSetores } from "@/app/hooks/setores"
-import { botIA } from "@/app/hooks/useIA";
-import { validarCpf, getMemoria, StatusChamado, enviarChamado,buscarAvisos } from "@/app/hooks/usedata";
+import { getSetores } from "@/lib/setores"
+import { botIA } from "@/lib/useIA";
+import { validarCpf, getMemoria, StatusChamado, enviarChamado,buscarAvisos } from "@/lib/usedata";
 import { User } from "lucide-react";
 
 //recupera os setores da empresa usando o cnpj da mesma,podemos usar uma key ou uma autenticaçaço
