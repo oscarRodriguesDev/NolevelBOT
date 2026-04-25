@@ -15,7 +15,7 @@ const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
 
 export async function buscarAvisos(req?: Request) {
   try {
-    const res = await fetch(`${baseUrl}/api/quadro-avisos`, {
+    const res = await fetch(`${baseUrl}/api/quadro-avisos/mostrar-avisos?cpf=${req?.headers.get("cpf")}`, {
       headers: {
         cookie: req?.headers.get("cookie") || "",
       },
@@ -86,7 +86,8 @@ export async function StatusChamado(filtro: string, req?: Request) {
   try {
     const isTicket = filtro.toUpperCase().includes("TKT") || filtro.length > 11;
     const param = isTicket ? `ticket=${filtro}` : `cpf=${filtro}`;
-    const url = `${baseUrl}/api/tickets?${param}`;
+    const url = `${baseUrl}/api/tickets/search?${param}`;
+    console.log(url)
 
     const response = await fetch(url, {
       method: "GET",
@@ -99,6 +100,8 @@ export async function StatusChamado(filtro: string, req?: Request) {
 
     return await response.json();
   } catch (error) {
+
+    console.error("Erro ao buscar status do chamado:", error);
     return [];
   }
 }
