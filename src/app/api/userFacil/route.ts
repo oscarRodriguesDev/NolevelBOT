@@ -5,6 +5,24 @@ import { hash } from "bcryptjs"
 import { NextRequest, NextResponse } from "next/server"
 import { getSessionOrFail } from "@/util/permission";
 
+// GET - Listar empresas (apenas GOD)
+export async function GET(req: NextRequest) {
+  const session = await getSessionOrFail(["GOD"])
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  const empresas = await prisma.empresa.findMany({
+    select: {
+      id: true,
+      nome: true,
+      cnpj: true,
+    },
+    orderBy: { nome: "asc" },
+  })
+
+  return NextResponse.json(empresas)
+}
 
 //assim posso criar usuario para qualquer empresa, preciso validar se
 //  o empresaId existe mesmo, ou se o usuario tem acesso a ele, para evitar que um usuario
@@ -40,11 +58,23 @@ export async function POST(req: NextRequest) {
     const empresaId = formData.get("empresaId") as string
     const file = formData.get("avatar") as File | null
 
+    if (!name || !name.trim()) {
+      return NextResponse.json({ error: "Nome é obrigatório" }, { status: 400 })
+    }
+    if (!email || !email.trim()) {
+      return NextResponse.json({ error: "Email é obrigatório" }, { status: 400 })
+    }
+    if (!cpf || !cpf.trim()) {
+      return NextResponse.json({ error: "CPF é obrigatório" }, { status: 400 })
+    }
+    if (!password || !password.trim()) {
+      return NextResponse.json({ error: "Senha é obrigatória" }, { status: 400 })
+    }
+    if (!setor || !setor.trim()) {
+      return NextResponse.json({ error: "Setor é obrigatório" }, { status: 400 })
+    }
     if (!empresaId) {
-      return NextResponse.json(
-        { error: "empresaId é obrigatório" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "empresaId é obrigatório" }, { status: 400 })
     }
 
     const avatarUrl = await uploadFile({

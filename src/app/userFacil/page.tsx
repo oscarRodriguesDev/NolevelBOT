@@ -1,6 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+
+interface Empresa {
+  id: string
+  nome: string
+  cnpj: string
+}
 
 export default function CreateUserFacil() {
   const [name, setName] = useState("")
@@ -10,48 +16,94 @@ export default function CreateUserFacil() {
   const [setor, setSetor] = useState("")
   const [role, setRole] = useState("X11")
   const [avatar, setAvatar] = useState<File | null>(null)
+  const [empresas, setEmpresas] = useState<Empresa[]>([])
+  const [empresaId, setEmpresaId] = useState("")
+  const [loadingEmpresas, setLoadingEmpresas] = useState(true)
 
-  const idEmpresa = "2e935cbd-eba2-4eab-a805-fbf296457b90"
-
-async function handleSubmit(e: React.FormEvent) {
-  e.preventDefault()
-
-  const formData = new FormData()
-  formData.append("name", name)
-  formData.append("email", email)
-  formData.append("cpf", cpf)
-  formData.append("password", password)
-  formData.append("setor", setor)
-  formData.append("role", role)
-  formData.append("empresaId", idEmpresa)
-
-  if (avatar) formData.append("avatar", avatar)
-
-  try {
-    const response = await fetch("/api/userFacil", {
-      method: "POST",
-      body: formData,
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.message || "Erro ao criar usuário")
+  useEffect(() => {
+    async function fetchEmpresas() {
+      try {
+        const response = await fetch("/api/userFacil")
+        if (response.ok) {
+          const data = await response.json()
+          setEmpresas(data)
+          if (data.length > 0) {
+            setEmpresaId(data[0].id)
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao carregar empresas:", error)
+      } finally {
+        setLoadingEmpresas(false)
+      }
     }
-    setName("")
-    setEmail("")
-    setCpf("")
-    setPassword("")
-    setSetor("")
-    setRole("X11")
-    setAvatar(null)
+    fetchEmpresas()
+  }, [])
 
-  } catch (error) {
-    alert(
-      "Erro ao criar usuário: " +
-        (error instanceof Error ? error.message : "Erro desconhecido")
-    )
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+
+    if (!name.trim()) {
+      alert("Nome é obrigatório")
+      return
+    }
+    if (!email.trim()) {
+      alert("Email é obrigatório")
+      return
+    }
+    if (!cpf.trim()) {
+      alert("CPF é obrigatório")
+      return
+    }
+    if (!password.trim()) {
+      alert("Senha é obrigatória")
+      return
+    }
+    if (!setor.trim()) {
+      alert("Setor é obrigatório")
+      return
+    }
+    if (!empresaId) {
+      alert("Empresa é obrigatória")
+      return
+    }
+
+    const formData = new FormData()
+    formData.append("name", name)
+    formData.append("email", email)
+    formData.append("cpf", cpf)
+    formData.append("password", password)
+    formData.append("setor", setor)
+    formData.append("role", role)
+    formData.append("empresaId", empresaId)
+
+    if (avatar) formData.append("avatar", avatar)
+
+    try {
+      const response = await fetch("/api/userFacil", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null)
+        throw new Error(errorData?.message || "Erro ao criar usuário")
+      }
+      setName("")
+      setEmail("")
+      setCpf("")
+      setPassword("")
+      setSetor("")
+      setRole("X11")
+      setAvatar(null)
+
+    } catch (error) {
+      alert(
+        "Erro ao criar usuário: " +
+          (error instanceof Error ? error.message : "Erro desconhecido")
+      )
+    }
   }
-}
 
 
   return (
@@ -94,6 +146,24 @@ async function handleSubmit(e: React.FormEvent) {
           onChange={(e) => setSetor(e.target.value)}
           className="w-full border p-2 rounded"
         />
+
+        {loadingEmpresas ? (
+          <select disabled className="w-full border p-2 rounded">
+            <option>Carregando empresas...</option>
+          </select>
+        ) : (
+          <select
+            value={empresaId}
+            onChange={(e) => setEmpresaId(e.target.value)}
+            className="w-full border p-2 rounded"
+          >
+            {empresas.map((emp) => (
+              <option key={emp.id} value={emp.id}>
+                {emp.nome} - {emp.cnpj}
+              </option>
+            ))}
+          </select>
+        )}
 
         <select
           value={role}
