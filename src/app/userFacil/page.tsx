@@ -13,40 +13,46 @@ export default function CreateUserFacil() {
 
   const idEmpresa = "2e935cbd-eba2-4eab-a805-fbf296457b90"
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+async function handleSubmit(e: React.FormEvent) {
+  e.preventDefault()
 
-    const formData = new FormData()
-    formData.append("name", name)
-    formData.append("email", email)
-    formData.append("cpf", cpf)
-    formData.append("password", password)
-    formData.append("setor", setor)
-    formData.append("role", role)
-    formData.append("empresaId", idEmpresa)
+  const formData = new FormData()
+  formData.append("name", name)
+  formData.append("email", email)
+  formData.append("cpf", cpf)
+  formData.append("password", password)
+  formData.append("setor", setor)
+  formData.append("role", role)
+  formData.append("empresaId", idEmpresa)
 
-    if (avatar) formData.append("avatar", avatar)
+  if (avatar) formData.append("avatar", avatar)
 
-    try {
-      await fetch("/api/userFacil", {
-        method: "POST",
-        body: formData,
-      })
+  try {
+    const response = await fetch("/api/userFacil", {
+      method: "POST",
+      body: formData,
+    })
 
-      setName("")
-      setEmail("")
-      setCpf("")
-      setPassword("")
-      setSetor("")
-      setRole("X11")
-      setAvatar(null)
-    } catch (error) {
-      alert(
-        "Erro ao criar usuário: " +
-          (error instanceof Error ? error.message : "Erro desconhecido")
-      )
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null)
+      throw new Error(errorData?.message || "Erro ao criar usuário")
     }
+    setName("")
+    setEmail("")
+    setCpf("")
+    setPassword("")
+    setSetor("")
+    setRole("X11")
+    setAvatar(null)
+
+  } catch (error) {
+    alert(
+      "Erro ao criar usuário: " +
+        (error instanceof Error ? error.message : "Erro desconhecido")
+    )
   }
+}
+
 
   return (
     <div className="max-w-md mx-auto p-6 space-y-4">

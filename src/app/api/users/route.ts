@@ -12,27 +12,29 @@ import { getServerSession } from "next-auth"
 
 
 
-
-
 export async function POST(req: NextRequest) {
-
-  const userLogado = await getServerSession()
-  const empresaID = userLogado?.user.empresaId
-  // 1. Liberamos a rota para quem tem poder de criação
-  // Note que ATENDENTE ficou de fora pois ele não cria ninguém.
   const session = await getSessionOrFail(["GOD", "ADMIN", "GESTOR"])
 
+  const empresaID = session?.user.empresaId
 
+  console.log("empresa id do usuario logado:", empresaID)
 
   try {
+    if (!empresaID) {
+      return NextResponse.json(
+        { error: "Usuário logado não possui empresa vinculada" },
+        { status: 400 }
+      )
+    }
+
     const formData = await req.formData()
     const roleFromFront = formData.get("role") as string
 
     const roleMap: Record<string, ROLE> = {
-      // "XX!": "GOD",
+      "XX!": "GOD",
       "X1X": "ADMIN",
       "1XX": "GESTOR",
-      "X11": "ATENDENTE"
+      "X11": "ATENDENTE",
     }
 
     const finalRole = roleMap[roleFromFront]
@@ -41,8 +43,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Papel inválido" }, { status: 400 })
     }
 
-    // --- LÓGICA DE HIERARQUIA ---
-    const userRole = session?.user.role
+    const userRole = session.user.role
+
+    if (userRole === "GOD") {
+      return NextResponse.json(
+        { error: "GOD deve usar a rota específica de criação" },
+        { status: 403 }
+      )
+    }
 
     let canCreate = false
 
@@ -51,19 +59,12 @@ export async function POST(req: NextRequest) {
         finalRole === "ADMIN" ||
         finalRole === "GESTOR" ||
         finalRole === "ATENDENTE"
-    } else if (userRole === "GESTOR") {
-      canCreate = finalRole === "ATENDENTE"
-    } else {
-      // GOD ou qualquer outro papel não pode criar aqui
-      canCreate = false
     }
 
-    if (!canCreate&& userRole === "GOD") {
-      return NextResponse.json(
-        { error: `Atenção GOD, a rota para criação mudou, favor consultar a documentação!` },
-        { status: 403 }
-      )
+    if (userRole === "GESTOR") {
+      canCreate = finalRole === "ATENDENTE"
     }
+
     if (!canCreate) {
       return NextResponse.json(
         { error: `Usuário não tem permissão para criar um ${finalRole}` },
@@ -71,17 +72,12 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // --- PROCESSAMENTO ---
     const name = formData.get("name") as string
     const email = formData.get("email") as string
     const cpf = formData.get("cpf") as string
     const password = formData.get("password") as string
     const setor = formData.get("setor") as string
     const file = formData.get("avatar") as File | null
-    const empresaId = formData.get(empresaID as string) as string
-
-    /*nessa rota somente usuarios da empresa podem ser criados, então god não cria aqui
-    */
 
     const avatarUrl = await uploadFile({
       bucket: "profile",
@@ -96,19 +92,29 @@ export async function POST(req: NextRequest) {
       data: {
         name,
         email,
-        empresaId: empresaId, // Certifique-se de que o ID da empresa seja passado corretamente
         cpf,
         password: hashedPassword,
         role: finalRole,
         setor,
         avatarUrl,
+        Empresa: {
+          connect: {
+            id: empresaID,
+          },
+        },
       },
     })
 
     return NextResponse.json(user)
-  } catch (error) {
+  } catch (error: any) {
+    if (error.code === "P2002") {
+      return NextResponse.json(
+        { error: "Email ou CPF já cadastrado" },
+        { status: 400 }
+      )
+    }
+
     console.error("Erro:", error)
     return NextResponse.json({ error: "Erro interno" }, { status: 500 })
   }
 }
-
