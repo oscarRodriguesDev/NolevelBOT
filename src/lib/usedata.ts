@@ -13,9 +13,9 @@ const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
 }
  */
 
-export async function buscarAvisos(req?: Request) {
+export async function buscarAvisos(cpf?: string, req?: Request) {
   try {
-    const res = await fetch(`${baseUrl}/api/quadro-avisos/mostrar-avisos?cpf=${req?.headers.get("cpf")}`, {
+    const res = await fetch(`${baseUrl}/api/quadro-avisos/mostrar-avisos?cpf=${cpf || ""}`, {
       headers: {
         cookie: req?.headers.get("cookie") || "",
       },
@@ -33,6 +33,9 @@ export async function buscarAvisos(req?: Request) {
     return "Sem avisos no momento.";
   }
 }
+
+
+
 //gerador de tickets
 export function generateRandomTicket() {
   const now = new Date();

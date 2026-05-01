@@ -35,7 +35,7 @@ type UserSession = {
 //função hevelynIA recebe o contexto já processado e gera a resposta da IA, mantendo a função limpa e focada apenas na geração de resposta, sem se preocupar com a lógica de negócios ou coleta de dados.   
 
 
-
+/* 
 export async function botIA(session: UserSession, userInput: string, instrucaoEtapa: string,avisos:string) {
 
   const statusAtual = session.cpf ? await StatusChamado(session.cpf) : "Nenhum CPF informado";
@@ -51,13 +51,14 @@ export async function botIA(session: UserSession, userInput: string, instrucaoEt
             PERSONA: Cordial, empática e direta. Use a saudação: ${saudacao()}.
             
             DIRETRIZ DE AVISOS (CRÍTICO):
-            Antes de qualquer abertura de chamado, verifique os avisos: ${avisos}.
+          
             - Se o relato do usuário bater com um aviso, explique a situação e pergunte se quer continuar.
             - Se não houver aviso relacionado, responda apenas: PROSSEGUIR_FLUXO.
 
             CONTEXTO DO USUÁRIO:
             - Nome: ${session.nome || "Ainda não informado"}
             - CPF: ${session.cpf || "Ainda não informado"}
+              Antes de qualquer abertura de chamado, verifique os avisos: ${avisos}.
             - Chamados Atuais: ${JSON.stringify(statusAtual)}
             
             ETAPA ATUAL: ${session.state}
@@ -81,4 +82,77 @@ export async function botIA(session: UserSession, userInput: string, instrucaoEt
     })
     return response.choices[0].message.content || "Pode repetir, por favor?"
   } catch { return "Tive um probleminha técnico, mas pode continuar." }
+}
+
+ */
+
+export async function botIA(
+  session: UserSession,
+  userInput: string,
+  instrucaoEtapa: string,
+  avisos: string
+) {
+  const statusAtual = session.cpf
+    ? await StatusChamado(session.cpf)
+    : "Nenhum CPF informado"
+
+  const isColetarMotivo = session.state === "coletar_motivo"
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: `
+Você é a Hevelyn, atendente virtual da ${empresa}.
+PERSONA: cordial, empática e direta. Use a saudação: ${saudacao()}.
+
+REGRAS GERAIS:
+- Seja objetiva.
+- Não invente informações.
+- Siga exatamente a instrução da etapa.
+
+${isColetarMotivo ? `
+REGRA DE AVISOS (OBRIGATÓRIA NESTA ETAPA):
+- Compare o relato do usuário com os avisos abaixo.
+- Se houver relação clara, explique o aviso e pergunte se deseja continuar.
+- Se NÃO houver relação, responda EXATAMENTE: PROSSEGUIR_FLUXO
+- NÃO misture PROSSEGUIR_FLUXO com outras frases.
+
+AVISOS:
+${avisos}
+` : ""}
+
+CONTEXTO DO USUÁRIO:
+- Nome: ${session.nome || "Não informado"}
+- CPF: ${session.cpf || "Não informado"}
+- Chamados atuais: ${JSON.stringify(statusAtual)}
+
+ETAPA ATUAL: ${session.state}
+INSTRUÇÃO: ${instrucaoEtapa}
+
+UPLOAD:
+Se o usuário precisar enviar arquivos, responda exatamente:
+Para enviar o documento, acesse: ${LINK_CHAMADOS}
+e clique em "Registrar Novo Chamado". Lá você poderá preencher os dados e anexar o arquivo necessário.
+
+LINKS:
+- Abertura: ${LINK_CHAMADOS}
+- Consulta: ${lINK_CONSULTA}
+- Sempre envie URLs completas.
+          `
+        },
+        {
+          role: "user",
+          content: userInput
+        }
+      ],
+      temperature: 0.3
+    })
+
+    return response.choices[0].message.content || "Pode repetir, por favor?"
+  } catch {
+    return "Tive um probleminha técnico, mas pode continuar."
+  }
 }
