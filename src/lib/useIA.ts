@@ -1,7 +1,7 @@
 import { buscarAvisos,StatusChamado,saudacao } from "./usedata";
 import OpenAI from "openai";
 
-
+// alterando config atoa
 //tudo abaixo precisa começar a ser informado na rota, para que a função hevelynIA fique mais limpa e focada apenas em gerar a resposta da IA, recebendo o contexto já processado.
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
