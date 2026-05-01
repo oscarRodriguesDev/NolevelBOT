@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    #container_name: nolevel-app
+    container_name: nolevel-app-dev
     restart: always
     env_file:
       - .env
