@@ -1,18 +1,25 @@
-// next.config.js ou next.config.ts
-import { NextConfig } from "next"
-
-const nextConfig: NextConfig = {
+const nextConfig = {
   images: {
     remotePatterns: [
       {
+        protocol: "http",
+        hostname: "localhost",
+        port: "8000",
+        pathname: "/storage/v1/object/public/**",
+      },
+      {
+        protocol: "http",
+        hostname: "127.0.0.1",
+        port: "8000",
+        pathname: "/storage/v1/object/public/**",
+      },
+      {
         protocol: "https",
         hostname: "tcgvuhoyojgdnzobmxxl.supabase.co",
-        port: "",
         pathname: "/storage/v1/object/public/**",
       },
     ],
   },
-  // outras configs...
-}
+};
 
-export default nextConfig
+export default nextConfig;
