@@ -129,3 +129,13 @@ model CompanyConfig {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+model cpfsLeads{
+  id        String   @id @default(uuid())
+  cpf       String   @unique
+  nome      String
+  telefone  String
+  empresa   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

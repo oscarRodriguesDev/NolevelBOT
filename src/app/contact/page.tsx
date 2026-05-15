@@ -38,12 +38,17 @@ export default function ContatoForm() {
       if (!res.ok) throw new Error("Falha ao enviar formulário")
 
       setSuccess(true)
-      // form.reset() // aqui funciona, porque 'form' é e.currentTarget
+        form.reset() // aqui funciona, porque 'form' é e.currentTarget
     } catch (error) {
       console.error(error)
     } finally {
       setLoading(false)
     }
+  }
+
+  function resetForm() {
+    const form = document.querySelector("form")
+    if (form) form.reset()
   }
 
   return (
