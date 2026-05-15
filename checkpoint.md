@@ -52,19 +52,20 @@
 ## Sessão Atual: 14/05/2026
 
 ### Pendentes antes do commit:
-- `prisma/schema.prisma` - Adicionado modelo `cpfsLeads` com campo `telefone`
-- `src/app/(atendimento)/components/modal-edit-user.tsx` - Modificado
-- `src/app/contact/page.tsx` - Modificado
-- `prisma/migrations/20260515010920_coletando_leads/` - Nova migration
-- `prisma/migrations/20260515011532_add_telefone_para_lead/` - Nova migration
-- `src/app/api/leads-network/routes.ts` - Nova API de leads
-- `src/app/leads/page.tsx` - Nova página de captura de leads
-- `src/types/leads.ts` - Tipo Lead
+- ~~`prisma/schema.prisma` - Adicionado modelo `cpfsLeads` com campo `telefone`~~ ✅
+- ~~`src/app/(atendimento)/components/modal-edit-user.tsx` - Modificado~~ ✅
+- ~~`src/app/contact/page.tsx` - Modificado~~ ✅
+- ~~`prisma/migrations/20260515010920_coletando_leads/` - Nova migration~~ ✅
+- ~~`prisma/migrations/20260515011532_add_telefone_para_lead/` - Nova migration~~ ✅
+- ~~`src/app/api/leads-network/routes.ts` - Nova API de leads~~ ✅
+- ~~`src/app/leads/page.tsx` - Nova página de captura de leads~~ ✅
+- ~~`src/types/leads.ts` - Tipo Lead~~ ✅
 
 ### Commits realizados nesta sessão:
 
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
+| 1 | `f20b837` | feat: captura de leads, docs do projeto, e melhorias no modal de usuario | 14/05/2026 |
 
 ---
 
