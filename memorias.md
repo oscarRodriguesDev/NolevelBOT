@@ -66,7 +66,8 @@ nolevel/
 │   │   │   ├── userFacil/     # Criar usuário (modo GOD)
 │   │   │   ├── users/         # CRUD usuários
 │   │   │   ├── webhook22/     # Webhook WhatsApp (instância 22)
-│   │   │   └── webhook23/     # Webhook WhatsApp (instância 23)
+│   │   │   ├── webhook23/     # Webhook WhatsApp (instância 23)
+│   │   │   └── webhook-leads/ # Webhook para captação de leads em eventos
 │   │   ├── chamado/           # Página pública de abrir chamado
 │   │   ├── chatbot-app/       # Interface mobile do bot Hevelyn
 │   │   ├── components/        # Componentes globais
@@ -197,6 +198,7 @@ nolevel/
 
 ## 8. WEBHOOKS / CHATBOT WHATSAPP
 
+### Webhooks de Atendimento (webhook22 e webhook23)
 - Duas instâncias: webhook22 e webhook23
 - Fluxo completo do bot:
   1. Saudação → CPF
@@ -208,6 +210,17 @@ nolevel/
   7. Se "avisos": busca avisos da empresa
 - IA integrada via `useIA.ts` (OpenAI) para processar linguagem natural
 - Envio de mensagens via Evolution API (`sendEvolutionText`)
+
+### Webhook de Leads (webhook-leads) — Evento/Feira
+- Webhook específico para captação de leads em eventos/feiras
+- **Não requer validação de CPF** — conversa fluida e sem travas
+- Toda lógica contida no próprio `route.ts` (exceto `sendEvolutionText` e `buscarAvisos`)
+- Usa OpenAI diretamente (não passa por `useIA.ts`)
+- Estados: `apresentacao` → `coletando_nome` → `coletando_telefone` → `conversando`
+- Salva leads na tabela `cpfsLeads` via Prisma direto
+- Suporta extração estruturada de dados via tags `[NOME:]`, `[TELEFONE:]`, `[CPF:]`, `[EMPRESA:]`
+- Temperatura da IA: 0.7 (mais criativa)
+- Sessão expira após 2h de inatividade
 
 ---
 
