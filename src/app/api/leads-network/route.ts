@@ -1,8 +1,24 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const { searchParams } = new URL(req.url)
+    const cpf = searchParams.get("cpf")
+
+    if (cpf) {
+      const cpfLimpo = cpf.replace(/\D/g, "")
+      const lead = await prisma.cpfsLeads.findUnique({
+        where: { cpf: cpfLimpo },
+      })
+
+      if (!lead) {
+        return NextResponse.json({ error: "Lead não encontrado" }, { status: 404 })
+      }
+
+      return NextResponse.json(lead, { status: 200 })
+    }
+
     const leads = await prisma.cpfsLeads.findMany({
       orderBy: {
         createdAt: "desc",
