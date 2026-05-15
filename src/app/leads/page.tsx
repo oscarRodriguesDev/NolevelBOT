@@ -1,9 +1,6 @@
 "use client"
 
 export default function LeadForm() {
-
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
-    alert(baseUrl)
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
@@ -17,7 +14,7 @@ export default function LeadForm() {
     }
 
     try {
-      const response = await fetch(`${baseUrl}/api/leads-network`, {
+      const response = await fetch("/api/leads-network", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
