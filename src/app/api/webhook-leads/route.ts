@@ -110,50 +110,50 @@ function encontrarAvisoRelevante(pergunta: string, avisos: { titulo: string; con
 }
 
 async function gerarRespostaComAviso(pergunta: string, nome: string, aviso: { titulo: string; conteudo: string }): Promise<string> {
-  const prompt = `Você é um atendente simpatico da NoLevel no estande da ESX 2026.
+  const prompt = `VOCE E UM ATENDENTE DA NOLEVEL NO ESTANDE DA ESX 2026.
 
-O visitante ${nome} perguntou: "${pergunta}"
+INSTRUCAO ABSOLUTA: responda em NO MAXIMO 2 FRASES CURTAS. Resuma o conteudo abaixo com suas proprias palavras. NAO leia o texto literalmente.
 
-Achei esta informacao no material da NoLevel:
+Visitante: ${nome}
+Pergunta: "${pergunta}"
+
+Informacao disponivel:
 TITULO: ${aviso.titulo}
-CONTEUDO: ${aviso.conteudo}
-
-Com base SOMENTE nessa informacao, responda de forma natural, resumida e conversacional (max 3 frases). Nao leia o texto literalmente -- resuma com suas palavras.`
-
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [{ role: "user", content: prompt }],
-    temperature: 0.5,
-    max_tokens: 180,
-  })
-
-  return response.choices[0].message.content || `${aviso.conteudo}`
-}
-
-async function gerarRespostaFallback(pergunta: string, nome: string, avisos: { titulo: string; conteudo: string }[]): Promise<string> {
-  const avisosTexto = avisos.map(a => `*${a.titulo}*: ${a.conteudo}`).join("\n")
-
-  const prompt = `Você é um atendente simpatico da NoLevel no estande da ESX 2026.
-
-O visitante ${nome} perguntou: "${pergunta}"
-
-Temos estas informacoes sobre o produto NoLevel:
-${avisosTexto}
-
-Regras:
-- Responda APENAS com base nas informacoes acima.
-- Se nao encontrar resposta, diga que nao sabe e ofereca anotar o contato.
-- Resposta curta, max 3 frases.
-- Nao invente informacoes.`
+CONTEUDO: ${aviso.conteudo}`
 
   const response = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [{ role: "user", content: prompt }],
     temperature: 0.3,
-    max_tokens: 180,
+    max_tokens: 100,
   })
 
-  return response.choices[0].message.content || "Pode repetir, por favor?"
+  return response.choices[0].message.content || "Desculpe, pode repetir a pergunta?"
+}
+
+async function gerarRespostaFallback(pergunta: string, nome: string, avisos: { titulo: string; conteudo: string }[]): Promise<string> {
+  const avisosTexto = avisos.map(a => `*${a.titulo}*: ${a.conteudo}`).join("\n")
+
+  const prompt = `VOCE E UM ATENDENTE DA NOLEVEL NO ESTANDE DA ESX 2026.
+
+INSTRUCAO ABSOLUTA: responda em NO MAXIMO 2 FRASES CURTAS. Resumo obrigatorio.
+
+Visitante: ${nome}
+Pergunta: "${pergunta}"
+
+Informacoes disponiveis:
+${avisosTexto}
+
+Se achar resposta, resuma em 2 frases. Se NAO achar, diga "Nao sei informar, mas posso anotar seu contato para retorno". Nao invente.`
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: prompt }],
+    temperature: 0.3,
+    max_tokens: 100,
+  })
+
+  return response.choices[0].message.content || "Desculpe, pode repetir a pergunta?"
 }
 
 async function consultarLeadPorCpf(cpf: string) {

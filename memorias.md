@@ -326,12 +326,14 @@ O bot foi reposicionado: antes era um "atendente do evento ESX" que tirava dúvi
   - Bônus proporcional de palavras do título vs pergunta
 - **`gerarRespostaComAviso`** — quando encontra aviso relevante:
   - Prompt pequeno com APENAS o aviso específico (barato/rápido)
-  - Temperature 0.5 (mais natural)
-  - IA resume com suas palavras, nunca lê literalmente
+  - Temperature 0.3, max_tokens 100 (força resposta curta)
+  - Instrução ABSOLUTA: "responda em NO MAXIMO 2 FRASES CURTAS. NAO leia o texto literalmente"
+  - Fallback seguro: "Desculpe, pode repetir?" (NUNCA devolve o texto bruto do aviso)
 - **`gerarRespostaFallback`** — quando NENHUM aviso casa:
   - Passa TODOS os avisos como contexto
-  - Temperature 0.3 (mais contido)
-  - IA busca resposta entre todos os avisos
+  - Temperature 0.3, max_tokens 100
+  - Mesma instrução de resumo obrigatório
+  - Se não achar resposta: "Nao sei informar, mas posso anotar seu contato"
 - **Greetings sem IA**: saudações simples respondem sem chamar OpenAI
 
 ### Fluxo atual do bot
