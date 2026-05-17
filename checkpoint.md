@@ -71,6 +71,7 @@
 | 6 | `c367506` | refactor: webhook-leads como representante NoLevel, matching PT-BR inteligente, economia de IA | 17/05/2026 |
 | 7 | `1060981` | docs: atualiza checkpoint com hash do commit c367506 | 17/05/2026 |
 | 8 | `958a120` | refactor: webhook-leads IA resume e naturaliza respostas dos avisos | 17/05/2026 |
+| 9 | `ed354d0` | fix: webhook-leads sempre resume - max 2 frases, sem fallback literal | 17/05/2026 |
 
 ---
 
