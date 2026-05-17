@@ -20,35 +20,94 @@ type UserSession = {
 }
 
 const sessions = new Map<string, UserSession>()
-const FEIRA_NOME = 'ESX 2026  - Feira de Tecnologia e Inovação do Espírito Santo'
+const ESTANDE_NOME = 'NoLevel na ESX 2026'
 
-function gerarPromptSistema(nome: string | undefined, avisos: string, memoria: string | null): string {
-  return `
-Você é um atendente virtual animado e simpático da ${FEIRA_NOME}, atuando em um evento/feira presencial.
-Sua missão é interagir com os visitantes que estão nos stands, tirar dúvidas e proporcionar uma experiência agradável.
+const STOP_WORDS = new Set([
+  'de', 'da', 'do', 'das', 'dos', 'para', 'pra', 'com', 'sem', 'sob', 'sobre',
+  'uma', 'um', 'uns', 'umas', 'o', 'a', 'os', 'as', 'no', 'na', 'nos', 'nas',
+  'em', 'por', 'pela', 'pelas', 'pelo', 'pelos', 'que', 'qual', 'quais', 'como',
+  'vai', 'vem', 'tem', 'sao', 'esta', 'esse', 'essa', 'isso', 'isto', 'aquele',
+  'se', 'seu', 'sua', 'seus', 'suas', 'meu', 'minha', 'meus', 'minhas', 'teu',
+  'e', 'mas', 'ou', 'nem', 'tambem', 'mais', 'menos', 'muito', 'pouco',
+  'ja', 'nao', 'sim', 'talvez', 'quando', 'onde', 'porque', 'pois',
+  'so', 'apenas', 'ate', 'depois', 'antes', 'sempre', 'nunca', 'agora',
+  'voce', 'ele', 'ela', 'eles', 'elas', 'nos', 'vos', 'eu', 'tu',
+  'pode', 'poderia', 'podem', 'poderiao', 'quero', 'gostaria', 'preciso',
+  'ser', 'estar', 'ter', 'ha', 'existir', 'ficar',
+  'obrigado', 'obrigada', 'valeu', 'brigado',
+  'bom', 'boa', 'bem', 'mal', 'legal', 'top', 'show',
+])
 
-PERSONA: Entusiasmada, acolhedora e direta. Use a saudação: ${saudacao()}.
+function extrairPalavras(texto: string): string[] {
+  return texto
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, '')
+    .split(/\s+/)
+    .filter(p => p.length > 3 && !STOP_WORDS.has(p))
+}
 
-REGRAS:
-- Seja objetiva e não invente informações.
-- Responda APENAS com base nos AVISOS abaixo, tentando identificar dentre os avisos, qual a informação mais tem a ver com 
-a pergunta do visitante. Se não tiver a informação nos avisos, diga que não sabe.
-- NÃO peça cadastro, NÃO colete dados — o visitante já está cadastrado no evento.
-- Sempre chame o visitante pelo nome.
-- Respostas curtas e diretas, máximo 3 frases.
-- Se o usuário encerrar, apenas confirme amigavelmente.
+function encontrarRespostaNosAvisos(pergunta: string, avisos: string): string | null {
+  if (!avisos || avisos.includes("Sem avisos")) return null
 
-CONTEXTO:
-- Nome: ${nome || "Visitante"}
+  const palavrasPergunta = extrairPalavras(pergunta)
+  if (palavrasPergunta.length === 0) return null
 
-AVISOS SOBRE O EVENTO:
-${avisos}
+  const linhas = avisos.split("\n").filter(l => l.trim())
+  const avisosParseados: { titulo: string; conteudo: string }[] = []
 
-${memoria ? `HISTÓRICO DA CONVERSA ANTERIOR:\n${memoria}` : ""}
+  let tituloAtual = ''
+  let conteudoParts: string[] = []
 
-INSTRUÇÃO:
-Converse naturalmente sobre o evento. Use os avisos como fonte ÚNICA de informação.
-`
+  for (const linha of linhas) {
+    const match = linha.match(/\*([^*]+)\*:\s*(.+)/)
+    if (match) {
+      if (tituloAtual) {
+        avisosParseados.push({ titulo: tituloAtual, conteudo: conteudoParts.join(' ') })
+      }
+      tituloAtual = match[1].trim()
+      conteudoParts = [match[2].trim()]
+    } else if (tituloAtual) {
+      conteudoParts.push(linha.trim())
+    }
+  }
+  if (tituloAtual) {
+    avisosParseados.push({ titulo: tituloAtual, conteudo: conteudoParts.join(' ') })
+  }
+
+  if (avisosParseados.length === 0) return null
+
+  let melhorScore = 0
+  let melhorAviso: typeof avisosParseados[0] | null = null
+
+  for (const aviso of avisosParseados) {
+    const palavrasTitulo = extrairPalavras(aviso.titulo)
+    const palavrasConteudo = extrairPalavras(aviso.conteudo)
+    const todasPalavras = [...new Set([...palavrasTitulo, ...palavrasConteudo])]
+
+    let score = 0
+    for (const pp of palavrasPergunta) {
+      if (palavrasTitulo.some(pt => pt.includes(pp) || pp.includes(pt))) {
+        score += 2
+      } else if (todasPalavras.some(p => p.includes(pp) || pp.includes(p))) {
+        score += 1
+      }
+    }
+
+    score = Math.round(score * (1 + 0.3 * (palavrasTitulo.length / Math.max(palavrasPergunta.length, 1))))
+
+    if (score > melhorScore) {
+      melhorScore = score
+      melhorAviso = aviso
+    }
+  }
+
+  if (melhorAviso && melhorScore > 0) {
+    return `📢 Sobre *${melhorAviso.titulo}*:\n\n${melhorAviso.conteudo}`
+  }
+
+  return null
 }
 
 async function consultarLeadPorCpf(cpf: string) {
@@ -63,28 +122,31 @@ async function consultarLeadPorCpf(cpf: string) {
   }
 }
 
-function encontrarRespostaNosAvisos(pergunta: string, avisos: string): string | null {
-  if (!avisos || avisos.includes("Sem avisos")) return null
+function gerarPromptSistema(nome: string | undefined, avisos: string): string {
+  return `
+Você é um atendente da NoLevel, uma empresa de software, no estande da empresa na feira ESX 2026.
+Sua função é apresentar o produto NoLevel para visitantes interessados.
 
-  const palavrasChave = pergunta.toLowerCase().split(/\s+/).filter(p => p.length > 3)
-  if (palavrasChave.length === 0) return null
+PERSONA: Entusiasmada, acolhedora e direta. Use a saudacao: ${saudacao()}.
 
-  const linhas = avisos.split("\n")
-  let melhorMatch: { texto: string; score: number } | null = null
+REGRAS:
+- Seja objetiva e nao invente informacoes.
+- Responda APENAS com base nos AVISOS sobre o produto NoLevel.
+- Se nao tiver informacao nos avisos, diga que nao sabe e que pode anotar o contato para retorno.
+- Sempre chame o visitante pelo nome: ${nome || "Visitante"}.
+- Respostas curtas e diretas, maximo 3 frases.
+- Nao pergunte sobre o evento, palestras, horarios ou programacao -- voce so tira duvidas sobre a NoLevel.
 
-  for (const linha of linhas) {
-    const match = linha.match(/\*([^*]+)\*:\s*(.+)/)
-    if (!match) continue
+AVISOS COM INFORMACOES SOBRE O PRODUTO NOLEVEL:
+${avisos}
 
-    const linhaLower = linha.toLowerCase()
-    const score = palavrasChave.filter(p => linhaLower.includes(p)).length
-    if (score > 0 && (!melhorMatch || score > melhorMatch.score)) {
-      melhorMatch = { texto: `📢 Sobre *${match[1]}*:\n\n${match[2]}`, score }
-    }
-  }
-
-  return melhorMatch?.texto || null
+INSTRUCAO:
+Converse naturalmente sobre o produto NoLevel. Use os avisos como fonte UNICA de informacao.
+Se o visitante perguntar algo fora do escopo, informe educadamente que nao sabe e ofereca anotar o contato.
+`
 }
+
+const saudacoes = new Set(['oi', 'ola', 'olá', 'bom', 'boa', 'oie', 'opa', 'hey', 'alo', 'alô'])
 
 export async function POST(req: NextRequest) {
   try {
@@ -107,11 +169,14 @@ export async function POST(req: NextRequest) {
 
     session.lastInteraction = Date.now()
 
-    if (["sair", "encerrar", "cancelar", "tchau", "obrigado"].some(v => lowerInput.includes(v))) {
+    if (["sair", "encerrar", "cancelar", "tchau", "obrigado", "vlw"].some(v => lowerInput.includes(v))) {
       if (session.cpf && session.ultimoResumo) {
         await saveMemoria(session.cpf, session.nome || "", session.ultimoResumo)
       }
-      await sendEvolutionText(instance, number, `${saudacao()}! Foi um prazer falar com você, ${session.nome || "visitante"}. Aproveite o evento! 😊`)
+      await sendEvolutionText(
+        instance, number,
+        `${saudacao()}! Foi um prazer falar com voce, ${session.nome || "visitante"}. Se quiser saber mais sobre a NoLevel, e so chamar! 😊`
+      )
       sessions.delete(number)
       return NextResponse.json({ ok: true })
     }
@@ -121,9 +186,8 @@ export async function POST(req: NextRequest) {
 
       if (cleanCPF.length !== 11) {
         await sendEvolutionText(
-          instance,
-          number,
-          `${saudacao()}! 👋 Bem-vindo ao estande da ${FEIRA_NOME}! Para eu te atender melhor, me informe seu CPF (apenas números).`
+          instance, number,
+          `${saudacao()}! 👋 Bem-vindo ao estande da ${ESTANDE_NOME}! Para eu te atender melhor, me informe seu CPF (apenas numeros).`
         )
         return NextResponse.json({ ok: true })
       }
@@ -132,9 +196,8 @@ export async function POST(req: NextRequest) {
 
       if (!lead) {
         await sendEvolutionText(
-          instance,
-          number,
-          `Não encontrei seu cadastro, ${session.nome || "visitante"}. Você já preencheu o formulário de visitante do evento? Se sim, tente novamente com o CPF usado no cadastro.`
+          instance, number,
+          `Nao encontrei seu cadastro, ${session.nome || "visitante"}. Voce ja preencheu o formulario de visitante do evento? Se sim, tente novamente com o CPF usado no cadastro.`
         )
         return NextResponse.json({ ok: true })
       }
@@ -152,9 +215,8 @@ export async function POST(req: NextRequest) {
         : `Que bom te ver por aqui! 😊`
 
       await sendEvolutionText(
-        instance,
-        number,
-        `${saudacao()}, ${lead.nome}! ${cumprimentoMemoria} Estou aqui para ajudar com qualquer dúvida sobre o evento: programação, palestras, stands, horários... É só perguntar!`
+        instance, number,
+        `${saudacao()}, ${lead.nome}! ${cumprimentoMemoria} Aqui no estande da NoLevel, posso tirar duvidas sobre nosso produto! pergunte sobre funcionalidades, integracoes, planos... O que voce gostaria de saber?`
       )
 
       session.state = FlowState.CONVERSANDO
@@ -166,13 +228,22 @@ export async function POST(req: NextRequest) {
 
     const respostaDireta = encontrarRespostaNosAvisos(userInput, avisos)
     if (respostaDireta) {
-      session.ultimoResumo = `${session.nome} perguntou: "${userInput}". Recebeu info sobre o evento.`
-      await sendEvolutionText(instance, number, respostaDireta + "\n\nMais alguma dúvida?")
+      session.ultimoResumo = `${session.nome} perguntou: "${userInput}". Recebeu resposta dos avisos.`
+      await sendEvolutionText(instance, number, respostaDireta + "\n\nMais alguma duvida sobre a NoLevel?")
       sessions.set(number, session)
       return NextResponse.json({ ok: true })
     }
 
-    const promptSistema = gerarPromptSistema(session.nome, avisos, session.ultimoResumo || null)
+    if (saudacoes.has(lowerInput)) {
+      await sendEvolutionText(
+        instance, number,
+        `${saudacao()}! Em que posso ajudar sobre a NoLevel hoje?`
+      )
+      sessions.set(number, session)
+      return NextResponse.json({ ok: true })
+    }
+
+    const promptSistema = gerarPromptSistema(session.nome, avisos)
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",

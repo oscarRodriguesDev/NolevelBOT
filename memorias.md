@@ -307,3 +307,35 @@ nolevel/
 **Bug corrigido em `src/app/api/webhook-leads/route.ts`:**
 - A função `consultarLeadPorCpf` usava fetch com URL relativa (`/api/leads-network?cpf=...`), que não funciona em ambiente server-side
 - Corrigido para usar `NEXT_PUBLIC_BASE_URL` (ou `BASE_URL` como fallback) com URL absoluta
+
+---
+
+## 16. REFATORAÇÃO WEBHOOK-LEADS — BOT DO ESTANDE (17/05/2026)
+
+### Mudança de propósito
+O bot foi reposicionado: antes era um "atendente do evento ESX" que tirava dúvidas sobre a feira. Agora é um **representante da NoLevel no estande da ESX**, focado em apresentar o produto NoLevel para visitantes.
+
+### Economia de IA
+- **`encontrarRespostaNosAvisos` refatorada** com matching inteligente em português:
+  - Normalização de acentos (NFD)
+  - Remoção de stop words portuguesas (de, para, como, etc.)
+  - Score ponderado: match no título vale 2x, match no conteúdo vale 1x
+  - Bônus proporcional à quantidade de palavras do título vs pergunta
+  - Parse robusto de avisos multi-linha
+- **Greetings sem IA**: saudações simples (oi, olá, bom dia) respondem sem chamar OpenAI
+- **Fallback consciente**: OpenAI só é chamada quando o matching nos avisos retorna score 0
+
+### Fluxo atual do bot
+1. Visitante envia CPF → valida na `leads-network`
+2. Mensagem → primeiro tenta `encontrarRespostaNosAvisos` (matching local)
+3. Se matched → responde direto (sem IA)
+4. Se for saudação → responde genericamente (sem IA)
+5. Se nada funcionou → chama OpenAI com prompt enxuto e `max_tokens: 150`
+6. Ao encerrar → salva memória do resumo da conversa
+
+### Como usar
+Os avisos cadastrados no sistema (tabela `avisos`) devem conter **perguntas frequentes sobre a NoLevel** no formato:
+- **Título:** assunto (ex: "Integração WhatsApp")
+- **Conteúdo:** resposta direta (ex: "O NoLevel se integra com WhatsApp via Evolution API...")
+
+Assim, quando um visitante perguntar "Como funciona a integração com WhatsApp?", o matching encontra o aviso pelo título e responde sem gastar token de IA.
