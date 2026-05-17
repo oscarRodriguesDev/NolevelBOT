@@ -38,6 +38,17 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
 
+    // Detecta se é um evento da Evolution API (webhook)
+    if (body.event === "messages.upsert") {
+      const webhookUrl = new URL("/api/webhook-leads", req.url).toString()
+      await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+      return NextResponse.json({ ok: true })
+    }
+
     const { cpf, nome, telefone, empresa } = body
 
     if (!cpf || !nome || !telefone) {

@@ -49,17 +49,12 @@
 
 ---
 
-## Sessão Atual: 14/05/2026
+## Sessão Atual: 17/05/2026
 
 ### Pendentes antes do commit:
-- ~~`prisma/schema.prisma` - Adicionado modelo `cpfsLeads` com campo `telefone`~~ ✅
-- ~~`src/app/(atendimento)/components/modal-edit-user.tsx` - Modificado~~ ✅
-- ~~`src/app/contact/page.tsx` - Modificado~~ ✅
-- ~~`prisma/migrations/20260515010920_coletando_leads/` - Nova migration~~ ✅
-- ~~`prisma/migrations/20260515011532_add_telefone_para_lead/` - Nova migration~~ ✅
-- ~~`src/app/api/leads-network/routes.ts` - Nova API de leads~~ ✅
-- ~~`src/app/leads/page.tsx` - Nova página de captura de leads~~ ✅
-- ~~`src/types/leads.ts` - Tipo Lead~~ ✅
+- ~~`src/app/api/leads-network/route.ts` - POST agora detecta eventos Evolution e faz proxy para webhook-leads~~ ✅
+- ~~`src/app/api/webhook-leads/route.ts` - Corrigido fetch relativo para URL absoluta~~ ✅
+- ~~`memorias.md` - Adicionada seção 15 com documentação das correções~~ ✅
 
 ### Commits realizados nesta sessão:
 
@@ -68,6 +63,7 @@
 | 1 | `f20b837` | feat: captura de leads, docs do projeto, e melhorias no modal de usuario | 14/05/2026 |
 | 2 | `adac2df` | fix: renomeia routes.ts para route.ts e corrige fetch em /leads | 14/05/2026 |
 | 3 | `18ae14b` | feat: webhook-leads para captacao de leads em eventos/feiras | 14/05/2026 |
+| 4 | `[pendente]` | fix: leads-network reconhece webhook Evolution + fetch absoluto webhook-leads | 17/05/2026 |
 
 ---
 

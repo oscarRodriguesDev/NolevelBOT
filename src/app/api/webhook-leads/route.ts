@@ -20,7 +20,7 @@ type UserSession = {
 }
 
 const sessions = new Map<string, UserSession>()
-const FEIRA_NOME = process.env.PUBLIC_NAME_EMPRESA || "Nolevel"
+const FEIRA_NOME = 'ESX 2026  - Feira de Tecnologia e Inovação do Espírito Santo'
 
 function gerarPromptSistema(nome: string | undefined, avisos: string, memoria: string | null): string {
   return `
@@ -31,7 +31,8 @@ PERSONA: Entusiasmada, acolhedora e direta. Use a saudação: ${saudacao()}.
 
 REGRAS:
 - Seja objetiva e não invente informações.
-- Responda APENAS com base nos AVISOS abaixo. Se não tiver a informação nos avisos, diga que não sabe.
+- Responda APENAS com base nos AVISOS abaixo, tentando identificar dentre os avisos, qual a informação mais tem a ver com 
+a pergunta do visitante. Se não tiver a informação nos avisos, diga que não sabe.
 - NÃO peça cadastro, NÃO colete dados — o visitante já está cadastrado no evento.
 - Sempre chame o visitante pelo nome.
 - Respostas curtas e diretas, máximo 3 frases.
@@ -52,7 +53,8 @@ Converse naturalmente sobre o evento. Use os avisos como fonte ÚNICA de informa
 
 async function consultarLeadPorCpf(cpf: string) {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL
+    if (!baseUrl) return null
     const res = await fetch(`${baseUrl}/api/leads-network?cpf=${cpf}`)
     if (!res.ok) return null
     return await res.json()

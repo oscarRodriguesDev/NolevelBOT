@@ -290,3 +290,20 @@ nolevel/
 - A branch principal de trabalho é `vibecode`
 - Alterações drásticas devem ser consultadas antes de implementar
 - Sempre manter consistência com o sistema de temas (dark/light)
+
+---
+
+## 15. CORREÇÕES IMPORTANTES (17/05/2026)
+
+### Webhook Evolution × leads-network
+
+**Problema:** A Evolution API estava configurada para chamar `/api/leads-network`, mas esse endpoint esperava `{ cpf, nome, telefone }` no body. A Evolution envia eventos no formato `{ event: "messages.upsert", data: {...}, instance: "..." }`, resultando em erro 400 e o webhook não era reconhecido.
+
+**Solução em `src/app/api/leads-network/route.ts`:**
+- O POST agora detecta se o body contém `event === "messages.upsert"` (formato Evolution)
+- Se for evento da Evolution, faz um proxy interno via fetch para `/api/webhook-leads`
+- Se não for, mantém o fluxo normal de CRUD de leads
+
+**Bug corrigido em `src/app/api/webhook-leads/route.ts`:**
+- A função `consultarLeadPorCpf` usava fetch com URL relativa (`/api/leads-network?cpf=...`), que não funciona em ambiente server-side
+- Corrigido para usar `NEXT_PUBLIC_BASE_URL` (ou `BASE_URL` como fallback) com URL absoluta
