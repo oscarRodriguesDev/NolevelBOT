@@ -55,8 +55,9 @@
 - ~~`src/app/api/leads-network/route.ts` - POST agora detecta eventos Evolution e faz proxy para webhook-leads~~ ✅
 - ~~`src/app/api/webhook-leads/route.ts` - Corrigido fetch relativo para URL absoluta~~ ✅
 - ~~`memorias.md` - Adicionada seção 15 com documentação das correções~~ ✅
-- ~~`src/app/api/webhook-leads/route.ts` - Refatorado: bot vira representante NoLevel, matching inteligente PT-BR, economia de IA~~ ✅
-- ~~`memorias.md` - Adicionada seção 16 com documentação da refatoração~~ ✅
+- ~~`src/app/api/webhook-leads/route.ts` - Refatorado: bot vira representante NoLevel, matching inteligente PT-BR~~ ✅
+- ~~`src/app/api/webhook-leads/route.ts` - IA resume/naturaliza respostas dos avisos (gerarRespostaComAviso + gerarRespostaFallback)~~ ✅
+- ~~`memorias.md` - Seção 16 atualizada com nova estratégia de IA~~ ✅
 
 ### Commits realizados nesta sessão:
 
@@ -68,6 +69,7 @@
 | 4 | `7b12a7d` | fix: leads-network reconhece webhook Evolution + fetch absoluto webhook-leads | 17/05/2026 |
 | 5 | `8f34c05` | docs: atualiza checkpoint com hash do commit 7b12a7d | 17/05/2026 |
 | 6 | `c367506` | refactor: webhook-leads como representante NoLevel, matching PT-BR inteligente, economia de IA | 17/05/2026 |
+| 7 | `1060981` | docs: atualiza checkpoint com hash do commit c367506 | 17/05/2026 |
 
 ---
 

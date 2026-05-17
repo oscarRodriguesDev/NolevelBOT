@@ -48,15 +48,11 @@ function extrairPalavras(texto: string): string[] {
     .filter(p => p.length > 3 && !STOP_WORDS.has(p))
 }
 
-function encontrarRespostaNosAvisos(pergunta: string, avisos: string): string | null {
-  if (!avisos || avisos.includes("Sem avisos")) return null
+function parseAvisos(raw: string): { titulo: string; conteudo: string }[] {
+  if (!raw || raw.includes("Sem avisos")) return []
 
-  const palavrasPergunta = extrairPalavras(pergunta)
-  if (palavrasPergunta.length === 0) return null
-
-  const linhas = avisos.split("\n").filter(l => l.trim())
-  const avisosParseados: { titulo: string; conteudo: string }[] = []
-
+  const linhas = raw.split("\n").filter(l => l.trim())
+  const avisos: { titulo: string; conteudo: string }[] = []
   let tituloAtual = ''
   let conteudoParts: string[] = []
 
@@ -64,7 +60,7 @@ function encontrarRespostaNosAvisos(pergunta: string, avisos: string): string | 
     const match = linha.match(/\*([^*]+)\*:\s*(.+)/)
     if (match) {
       if (tituloAtual) {
-        avisosParseados.push({ titulo: tituloAtual, conteudo: conteudoParts.join(' ') })
+        avisos.push({ titulo: tituloAtual, conteudo: conteudoParts.join(' ') })
       }
       tituloAtual = match[1].trim()
       conteudoParts = [match[2].trim()]
@@ -73,15 +69,22 @@ function encontrarRespostaNosAvisos(pergunta: string, avisos: string): string | 
     }
   }
   if (tituloAtual) {
-    avisosParseados.push({ titulo: tituloAtual, conteudo: conteudoParts.join(' ') })
+    avisos.push({ titulo: tituloAtual, conteudo: conteudoParts.join(' ') })
   }
 
-  if (avisosParseados.length === 0) return null
+  return avisos
+}
+
+function encontrarAvisoRelevante(pergunta: string, avisos: { titulo: string; conteudo: string }[]): { titulo: string; conteudo: string } | null {
+  if (avisos.length === 0) return null
+
+  const palavrasPergunta = extrairPalavras(pergunta)
+  if (palavrasPergunta.length === 0) return null
 
   let melhorScore = 0
-  let melhorAviso: typeof avisosParseados[0] | null = null
+  let melhorAviso: typeof avisos[0] | null = null
 
-  for (const aviso of avisosParseados) {
+  for (const aviso of avisos) {
     const palavrasTitulo = extrairPalavras(aviso.titulo)
     const palavrasConteudo = extrairPalavras(aviso.conteudo)
     const todasPalavras = [...new Set([...palavrasTitulo, ...palavrasConteudo])]
@@ -103,11 +106,54 @@ function encontrarRespostaNosAvisos(pergunta: string, avisos: string): string | 
     }
   }
 
-  if (melhorAviso && melhorScore > 0) {
-    return `📢 Sobre *${melhorAviso.titulo}*:\n\n${melhorAviso.conteudo}`
-  }
+  return melhorScore > 0 ? melhorAviso : null
+}
 
-  return null
+async function gerarRespostaComAviso(pergunta: string, nome: string, aviso: { titulo: string; conteudo: string }): Promise<string> {
+  const prompt = `Você é um atendente simpatico da NoLevel no estande da ESX 2026.
+
+O visitante ${nome} perguntou: "${pergunta}"
+
+Achei esta informacao no material da NoLevel:
+TITULO: ${aviso.titulo}
+CONTEUDO: ${aviso.conteudo}
+
+Com base SOMENTE nessa informacao, responda de forma natural, resumida e conversacional (max 3 frases). Nao leia o texto literalmente -- resuma com suas palavras.`
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: prompt }],
+    temperature: 0.5,
+    max_tokens: 180,
+  })
+
+  return response.choices[0].message.content || `${aviso.conteudo}`
+}
+
+async function gerarRespostaFallback(pergunta: string, nome: string, avisos: { titulo: string; conteudo: string }[]): Promise<string> {
+  const avisosTexto = avisos.map(a => `*${a.titulo}*: ${a.conteudo}`).join("\n")
+
+  const prompt = `Você é um atendente simpatico da NoLevel no estande da ESX 2026.
+
+O visitante ${nome} perguntou: "${pergunta}"
+
+Temos estas informacoes sobre o produto NoLevel:
+${avisosTexto}
+
+Regras:
+- Responda APENAS com base nas informacoes acima.
+- Se nao encontrar resposta, diga que nao sabe e ofereca anotar o contato.
+- Resposta curta, max 3 frases.
+- Nao invente informacoes.`
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: prompt }],
+    temperature: 0.3,
+    max_tokens: 180,
+  })
+
+  return response.choices[0].message.content || "Pode repetir, por favor?"
 }
 
 async function consultarLeadPorCpf(cpf: string) {
@@ -120,30 +166,6 @@ async function consultarLeadPorCpf(cpf: string) {
   } catch {
     return null
   }
-}
-
-function gerarPromptSistema(nome: string | undefined, avisos: string): string {
-  return `
-Você é um atendente da NoLevel, uma empresa de software, no estande da empresa na feira ESX 2026.
-Sua função é apresentar o produto NoLevel para visitantes interessados.
-
-PERSONA: Entusiasmada, acolhedora e direta. Use a saudacao: ${saudacao()}.
-
-REGRAS:
-- Seja objetiva e nao invente informacoes.
-- Responda APENAS com base nos AVISOS sobre o produto NoLevel.
-- Se nao tiver informacao nos avisos, diga que nao sabe e que pode anotar o contato para retorno.
-- Sempre chame o visitante pelo nome: ${nome || "Visitante"}.
-- Respostas curtas e diretas, maximo 3 frases.
-- Nao pergunte sobre o evento, palestras, horarios ou programacao -- voce so tira duvidas sobre a NoLevel.
-
-AVISOS COM INFORMACOES SOBRE O PRODUTO NOLEVEL:
-${avisos}
-
-INSTRUCAO:
-Converse naturalmente sobre o produto NoLevel. Use os avisos como fonte UNICA de informacao.
-Se o visitante perguntar algo fora do escopo, informe educadamente que nao sabe e ofereca anotar o contato.
-`
 }
 
 const saudacoes = new Set(['oi', 'ola', 'olá', 'bom', 'boa', 'oie', 'opa', 'hey', 'alo', 'alô'])
@@ -216,20 +238,10 @@ export async function POST(req: NextRequest) {
 
       await sendEvolutionText(
         instance, number,
-        `${saudacao()}, ${lead.nome}! ${cumprimentoMemoria} Aqui no estande da NoLevel, posso tirar duvidas sobre nosso produto! pergunte sobre funcionalidades, integracoes, planos... O que voce gostaria de saber?`
+        `${saudacao()}, ${lead.nome}! ${cumprimentoMemoria} Aqui no estande da NoLevel, posso tirar duvidas sobre nosso produto! Pergunte sobre funcionalidades, integracoes, planos... O que voce gostaria de saber?`
       )
 
       session.state = FlowState.CONVERSANDO
-      sessions.set(number, session)
-      return NextResponse.json({ ok: true })
-    }
-
-    const avisos = await buscarAvisos(undefined, req)
-
-    const respostaDireta = encontrarRespostaNosAvisos(userInput, avisos)
-    if (respostaDireta) {
-      session.ultimoResumo = `${session.nome} perguntou: "${userInput}". Recebeu resposta dos avisos.`
-      await sendEvolutionText(instance, number, respostaDireta + "\n\nMais alguma duvida sobre a NoLevel?")
       sessions.set(number, session)
       return NextResponse.json({ ok: true })
     }
@@ -243,20 +255,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true })
     }
 
-    const promptSistema = gerarPromptSistema(session.nome, avisos)
+    const avisosRaw = await buscarAvisos(undefined, req)
+    const avisos = parseAvisos(avisosRaw)
+    const avisoMatch = encontrarAvisoRelevante(userInput, avisos)
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: promptSistema },
-        { role: "user", content: userInput },
-      ],
-      temperature: 0.3,
-      max_tokens: 150,
-    })
+    let resposta: string
 
-    const resposta = response.choices[0].message.content || "Pode repetir, por favor?"
-    session.ultimoResumo = `Interagiu sobre: "${userInput}". Resposta: "${resposta.substring(0, 100)}..."`
+    if (avisoMatch) {
+      resposta = await gerarRespostaComAviso(userInput, session.nome || "Visitante", avisoMatch)
+      session.ultimoResumo = `Perguntou: "${userInput}". Respondido com aviso: ${avisoMatch.titulo}`
+    } else {
+      resposta = await gerarRespostaFallback(userInput, session.nome || "Visitante", avisos)
+      session.ultimoResumo = `Perguntou: "${userInput}". Fallback - sem aviso especifico.`
+    }
 
     await sendEvolutionText(instance, number, resposta)
     sessions.set(number, session)

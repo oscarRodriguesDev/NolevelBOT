@@ -315,27 +315,36 @@ nolevel/
 ### Mudança de propósito
 O bot foi reposicionado: antes era um "atendente do evento ESX" que tirava dúvidas sobre a feira. Agora é um **representante da NoLevel no estande da ESX**, focado em apresentar o produto NoLevel para visitantes.
 
-### Economia de IA
-- **`encontrarRespostaNosAvisos` refatorada** com matching inteligente em português:
+### Estratégia de IA (refinada)
+- Avisos são a **fonte de verdade**, mas IA **resume e naturaliza** as respostas
+- IA nunca lê o aviso literalmente — reformula de forma conversacional
+- **`parseAvisos`** — transforma string raw em array estruturado `{ titulo, conteudo }`
+- **`encontrarAvisoRelevante`** — matching inteligente PT-BR:
   - Normalização de acentos (NFD)
-  - Remoção de stop words portuguesas (de, para, como, etc.)
+  - Remoção de stop words portuguesas
   - Score ponderado: match no título vale 2x, match no conteúdo vale 1x
-  - Bônus proporcional à quantidade de palavras do título vs pergunta
-  - Parse robusto de avisos multi-linha
-- **Greetings sem IA**: saudações simples (oi, olá, bom dia) respondem sem chamar OpenAI
-- **Fallback consciente**: OpenAI só é chamada quando o matching nos avisos retorna score 0
+  - Bônus proporcional de palavras do título vs pergunta
+- **`gerarRespostaComAviso`** — quando encontra aviso relevante:
+  - Prompt pequeno com APENAS o aviso específico (barato/rápido)
+  - Temperature 0.5 (mais natural)
+  - IA resume com suas palavras, nunca lê literalmente
+- **`gerarRespostaFallback`** — quando NENHUM aviso casa:
+  - Passa TODOS os avisos como contexto
+  - Temperature 0.3 (mais contido)
+  - IA busca resposta entre todos os avisos
+- **Greetings sem IA**: saudações simples respondem sem chamar OpenAI
 
 ### Fluxo atual do bot
 1. Visitante envia CPF → valida na `leads-network`
-2. Mensagem → primeiro tenta `encontrarRespostaNosAvisos` (matching local)
-3. Se matched → responde direto (sem IA)
-4. Se for saudação → responde genericamente (sem IA)
-5. Se nada funcionou → chama OpenAI com prompt enxuto e `max_tokens: 150`
+2. Mensagem → se for saudação → responde sem IA
+3. Mensagem → `parseAvisos` + `encontrarAvisoRelevante` (matching local)
+4. Se matched → `gerarRespostaComAviso` (IA só com aquele aviso = contexto mínimo)
+5. Se não matched → `gerarRespostaFallback` (IA com todos os avisos)
 6. Ao encerrar → salva memória do resumo da conversa
 
 ### Como usar
-Os avisos cadastrados no sistema (tabela `avisos`) devem conter **perguntas frequentes sobre a NoLevel** no formato:
+Os avisos cadastrados no sistema (tabela `avisos`) devem conter **informações sobre a NoLevel** no formato:
 - **Título:** assunto (ex: "Integração WhatsApp")
-- **Conteúdo:** resposta direta (ex: "O NoLevel se integra com WhatsApp via Evolution API...")
+- **Conteúdo:** descrição detalhada (ex: "O NoLevel se integra com WhatsApp via Evolution API...")
 
-Assim, quando um visitante perguntar "Como funciona a integração com WhatsApp?", o matching encontra o aviso pelo título e responde sem gastar token de IA.
+Quando um visitante perguntar "Como funciona a integração com WhatsApp?", o matching encontra o aviso, e a IA resume numa resposta natural e conversacional.
