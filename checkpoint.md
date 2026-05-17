@@ -67,6 +67,7 @@
 | 3 | `18ae14b` | feat: webhook-leads para captacao de leads em eventos/feiras | 14/05/2026 |
 | 4 | `7b12a7d` | fix: leads-network reconhece webhook Evolution + fetch absoluto webhook-leads | 17/05/2026 |
 | 5 | `8f34c05` | docs: atualiza checkpoint com hash do commit 7b12a7d | 17/05/2026 |
+| 6 | `c367506` | refactor: webhook-leads como representante NoLevel, matching PT-BR inteligente, economia de IA | 17/05/2026 |
 
 ---
 
