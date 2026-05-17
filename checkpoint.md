@@ -63,7 +63,7 @@
 | 1 | `f20b837` | feat: captura de leads, docs do projeto, e melhorias no modal de usuario | 14/05/2026 |
 | 2 | `adac2df` | fix: renomeia routes.ts para route.ts e corrige fetch em /leads | 14/05/2026 |
 | 3 | `18ae14b` | feat: webhook-leads para captacao de leads em eventos/feiras | 14/05/2026 |
-| 4 | `[pendente]` | fix: leads-network reconhece webhook Evolution + fetch absoluto webhook-leads | 17/05/2026 |
+| 4 | `7b12a7d` | fix: leads-network reconhece webhook Evolution + fetch absoluto webhook-leads | 17/05/2026 |
 
 ---
 
