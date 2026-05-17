@@ -70,6 +70,7 @@
 | 5 | `8f34c05` | docs: atualiza checkpoint com hash do commit 7b12a7d | 17/05/2026 |
 | 6 | `c367506` | refactor: webhook-leads como representante NoLevel, matching PT-BR inteligente, economia de IA | 17/05/2026 |
 | 7 | `1060981` | docs: atualiza checkpoint com hash do commit c367506 | 17/05/2026 |
+| 8 | `958a120` | refactor: webhook-leads IA resume e naturaliza respostas dos avisos | 17/05/2026 |
 
 ---
 
