@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
-import { sendEvolutionText, buscarAvisos, saudacao, getMemoria, saveMemoria } from "@/lib/usedata"
+import { sendEvolutionText, saudacao, getMemoria, saveMemoria } from "@/lib/usedata"
+import { obterBaseDeConhecimento } from "@/lib/smartSearch"
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
@@ -22,152 +23,39 @@ type UserSession = {
 const sessions = new Map<string, UserSession>()
 const ESTANDE_NOME = 'NoLevel na ESX 2026'
 
-const STOP_WORDS = new Set([
-  'de', 'da', 'do', 'das', 'dos', 'para', 'pra', 'com', 'sem', 'sob', 'sobre',
-  'uma', 'um', 'uns', 'umas', 'o', 'a', 'os', 'as', 'no', 'na', 'nos', 'nas',
-  'em', 'por', 'pela', 'pelas', 'pelo', 'pelos', 'que', 'qual', 'quais', 'como',
-  'vai', 'vem', 'tem', 'sao', 'esta', 'esse', 'essa', 'isso', 'isto', 'aquele',
-  'se', 'seu', 'sua', 'seus', 'suas', 'meu', 'minha', 'meus', 'minhas', 'teu',
-  'e', 'mas', 'ou', 'nem', 'tambem', 'mais', 'menos', 'muito', 'pouco',
-  'ja', 'nao', 'sim', 'talvez', 'quando', 'onde', 'porque', 'pois',
-  'so', 'apenas', 'ate', 'depois', 'antes', 'sempre', 'nunca', 'agora',
-  'voce', 'ele', 'ela', 'eles', 'elas', 'nos', 'vos', 'eu', 'tu',
-  'pode', 'poderia', 'podem', 'poderiao', 'quero', 'gostaria', 'preciso',
-  'ser', 'estar', 'ter', 'ha', 'existir', 'ficar',
-  'obrigado', 'obrigada', 'valeu', 'brigado',
-  'bom', 'boa', 'bem', 'mal', 'legal', 'top', 'show',
-])
-
-function extrairPalavras(texto: string): string[] {
-  return texto
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9\s]/g, '')
-    .split(/\s+/)
-    .filter(p => p.length > 3 && !STOP_WORDS.has(p))
-}
-
-function parseAvisos(raw: string): { titulo: string; conteudo: string }[] {
-  if (!raw || raw.includes("Sem avisos")) return []
-
-  const linhas = raw.split("\n").filter(l => l.trim())
-  const avisos: { titulo: string; conteudo: string }[] = []
-  let tituloAtual = ''
-  let conteudoParts: string[] = []
-
-  for (const linha of linhas) {
-    const match = linha.match(/\*([^*]+)\*:\s*(.+)/)
-    if (match) {
-      if (tituloAtual) {
-        avisos.push({ titulo: tituloAtual, conteudo: conteudoParts.join(' ') })
-      }
-      tituloAtual = match[1].trim()
-      conteudoParts = [match[2].trim()]
-    } else if (tituloAtual) {
-      conteudoParts.push(linha.trim())
-    }
-  }
-  if (tituloAtual) {
-    avisos.push({ titulo: tituloAtual, conteudo: conteudoParts.join(' ') })
-  }
-
-  return avisos
-}
-
-function encontrarAvisoRelevante(pergunta: string, avisos: { titulo: string; conteudo: string }[]): { titulo: string; conteudo: string } | null {
-  if (avisos.length === 0) return null
-
-  const palavrasPergunta = extrairPalavras(pergunta)
-  if (palavrasPergunta.length === 0) return null
-
-  let melhorScore = 0
-  let melhorAviso: typeof avisos[0] | null = null
-
-  for (const aviso of avisos) {
-    const palavrasTitulo = extrairPalavras(aviso.titulo)
-    const palavrasConteudo = extrairPalavras(aviso.conteudo)
-    const todasPalavras = [...new Set([...palavrasTitulo, ...palavrasConteudo])]
-
-    let score = 0
-    for (const pp of palavrasPergunta) {
-      if (palavrasTitulo.some(pt => pt.includes(pp) || pp.includes(pt))) {
-        score += 2
-      } else if (todasPalavras.some(p => p.includes(pp) || pp.includes(p))) {
-        score += 1
-      }
-    }
-
-    score = Math.round(score * (1 + 0.3 * (palavrasTitulo.length / Math.max(palavrasPergunta.length, 1))))
-
-    if (score > melhorScore) {
-      melhorScore = score
-      melhorAviso = aviso
-    }
-  }
-
-  return melhorScore > 0 ? melhorAviso : null
-}
-
-async function gerarRespostaComAviso(pergunta: string, nome: string, aviso: { titulo: string; conteudo: string }): Promise<string> {
+async function gerarRespostaInteligente(pergunta: string, nome: string, baseDeConhecimento: string, historico?: string): Promise<string> {
   const response = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [
       {
         role: "system",
-        content: `Você é um atendente da NoLevel no estande da ESX 2026.
-Você estudou e domina este assunto sobre o produto:
+        content: `Você é a Hevelyn, a assistente virtual super carismática, empática e humana da NoLevel. Você está atendendo no estande da ESX 2026.
 
-${aviso.conteudo}
+Aqui estão as informações e regras do produto que você domina:
+---
+${baseDeConhecimento}
+---
 
-REGRAS ABSOLUTAS:
-- Explique com SUAS PALAVRAS, como se estivesse ensinando alguém.
-- NUNCA repita frases inteiras do texto que você leu.
-- NUNCA use formatos como "Sobre X:" ou "De acordo com...".
-- Máximo 2 frases curtas.
-- Seja natural, como uma conversa de stand de feira.`
+REGRAS ESTRITAS DE COMPORTAMENTO:
+1. INTERNALIZE A INFORMAÇÃO: Leia as informações acima, entenda a pergunta do visitante e formule uma resposta 100% autoral.
+2. NUNCA REPITA TÍTULOS: É terminantemente proibido usar frases como "Sobre o aviso X", "📢", ou "De acordo com as informações".
+3. TOM DE VOZ: Fale como uma pessoa real em um bate-papo de WhatsApp. Seja direta, amigável e prestativa. Não soe como um robô lendo um manual.
+4. RESUMO CLARO: Se a explicação for longa, resuma de forma simples. Use no máximo 2 a 3 parágrafos curtos.
+5. OBJETIVIDADE: Vá direto à resposta da pergunta. Se a informação não estiver na base, diga que não sabe de cabeça mas que a equipe presencial no estande pode ajudar.
+
+Contexto da conversa atual:
+${historico ? historico : "Início da conversa."}`
       },
       {
         role: "user",
-        content: `O visitante ${nome} perguntou: "${pergunta}".`
+        content: `O visitante ${nome} perguntou: "${pergunta}". Responda de forma natural e conversacional.`
       },
     ],
-    temperature: 0.3,
-    max_tokens: 100,
+    temperature: 0.6,
+    max_tokens: 250,
   })
 
-  return response.choices[0].message.content || "Desculpe, pode repetir a pergunta?"
-}
-
-async function gerarRespostaFallback(pergunta: string, nome: string, avisos: { titulo: string; conteudo: string }[]): Promise<string> {
-  const topicos = avisos.map(a => `- ${a.titulo}: ${a.conteudo}`).join("\n")
-
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [
-      {
-        role: "system",
-        content: `Você é um atendente da NoLevel no estande da ESX 2026.
-Você estudou estes topicos sobre o produto:
-
-${topicos}
-
-REGRAS ABSOLUTAS:
-- Explique com SUAS PALAVRAS, sem repetir frases inteiras.
-- NUNCA use formatos como "Sobre X:" ou "De acordo com...".
-- Máximo 2 frases curtas.
-- Se não souber responder, diga: "Nao sei informar, mas posso anotar seu contato para retorno".`
-      },
-      {
-        role: "user",
-        content: `O visitante ${nome} perguntou: "${pergunta}".`
-      },
-    ],
-    temperature: 0.3,
-    max_tokens: 100,
-  })
-
-  return response.choices[0].message.content || "Desculpe, pode repetir a pergunta?"
+  return response.choices[0].message.content || "Me desculpe, deu um errinho aqui! Você pode repetir a pergunta?"
 }
 
 async function consultarLeadPorCpf(cpf: string) {
@@ -182,7 +70,7 @@ async function consultarLeadPorCpf(cpf: string) {
   }
 }
 
-const saudacoes = new Set(['oi', 'ola', 'olá', 'bom', 'boa', 'oie', 'opa', 'hey', 'alo', 'alô'])
+const saudacoes = new Set(['oi', 'ola', 'olá', 'bom', 'boa', 'oie', 'opa', 'hey', 'alo', 'alô', 'salve'])
 
 export async function POST(req: NextRequest) {
   try {
@@ -205,25 +93,27 @@ export async function POST(req: NextRequest) {
 
     session.lastInteraction = Date.now()
 
+    // Lógica de encerramento
     if (["sair", "encerrar", "cancelar", "tchau", "obrigado", "vlw"].some(v => lowerInput.includes(v))) {
       if (session.cpf && session.ultimoResumo) {
         await saveMemoria(session.cpf, session.nome || "", session.ultimoResumo)
       }
       await sendEvolutionText(
         instance, number,
-        `${saudacao()}! Foi um prazer falar com voce, ${session.nome || "visitante"}. Se quiser saber mais sobre a NoLevel, e so chamar! 😊`
+        `${saudacao()}! Foi um prazer falar com você, ${session.nome || "visitante"}. Se quiser saber mais sobre a NoLevel, é só chamar ou passar aqui no estande! 😊`
       )
       sessions.delete(number)
       return NextResponse.json({ ok: true })
     }
 
+    // Fluxo de captura e validação de CPF
     if (session.state === FlowState.AGUARDANDO_CPF) {
       const cleanCPF = userInput.replace(/\D/g, "")
 
       if (cleanCPF.length !== 11) {
         await sendEvolutionText(
           instance, number,
-          `${saudacao()}! 👋 Bem-vindo ao estande da ${ESTANDE_NOME}! Para eu te atender melhor, me informe seu CPF (apenas numeros).`
+          `${saudacao()}! 👋 Bem-vindo ao estande virtual da ${ESTANDE_NOME}! Para eu te atender de forma personalizada, digite seu CPF (apenas números).`
         )
         return NextResponse.json({ ok: true })
       }
@@ -233,7 +123,7 @@ export async function POST(req: NextRequest) {
       if (!lead) {
         await sendEvolutionText(
           instance, number,
-          `Nao encontrei seu cadastro, ${session.nome || "visitante"}. Voce ja preencheu o formulario de visitante do evento? Se sim, tente novamente com o CPF usado no cadastro.`
+          `Não encontrei seu cadastro, ${session.nome || "visitante"}. Você já preencheu o formulário de visitante do evento? Se sim, tente novamente com o CPF usado no cadastro.`
         )
         return NextResponse.json({ ok: true })
       }
@@ -247,12 +137,12 @@ export async function POST(req: NextRequest) {
       }
 
       const cumprimentoMemoria = memoria
-        ? `Que bom te ver de novo! 👋`
-        : `Que bom te ver por aqui! 😊`
+        ? `Que bom te ver de novo!`
+        : `Que legal ter você por aqui!`
 
       await sendEvolutionText(
         instance, number,
-        `${saudacao()}, ${lead.nome}! ${cumprimentoMemoria} Aqui no estande da NoLevel, posso tirar duvidas sobre nosso produto! Pergunte sobre funcionalidades, integracoes, planos... O que voce gostaria de saber?`
+        `${saudacao()}, ${lead.nome}! ${cumprimentoMemoria} 👋 Sou a Hevelyn, assistente virtual da NoLevel. Posso tirar suas dúvidas sobre nosso produto, funcionalidades, planos ou integrações. O que você gostaria de saber hoje?`
       )
 
       session.state = FlowState.CONVERSANDO
@@ -260,29 +150,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true })
     }
 
+    // Respostas rápidas a saudações isoladas
     if (saudacoes.has(lowerInput)) {
       await sendEvolutionText(
         instance, number,
-        `${saudacao()}! Em que posso ajudar sobre a NoLevel hoje?`
+        `${saudacao()}, ${session.nome}! Como posso te ajudar com as soluções da NoLevel hoje?`
       )
       sessions.set(number, session)
       return NextResponse.json({ ok: true })
     }
 
-    const avisosRaw = await buscarAvisos(undefined, req)
-    const avisos = parseAvisos(avisosRaw)
-    const avisoMatch = encontrarAvisoRelevante(userInput, avisos)
+    // 1. Busca os avisos direto do banco de dados 
+    // Certifique-se de passar o ID correto da empresa aqui, se necessário no seu sistema
+    const empresaIdDaNolevel = process.env.EMPRESA_ID || "COLOQUE_O_ID_AQUI_SE_PRECISAR"
+    const baseDeConhecimento = await obterBaseDeConhecimento(empresaIdDaNolevel)
 
-    let resposta: string
-
-    if (avisoMatch) {
-      resposta = await gerarRespostaComAviso(userInput, session.nome || "Visitante", avisoMatch)
-      session.ultimoResumo = `Perguntou: "${userInput}". Respondido com aviso: ${avisoMatch.titulo}`
-    } else {
-      resposta = await gerarRespostaFallback(userInput, session.nome || "Visitante", avisos)
-      session.ultimoResumo = `Perguntou: "${userInput}". Fallback - sem aviso especifico.`
-    }
-
+    // 2. A Hevelyn analisa a pergunta e a base de dados de forma semântica
+    const resposta = await gerarRespostaInteligente(
+        userInput, 
+        session.nome || "Visitante", 
+        baseDeConhecimento, 
+        session.ultimoResumo
+    )
+    
+    // 3. Salva na memória e envia
+    session.ultimoResumo = `Visitante perguntou: "${userInput}". Você respondeu: "${resposta}"`
+    
     await sendEvolutionText(instance, number, resposta)
     sessions.set(number, session)
 
