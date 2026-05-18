@@ -110,20 +110,28 @@ function encontrarAvisoRelevante(pergunta: string, avisos: { titulo: string; con
 }
 
 async function gerarRespostaComAviso(pergunta: string, nome: string, aviso: { titulo: string; conteudo: string }): Promise<string> {
-  const prompt = `VOCE E UM ATENDENTE DA NOLEVEL NO ESTANDE DA ESX 2026.
-
-INSTRUCAO ABSOLUTA: responda em NO MAXIMO 2 FRASES CURTAS. Resuma o conteudo abaixo com suas proprias palavras. NAO leia o texto literalmente.
-
-Visitante: ${nome}
-Pergunta: "${pergunta}"
-
-Informacao disponivel:
-TITULO: ${aviso.titulo}
-CONTEUDO: ${aviso.conteudo}`
-
   const response = await openai.chat.completions.create({
     model: "gpt-4o-mini",
-    messages: [{ role: "user", content: prompt }],
+    messages: [
+      {
+        role: "system",
+        content: `Você é um atendente da NoLevel no estande da ESX 2026.
+Você estudou e domina este assunto sobre o produto:
+
+${aviso.conteudo}
+
+REGRAS ABSOLUTAS:
+- Explique com SUAS PALAVRAS, como se estivesse ensinando alguém.
+- NUNCA repita frases inteiras do texto que você leu.
+- NUNCA use formatos como "Sobre X:" ou "De acordo com...".
+- Máximo 2 frases curtas.
+- Seja natural, como uma conversa de stand de feira.`
+      },
+      {
+        role: "user",
+        content: `O visitante ${nome} perguntou: "${pergunta}".`
+      },
+    ],
     temperature: 0.3,
     max_tokens: 100,
   })
@@ -132,23 +140,29 @@ CONTEUDO: ${aviso.conteudo}`
 }
 
 async function gerarRespostaFallback(pergunta: string, nome: string, avisos: { titulo: string; conteudo: string }[]): Promise<string> {
-  const avisosTexto = avisos.map(a => `*${a.titulo}*: ${a.conteudo}`).join("\n")
-
-  const prompt = `VOCE E UM ATENDENTE DA NOLEVEL NO ESTANDE DA ESX 2026.
-
-INSTRUCAO ABSOLUTA: responda em NO MAXIMO 2 FRASES CURTAS. Resumo obrigatorio.
-
-Visitante: ${nome}
-Pergunta: "${pergunta}"
-
-Informacoes disponiveis:
-${avisosTexto}
-
-Se achar resposta, resuma em 2 frases. Se NAO achar, diga "Nao sei informar, mas posso anotar seu contato para retorno". Nao invente.`
+  const topicos = avisos.map(a => `- ${a.titulo}: ${a.conteudo}`).join("\n")
 
   const response = await openai.chat.completions.create({
     model: "gpt-4o-mini",
-    messages: [{ role: "user", content: prompt }],
+    messages: [
+      {
+        role: "system",
+        content: `Você é um atendente da NoLevel no estande da ESX 2026.
+Você estudou estes topicos sobre o produto:
+
+${topicos}
+
+REGRAS ABSOLUTAS:
+- Explique com SUAS PALAVRAS, sem repetir frases inteiras.
+- NUNCA use formatos como "Sobre X:" ou "De acordo com...".
+- Máximo 2 frases curtas.
+- Se não souber responder, diga: "Nao sei informar, mas posso anotar seu contato para retorno".`
+      },
+      {
+        role: "user",
+        content: `O visitante ${nome} perguntou: "${pergunta}".`
+      },
+    ],
     temperature: 0.3,
     max_tokens: 100,
   })

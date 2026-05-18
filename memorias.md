@@ -325,15 +325,16 @@ O bot foi reposicionado: antes era um "atendente do evento ESX" que tirava dúvi
   - Score ponderado: match no título vale 2x, match no conteúdo vale 1x
   - Bônus proporcional de palavras do título vs pergunta
 - **`gerarRespostaComAviso`** — quando encontra aviso relevante:
-  - Prompt pequeno com APENAS o aviso específico (barato/rápido)
-  - Temperature 0.3, max_tokens 100 (força resposta curta)
-  - Instrução ABSOLUTA: "responda em NO MAXIMO 2 FRASES CURTAS. NAO leia o texto literalmente"
-  - Fallback seguro: "Desculpe, pode repetir?" (NUNCA devolve o texto bruto do aviso)
-- **`gerarRespostaFallback`** — quando NENHUM aviso casa:
-  - Passa TODOS os avisos como contexto
+  - Usa `role: "system"` (conhecimento assimilado, não texto lido)
+  - Prompt: "Você estudou e domina este assunto... Explique com SUAS PALAVRAS, como se estivesse ensinando alguém"
+  - NUNCA repete frases inteiras do texto original
+  - NUNCA usa formatos como "Sobre X:" ou "De acordo com..."
   - Temperature 0.3, max_tokens 100
-  - Mesma instrução de resumo obrigatório
-  - Se não achar resposta: "Nao sei informar, mas posso anotar seu contato"
+  - Fallback: "Desculpe, pode repetir?" (nunca devolve texto bruto)
+- **`gerarRespostaFallback`** — quando NENHUM aviso casa:
+  - Usa `role: "system"` com múltiplos tópicos assimilados
+  - Mesmas regras de paraphrase obrigatória
+  - Se não souber: "Nao sei informar, mas posso anotar seu contato"
 - **Greetings sem IA**: saudações simples respondem sem chamar OpenAI
 
 ### Fluxo atual do bot
