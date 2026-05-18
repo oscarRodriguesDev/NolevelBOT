@@ -160,10 +160,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true })
     }
 
-    // 1. Busca os avisos direto do banco de dados 
-    // Certifique-se de passar o ID correto da empresa aqui, se necessário no seu sistema
-    const empresaIdDaNolevel = process.env.EMPRESA_ID || "COLOQUE_O_ID_AQUI_SE_PRECISAR"
-    const baseDeConhecimento = await obterBaseDeConhecimento(empresaIdDaNolevel)
+    const baseDeConhecimento = await obterBaseDeConhecimento()
 
     // 2. A Hevelyn analisa a pergunta e a base de dados de forma semântica
     const resposta = await gerarRespostaInteligente(

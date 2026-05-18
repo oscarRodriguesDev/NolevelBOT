@@ -1,10 +1,20 @@
 import { prisma } from "@/lib/prisma"
 
-export async function obterBaseDeConhecimento(empresaId: string): Promise<string> {
+export async function obterBaseDeConhecimento(): Promise<string> {
   try {
+    const nomeEmpresa = process.env.PUBLIC_NAME_EMPRESA || "Nolevel"
+    const empresa = await prisma.empresa.findFirst({
+      where: { nome: nomeEmpresa },
+      select: { id: true }
+    })
+
+    if (!empresa) {
+      return "Não há informações adicionais no banco de dados no momento."
+    }
+
     const avisos = await prisma.avisos.findMany({
       where: {
-        empresaId: empresaId,
+        empresaId: empresa.id,
         OR: [
           { expiresAt: null },
           { expiresAt: { gt: new Date() } }
@@ -20,7 +30,7 @@ export async function obterBaseDeConhecimento(empresaId: string): Promise<string
       return "Não há informações adicionais no banco de dados no momento."
     }
 
-    return avisos.map(aviso => `Informação sobre o produto/empresa: ${aviso.conteudo}`).join('\n\n')
+    return avisos.map(aviso => `${aviso.conteudo}`).join('\n\n')
   } catch (error) {
     console.error("Erro ao buscar avisos no Prisma:", error)
     return "Erro ao carregar base de conhecimento."
