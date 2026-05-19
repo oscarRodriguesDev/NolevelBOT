@@ -89,6 +89,7 @@
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
 | 1 | `36e530a` | feat: notificacoes proativas no webhook24 - avisa cliente quando chamado e criado, tratado e finalizado | 19/05/2026 |
+| 2 | `a6d255a` | fix: matching bidirecional de setores - reconhece setor mesmo quando nome nao contem exatamente o input | 19/05/2026 |
 
 ---
 

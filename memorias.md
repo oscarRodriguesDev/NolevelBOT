@@ -397,3 +397,24 @@ Usuário → Webhook24 (valida CPF)
 - Chamados abertos pelo portal web NÃO geram notificação (sem telefone registrado)
 - Falha na notificação não quebra o fluxo principal (try/catch isolado)
 - O número de WhatsApp é registrado automaticamente na primeira interação com o bot
+
+---
+
+## 18. CORREÇÃO: MATCHING BIDIRECIONAL DE SETORES (19/05/2026)
+
+### Problema
+O matching de setores nos webhooks (22, 23, 24) e chat usava apenas:
+```typescript
+setores.find(s => lowerInput.includes(s.toLowerCase()))
+```
+Isso falhava quando o nome do setor no banco era mais específico que a resposta do usuário. Ex:
+- Setor no banco: `"Suporte Técnico"` → usuário digita `"suporte"` → `"suporte".includes("suporte técnico")` → **false** ❌
+
+### Solução aplicada em `webhook22`, `webhook23`, `webhook24` e `chat/route.ts`
+```typescript
+const setor = setores.find(s => {
+  const nomeSetor = s.toLowerCase();
+  return nomeSetor.includes(input) || input.includes(nomeSetor);
+});
+```
+Matching bidirecional: checa se o **nome do setor contém o input** OU se o **input contém o nome do setor**.
