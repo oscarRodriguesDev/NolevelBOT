@@ -350,4 +350,50 @@ Os avisos cadastrados no sistema (tabela `avisos`) devem conter **informações 
 - **Título:** assunto (ex: "Integração WhatsApp")
 - **Conteúdo:** descrição detalhada (ex: "O NoLevel se integra com WhatsApp via Evolution API...")
 
-Quando um visitante perguntar "Como funciona a integração com WhatsApp?", o matching encontra o aviso, e a IA resume numa resposta natural e conversacional.
+Quando um visitante perguntar "Como funciona a integração com WhatsApp?", o matching encontra o aviso, and a IA resume numa resposta natural e conversacional.
+
+---
+
+## 17. NOTIFICAÇÕES PROATIVAS WEBHOOK24 (19/05/2026)
+
+### Objetivo
+O webhook24 agora envia mensagens proativas no WhatsApp do usuário em 3 momentos do ciclo de vida do chamado:
+1. **Chamado criado** (status `NOVO`) — aviso de criação com número do ticket
+2. **Chamado em atendimento** (status `EM_ANDAMENTO`) — aviso que começou a ser tratado
+3. **Chamado finalizado** (movido para `tickets_fechados`) — aviso de conclusão
+
+### Arquitetura
+
+```
+Usuário → Webhook24 (valida CPF)
+  → phoneMap.ts salva: CPF → { telefone, instance }
+  → Usuário abre chamado via webhook24
+  → Atendente atualiza/finaliza via sistema web
+    → api/tickets/route.ts busca telefone pelo CPF no phoneMap
+    → sendEvolutionText envia notificação proativa
+```
+
+### Componentes criados/modificados
+
+#### `src/lib/phoneMap.ts` (novo)
+- Persistência em arquivo JSON (`data/phoneMap.json`)
+- Mapa: `CPF → { telefone, instance, updatedAt }`
+- Funções: `registerPhone()`, `getPhoneByCpf()`, `removePhone()`
+
+#### `src/app/api/webhook24/route.ts` (modificado)
+- Importa `registerPhone` do phoneMap
+- Na etapa `IDENTIFICACAO_CPF`, após validar CPF, chama `registerPhone(cleanCPF, number, instance)`
+- Vincula o número de WhatsApp ao CPF para notificações futuras
+
+#### `src/app/api/tickets/route.ts` (modificado)
+- Importa `getPhoneByCpf` e `sendEvolutionText`
+- Função auxiliar `notificarCliente(cpf, ticket, etapa, nomeAtendente?)`
+- **POST** (criação): notifica "Seu chamado *TKT-xxx* foi criado com sucesso!"
+- **PUT** (status → `EM_ANDAMENTO`): notifica "Seu chamado *TKT-xxx* começou a ser tratado!"
+- **DELETE** (finalização): notifica "Seu chamado *TKT-xxx* foi finalizado."
+
+### Regras de negócio
+- Apenas usuários que interagiram com o webhook24 recebem notificações (precisam ter CPF mapeado)
+- Chamados abertos pelo portal web NÃO geram notificação (sem telefone registrado)
+- Falha na notificação não quebra o fluxo principal (try/catch isolado)
+- O número de WhatsApp é registrado automaticamente na primeira interação com o bot

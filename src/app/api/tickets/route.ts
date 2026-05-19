@@ -6,6 +6,8 @@ import type { Prisma } from '@prisma/client'
 export const dynamic = 'force-dynamic'
 import { uploadFile } from '@/lib/upload'
 import { getSessionOrFail } from '@/util/permission';
+import { getPhoneByCpf } from '@/lib/phoneMap';
+import { sendEvolutionText } from '@/lib/usedata';
 
 
 
@@ -20,6 +22,24 @@ type HistoricoItem = {
   acao: string
   observacao?: string
   atendente?: string
+}
+
+async function notificarCliente(cpf: string, ticket: string, etapa: 'criado' | 'em_andamento' | 'finalizado', nomeAtendente?: string) {
+  try {
+    const contato = getPhoneByCpf(cpf);
+    if (!contato) return;
+
+    const mensagens: Record<string, string> = {
+      criado: `Olá! Seu chamado *${ticket}* foi criado com sucesso! Nossa equipe já foi notificada e em breve alguém começará a tratar.`,
+      em_andamento: `Olá! Seu chamado *${ticket}* começou a ser tratado${nomeAtendente ? ` por *${nomeAtendente}*` : ''}! Fique tranquilo que estamos resolvendo.`,
+      finalizado: `Olá! Seu chamado *${ticket}* foi finalizado. Agradecemos pelo contato! Se precisar de algo, é só nos chamar novamente.`,
+    };
+
+    await sendEvolutionText(contato.instance, contato.telefone, mensagens[etapa]);
+    console.log(`📨 Notificação enviada: ${ticket} -> ${etapa}`);
+  } catch (error) {
+    console.error('Erro ao notificar cliente:', error);
+  }
 }
 
 /* 
@@ -126,9 +146,11 @@ export async function POST(req: NextRequest) {
         descricao,
         prioridade,
         anexoUrl,
-        empresaId, // 🔒 vínculo multi-tenant
+        empresaId,
       },
     })
+
+    notificarCliente(cpf, ticket, 'criado');
 
     return NextResponse.json(chamado, { status: 201 })
   } catch (error) {
@@ -298,6 +320,10 @@ getSessionOrFail()
       },
     })
 
+    if (estagio === "EM_ANDAMENTO") {
+      notificarCliente(chamadoExistente.cpf, chamadoExistente.ticket, 'em_andamento', chamadoAtualizado.atendente?.name);
+    }
+
     return NextResponse.json(chamadoAtualizado, { status: 200 })
   } catch (error) {
     console.error(error)
@@ -355,6 +381,8 @@ export async function DELETE(req: NextRequest) {
     await prisma.chamado.delete({
       where: { id: chamado.id },
     })
+
+    notificarCliente(chamado.cpf, chamado.ticket, 'finalizado', chamado.atendente?.name);
 
     return NextResponse.json(
       { message: "Chamado movido para tickets fechados" },
