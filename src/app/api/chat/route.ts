@@ -193,7 +193,11 @@ export async function POST(req: NextRequest) {
 
       case "coletar_setor": {
         const setores = await getSetores(session.cpf || "")
-        const setor = setores.find(s => lowerInput.includes(s.toLowerCase()))
+        const input = lowerInput.trim()
+        const setor = setores.find(s => {
+          const nomeSetor = s.toLowerCase()
+          return nomeSetor.includes(input) || input.includes(nomeSetor)
+        })
 
         if (!setor) {
           return NextResponse.json({

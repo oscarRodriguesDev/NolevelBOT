@@ -223,7 +223,11 @@ export async function POST(req: NextRequest) {
 
       case FlowState.COLETAR_SETOR: {
         const setores = await getSetores(session.cpf || '');
-        const setor = setores.find(s => lowerInput.includes(s.toLowerCase()));
+        const input = lowerInput.trim();
+        const setor = setores.find(s => {
+          const nomeSetor = s.toLowerCase();
+          return nomeSetor.includes(input) || input.includes(nomeSetor);
+        });
 
         if (setor) {
           const ok = await enviarChamado(
