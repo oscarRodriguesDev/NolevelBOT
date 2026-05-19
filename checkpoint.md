@@ -76,5 +76,21 @@
 
 ---
 
+## Sessão: 19/05/2026
+
+### Pendentes antes do commit:
+- ~~`src/lib/phoneMap.ts` - Mapa CPF → telefone + instância, persistência em JSON~~ ✅
+- ~~`src/app/api/webhook24/route.ts` - Registrar telefone ao validar CPF~~ ✅
+- ~~`src/app/api/tickets/route.ts` - Notificações proativas no POST/PUT/DELETE~~ ✅
+- ~~`memorias.md` - Seção 17 documentando notificações proativas~~ ✅
+
+### Commits realizados nesta sessão:
+
+| # | Hash | Mensagem | Data |
+|---|------|----------|------|
+| 1 | `36e530a` | feat: notificacoes proativas no webhook24 - avisa cliente quando chamado e criado, tratado e finalizado | 19/05/2026 |
+
+---
+
 ## Próximos Passos (planejados)
 - (a definir)
