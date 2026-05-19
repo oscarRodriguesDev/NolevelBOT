@@ -320,8 +320,11 @@ getSessionOrFail()
       },
     })
 
-    if (estagio === "EM_ANDAMENTO") {
+    const estagioLower = estagio.toLowerCase();
+    if (estagioLower === "em_atendimento") {
       notificarCliente(chamadoExistente.cpf, chamadoExistente.ticket, 'em_andamento', chamadoAtualizado.atendente?.name);
+    } else if (estagioLower === "concluido") {
+      notificarCliente(chamadoExistente.cpf, chamadoExistente.ticket, 'finalizado', chamadoAtualizado.atendente?.name);
     }
 
     return NextResponse.json(chamadoAtualizado, { status: 200 })
