@@ -6,16 +6,8 @@ import type { Prisma } from '@prisma/client'
 export const dynamic = 'force-dynamic'
 import { uploadFile } from '@/lib/upload'
 import { getSessionOrFail } from '@/util/permission';
-
-function normalizarStatus(status: string): string {
-  const s = status?.toUpperCase().replace(/[^A-Z]/g, '') || ''
-  if (s.includes('NOVO')) return 'NOVO'
-  if (s.includes('ATENDIMENTO') || s.includes('ANDAMENTO')) return 'EM_ATENDIMENTO'
-  if (s.includes('AGUARDANDO')) return 'AGUARDANDO'
-  if (s.includes('CONCLUIDO') || s.includes('FINALIZADO')) return 'CONCLUIDO'
-  if (s.includes('CANCELADO')) return 'CANCELADO'
-  return status
-}
+import type { HistoricoItem } from '@/types/chamado';
+import { normalizarStatus } from '@/types/chamado';
 
 
 
@@ -25,12 +17,7 @@ function normalizarStatus(status: string): string {
 
 //buscar o user da session
 
-type HistoricoItem = {
-  data: string
-  acao: string
-  observacao?: string
-  atendente?: string
-}
+
 
 export async function POST(req: NextRequest) {
   try {

@@ -28,6 +28,8 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/next.config.* ./
 
+USER node
+
 EXPOSE 3000
 
 CMD ["npm", "run", "start"]

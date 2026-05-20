@@ -108,29 +108,47 @@ export default function CreateUserFacil() {
 
 
   return (
-    <div className="max-w-md mx-auto p-6 space-y-4">
-      <h2 className="text-lg font-semibold">Criar usuário</h2>
+    <div
+      className="max-w-md mx-auto p-6 space-y-4 transition-colors duration-300"
+      style={{ backgroundColor: "var(--background)", color: "var(--foreground)" }}
+    >
+      <h2 className="text-lg font-semibold" style={{ color: "var(--primary)" }}>Criar usuário</h2>
 
       <form onSubmit={handleSubmit} className="space-y-3">
         <input
           placeholder="Nome"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full border p-2 rounded"
+          className="w-full border rounded-lg px-4 py-3 outline-none transition-all duration-300 focus:ring-2"
+          style={{
+            backgroundColor: "var(--surface-elevated)",
+            borderColor: "var(--border-subtle)",
+            color: "var(--foreground)",
+          }}
         />
 
         <input
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full border p-2 rounded"
+          className="w-full border rounded-lg px-4 py-3 outline-none transition-all duration-300 focus:ring-2"
+          style={{
+            backgroundColor: "var(--surface-elevated)",
+            borderColor: "var(--border-subtle)",
+            color: "var(--foreground)",
+          }}
         />
 
         <input
           placeholder="CPF"
           value={cpf}
           onChange={(e) => setCpf(e.target.value)}
-          className="w-full border p-2 rounded"
+          className="w-full border rounded-lg px-4 py-3 outline-none transition-all duration-300 focus:ring-2"
+          style={{
+            backgroundColor: "var(--surface-elevated)",
+            borderColor: "var(--border-subtle)",
+            color: "var(--foreground)",
+          }}
         />
 
         <input
@@ -138,25 +156,45 @@ export default function CreateUserFacil() {
           placeholder="Senha"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full border p-2 rounded"
+          className="w-full border rounded-lg px-4 py-3 outline-none transition-all duration-300 focus:ring-2"
+          style={{
+            backgroundColor: "var(--surface-elevated)",
+            borderColor: "var(--border-subtle)",
+            color: "var(--foreground)",
+          }}
         />
 
         <input
           placeholder="Setor"
           value={setor}
           onChange={(e) => setSetor(e.target.value)}
-          className="w-full border p-2 rounded"
+          className="w-full border rounded-lg px-4 py-3 outline-none transition-all duration-300 focus:ring-2"
+          style={{
+            backgroundColor: "var(--surface-elevated)",
+            borderColor: "var(--border-subtle)",
+            color: "var(--foreground)",
+          }}
         />
 
         {loadingEmpresas ? (
-          <select disabled className="w-full border p-2 rounded">
+          <select disabled className="w-full border rounded-lg px-4 py-3"
+            style={{
+              backgroundColor: "var(--surface-elevated)",
+              borderColor: "var(--border-subtle)",
+              color: "var(--foreground)",
+            }}>
             <option>Carregando empresas...</option>
           </select>
         ) : (
           <select
             value={empresaId}
             onChange={(e) => setEmpresaId(e.target.value)}
-            className="w-full border p-2 rounded"
+            className="w-full border rounded-lg px-4 py-3 outline-none transition-all duration-300 focus:ring-2"
+            style={{
+              backgroundColor: "var(--surface-elevated)",
+              borderColor: "var(--border-subtle)",
+              color: "var(--foreground)",
+            }}
           >
             {empresas.map((emp) => (
               <option key={emp.id} value={emp.id}>
@@ -169,7 +207,12 @@ export default function CreateUserFacil() {
         <select
           value={role}
           onChange={(e) => setRole(e.target.value)}
-          className="w-full border p-2 rounded"
+          className="w-full border rounded-lg px-4 py-3 outline-none transition-all duration-300 focus:ring-2"
+          style={{
+            backgroundColor: "var(--surface-elevated)",
+            borderColor: "var(--border-subtle)",
+            color: "var(--foreground)",
+          }}
         >
           <option value="XX!">GOD</option>
           <option value="X1X">ADMIN</option>
@@ -180,9 +223,14 @@ export default function CreateUserFacil() {
         <input
           type="file"
           onChange={(e) => setAvatar(e.target.files?.[0] || null)}
+          style={{ color: "var(--foreground)" }}
         />
 
-        <button type="submit" className="w-full bg-black text-white p-2 rounded">
+        <button
+          type="submit"
+          className="w-full text-white font-semibold py-3 rounded-lg transition-all duration-300 hover:scale-105 active:scale-95"
+          style={{ backgroundColor: "var(--primary)" }}
+        >
           Criar
         </button>
       </form>

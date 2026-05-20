@@ -6,35 +6,10 @@ import type { Prisma } from '@prisma/client'
 export const dynamic = 'force-dynamic'
 import { uploadFile } from '@/lib/upload'
 import { getSessionOrFail } from '@/util/permission';
-import { getPhoneByCpf } from '@/lib/phoneMap';
+import { getPhoneByCpf, registerPhone } from '@/lib/phoneMap';
 import { sendEvolutionText } from '@/lib/usedata';
-
-const STATUS_VALIDOS = ['NOVO', 'EM_ATENDIMENTO', 'AGUARDANDO', 'CONCLUIDO', 'CANCELADO'] as const
-
-function normalizarStatus(status: string): string {
-  const s = status?.toUpperCase().replace(/[^A-Z]/g, '') || ''
-  if (s.includes('NOVO')) return 'NOVO'
-  if (s.includes('ATENDIMENTO') || s.includes('ANDAMENTO')) return 'EM_ATENDIMENTO'
-  if (s.includes('AGUARDANDO')) return 'AGUARDANDO'
-  if (s.includes('CONCLUIDO') || s.includes('FINALIZADO')) return 'CONCLUIDO'
-  if (s.includes('CANCELADO')) return 'CANCELADO'
-  return status
-}
-
-
-
-// helper para validar sessão
-
-
-
-//buscar o user da session
-
-type HistoricoItem = {
-  data: string
-  acao: string
-  observacao?: string
-  atendente?: string
-}
+import type { HistoricoItem } from '@/types/chamado';
+import { normalizarStatus } from '@/types/chamado';
 
 async function notificarCliente(cpf: string, ticket: string, etapa: 'criado' | 'atualizado' | 'finalizado', nomeAtendente?: string, observacao?: string) {
   try {
@@ -118,6 +93,7 @@ export async function POST(req: NextRequest) {
     const setor = formData.get("setor") as string
     const descricao = formData.get("descricao") as string
     const prioridade = (formData.get("prioridade") as string) || "normal"
+    const telefone = formData.get("telefone") as string | null
     const file = formData.get("anexo") as File | null
 
     if (!nome || !cpf || !setor || !descricao) {
@@ -164,6 +140,10 @@ export async function POST(req: NextRequest) {
         empresaId,
       },
     })
+
+    if (telefone) {
+      registerPhone(cpf, telefone, 'web')
+    }
 
     notificarCliente(cpf, ticket, 'criado');
 

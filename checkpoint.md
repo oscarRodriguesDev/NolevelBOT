@@ -193,5 +193,59 @@
 
 ---
 
-## Próximos Passos (planejados)
-- Itens 12+ do `ideias.md`: refatoração de webhooks duplicados, índices no banco, tema consistente, etc.
+---
+
+## Sessão: 19/05/2026 (Implementação Itens 13-28)
+
+### Itens implementados:
+
+| Item | Descrição | Status |
+|------|-----------|--------|
+| 13 | Índices (`@@index`) em todos os modelos Prisma | ✅ |
+| 14 | Tema consistente em `modal-edit-user.tsx` e `userFacil/page.tsx` | ✅ |
+| 15 | Skeleton components + `loading.tsx` | ✅ |
+| 16 | Componentes UI: StatusBadge, PriorityBadge, Spinner | ✅ |
+| 17 | ARIA: role="dialog", aria-modal, Escape key em modais | ✅ |
+| 19 | Docker: `USER node` para não rodar como root | ✅ |
+| 20 | CI/CD: steps de build/lint antes do deploy | ✅ |
+| 21 | Typo `ransition` → `transition` em layout.tsx | ✅ |
+| 22 | `.env.example` com variáveis documentadas | ✅ |
+| 23 | Typo `chammados` → `chamados` no schema | ✅ |
+| 24 | Prettier configurado (`.prettierrc` + `.prettierignore`) | ✅ |
+| 25 | Página de documentação da API (`/api-docs`) | ✅ |
+| 27 | Tipos centralizados em `src/types/chamado.ts` | ✅ |
+| 28 | Campo telefone opcional no portal de chamados | ✅ |
+
+### Arquivos criados:
+- `src/types/chamado.ts` — Tipos e funções utilitárias centralizadas
+- `src/app/components/skeleton.tsx` — Skeleton, SkeletonTable, SkeletonCard
+- `src/app/components/spinner.tsx` — Spinner SVG animado
+- `src/app/components/status-badge.tsx` — Badge de status com cor
+- `src/app/components/priority-badge.tsx` — Badge de prioridade com cor
+- `src/app/(atendimento)/all-tickets/loading.tsx` — Loading state
+- `src/app/api-docs/page.tsx` — Documentação da API
+- `.env.example` — Template de variáveis de ambiente
+- `.prettierrc` — Configuração Prettier
+- `.prettierignore` — Ignora node_modules, .next, etc.
+
+### Arquivos modificados:
+- `prisma/schema.prisma` — Índices + typo `chammados` → `chamados`
+- `src/app/layout.tsx` — Typo `ransition` → `transition`
+- `src/app/userFacil/page.tsx` — Tema CSS variables
+- `src/app/(atendimento)/components/modal-edit-user.tsx` — Tema CSS variables + ARIA
+- `src/app/(atendimento)/components/modal_tandimento.tsx` — ARIA + tipos centralizados
+- `src/app/(atendimento)/all-tickets/page.tsx` — Importa funções de cor do tipos central
+- `src/app/(atendimento)/all-tickets/kanban-board.tsx` — Importa getPriorityColor do tipos central
+- `src/app/consulta/[ticket]/page.tsx` — Importa getStatusColor do tipos central
+- `src/app/api/tickets/route.ts` — Importa HistoricoItem + normalizarStatus do tipos central; aceita telefone
+- `src/app/api/tickets/search/route.ts` — Importa HistoricoItem + normalizarStatus do tipos central
+- `src/app/chamado/page.tsx` — Campo telefone opcional
+- `dockerfile` — USER node
+- `.github/workflows/deploy.yml` — Steps de build/lint
+- `.github/workflows/deploy-homologa.yml` — Steps de build/lint
+
+### Commits realizados nesta sessão:
+
+| # | Hash | Mensagem | Data |
+|---|------|----------|------|
+| 1 | `pendente` | Pendente de commit | 19/05/2026 |

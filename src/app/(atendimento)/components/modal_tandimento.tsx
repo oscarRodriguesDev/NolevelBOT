@@ -3,28 +3,7 @@
 import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import Image from "next/image"
-
-type HistoricoItem = {
-  data: string
-  acao: string
-  observacao?: string
-  atendente?: string
-}
-
-type Chamado = {
-  id: number
-  ticket: string
-  nome: string
-  cpf: string
-  setor: string
-  descricao: string
-  prioridade: string
-  status: string
-  createdAt: string
-  anexoUrl?: string | null
-  historico?: string | null
-  atendente?: string | null
-}
+import type { HistoricoItem, Chamado } from "@/types/chamado"
 
 interface ModalChamadoProps {
   ticket: string | null
@@ -129,7 +108,13 @@ export function ModalChamado({
   if (!open || !chamado) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-chamado-title"
+      onKeyDown={(e) => e.key === 'Escape' && onClose()}
+    >
       <div
         className="w-full max-w-4xl rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 relative border transition-colors duration-300 my-4"
         style={{
@@ -146,7 +131,7 @@ export function ModalChamado({
           ✕
         </button>
 
-        <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-4 sm:mb-6 pr-8" style={{ color: "var(--primary)" }}>
+        <h2 id="modal-chamado-title" className="text-xl sm:text-2xl lg:text-3xl font-bold mb-4 sm:mb-6 pr-8" style={{ color: "var(--primary)" }}>
           Chamado {chamado.ticket}
         </h2>
 

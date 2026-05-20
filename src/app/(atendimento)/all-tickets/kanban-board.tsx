@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react"
 import { useSession } from "next-auth/react"
 import { ModalChamado } from "../components/modal_tandimento"
+import { getPriorityColor } from "@/types/chamado"
 
 type Chamado = {
   id: string
@@ -42,14 +43,7 @@ function normalizeStatus(status: string): string {
   return "NOVO"
 }
 
-function getPriorityColor(prioridade: string): string {
-  const p = prioridade?.toUpperCase() || ""
-  if (p.includes("BAIXA")) return "#10b981"
-  if (p.includes("NORMAL") || p.includes("MEDIA")) return "var(--status-in-progress)"
-  if (p.includes("ALTA")) return "#ef4444"
-  if (p.includes("CRITICA")) return "#7f1d1d"
-  return "var(--primary)"
-}
+
 
 export default function KanbanBoard({ tickets, loading, onRefresh }: KanbanBoardProps) {
   const { data: session } = useSession()

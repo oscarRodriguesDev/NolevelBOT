@@ -166,42 +166,69 @@ const handleSubmit = async () => {
 
   return createPortal(
     <div className={isDark ? "dark" : ""}>
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200">
-        {/* Overlay: Opacidade levemente reduzida para não pesar o ambiente */}
+      <div
+        className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-edit-user-title"
+        onKeyDown={(e) => e.key === 'Escape' && onClose()}
+      >
         <div
-          className="absolute inset-0 bg-zinc-900/30 dark:bg-black/50 backdrop-blur-md"
+          className="absolute inset-0 backdrop-blur-md"
+          style={{ backgroundColor: "rgba(0,0,0,0.4)" }}
           onClick={onClose}
         />
 
-        {/* Modal Card: Bordas e sombras mais suaves */}
-        <div className="relative w-full max-w-lg rounded-3xl bg-white dark:bg-zinc-900 shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-zinc-100 dark:border-zinc-800/50 overflow-hidden">
-
-          {/* Header Gradient: Tons mais pastéis/claros */}
-          <div className="relative h-28 bg-gradient-to-br from-blue-400 to-indigo-500 dark:from-blue-600 dark:to-zinc-800">
+        <div
+          className="relative w-full max-w-lg rounded-3xl shadow-2xl border overflow-hidden transition-colors duration-300"
+          style={{
+            backgroundColor: "var(--surface)",
+            borderColor: "var(--border-subtle)",
+          }}
+        >
+          <div
+            className="relative h-28"
+            style={{
+              background: "linear-gradient(to bottom right, var(--primary), var(--primary-hover))",
+            }}
+          >
             <button
               onClick={onClose}
               className="absolute top-5 right-5 p-2 rounded-full bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm transition-all"
+              aria-label="Fechar modal"
             >
               <X size={18} />
             </button>
           </div>
 
           <div className="px-8 pb-8">
-            {/* Avatar Section: Border branca para "saltar" do fundo */}
             <div className="relative -mt-14 mb-6 flex justify-center">
               <div className="relative group">
-                <div className="w-28 h-28 rounded-3xl border-[6px] border-white dark:border-zinc-900 bg-zinc-50 dark:bg-zinc-800 overflow-hidden shadow-lg">
+                <div
+                  className="w-28 h-28 rounded-3xl border-[6px] overflow-hidden shadow-lg transition-colors duration-300"
+                  style={{
+                    backgroundColor: "var(--surface-elevated)",
+                    borderColor: "var(--surface)",
+                  }}
+                >
                   {avatarFile ? (
                     <img src={URL.createObjectURL(avatarFile)} className="w-full h-full object-cover" alt="Preview" />
                   ) : user?.avatarUrl ? (
                     <img src={user.avatarUrl} className="w-full h-full object-cover" alt="Perfil" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-zinc-300 dark:text-zinc-600">
+                    <div className="w-full h-full flex items-center justify-center" style={{ color: "var(--border-subtle)" }}>
                       <UserIcon size={44} />
                     </div>
                   )}
                 </div>
-                <label className="absolute bottom-1 right-1 p-2.5 rounded-2xl bg-white dark:bg-zinc-800 shadow-xl border border-zinc-100 dark:border-zinc-700 cursor-pointer hover:scale-110 active:scale-95 transition-all text-blue-500">
+                <label
+                  className="absolute bottom-1 right-1 p-2.5 rounded-2xl shadow-xl border cursor-pointer hover:scale-110 active:scale-95 transition-all"
+                  style={{
+                    backgroundColor: "var(--surface)",
+                    borderColor: "var(--border-subtle)",
+                    color: "var(--primary)",
+                  }}
+                >
                   <Camera size={18} />
                   <input
                     type="file"
@@ -214,50 +241,59 @@ const handleSubmit = async () => {
             </div>
 
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-zinc-800 dark:text-zinc-100 tracking-tight">
+              <h2 id="modal-edit-user-title" className="text-2xl font-bold tracking-tight" style={{ color: "var(--foreground)" }}>
                 {user?.name || "Usuário"}
               </h2>
-              <p className="text-zinc-500 dark:text-zinc-400 font-medium">Configurações de Perfil</p>
+              <p className="font-medium" style={{ color: "var(--border-subtle)" }}>Configurações de Perfil</p>
             </div>
 
-            {/* Form Fields: Cores de background mais lavadas */}
             <div className="grid gap-5">
               <div className="space-y-2">
-                <label className="text-[11px] font-bold uppercase tracking-[0.1em] text-zinc-400 dark:text-zinc-500 ml-1">
+                <label className="text-[11px] font-bold uppercase tracking-[0.1em] ml-1" style={{ color: "var(--border-subtle)" }}>
                   E-mail da Conta
                 </label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 dark:text-zinc-600" size={18} />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2" size={18} style={{ color: "var(--border-subtle)" }} />
                   <input
                     value={user?.email || ""}
                     disabled
-                    className="w-full pl-12 pr-4 py-3 rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/30 text-zinc-400 dark:text-zinc-500 text-sm cursor-not-allowed"
+                    className="w-full pl-12 pr-4 py-3 rounded-2xl border text-sm cursor-not-allowed transition-colors duration-300"
+                    style={{
+                      borderColor: "var(--border-subtle)",
+                      backgroundColor: "var(--surface-elevated)",
+                      color: "var(--border-subtle)",
+                    }}
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-[11px] font-bold uppercase tracking-[0.1em] text-zinc-400 dark:text-zinc-500 ml-1">
+                <label className="text-[11px] font-bold uppercase tracking-[0.1em] ml-1" style={{ color: "var(--border-subtle)" }}>
                   Segurança
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 dark:text-zinc-600" size={18} />
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2" size={18} style={{ color: "var(--border-subtle)" }} />
                   <input
                     type="password"
                     placeholder="Alterar senha atual"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-sm text-zinc-700 dark:text-zinc-200 placeholder:text-zinc-300 dark:placeholder:text-zinc-700 focus:ring-4 focus:ring-blue-500/5 focus:border-blue-400 dark:focus:border-blue-500/50 outline-none transition-all"
+                    className="w-full pl-12 pr-4 py-3 rounded-2xl border text-sm outline-none transition-all focus:ring-2"
+                    style={{
+                      borderColor: "var(--border-subtle)",
+                      backgroundColor: "var(--background)",
+                      color: "var(--foreground)",
+                    }}
                   />
                 </div>
               </div>
             </div>
 
-            {/* Action Buttons: Botões com cantos arredondados e cores menos agressivas */}
             <div className="flex items-center gap-4 mt-10">
               <button
                 onClick={onClose}
-                className="flex-1 px-4 py-3 text-sm font-bold text-zinc-500 dark:text-zinc-400 rounded-2xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all"
+                className="flex-1 px-4 py-3 text-sm font-bold rounded-2xl transition-all"
+                style={{ color: "var(--border-subtle)" }}
               >
                 Voltar
               </button>
@@ -265,7 +301,11 @@ const handleSubmit = async () => {
               <button
                 onClick={handleSubmit}
                 disabled={loading}
-                className="flex-[2] relative px-4 py-3 text-sm font-bold bg-blue-600 dark:bg-white text-white dark:text-zinc-950 rounded-2xl hover:bg-blue-700 dark:hover:bg-zinc-100 shadow-lg shadow-blue-500/20 dark:shadow-none disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                className="flex-[2] relative px-4 py-3 text-sm font-bold rounded-2xl disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                style={{
+                  backgroundColor: "var(--primary)",
+                  color: "#fff",
+                }}
               >
                 {loading ? (
                   <Loader2 size={20} className="animate-spin" />

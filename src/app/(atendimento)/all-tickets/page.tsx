@@ -5,6 +5,7 @@ import { LayoutList, Columns3 } from "lucide-react"
 import { ModalChamado } from "../components/modal_tandimento"
 import KanbanBoard from "./kanban-board"
 import { useHeader } from '../layout'
+import { getStatusColor, getPriorityColor } from "@/types/chamado"
 
 type Chamado = {
   id: string
@@ -116,24 +117,7 @@ export default function TicketsPage() {
     setTickets(prev => prev.filter(t => t.ticket !== ticket))
   }
 
-  const getStatusColor = (status: string) => {
-    const s = status?.toUpperCase() || "";
-    if (s.includes("NOVO")) return "var(--status-new)";
-    if (s.includes("ATENDIMENTO") || s.includes("ANDAMENTO")) return "var(--status-in-progress)";
-    if (s.includes("AGUARDANDO")) return "var(--status-waiting)";
-    if (s.includes("CONCLUIDO") || s.includes("FINALIZADO")) return "var(--status-completed)";
-    if (s.includes("CANCELADO")) return "var(--status-cancelled)";
-    return "#6b7280";
-  };
 
-  const getPriorityColor = (prioridade: string) => {
-    const p = prioridade?.toUpperCase() || "";
-    if (p.includes("BAIXA")) return "#10b981";
-    if (p.includes("NORMAL") || p.includes("MEDIA")) return "var(--status-in-progress)";
-    if (p.includes("ALTA")) return "#ef4444";
-    if (p.includes("CRITICA")) return "#7f1d1d";
-    return "var(--primary)";
-  };
 
   return (
     <div className="py-10 px-4 transition-colors duration-300" style={{ backgroundColor: "var(--background)", color: "var(--foreground)" }}>

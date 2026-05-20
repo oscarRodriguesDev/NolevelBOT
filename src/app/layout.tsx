@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body className={`ransition-colors duration-300`}>
+      <body className={`transition-colors duration-300`}>
         <>
         <RootLayoutClient>
 <>

@@ -524,3 +524,88 @@ Função `normalizarStatus()` adicionada nas rotas PUT que normaliza qualquer va
 
 #### Validação com Zod
 Schemas de validação centralizados em `src/lib/validation.ts` para: CPF, email, senha, criação de usuário, chamado, empresa e lead.
+
+---
+
+## 21. ITENS 13-28 DO IDEIAS.MD — IMPLEMENTAÇÃO (19/05/2026)
+
+### Resumo
+
+Implementação dos itens 13 a 28 do `ideias.md` (excluindo item 12 e 18, que eram testes propositais de webhooks, e item 26 já implementado no item 1).
+
+### Item 13 — Índices no Banco de Dados
+
+Adicionados `@@index` nos modelos do Prisma para performance:
+
+| Modelo | Índices |
+|--------|---------|
+| `empresa` | `nome`, `cnpj` |
+| `User` | `empresaId`, `cpf`, `email` |
+| `Chamado` | `empresaId`, `cpf`, `status`, `[empresaId, status]`, `ticket` |
+| `cpfs` | `empresaId`, `cpf` |
+| `tickets_fechados` | `empresaId`, `cpf`, `ticket` |
+| `avisos` | `empresaId`, `setor` |
+| `resumoPersona` | `cpf` |
+| `cpfsLeads` | `cpf`, `telefone` |
+
+### Item 14 — Tema Consistente
+
+- **`src/app/(atendimento)/components/modal-edit-user.tsx`**: Substituídas classes `dark:bg-zinc-900`, `dark:text-zinc-100`, etc. por variáveis CSS (`var(--surface)`, `var(--foreground)`, etc.)
+- **`src/app/userFacil/page.tsx`**: Adicionado suporte completo ao tema com variáveis CSS (antes usava apenas `border p-2 rounded` sem tema)
+
+### Item 15 — Skeleton Loaders
+
+- **`src/app/components/skeleton.tsx`** (novo): Componentes `Skeleton`, `SkeletonTable`, `SkeletonCard`
+- **`src/app/(atendimento)/all-tickets/loading.tsx`** (novo): Loading state com SkeletonTable
+
+### Item 16 — Componentes UI Reutilizáveis
+
+| Componente | Arquivo |
+|------------|---------|
+| `StatusBadge` | `src/app/components/status-badge.tsx` |
+| `PriorityBadge` | `src/app/components/priority-badge.tsx` |
+| `Spinner` | `src/app/components/spinner.tsx` |
+
+### Item 17 — Acessibilidade (ARIA)
+
+- **`modal_tandimento.tsx`**: Adicionado `role="dialog"`, `aria-modal="true"`, `aria-labelledby` no container; fechamento com tecla Escape
+- **`modal-edit-user.tsx`**: Mesmas melhorias de ARIA + Escape key
+
+### Item 19 — Docker USER node
+
+- **`dockerfile`**: Adicionado `USER node` antes do `EXPOSE` para segurança (container não roda mais como root)
+
+### Item 20 — CI/CD com Validação
+
+- **`.github/workflows/deploy.yml`** e **`deploy-homologa.yml`**: Adicionados steps de `checkout`, `setup-node`, `npm ci`, `npm run lint`, `npm run build` antes do deploy
+
+### Item 21 — Typo no layout
+
+- **`src/app/layout.tsx`**: Corrigido `ransition-colors` → `transition-colors`
+
+### Item 22 — .env.example
+
+- **`.env.example`** (novo): Template com todas as variáveis de ambiente documentadas (valores placeholder)
+
+### Item 23 — Typo no Schema
+
+- **`prisma/schema.prisma`**: Corrigido `chammados` → `chamados` no model `empresa`
+
+### Item 24 — Prettier
+
+- **`.prettierrc`** e **`.prettierignore`** (novos): Configuração de formatação automática
+
+### Item 25 — Documentação da API
+
+- **`src/app/api-docs/page.tsx`** (novo): Página com tabela de todos os endpoints, métodos, autenticação e descrição
+
+### Item 27 — Tipos Centralizados
+
+- **`src/types/chamado.ts`** (novo): Tipos `Chamado`, `HistoricoItem` + funções `getStatusColor()`, `getPriorityColor()`, `normalizarStatus()` centralizadas
+- Removidos tipos duplicados de `modal_tandimento.tsx`, `tickets/route.ts`, `tickets/search/route.ts`, `consulta/[ticket]/page.tsx`, `all-tickets/page.tsx`, `kanban-board.tsx`
+- Funções de cor e normalização agora importadas do arquivo central
+
+### Item 28 — Telefone Opcional no Portal
+
+- **`src/app/chamado/page.tsx`**: Adicionado campo "Telefone (opcional)" no formulário de abertura de chamado
+- **`src/app/api/tickets/route.ts`**: POST agora aceita `telefone` e registra no `phoneMap` via `registerPhone()` para permitir notificações WhatsApp mesmo para chamados abertos pelo portal web

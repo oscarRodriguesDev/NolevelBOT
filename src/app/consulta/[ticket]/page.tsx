@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { ThemeToggle } from "@/app/components/theme-toggle";
+import { getStatusColor } from "@/types/chamado";
 import {
   FaTicketAlt,
   FaUser,
@@ -122,23 +123,7 @@ export default function TicketPage() {
         ? "bg-yellow-500"
         : "bg-blue-600";
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "NOVO":
-        return "var(--status-new)";
-      case "EM_ANDAMENTO":
-        return "var(--status-in-progress)";
-      case "AGUARDANDO":
-        return "var(--status-waiting)";
-      case "CONCLUIDO":
-      case "FINALIZADO":
-        return "var(--status-completed)";
-      case "CANCELADO":
-        return "var(--status-cancelled)";
-      default:
-        return "var(--primary)";
-    }
-  };
+
 
   return (
     <div

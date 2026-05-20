@@ -22,12 +22,15 @@ model empresa {
   cnpj        String    @unique
   setores     String[]
   users       User[]
-  chammados   Chamado[]
+  chamados    Chamado[]
   cpfs        cpfs[]
   avisos      avisos[]
   databaseUrl String? // URL de conexão específica para esta empresa
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([nome])
+  @@index([cnpj])
 }
 
 //não precisa relacionar com os usuarios porque vai ser um banco por empresa
@@ -46,6 +49,10 @@ model User {
   chamados  Chamado[] @relation("AtendenteChamados")
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+
+  @@index([empresaId])
+  @@index([cpf])
+  @@index([email])
 }
 
 model Chamado {
@@ -65,6 +72,12 @@ model Chamado {
   atendente   User?    @relation("AtendenteChamados", fields: [atendenteId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([empresaId])
+  @@index([cpf])
+  @@index([status])
+  @@index([empresaId, status])
+  @@index([ticket])
 }
 
 // Modelo para armazenar CPFs e nomes dos usuários autorizados a usar o chatbot
@@ -76,6 +89,9 @@ model cpfs {
   nome      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([empresaId])
+  @@index([cpf])
 }
 
 //para gerar os dashboards de chamados fechados, para não poluir a tabela principal
@@ -89,8 +105,12 @@ model tickets_fechados {
   prioridade String
   anexoUrl   String?
   atendente  String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([empresaId])
+  @@index([cpf])
+  @@index([ticket])
 }
 
 //representa o quadro de avisos da empresa
@@ -105,6 +125,9 @@ model avisos {
   expiresAt DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+
+  @@index([empresaId])
+  @@index([setor])
 }
 
 
@@ -116,18 +139,8 @@ model resumoPersona {
   resumo    String //resumo da persona gerado pelo gpt, para ele se lembrar da personalidade do usuário
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
 
-model CompanyConfig {
-  id          String   @id @default(uuid())
-  databaseUrl String
-  aiProvider  String   @default("gpt") // "gpt" ou "gemini"
-  aiModel     String? // modelo específico (ex: gpt-4, gemini-pro)
-  aiApiKey    String?
-  companyName String?
-  companyLogo String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  @@index([cpf])
 }
 
 model cpfsLeads{
@@ -138,4 +151,7 @@ model cpfsLeads{
   empresa   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([cpf])
+  @@index([telefone])
 }
