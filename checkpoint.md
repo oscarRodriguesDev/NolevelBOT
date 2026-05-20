@@ -92,6 +92,7 @@
 | 2 | `a6d255a` | fix: matching bidirecional de setores - reconhece setor mesmo quando nome nao contem exatamente o input | 19/05/2026 |
 | 3 | `06a1d43` | fix: notificacao PUT usa 'em_atendimento' (valor real do frontend) e notifica em 'concluido' | 19/05/2026 |
 | 4 | `16e5834` | feat: notifica usuario em toda atualizacao do chamado com observacao | 19/05/2026 |
+| 5 | `3699ded` | feat: consulta de chamados mostra resumo completo com status, atendente, historico e observacoes | 19/05/2026 |
 
 ---
 
