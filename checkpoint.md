@@ -109,6 +109,7 @@
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
 | 1 | `3cb83f9` | feat: visualizacao Kanban com alternancia lista/kanban e status padronizados | 19/05/2026 |
+| 2 | `dc7b270` | docs: atualiza checkpoint com hash 3cb83f9 | 19/05/2026 |
 
 ---
 
