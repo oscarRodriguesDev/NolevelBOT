@@ -1,5 +1,7 @@
 "use client"
 
+import toast from "react-hot-toast"
+
 export default function LeadForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -34,7 +36,7 @@ export default function LeadForm() {
 
       window.location.href = `https://wa.me/${numeroWhatsapp}?text=${mensagem}`
     } catch (error) {
-      alert("Erro ao enviar formulário")
+      toast.error("Erro ao enviar formulário")
     }
   }
 

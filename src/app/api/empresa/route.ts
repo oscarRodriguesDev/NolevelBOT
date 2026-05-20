@@ -34,6 +34,11 @@ export async function GET(request: Request) {
     const cpf = searchParams.get('cpf')
 
     if (!cpf) {
+      const session = await getSessionOrFail(["GOD", "ADMIN", "GESTOR"])
+      if (!session) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      }
+
       const empresas = await prisma.empresa.findMany({
         select: {
           id: true,

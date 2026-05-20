@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { createPortal } from "react-dom"
 import { Camera, X, Lock, User as UserIcon, Mail, Loader2 } from "lucide-react"
 import { useSession } from "next-auth/react"
+import toast from "react-hot-toast"
 
 
 interface User {
@@ -97,12 +98,12 @@ export function UserProfileModal({ open, onClose }: Props) {
       onClose()
       window.location.reload()
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Falha ao atualizar perfil")
+      toast.error(error instanceof Error ? error.message : "Falha ao atualizar perfil")
     } finally {
       setLoading(false)
     }
   }
-  
+
    */
 
 const session = useSession()
@@ -154,8 +155,8 @@ const handleSubmit = async () => {
     setPassword("")
     setAvatarFile(null)
     onClose()
-  } catch (error) {
-    alert(error instanceof Error ? error.message : "Falha ao atualizar perfil")
+    } catch (error) {
+    toast.error(error instanceof Error ? error.message : "Falha ao atualizar perfil")
   } finally {
     setLoading(false)
   }

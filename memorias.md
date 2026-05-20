@@ -490,3 +490,37 @@ all-tickets/page.tsx
 - Filtros de nome, ticket, setor, prioridade funcionam em ambos os modos
 - Filtro de status funciona nos dois modos (em Kanban, filtra quais tickets aparecem nas colunas)
 - Refresh automático ao fechar modal garante consistência dos dados
+
+---
+
+## 20. MELHORIAS DE SEGURANÇA E QUALIDADE (19/05/2026)
+
+### Implementação dos itens 1-11 do `ideias.md`
+
+| Item | Mudança | Arquivos |
+|------|---------|----------|
+| 1 | Removido log de senha em plaintext | `api/auth/[...nextauth]/route.ts` |
+| 2 | Auth real em PUT/DELETE de tickets (usando session.user.id) | `api/tickets/route.ts`, `api/tickets/search/route.ts` |
+| 3 | GET empresas protegido (exceto consulta por CPF pública) | `api/empresa/route.ts` |
+| 4 | GET leads-network protegido | `api/leads-network/route.ts` |
+| 5-6 | Dependências fantasmas removidas | `package.json` |
+| 7 | Vitest configurado (scripts + vitest.config.ts) | `vitest.config.ts`, `package.json` |
+| 8 | Error boundaries (global + atendimento) | `src/app/error.tsx`, `src/app/(atendimento)/error.tsx` |
+| 9 | 26 `alert()` substituídos por `react-hot-toast` | 8 arquivos de UI |
+| 10 | Zod + React Hook Form instalados, schemas criados | `src/lib/validation.ts` |
+| 11 | Normalização de status nas rotas PUT de tickets | `api/tickets/route.ts`, `api/tickets/search/route.ts` |
+
+### Detalhes técnicos
+
+#### Autenticação em PUT/DELETE de tickets
+Antes: `getSessionOrFail()` era chamado sem `await` e o retorno era descartado — qualquer requisição com `userId` no body conseguia alterar qualquer chamado.
+Depois: `const session = await getSessionOrFail()` com verificação de `!session`, e `userId` passa a vir de `session.user.id` (ignorando o body).
+
+#### Toast notifications
+`react-hot-toast` já estava no `package.json` mas nunca era importado. Agora está configurado no `layout-client.tsx` com `<Toaster />` e todos os 26 `alert()` foram substituídos por `toast.success()` / `toast.error()`.
+
+#### Normalização de status
+Função `normalizarStatus()` adicionada nas rotas PUT que normaliza qualquer variação de status (maiúscula/minúscula, `em_andamento`, `aberto`, `concluido`) para os 5 valores padronizados: `NOVO`, `EM_ATENDIMENTO`, `AGUARDANDO`, `CONCLUIDO`, `CANCELADO`.
+
+#### Validação com Zod
+Schemas de validação centralizados em `src/lib/validation.ts` para: CPF, email, senha, criação de usuário, chamado, empresa e lead.

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import usuarios from "../../../../public/users/usuarios.png"
 import { useHeader } from "../layout"
+import toast from "react-hot-toast"
 
 
 // Interface para tipar os dados da empresa vindos da API
@@ -94,15 +95,14 @@ export default function CriarUsuarioPage() {
       })
 
       if (response.ok) {
-        alert("Usuário criado com sucesso!")
-        // Opcional: resetar form ou redirecionar
+        toast.success("Usuário criado com sucesso!")
       } else {
         const errorData = await response.json()
-        alert(`Erro: ${errorData.error}`)
+        toast.error(`Erro: ${errorData.error}`)
       }
     } catch (error) {
       console.error(error)
-      alert("Erro ao conectar com o servidor.")
+      toast.error("Erro ao conectar com o servidor.")
     } finally {
       setLoading(false)
     }

@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { getSessionOrFail } from "@/util/permission"
 
 export async function GET(req: NextRequest) {
+  const session = await getSessionOrFail(["GOD", "ADMIN", "GESTOR"])
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   try {
     const { searchParams } = new URL(req.url)
     const cpf = searchParams.get("cpf")

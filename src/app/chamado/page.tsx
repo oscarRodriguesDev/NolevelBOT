@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { LuCheck, LuLoader, LuArrowRight } from 'react-icons/lu'
 import { ThemeToggle } from '../components/theme-toggle'
 import { FileUpload } from '../components/fileInput'
+import toast from 'react-hot-toast'
 
 
 export default function TicketPageDirect() {
@@ -85,7 +86,7 @@ export default function TicketPageDirect() {
 
       setSubmitted(true)
     } catch {
-      alert('Erro ao processar. Tente novamente.')
+      toast.error('Erro ao processar. Tente novamente.')
     } finally {
       setLoading(false)
     }

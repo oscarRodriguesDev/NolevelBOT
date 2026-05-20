@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useHeader } from "../layout"
 import { FaTrash } from "react-icons/fa"
+import toast from "react-hot-toast"
 
 export default function CadastroCPFs() {
   const [nome, setNome] = useState("")
@@ -61,17 +62,15 @@ async function fetchCpfs() {
       const data = await res.json()
 
       if (!res.ok) {
-        alert(data.error || "Erro ao deletar")
+        toast.error(data.error || "Erro ao deletar")
         return
       }
 
-      // Atualiza a lista na tela de forma otimista ou busca novamente
       setCpfs(prev => prev.filter(item => item.cpf !== cpfToDelete))
-      alert("CPF deletado com sucesso")
+      toast.success("CPF deletado com sucesso")
       
-      // Opcional: fetchCpfs() se quiser garantir a sincronia com o banco
     } catch (error) {
-      alert("Erro ao deletar CPF")
+      toast.error("Erro ao deletar CPF")
     }
   }
 
@@ -89,18 +88,18 @@ async function fetchCpfs() {
       const data = await res.json()
 
       if (!res.ok) {
-        alert(data.error || "Erro ao cadastrar")
+        toast.error(data.error || "Erro ao cadastrar")
         return
       }
 
-      alert("CPF cadastrado com sucesso")
+      toast.success("CPF cadastrado com sucesso")
       setNome("")
       setCpf("")
       
       // Atualiza a lista após inserir
       fetchCpfs()
     } catch {
-      alert("Erro ao conectar com o servidor")
+      toast.error("Erro ao conectar com o servidor")
     }
   }
 
@@ -109,7 +108,7 @@ async function fetchCpfs() {
     e.preventDefault()
 
     if (!file) {
-      alert("Selecione um arquivo")
+      toast.error("Selecione um arquivo")
       return
     }
 
@@ -125,17 +124,16 @@ async function fetchCpfs() {
       const data = await res.json()
 
       if (!res.ok) {
-        alert(data.error || "Erro ao importar")
+        toast.error(data.error || "Erro ao importar")
         return
       }
 
-      alert(`Arquivo importado com sucesso (${data.inseridos ?? 0} registros)`)
+      toast.success(`Arquivo importado com sucesso (${data.inseridos ?? 0} registros)`)
       setFile(null)
       
-      // Atualiza a lista após importar lote
       fetchCpfs()
     } catch {
-      alert("Erro ao conectar com o servidor")
+      toast.error("Erro ao conectar com o servidor")
     }
   }
 

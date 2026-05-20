@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import toast from "react-hot-toast"
 
 interface Empresa {
   id: string
@@ -44,27 +45,27 @@ export default function CreateUserFacil() {
     e.preventDefault()
 
     if (!name.trim()) {
-      alert("Nome é obrigatório")
+      toast.error("Nome é obrigatório")
       return
     }
     if (!email.trim()) {
-      alert("Email é obrigatório")
+      toast.error("Email é obrigatório")
       return
     }
     if (!cpf.trim()) {
-      alert("CPF é obrigatório")
+      toast.error("CPF é obrigatório")
       return
     }
     if (!password.trim()) {
-      alert("Senha é obrigatória")
+      toast.error("Senha é obrigatória")
       return
     }
     if (!setor.trim()) {
-      alert("Setor é obrigatório")
+      toast.error("Setor é obrigatório")
       return
     }
     if (!empresaId) {
-      alert("Empresa é obrigatória")
+      toast.error("Empresa é obrigatória")
       return
     }
 
@@ -98,7 +99,7 @@ export default function CreateUserFacil() {
       setAvatar(null)
 
     } catch (error) {
-      alert(
+      toast.error(
         "Erro ao criar usuário: " +
           (error instanceof Error ? error.message : "Erro desconhecido")
       )

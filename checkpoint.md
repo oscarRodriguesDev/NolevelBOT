@@ -144,5 +144,54 @@
 
 ---
 
+## Sessão: 19/05/2026 (Implementação Itens 1-11)
+
+### Implementações realizadas:
+
+| Item | Descrição | Status |
+|------|-----------|--------|
+| 1 | Remove log de senha em plaintext em `[...nextauth]/route.ts` | ✅ |
+| 2 | Corrige autenticação em PUT/DELETE de tickets (main + search) | ✅ |
+| 3 | Adiciona proteção em GET empresas (exceto consulta por CPF pública) | ✅ |
+| 4 | Adiciona autenticação em GET leads-network | ✅ |
+| 5 | Remove dependência fantasma `prisma-client` | ✅ |
+| 6 | Remove dependência obscura `toast` | ✅ |
+| 7 | Configura Vitest + vitest.config.ts + scripts de teste | ✅ |
+| 8 | Cria error.tsx global + error.tsx para área de atendimento | ✅ |
+| 9 | Substitui 26 `alert()` por `react-hot-toast` em 8 arquivos | ✅ |
+| 10 | Instala react-hook-form + zod + @hookform/resolvers + cria `src/lib/validation.ts` | ✅ |
+| 11 | Adiciona `normalizarStatus()` nas rotas PUT de tickets | ✅ |
+
+### Arquivos criados:
+- `vitest.config.ts` — Configuração do Vitest
+- `src/app/error.tsx` — Error boundary global
+- `src/app/(atendimento)/error.tsx` — Error boundary da área logada
+- `src/lib/validation.ts` — Schemas Zod para validação de formulários
+
+### Arquivos modificados:
+- `package.json` — Remove `prisma-client`, `toast`; adiciona scripts `test`, `test:watch`
+- `src/app/api/auth/[...nextauth]/route.ts` — Remove console.log de senha
+- `src/app/api/tickets/route.ts` — Auth real em PUT/DELETE + normalizarStatus
+- `src/app/api/tickets/search/route.ts` — Auth real em PUT/DELETE + normalizarStatus
+- `src/app/api/empresa/route.ts` — Auth em GET (listagem)
+- `src/app/api/leads-network/route.ts` — Auth em GET
+- `src/app/layout-client.tsx` — Adiciona `<Toaster />` do react-hot-toast
+- `src/app/leads/page.tsx` — alert → toast
+- `src/app/(atendimento)/components/modal-edit-user.tsx` — alert → toast
+- `src/app/userFacil/page.tsx` — alert → toast
+- `src/app/chamado/page.tsx` — alert → toast
+- `src/app/chamado/[ticket]/page.tsx` — alert → toast (add import)
+- `src/app/(atendimento)/cpfs/page.tsx` — alert → toast (10 ocorrências)
+- `src/app/(atendimento)/gestao-de-usuarios/page.tsx` — alert → toast
+- `src/app/(atendimento)/empresa/create/page.tsx` — alert → toast
+
+### Commits realizados nesta sessão:
+
+| # | Hash | Mensagem | Data |
+|---|------|----------|------|
+| 1 | `pendente` | feat: implementa itens 1-11 do ideias.md - seguranca, testes, error boundaries, toast, validacao | 19/05/2026 |
+
+---
+
 ## Próximos Passos (planejados)
-- (a definir)
+- Itens 12+ do `ideias.md`: refatoração de webhooks duplicados, índices no banco, tema consistente, etc.

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Building2, CheckCircle2, Loader2 } from 'lucide-react'
 import { useHeader } from '../../layout'
+import toast from 'react-hot-toast'
 
 export default function CreateEmpresa() {
   const router = useRouter()
@@ -49,9 +50,9 @@ export default function CreateEmpresa() {
 
       if (!res.ok) throw new Error()
       router.push('/empresa')
-      router.refresh() // Garante que a lista atualize
+      router.refresh()
     } catch (error) {
-      alert('Erro ao criar empresa. Verifique os dados.')
+      toast.error('Erro ao criar empresa. Verifique os dados.')
     } finally {
       setLoading(false)
     }

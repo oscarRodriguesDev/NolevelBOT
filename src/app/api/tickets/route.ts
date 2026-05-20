@@ -9,6 +9,18 @@ import { getSessionOrFail } from '@/util/permission';
 import { getPhoneByCpf } from '@/lib/phoneMap';
 import { sendEvolutionText } from '@/lib/usedata';
 
+const STATUS_VALIDOS = ['NOVO', 'EM_ATENDIMENTO', 'AGUARDANDO', 'CONCLUIDO', 'CANCELADO'] as const
+
+function normalizarStatus(status: string): string {
+  const s = status?.toUpperCase().replace(/[^A-Z]/g, '') || ''
+  if (s.includes('NOVO')) return 'NOVO'
+  if (s.includes('ATENDIMENTO') || s.includes('ANDAMENTO')) return 'EM_ATENDIMENTO'
+  if (s.includes('AGUARDANDO')) return 'AGUARDANDO'
+  if (s.includes('CONCLUIDO') || s.includes('FINALIZADO')) return 'CONCLUIDO'
+  if (s.includes('CANCELADO')) return 'CANCELADO'
+  return status
+}
+
 
 
 // helper para validar sessão
@@ -251,7 +263,10 @@ export async function GET(req: NextRequest) {
 
 
 export async function PUT(req: NextRequest) {
-getSessionOrFail()
+  const session = await getSessionOrFail()
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
 
   try {
     const { searchParams } = new URL(req.url)
@@ -267,11 +282,8 @@ getSessionOrFail()
     }
 
     const body = await req.json()
-    const { descricao, historico, userId } = body
-
-    if (!userId) {
-      return NextResponse.json({ error: "Usuário não identificado" }, { status: 401 })
-    }
+    const { descricao, historico } = body
+    const userId = session.user.id
 
     const chamadoExistente = await prisma.chamado.findFirst({
       where: {
@@ -306,7 +318,7 @@ getSessionOrFail()
     const chamadoAtualizado = await prisma.chamado.update({
       where: { ticket: ticketNumber.trim() },
       data: {
-        status: estagio,
+        status: normalizarStatus(estagio),
         atendenteId: userId,
         descricao: descricao || chamadoExistente.descricao,
         historico: JSON.stringify(novoHistorico),
@@ -343,8 +355,10 @@ getSessionOrFail()
 
 
 export async function DELETE(req: NextRequest) {
-
-  getSessionOrFail()
+  const session = await getSessionOrFail()
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
   try {
     const { searchParams } = new URL(req.url)
     const ticketNumber = searchParams.get("atendimento")
