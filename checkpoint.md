@@ -113,5 +113,21 @@
 
 ---
 
+---
+
+## Sessão: 19/05/2026 (Kanban - Drag & Drop + 5 Colunas)
+
+### Pendentes antes do commit:
+- ~~`src/app/(atendimento)/all-tickets/kanban-board.tsx` - 5 colunas + drag and drop~~ ✅
+- ~~`memorias.md` - Seção 19 atualizada com drag and drop~~ ✅
+
+### Commits realizados nesta sessão:
+
+| # | Hash | Mensagem | Data |
+|---|------|----------|------|
+| 1 | `pendente` | feat: kanban com 5 colunas e drag-and-drop para mover chamados entre status | 19/05/2026 |
+
+---
+
 ## Próximos Passos (planejados)
 - (a definir)

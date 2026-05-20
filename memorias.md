@@ -439,12 +439,19 @@ Os status foram padronizados para valores consistentes e profissionais:
 ### Arquivos criados/modificados
 
 #### `src/app/(atendimento)/all-tickets/kanban-board.tsx` (novo)
-- Componente KanbanBoard que renderiza 3 colunas: **Novo**, **Em Atendimento**, **Aguardando**
+- Componente KanbanBoard que renderiza **5 colunas**: **Novo**, **Em Atendimento**, **Aguardando**, **Concluído**, **Cancelado**
 - Cada coluna exibe cards com: número do ticket, nome, setor, prioridade, data e atendente
 - Cores dos cards de prioridade: Baixa (verde), Normal (laranja), Alta (vermelho), Crítica (vermelho escuro)
-- Função `normalizeStatus()` que normaliza variações de status do banco para os 3 grupos
+- Função `normalizeStatus()` que normaliza variações de status do banco para os 5 grupos
+- **Drag and drop nativo (HTML5):** cards podem ser arrastados entre colunas
+  - `draggable` nos cards, `onDragStart`/`onDragEnd` no card, `onDragOver`/`onDragLeave`/`onDrop` na coluna
+  - Feedback visual: card arrastado fica semi-transparente e rotacionado; coluna alvo destaca borda
+  - Drop zone vazia exibe "Solte aqui" quando hover
+- Ao soltar card em coluna diferente, faz `PUT /api/tickets?atendimento=X&estagio=NOVO_STATUS` com `userId` da sessão
+- Se o drop for na mesma coluna, não faz nada (evita chamada desnecessária)
 - Clique em qualquer card abre o `ModalChamado` existente (reúso completo)
 - Ao concluir/fechar o modal, o Kanban faz refresh automático da lista
+- Grid responsivo: `grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5`
 
 #### `src/app/(atendimento)/all-tickets/page.tsx` (modificado)
 - Adicionado estado `viewMode: 'list' | 'kanban'` para alternar entre visualizações
@@ -466,16 +473,20 @@ Os status foram padronizados para valores consistentes e profissionais:
 ```
 all-tickets/page.tsx
   ├── [viewMode=list]  → Tabela (existente)
-  └── [viewMode=kanban] → KanbanBoard
+  └── [viewMode=kanban] → KanbanBoard (drag-and-drop)
                             ├── Coluna "Novo" (status NOVO)
                             ├── Coluna "Em Atendimento" (status ATENDIMENTO/ANDAMENTO)
                             ├── Coluna "Aguardando" (status AGUARDANDO)
+                            ├── Coluna "Concluído" (status CONCLUIDO)
+                            ├── Coluna "Cancelado" (status CANCELADO)
                             └── Card → clique → ModalChamado (mesmo componente da lista)
+                                  → arrastar → soltar em coluna → PUT /api/tickets
 ```
 
 ### Regras de negócio
-- Kanban mostra apenas chamados com status ativos (NOVO, EM_ATENDIMENTO, AGUARDANDO)
-- Status CONCLUIDO e CANCELADO não aparecem nas colunas (filtrados pelo backend)
+- Kanban mostra **todas as 5 colunas** de status disponíveis
+- Drag and drop move o chamado entre colunas, atualizando o status via API
+- Se o card for solto na mesma coluna, a operação é ignorada (sem chamada à API)
 - Filtros de nome, ticket, setor, prioridade funcionam em ambos os modos
 - Filtro de status funciona nos dois modos (em Kanban, filtra quais tickets aparecem nas colunas)
 - Refresh automático ao fechar modal garante consistência dos dados
