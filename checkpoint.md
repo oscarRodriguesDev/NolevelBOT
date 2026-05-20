@@ -248,4 +248,4 @@
 
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
-| 1 | `pendente` | Pendente de commit | 19/05/2026 |
+| 1 | `d16f650` | feat: implementa itens 13-28 do ideias.md - indices, tema, skeleton, componentes UI, ARIA, docker, CI, prettier, tipos centralizados, telefone no portal | 19/05/2026 |
