@@ -418,3 +418,64 @@ const setor = setores.find(s => {
 });
 ```
 Matching bidirecional: checa se o **nome do setor contém o input** OU se o **input contém o nome do setor**.
+
+---
+
+## 19. VISUALIZAÇÃO KANBAN (19/05/2026)
+
+### Objetivo
+Adicionar visualização em quadro Kanban para os chamados abertos, permitindo que o atendente alterne entre visualização em lista (tabela) e visualização em colunas (Kanban) para gerenciar chamados de forma mais visual e intuitiva.
+
+### Status padronizados
+Os status foram padronizados para valores consistentes e profissionais:
+| Valor | Display | Cor |
+|-------|---------|-----|
+| `NOVO` | Novo | Roxo (`--status-new`) |
+| `EM_ATENDIMENTO` | Em Atendimento | Laranja (`--status-in-progress`) |
+| `AGUARDANDO` | Aguardando | Magenta (`--status-waiting`) |
+| `CONCLUIDO` | Concluído | Verde (`--status-completed`) |
+| `CANCELADO` | Cancelado | Vermelho (`--status-cancelled`) |
+
+### Arquivos criados/modificados
+
+#### `src/app/(atendimento)/all-tickets/kanban-board.tsx` (novo)
+- Componente KanbanBoard que renderiza 3 colunas: **Novo**, **Em Atendimento**, **Aguardando**
+- Cada coluna exibe cards com: número do ticket, nome, setor, prioridade, data e atendente
+- Cores dos cards de prioridade: Baixa (verde), Normal (laranja), Alta (vermelho), Crítica (vermelho escuro)
+- Função `normalizeStatus()` que normaliza variações de status do banco para os 3 grupos
+- Clique em qualquer card abre o `ModalChamado` existente (reúso completo)
+- Ao concluir/fechar o modal, o Kanban faz refresh automático da lista
+
+#### `src/app/(atendimento)/all-tickets/page.tsx` (modificado)
+- Adicionado estado `viewMode: 'list' | 'kanban'` para alternar entre visualizações
+- Botões de toggle no header dos filtros com ícones (`LayoutList` e `Columns3` da Lucide)
+- Botão ativo recebe cor primária com texto branco; inativo fica transparente
+- Filtro de status agora preserva case (não aplica `.toLowerCase()`) para corresponder exatamente aos valores padronizados
+- Função `refreshTickets()` criada para permitir refresh manual do Kanban
+- Exibição de status na tabela agora usa `replace(/_/g, ' ')` (todas as ocorrências)
+
+#### `src/app/(atendimento)/components/modal_tandimento.tsx` (modificado)
+- Dropdown de status atualizado com valores padronizados:
+  - ~~`aberto`~~ → `NOVO`
+  - ~~`em_atendimento`~~ → `EM_ATENDIMENTO`
+  - ~~`aguardando`~~ → `AGUARDANDO`
+  - ~~`concluido`~~ → `CONCLUIDO`
+  - **Novo:** `CANCELADO`
+
+### Arquitetura do Kanban
+```
+all-tickets/page.tsx
+  ├── [viewMode=list]  → Tabela (existente)
+  └── [viewMode=kanban] → KanbanBoard
+                            ├── Coluna "Novo" (status NOVO)
+                            ├── Coluna "Em Atendimento" (status ATENDIMENTO/ANDAMENTO)
+                            ├── Coluna "Aguardando" (status AGUARDANDO)
+                            └── Card → clique → ModalChamado (mesmo componente da lista)
+```
+
+### Regras de negócio
+- Kanban mostra apenas chamados com status ativos (NOVO, EM_ATENDIMENTO, AGUARDANDO)
+- Status CONCLUIDO e CANCELADO não aparecem nas colunas (filtrados pelo backend)
+- Filtros de nome, ticket, setor, prioridade funcionam em ambos os modos
+- Filtro de status funciona nos dois modos (em Kanban, filtra quais tickets aparecem nas colunas)
+- Refresh automático ao fechar modal garante consistência dos dados

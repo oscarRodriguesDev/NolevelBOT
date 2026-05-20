@@ -96,5 +96,21 @@
 
 ---
 
+## Sessão: 19/05/2026 (Kanban Board)
+
+### Pendentes antes do commit:
+- ~~`src/app/(atendimento)/all-tickets/kanban-board.tsx` - Componente KanbanBoard com 3 colunas~~ ✅
+- ~~`src/app/(atendimento)/all-tickets/page.tsx` - Alternância Lista/Kanban + toggle~~ ✅
+- ~~`src/app/(atendimento)/components/modal_tandimento.tsx` - Status padronizados~~ ✅
+- ~~`memorias.md` - Seção 19 documentando Kanban~~ ✅
+
+### Commits realizados nesta sessão:
+
+| # | Hash | Mensagem | Data |
+|---|------|----------|------|
+| 1 | `pendente` | feat: visualizacao Kanban com alternancia lista/kanban e status padronizados | 19/05/2026 |
+
+---
+
 ## Próximos Passos (planejados)
 - (a definir)

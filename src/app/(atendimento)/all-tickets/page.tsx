@@ -1,7 +1,9 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { LayoutList, Columns3 } from "lucide-react"
 import { ModalChamado } from "../components/modal_tandimento"
+import KanbanBoard from "./kanban-board"
 import { useHeader } from '../layout'
 
 type Chamado = {
@@ -21,6 +23,7 @@ type Chamado = {
 export default function TicketsPage() {
   const [tickets, setTickets] = useState<Chamado[]>([])
   const [loading, setLoading] = useState(false)
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list')
 
   const [filters, setFilters] = useState({
     nome: "",
@@ -45,6 +48,10 @@ export default function TicketsPage() {
     })
   }, [setHeader])
 
+  function refreshTickets() {
+    fetchTickets(filters)
+  }
+
   // Função de busca principal
   const fetchTickets = useCallback(async (currentFilters: typeof filters) => {
     setLoading(true)
@@ -53,7 +60,7 @@ export default function TicketsPage() {
       
       Object.entries(currentFilters).forEach(([key, value]) => {
         if (value && value.trim() !== "") {
-          params.append(key, value.trim().toLowerCase())
+          params.append(key, key === 'status' ? value.trim() : value.trim().toLowerCase())
         }
       })
 
@@ -100,7 +107,7 @@ export default function TicketsPage() {
   }
 
   const fecharModal = () => {
-    fetchTickets(filters)
+    refreshTickets()
     setModalOpen(false)
     setSelectedTicket(null)
   }
@@ -133,14 +140,45 @@ export default function TicketsPage() {
       <div className="max-w-7xl mx-auto shadow-lg rounded-2xl border p-6 sm:p-8 lg:p-10 space-y-6" style={{ backgroundColor: "var(--surface)", borderColor: "var(--border-subtle)" }}>
         
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-3">
             <h2 className="text-xl font-bold flex items-center gap-2">
                Filtros em tempo real
                {loading && <span className="text-sm font-normal opacity-50 animate-pulse">(Atualizando...)</span>}
             </h2>
-            <button type="button" onClick={clearFilters} className="text-sm text-[var(--primary)] hover:underline">
-              Limpar todos
-            </button>
+            <div className="flex items-center gap-2">
+              <div
+                className="flex rounded-lg border overflow-hidden"
+                style={{ borderColor: "var(--border-subtle)" }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setViewMode('list')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors duration-200"
+                  style={{
+                    backgroundColor: viewMode === 'list' ? 'var(--primary)' : 'transparent',
+                    color: viewMode === 'list' ? '#fff' : 'var(--foreground)',
+                  }}
+                >
+                  <LayoutList size={14} />
+                  Lista
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('kanban')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors duration-200"
+                  style={{
+                    backgroundColor: viewMode === 'kanban' ? 'var(--primary)' : 'transparent',
+                    color: viewMode === 'kanban' ? '#fff' : 'var(--foreground)',
+                  }}
+                >
+                  <Columns3 size={14} />
+                  Kanban
+                </button>
+              </div>
+              <button type="button" onClick={clearFilters} className="text-sm text-[var(--primary)] hover:underline whitespace-nowrap">
+                Limpar todos
+              </button>
+            </div>
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-[var(--border-subtle)]">
@@ -174,60 +212,69 @@ export default function TicketsPage() {
               className="border p-3 rounded-lg bg-[var(--surface-elevated)] border-[var(--border-subtle)] outline-none"
             >
               <option value="">Status (Todos)</option>
-              <option value="novo">Novo</option>
-              <option value="em_atendimento">Em Atendimento</option>
-              <option value="aguardando">Aguardando</option>
-              <option value="concluido">Concluído</option>
+              <option value="NOVO">Novo</option>
+              <option value="EM_ATENDIMENTO">Em Atendimento</option>
+              <option value="AGUARDANDO">Aguardando</option>
+              <option value="CONCLUIDO">Concluído</option>
+              <option value="CANCELADO">Cancelado</option>
             </select>
           </div>
         </div>
 
-        <div className="overflow-x-auto rounded-xl border border-[var(--border-subtle)]">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left border-b bg-[var(--surface-elevated)] border-[var(--border-subtle)]">
-                <th className="py-3 px-4">Ticket</th>
-                <th className="py-3 px-4">Nome</th>
-                <th className="py-3 px-4">Setor</th>
-                <th className="py-3 px-4">Prioridade</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4">Atendente</th>
-                <th className="py-3 px-4">Data</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tickets.length === 0 && !loading ? (
-                <tr><td colSpan={7} className="text-center py-10 opacity-50">Nenhum chamado encontrado.</td></tr>
-              ) : (
-                tickets.map(ticket => (
-                  <tr
-                    key={ticket.id || ticket.ticket}
-                    onClick={() => abrirModal(ticket.ticket)}
-                    className={`hover:bg-[var(--surface-elevated)] transition cursor-pointer border-b last:border-0 border-[var(--border-subtle)] ${loading ? 'opacity-50' : ''}`}
-                  >
-                    <td className="py-4 px-4 font-bold text-[var(--primary)]">{ticket.ticket}</td>
-                    <td className="py-4 px-4">{ticket.nome}</td>
-                    <td className="py-4 px-4">{ticket.setor}</td>
-                    <td className="py-4 px-4">
-                      <span className="px-3 py-1 rounded-full text-[10px] font-bold text-white uppercase" style={{ backgroundColor: getPriorityColor(ticket.prioridade) }}>
-                        {ticket.prioridade}
-                      </span>
-                    </td>
-                    <td className="py-4 px-4">
-                      <span className="px-3 py-1 rounded-full text-[10px] font-bold text-white uppercase" style={{ backgroundColor: getStatusColor(ticket.status) }}>
-                        {ticket.status?.replace('_', ' ')}
-                      </span>
-                    </td>
-                    <td className="py-4 px-4">
-                      {typeof ticket.atendente === 'string' ? ticket.atendente : (ticket.atendente?.name || "Pendente")}
-                    </td>
-                    <td className="py-4 px-4">{new Date(ticket.createdAt).toLocaleDateString("pt-BR")}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+        {viewMode === 'list' ? (
+          <div className="overflow-x-auto rounded-xl border border-[var(--border-subtle)]">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left border-b bg-[var(--surface-elevated)] border-[var(--border-subtle)]">
+                  <th className="py-3 px-4">Ticket</th>
+                  <th className="py-3 px-4">Nome</th>
+                  <th className="py-3 px-4">Setor</th>
+                  <th className="py-3 px-4">Prioridade</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4">Atendente</th>
+                  <th className="py-3 px-4">Data</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tickets.length === 0 && !loading ? (
+                  <tr><td colSpan={7} className="text-center py-10 opacity-50">Nenhum chamado encontrado.</td></tr>
+                ) : (
+                  tickets.map(ticket => (
+                    <tr
+                      key={ticket.id || ticket.ticket}
+                      onClick={() => abrirModal(ticket.ticket)}
+                      className={`hover:bg-[var(--surface-elevated)] transition cursor-pointer border-b last:border-0 border-[var(--border-subtle)] ${loading ? 'opacity-50' : ''}`}
+                    >
+                      <td className="py-4 px-4 font-bold text-[var(--primary)]">{ticket.ticket}</td>
+                      <td className="py-4 px-4">{ticket.nome}</td>
+                      <td className="py-4 px-4">{ticket.setor}</td>
+                      <td className="py-4 px-4">
+                        <span className="px-3 py-1 rounded-full text-[10px] font-bold text-white uppercase" style={{ backgroundColor: getPriorityColor(ticket.prioridade) }}>
+                          {ticket.prioridade}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className="px-3 py-1 rounded-full text-[10px] font-bold text-white uppercase" style={{ backgroundColor: getStatusColor(ticket.status) }}>
+                          {ticket.status?.replace(/_/g, ' ')}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4">
+                        {typeof ticket.atendente === 'string' ? ticket.atendente : (ticket.atendente?.name || "Pendente")}
+                      </td>
+                      <td className="py-4 px-4">{new Date(ticket.createdAt).toLocaleDateString("pt-BR")}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <KanbanBoard
+            tickets={tickets}
+            loading={loading}
+            onRefresh={refreshTickets}
+          />
+        )}
       </div>
 
       <ModalChamado

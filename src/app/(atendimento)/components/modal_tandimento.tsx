@@ -245,10 +245,11 @@ export function ModalChamado({
                   color: "var(--foreground)",
                 }}
               >
-                <option value="aberto">Aberto</option>
-                <option value="em_atendimento">Em atendimento</option>
-                <option value="aguardando">Aguardando</option>
-                <option value="concluido">Concluído</option>
+                <option value="NOVO">Novo</option>
+                <option value="EM_ATENDIMENTO">Em Atendimento</option>
+                <option value="AGUARDANDO">Aguardando</option>
+                <option value="CONCLUIDO">Concluído</option>
+                <option value="CANCELADO">Cancelado</option>
               </select>
             </div>
 
