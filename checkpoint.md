@@ -125,7 +125,7 @@
 
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
-| 1 | `pendente` | feat: kanban com 5 colunas e drag-and-drop para mover chamados entre status | 19/05/2026 |
+| 1 | `b334756` | feat: kanban com 5 colunas e drag-and-drop para mover chamados entre status | 19/05/2026 |
 
 ---
 
