@@ -35,7 +35,7 @@ async function notificarCliente(cpf: string, ticket: string, etapa: 'criado' | '
     } else if (etapa === 'finalizado') {
       mensagem = `Olá! Seu chamado *${ticket}* foi finalizado. Agradecemos pelo contato! Se precisar de algo, é só nos chamar novamente.`;
     } else {
-      mensagem = `Olá! Seu chamado *${ticket}* foi atualizado${nomeAtendente ? ` por *${nomeAtendente}*` : ''}.${observacao ? `\n\n📝 *Observação:* ${observacao}` : ''}\n\nFique tranquilo que estamos acompanhando.`;
+      mensagem = `Olá! Seu chamado *${ticket}* foi atualizado${nomeAtendente ? ` por *${nomeAtendente}*` : ''}.${observacao ? `\n\n📝 *Informação:* ${observacao}` : ''}\n\nFique tranquilo que estamos acompanhando.`;
     }
 
     await sendEvolutionText(contato.instance, contato.telefone, mensagem);
