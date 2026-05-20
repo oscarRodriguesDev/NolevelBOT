@@ -126,6 +126,7 @@
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
 | 1 | `b334756` | feat: kanban com 5 colunas e drag-and-drop para mover chamados entre status | 19/05/2026 |
+| 2 | `8f1f2d5` | docs: atualiza checkpoint com hash b334756 | 19/05/2026 |
 
 ---
 
