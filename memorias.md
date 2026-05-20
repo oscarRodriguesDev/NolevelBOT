@@ -574,6 +574,7 @@ Adicionados `@@index` nos modelos do Prisma para performance:
 ### Item 19 — Docker USER node
 
 - **`dockerfile`**: Adicionado `USER node` antes do `EXPOSE` para segurança (container não roda mais como root)
+- **`dockerfile`**: Adicionado `RUN mkdir -p /app/data && chown -R node:node /app/data` para que o `phoneMap.json` possa ser escrito pelo usuário `node`
 
 ### Item 20 — CI/CD com Validação
 

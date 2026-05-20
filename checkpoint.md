@@ -249,3 +249,6 @@
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
 | 1 | `d16f650` | feat: implementa itens 13-28 do ideias.md - indices, tema, skeleton, componentes UI, ARIA, docker, CI, prettier, tipos centralizados, telefone no portal | 19/05/2026 |
+| 2 | `874e232` | chore: atualiza package-lock.json para sync com docker build | 19/05/2026 |
+| 3 | `f06cc6c` | fix: altera npm ci para npm install no dockerfile para evitar conflito de lockfile | 19/05/2026 |
+| 4 | `907f9d1` | fix: cria diretorio /app/data com permissao para node user no dockerfile - webhook24 nao salvava phoneMap | 19/05/2026 |
