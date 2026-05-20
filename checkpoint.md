@@ -108,7 +108,7 @@
 
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
-| 1 | `pendente` | feat: visualizacao Kanban com alternancia lista/kanban e status padronizados | 19/05/2026 |
+| 1 | `3cb83f9` | feat: visualizacao Kanban com alternancia lista/kanban e status padronizados | 19/05/2026 |
 
 ---
 
