@@ -24,18 +24,21 @@ type HistoricoItem = {
   atendente?: string
 }
 
-async function notificarCliente(cpf: string, ticket: string, etapa: 'criado' | 'em_andamento' | 'finalizado', nomeAtendente?: string) {
+async function notificarCliente(cpf: string, ticket: string, etapa: 'criado' | 'atualizado' | 'finalizado', nomeAtendente?: string, observacao?: string) {
   try {
     const contato = getPhoneByCpf(cpf);
     if (!contato) return;
 
-    const mensagens: Record<string, string> = {
-      criado: `Olá! Seu chamado *${ticket}* foi criado com sucesso! Nossa equipe já foi notificada e em breve alguém começará a tratar.`,
-      em_andamento: `Olá! Seu chamado *${ticket}* começou a ser tratado${nomeAtendente ? ` por *${nomeAtendente}*` : ''}! Fique tranquilo que estamos resolvendo.`,
-      finalizado: `Olá! Seu chamado *${ticket}* foi finalizado. Agradecemos pelo contato! Se precisar de algo, é só nos chamar novamente.`,
-    };
+    let mensagem = '';
+    if (etapa === 'criado') {
+      mensagem = `Olá! Seu chamado *${ticket}* foi criado com sucesso! Nossa equipe já foi notificada e em breve alguém começará a tratar.`;
+    } else if (etapa === 'finalizado') {
+      mensagem = `Olá! Seu chamado *${ticket}* foi finalizado. Agradecemos pelo contato! Se precisar de algo, é só nos chamar novamente.`;
+    } else {
+      mensagem = `Olá! Seu chamado *${ticket}* foi atualizado${nomeAtendente ? ` por *${nomeAtendente}*` : ''}.${observacao ? `\n\n📝 *Observação:* ${observacao}` : ''}\n\nFique tranquilo que estamos acompanhando.`;
+    }
 
-    await sendEvolutionText(contato.instance, contato.telefone, mensagens[etapa]);
+    await sendEvolutionText(contato.instance, contato.telefone, mensagem);
     console.log(`📨 Notificação enviada: ${ticket} -> ${etapa}`);
   } catch (error) {
     console.error('Erro ao notificar cliente:', error);
@@ -320,12 +323,15 @@ getSessionOrFail()
       },
     })
 
-    const estagioLower = estagio.toLowerCase();
-    if (estagioLower === "em_atendimento") {
-      notificarCliente(chamadoExistente.cpf, chamadoExistente.ticket, 'em_andamento', chamadoAtualizado.atendente?.name);
-    } else if (estagioLower === "concluido") {
-      notificarCliente(chamadoExistente.cpf, chamadoExistente.ticket, 'finalizado', chamadoAtualizado.atendente?.name);
-    }
+    let observacao = '';
+    try {
+      const historicoParsed: HistoricoItem[] = JSON.parse(historico || '[]');
+      const ultimo = historicoParsed[historicoParsed.length - 1];
+      if (ultimo?.observacao) observacao = ultimo.observacao;
+    } catch {}
+
+    const etapa = estagio.toLowerCase() === 'concluido' ? 'finalizado' : 'atualizado';
+    notificarCliente(chamadoExistente.cpf, chamadoExistente.ticket, etapa, chamadoAtualizado.atendente?.name, observacao);
 
     return NextResponse.json(chamadoAtualizado, { status: 200 })
   } catch (error) {
