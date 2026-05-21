@@ -268,7 +268,41 @@
 | 5 | 🔴 Crítico | `gestao-de-usuarios/page.tsx` | Setores da empresa errada | Fix via empresa GET role-aware |
 | 6 | 🔴 Crítico | `api/empresa/route.ts` — GET | Retornava todas empresas | GOD vê todas, demais vêem só a própria |
 
-### Correções adicionais nesta sessão:
+### Commits realizados nesta sessão:
+
+| # | Hash | Mensagem | Data |
+|---|------|----------|------|
+| 1 | `ec91ead` | fix: corrige vazamento de dados multi-tenancy entre empresas | 20/05/2026 |
+| 2 | `3e4b99c` | docs: atualiza checkpoint com hash ec91ead | 20/05/2026 |
+| 3 | `19438aa` | docs: adiciona hash 3e4b99c no checkpoint | 20/05/2026 |
+| 4 | `53a681c` | docs: add hash 19438aa ao checkpoint | 20/05/2026 |
+| 5 | `fdc5cf9` | fix: tickets GET role-aware + consulta publica usa search route | 20/05/2026 |
+| 6 | `faa6265` | docs: atualiza memorias e checkpoint com fixes 7 e 8 | 20/05/2026 |
+
+---
+
+## Sessão: 20/05/2026 (GOD Cria Usuários + Lista de Admins)
+
+### Mudanças realizadas:
+
+| # | Mudança | Descrição |
+|---|---------|-----------|
+| 1 | `api/users/route.ts` | GOD agora pode criar usuários no mesmo form (seletor de empresa + todas roles liberadas) |
+| 2 | `api/users/admins/route.ts` (novo) | GET lista admins, PUT edita, DELETE remove (tudo restrito a GOD) |
+| 3 | `gestao-de-usuarios/page.tsx` | GOD vê seletor de empresa + papel Master no formulário |
+| 4 | `cpfs/page.tsx` | GOD vê tabela de admins com nome, CPF, empresa, setor, editar/apagar |
+
+### Detalhes
+
+- **API `/api/users/admins`**: GET (listar), PUT (editar nome/email/cpf/setor), DELETE (remover admin por id)
+- **Formulário de criação**: GOD vê campo extra "Empresa" para selecionar a empresa destino
+- **Lista de admins**: Exibida na página de CPFs, visível apenas para GOD, com edição inline e exclusão com confirmação
+
+### Commits realizados nesta sessão:
+
+| # | Hash | Mensagem | Data |
+|---|------|----------|------|
+| 1 | `ab2654c` | feat: GOD cria usuarios no form padrao + lista de admins na pagina de CPFs | 20/05/2026 |
 
 | # | Fix | Descrição |
 |---|-----|-----------|
@@ -284,3 +318,4 @@
 | 3 | `19438aa` | docs: adiciona hash 3e4b99c no checkpoint | 20/05/2026 |
 | 4 | `53a681c` | docs: add hash 19438aa ao checkpoint | 20/05/2026 |
 | 5 | `fdc5cf9` | fix: tickets GET role-aware + consulta publica usa search route | 20/05/2026 |
+| 6 | `faa6265` | docs: atualiza memorias e checkpoint com fixes 7 e 8 | 20/05/2026 |

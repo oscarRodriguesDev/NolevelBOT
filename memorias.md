@@ -689,3 +689,42 @@ if (userRole === "ATENDENTE") {
 **Correção:** Agora chamam `/api/tickets/search?cpf=X` e `/api/tickets/search?ticket=X`, que funcionam sem autenticação (escopo natural por CPF/ticket).
 - `src/app/consulta/page.tsx` — URL alterada
 - `src/app/consulta/[ticket]/page.tsx` — URL alterada
+
+---
+
+## 23. GOD CRIA USUÁRIOS NO FORM PADRÃO + LISTA DE ADMINS (20/05/2026)
+
+### Mudanças
+
+#### 1. GOD liberado no form de criação de usuários (`api/users/route.ts`)
+Antes: GOD era bloqueado com "GOD deve usar a rota específica de criação".
+Agora: GOD pode criar qualquer papel e selecionar a empresa destino via campo `empresaId` no form.
+
+#### 2. Nova API `/api/users/admins` (restrita a GOD)
+| Método | Função |
+|--------|--------|
+| `GET` | Lista todos usuários com role ADMIN (nome, CPF, email, empresa, setor) |
+| `PUT` | Edita dados de um admin (nome, email, CPF, setor) |
+| `DELETE` | Remove um admin por ID |
+
+#### 3. Formulário `gestao-de-usuarios/page.tsx`
+- GOD vê campo extra "Empresa" (dropdown com todas empresas)
+- GOD também vê opção "Master" no seletor de Papel
+- Demais usuários: comportamento inalterado
+
+#### 4. Página `cpfs/page.tsx` — Lista de Administradores
+- Apenas GOD vê a seção "Administradores Cadastrados"
+- Tabela com: Nome, CPF, Empresa, Setor, Ações (Editar/Apagar)
+- Edição inline com formulário dentro da própria página
+- Exclusão com confirmação (`confirm()`)
+
+### Arquivos criados
+- `src/app/api/users/admins/route.ts` — CRUD de administradores
+
+### Arquivos modificados
+- `src/app/api/users/route.ts` — GOD liberado + empresaId opcional
+- `src/app/(atendimento)/gestao-de-usuarios/page.tsx` — GOD mode + empresa selector
+- `src/app/(atendimento)/cpfs/page.tsx` — Lista de admins (só GOD)
+
+### Build
+- `npm run build` — compilado com sucesso ✅
