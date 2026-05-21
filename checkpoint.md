@@ -268,4 +268,8 @@
 | 5 | 🔴 Crítico | `gestao-de-usuarios/page.tsx` | Setores da empresa errada | Fix via empresa GET role-aware |
 | 6 | 🔴 Crítico | `api/empresa/route.ts` — GET | Retornava todas empresas | GOD vê todas, demais vêem só a própria |
 
-### Commits realizados nesta sessão: (a fazer)
+### Commits realizados nesta sessão:
+
+| # | Hash | Mensagem | Data |
+|---|------|----------|------|
+| 1 | `ec91ead` | fix: corrige vazamento de dados multi-tenancy entre empresas | 20/05/2026 |
