@@ -273,3 +273,4 @@
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
 | 1 | `ec91ead` | fix: corrige vazamento de dados multi-tenancy entre empresas | 20/05/2026 |
+| 2 | `3e4b99c` | docs: atualiza checkpoint com hash ec91ead | 20/05/2026 |
