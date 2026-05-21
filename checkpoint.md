@@ -268,6 +268,13 @@
 | 5 | 🔴 Crítico | `gestao-de-usuarios/page.tsx` | Setores da empresa errada | Fix via empresa GET role-aware |
 | 6 | 🔴 Crítico | `api/empresa/route.ts` — GET | Retornava todas empresas | GOD vê todas, demais vêem só a própria |
 
+### Correções adicionais nesta sessão:
+
+| # | Fix | Descrição |
+|---|-----|-----------|
+| 7 | Tickets GET role-aware | Só ATENDENTE filtra por setor; ADMIN/GESTOR/GOD veem todos setores |
+| 8 | Consulta pública | /consulta e /consulta/[ticket] agora usam /api/tickets/search (funciona sem auth) |
+
 ### Commits realizados nesta sessão:
 
 | # | Hash | Mensagem | Data |
@@ -275,3 +282,5 @@
 | 1 | `ec91ead` | fix: corrige vazamento de dados multi-tenancy entre empresas | 20/05/2026 |
 | 2 | `3e4b99c` | docs: atualiza checkpoint com hash ec91ead | 20/05/2026 |
 | 3 | `19438aa` | docs: adiciona hash 3e4b99c no checkpoint | 20/05/2026 |
+| 4 | `53a681c` | docs: add hash 19438aa ao checkpoint | 20/05/2026 |
+| 5 | `fdc5cf9` | fix: tickets GET role-aware + consulta publica usa search route | 20/05/2026 |

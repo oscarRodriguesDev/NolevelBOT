@@ -672,3 +672,20 @@ const chamado = await prisma.chamado.findFirst({
 - ✅ Bot WhatsApp continua funcionando via CPF (escopo natural)
 - ✅ Webhooks mantidos (CPF → empresaId via registro)
 - Build validado com `npm run build` — sem erros
+
+### Correções adicionais (20/05/2026)
+
+#### Fix 7 — Tickets GET role-aware para filtro de setor
+**Problema:** O GET de tickets SEMPRE filtrava por `setor: userSetor`, fazendo com que ADMIN e GESTOR só vissem chamados do próprio setor, não da empresa inteira.
+**Correção:** Apenas ATENDENTE tem filtro de setor automático. ADMIN, GESTOR e GOD veem todos os setores da empresa.
+```typescript
+if (userRole === "ATENDENTE") {
+  where.setor = userSetor
+}
+```
+
+#### Fix 8 — Páginas públicas de consulta usando API errada
+**Problema:** As páginas `/consulta` e `/consulta/[ticket]` chamavam `/api/tickets?cpf=X` e `/api/tickets?ticket=X`, que exigem autenticação. Por serem páginas públicas, retornavam 401.
+**Correção:** Agora chamam `/api/tickets/search?cpf=X` e `/api/tickets/search?ticket=X`, que funcionam sem autenticação (escopo natural por CPF/ticket).
+- `src/app/consulta/page.tsx` — URL alterada
+- `src/app/consulta/[ticket]/page.tsx` — URL alterada
