@@ -168,6 +168,12 @@ export async function GET(req: NextRequest) {
 
     const where: Prisma.ChamadoWhereInput = {}
 
+    // Se for chamada autenticada (web UI), filtra por empresaId
+    const session = await getSessionOrFail()
+    if (session?.user?.empresaId) {
+      where.empresaId = session.user.empresaId
+    }
+
     if (ticket) {
       where.ticket = ticket
     } else if (cpf) {

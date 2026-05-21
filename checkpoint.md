@@ -252,3 +252,20 @@
 | 2 | `874e232` | chore: atualiza package-lock.json para sync com docker build | 19/05/2026 |
 | 3 | `f06cc6c` | fix: altera npm ci para npm install no dockerfile para evitar conflito de lockfile | 19/05/2026 |
 | 4 | `907f9d1` | fix: cria diretorio /app/data com permissao para node user no dockerfile - webhook24 nao salvava phoneMap | 19/05/2026 |
+
+---
+
+## Sessão: 20/05/2026 (Correção Multi-Tenancy)
+
+### Bugs corrigidos:
+
+| # | Severidade | Arquivo | Problema | Fix |
+|---|-----------|---------|----------|-----|
+| 1 | 🔴 Crítico | `api/cpfs/route.ts` — DELETE | Deletava CPF de qualquer empresa | Adicionado findFirst com empresaId antes de deletar |
+| 2 | 🔴 Crítico | `api/tickets/route.ts` — PUT | Atualizava chamado de qualquer empresa | Adicionado empresaId no where |
+| 3 | 🔴 Crítico | `api/tickets/route.ts` — DELETE | Movia chamado de qualquer empresa | Adicionado empresaId no where |
+| 4 | 🔴 Crítico | `api/tickets/search/route.ts` — GET | Retornava chamados de todas empresas | Adicionado empresaId quando autenticado |
+| 5 | 🔴 Crítico | `gestao-de-usuarios/page.tsx` | Setores da empresa errada | Fix via empresa GET role-aware |
+| 6 | 🔴 Crítico | `api/empresa/route.ts` — GET | Retornava todas empresas | GOD vê todas, demais vêem só a própria |
+
+### Commits realizados nesta sessão: (a fazer)

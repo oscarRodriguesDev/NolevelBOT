@@ -610,3 +610,65 @@ Adicionados `@@index` nos modelos do Prisma para performance:
 
 - **`src/app/chamado/page.tsx`**: Adicionado campo "Telefone (opcional)" no formulário de abertura de chamado
 - **`src/app/api/tickets/route.ts`**: POST agora aceita `telefone` e registra no `phoneMap` via `registerPhone()` para permitir notificações WhatsApp mesmo para chamados abertos pelo portal web
+
+---
+
+## 22. CORREÇÃO DE MULTI-TENANCY — DADOS ENTRE EMPRESAS (20/05/2026)
+
+### Problemas identificados
+
+Diversos bugs críticos de **vazamento de dados entre empresas (multi-tenancy)** foram encontrados e corrigidos:
+
+| # | Severidade | Arquivo | Problema |
+|---|-----------|---------|----------|
+| 1 | 🔴 Crítico | `api/cpfs/route.ts` — DELETE | Deletava CPF de QUALQUER empresa sem verificar empresaId |
+| 2 | 🔴 Crítico | `api/tickets/route.ts` — PUT | Atualizava chamado de QUALQUER empresa sem verificar empresaId |
+| 3 | 🔴 Crítico | `api/tickets/route.ts` — DELETE | Movia chamado para fechados de QUALQUER empresa sem verificar empresaId |
+| 4 | 🔴 Crítico | `api/tickets/search/route.ts` — GET | Retornava chamados de TODAS as empresas sem autenticação |
+| 5 | 🔴 Crítico | `gestao-de-usuarios/page.tsx` | Exibia setores da primeira empresa do banco, não da empresa do usuário |
+| 6 | 🔴 Crítico | `api/empresa/route.ts` — GET | Retornava TODAS as empresas para qualquer usuário logado |
+
+### Correções aplicadas
+
+#### Fix 1 — CPF DELETE escopado por empresaId (`api/cpfs/route.ts`)
+```typescript
+// Antes: deletava qualquer CPF sem verificar empresa
+await prisma.cpfs.delete({ where: { cpf } })
+
+// Depois: verifica se o CPF pertence à empresa do usuário
+const registro = await prisma.cpfs.findFirst({ where: { cpf, empresaId } })
+if (!registro) return error 404
+await prisma.cpfs.delete({ where: { cpf } })
+```
+
+#### Fix 2 — Empresa GET filtrando por role (`api/empresa/route.ts`)
+- Se o usuário é **GOD**: retorna todas as empresas (admin)
+- Se o usuário é **ADMIN/GESTOR**: retorna apenas a própria empresa
+- A página `gestao-de-usuarios/page.tsx` passa a receber os setores corretos
+
+#### Fix 3 — Tickets PUT escopado por empresaId (`api/tickets/route.ts`)
+```typescript
+// Adicionado empresaId no where do findFirst
+const chamadoExistente = await prisma.chamado.findFirst({
+  where: { ticket: ticketNumber.trim(), empresaId }
+})
+```
+
+#### Fix 4 — Tickets DELETE escopado por empresaId (`api/tickets/route.ts`)
+```typescript
+// Adicionado empresaId no where do findFirst
+const chamado = await prisma.chamado.findFirst({
+  where: { ticket: ticketNumber.trim(), empresaId }
+})
+```
+
+#### Fix 5 — Tickets search com empresaId quando autenticado (`api/tickets/search/route.ts`)
+- Quando chamado com sessão (web UI): filtra por empresaId
+- Quando chamado sem sessão (bot via `StatusChamado`): mantém busca por CPF/ticket (escopo natural)
+
+### Impacto
+- ✅ GOD continua vendo todas as empresas (admin)
+- ✅ ADMIN/GESTOR vêem apenas dados da própria empresa
+- ✅ Bot WhatsApp continua funcionando via CPF (escopo natural)
+- ✅ Webhooks mantidos (CPF → empresaId via registro)
+- Build validado com `npm run build` — sem erros

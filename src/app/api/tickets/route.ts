@@ -264,6 +264,7 @@ export async function PUT(req: NextRequest) {
     const body = await req.json()
     const { descricao, historico } = body
     const userId = session.user.id
+    const empresaId = session.user.empresaId
 
     const chamadoExistente = await prisma.chamado.findFirst({
       where: {
@@ -271,6 +272,7 @@ export async function PUT(req: NextRequest) {
           equals: ticketNumber.trim(),
           mode: "insensitive",
         },
+        empresaId,
       },
     })
 
@@ -347,12 +349,15 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Número do ticket não fornecido" }, { status: 400 })
     }
 
+    const empresaId = session.user.empresaId
+
     const chamado = await prisma.chamado.findFirst({
       where: {
         ticket: {
           equals: ticketNumber.trim(),
           mode: "insensitive",
         },
+        empresaId,
       },
       include: {
         atendente: {

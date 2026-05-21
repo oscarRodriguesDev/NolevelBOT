@@ -39,7 +39,24 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
       }
 
-      const empresas = await prisma.empresa.findMany({
+      const userRole = session.user.role
+      const userEmpresaId = session.user.empresaId
+
+      // GOD vê todas as empresas; demais roles vêem apenas a própria empresa
+      if (userRole === "GOD") {
+        const empresas = await prisma.empresa.findMany({
+          select: {
+            id: true,
+            nome: true,
+            cnpj: true,
+            setores: true,
+          },
+        })
+        return NextResponse.json(empresas)
+      }
+
+      const empresa = await prisma.empresa.findUnique({
+        where: { id: userEmpresaId },
         select: {
           id: true,
           nome: true,
@@ -48,7 +65,14 @@ export async function GET(request: Request) {
         },
       })
 
-      return NextResponse.json(empresas)
+      if (!empresa) {
+        return NextResponse.json(
+          { error: "Empresa não encontrada" },
+          { status: 404 }
+        )
+      }
+
+      return NextResponse.json(empresa)
     }
 
     const registro = await prisma.cpfs.findUnique({

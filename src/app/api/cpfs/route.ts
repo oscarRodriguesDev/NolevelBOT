@@ -227,6 +227,16 @@ export async function DELETE(req: NextRequest) {
   if (!session ) {  
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
   }
+
+  const empresaId = session.user.empresaId
+
+  if (!empresaId) {
+    return NextResponse.json(
+      { error: "Empresa não encontrada na sessão" },
+      { status: 400 }
+    )
+  }
+
   try {
     const { cpf } = await req.json()
 
@@ -234,13 +244,22 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "CPF é obrigatório" }, { status: 400 })
     }
 
-    const registro = await prisma.cpfs.delete({
-      where: {
-        cpf,
-      },
+    const registro = await prisma.cpfs.findFirst({
+      where: { cpf, empresaId },
     })
 
-    return NextResponse.json(registro)
+    if (!registro) {
+      return NextResponse.json(
+        { error: "CPF não encontrado nesta empresa" },
+        { status: 404 }
+      )
+    }
+
+    await prisma.cpfs.delete({
+      where: { cpf },
+    })
+
+    return NextResponse.json({ message: "CPF deletado com sucesso" })
   } catch (error) {
     return NextResponse.json(
       { error: "Erro ao deletar CPF" },
