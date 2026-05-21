@@ -1,14 +1,21 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useSession } from "next-auth/react"
 import usuarios from "../../../../public/users/usuarios.png"
 import { useHeader } from "../layout"
 import toast from "react-hot-toast"
 
-
-// Interface para tipar os dados da empresa vindos da API
+interface Empresa {
+  id: string
+  nome: string
+  setores: string[]
+}
 
 export default function CriarUsuarioPage() {
+  const { data: session } = useSession()
+  const isGod = session?.user?.role === "GOD"
+
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -16,18 +23,17 @@ export default function CriarUsuarioPage() {
     password: "",
     role: "",
     setor: "",
+    empresaId: "",
     avatarFile: null as File | null,
   })
 
+  const [empresas, setEmpresas] = useState<Empresa[]>([])
   const [setoresDisponiveis, setSetoresDisponiveis] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
-  const [loadingSetores, setLoadingSetores] = useState(true)
+  const [loadingDados, setLoadingDados] = useState(true)
 
   const { setHeader } = useHeader()
 
-
-
-  // 1. useEffect para o Header
   useEffect(() => {
     setHeader({
       titulo: 'Criar Novo Usuário',
@@ -35,35 +41,48 @@ export default function CriarUsuarioPage() {
     })
   }, [setHeader])
 
-  // 2. useEffect para buscar os setores da API
   useEffect(() => {
-    async function fetchSetores() {
+    async function fetchDados() {
       try {
-        setLoadingSetores(true)
-        const response = await fetch("/api/empresa")
-        const data = await response.json()
+        setLoadingDados(true)
+        const res = await fetch("/api/empresa")
+        const data = await res.json()
 
-        if (Array.isArray(data) && data.length > 0) {
-          // Se retornar array, pegamos os setores da primeira empresa
-          // Se você tiver o CNPJ em mãos, pode usar fetch(`/api/empresas?cnpj=${cnpj}`)
-          setSetoresDisponiveis(data[0].setores || [])
-        } else if (data.setores) {
+        if (isGod && Array.isArray(data)) {
+          setEmpresas(data)
+          if (data.length > 0) {
+            setForm(prev => ({ ...prev, empresaId: data[0].id }))
+            setSetoresDisponiveis(data[0].setores || [])
+          }
+        } else if (!Array.isArray(data) && data.setores) {
           setSetoresDisponiveis(data.setores)
+        } else if (Array.isArray(data) && data.length > 0) {
+          setSetoresDisponiveis(data[0].setores || [])
         }
       } catch (error) {
-        console.error("Erro ao carregar setores:", error)
+        console.error("Erro ao carregar dados:", error)
       } finally {
-        setLoadingSetores(false)
+        setLoadingDados(false)
       }
     }
 
-    fetchSetores()
-  }, [])
+    fetchDados()
+  }, [isGod])
+
+  function handleEmpresaChange(empresaId: string) {
+    setForm(prev => ({ ...prev, empresaId, setor: "" }))
+    const emp = empresas.find(e => e.id === empresaId)
+    setSetoresDisponiveis(emp?.setores || [])
+  }
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) {
     const { name, value } = e.target
+    if (name === "empresaId") {
+      handleEmpresaChange(value)
+      return
+    }
     setForm((prev) => ({ ...prev, [name]: value }))
   }
 
@@ -85,6 +104,10 @@ export default function CriarUsuarioPage() {
       formData.append("role", form.role)
       formData.append("setor", form.setor)
 
+      if (isGod && form.empresaId) {
+        formData.append("empresaId", form.empresaId)
+      }
+
       if (form.avatarFile) {
         formData.append("avatar", form.avatarFile)
       }
@@ -96,6 +119,11 @@ export default function CriarUsuarioPage() {
 
       if (response.ok) {
         toast.success("Usuário criado com sucesso!")
+        setForm({
+          name: "", email: "", cpf: "", password: "",
+          role: "", setor: "", empresaId: isGod ? form.empresaId : "",
+          avatarFile: null,
+        })
       } else {
         const errorData = await response.json()
         toast.error(`Erro: ${errorData.error}`)
@@ -118,8 +146,7 @@ export default function CriarUsuarioPage() {
     >
       <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-          
-          {/* Coluna Esquerda - Imagem */}
+
           <div
             className="rounded-2xl border shadow-lg p-6 sm:p-8 flex items-center justify-center min-h-96 lg:min-h-full transition-colors duration-300"
             style={{
@@ -133,7 +160,6 @@ export default function CriarUsuarioPage() {
             }}
           />
 
-          {/* Coluna Direita - Formulário */}
           <div
             className="rounded-2xl border shadow-lg p-6 sm:p-8 transition-colors duration-300"
             style={{
@@ -142,7 +168,32 @@ export default function CriarUsuarioPage() {
             }}
           >
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Nome */}
+              {isGod && (
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Empresa</label>
+                  <select
+                    name="empresaId"
+                    value={form.empresaId}
+                    onChange={handleChange}
+                    required
+                    disabled={loadingDados || empresas.length === 0}
+                    className="w-full px-4 py-3 border rounded-lg outline-none disabled:opacity-50"
+                    style={{
+                      borderColor: "var(--border-subtle)",
+                      backgroundColor: "var(--surface-elevated)",
+                      color: "var(--foreground)",
+                    }}
+                  >
+                    <option value="">
+                      {loadingDados ? "Carregando..." : "Selecione a empresa"}
+                    </option>
+                    {empresas.map(emp => (
+                      <option key={emp.id} value={emp.id}>{emp.nome}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-semibold mb-2">Nome Completo</label>
                 <input
@@ -161,7 +212,6 @@ export default function CriarUsuarioPage() {
                 />
               </div>
 
-              {/* Email e CPF */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold mb-2">Email</label>
@@ -198,7 +248,6 @@ export default function CriarUsuarioPage() {
                 </div>
               </div>
 
-              {/* Senha */}
               <div>
                 <label className="block text-sm font-semibold mb-2">Senha</label>
                 <input
@@ -217,9 +266,7 @@ export default function CriarUsuarioPage() {
                 />
               </div>
 
-              {/* Grid para Seletores (Papel e Setor) */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Papel */}
                 <div>
                   <label className="block text-sm font-semibold mb-2">Papel</label>
                   <select
@@ -235,14 +282,13 @@ export default function CriarUsuarioPage() {
                     } as never}
                   >
                     <option value="">Selecione um papel</option>
-                   <option value="XX!">Master</option> {/* GOD */} 
-                    <option value="X1X">Admin</option> {/* ADMIN */}
-                    <option value="1XX">Gestor</option> {/* GESTOR */}
-                    <option value="X11">Atendente</option> {/* ATENDENTE */}
+                    {isGod && <option value="XX!">Master</option>}
+                    <option value="X1X">Admin</option>
+                    <option value="1XX">Gestor</option>
+                    <option value="X11">Atendente</option>
                   </select>
                 </div>
 
-                {/* Setor DINÂMICO */}
                 <div>
                   <label className="block text-sm font-semibold mb-2">Setor</label>
                   <select
@@ -250,7 +296,7 @@ export default function CriarUsuarioPage() {
                     value={form.setor}
                     onChange={handleChange}
                     required
-                    disabled={loadingSetores}
+                    disabled={loadingDados}
                     className="w-full px-4 py-3 border rounded-lg outline-none disabled:opacity-50"
                     style={{
                       borderColor: "var(--border-subtle)",
@@ -259,7 +305,7 @@ export default function CriarUsuarioPage() {
                     } as never}
                   >
                     <option value="">
-                      {loadingSetores ? "Carregando setores..." : "Selecione o setor"}
+                      {loadingDados ? "Carregando setores..." : "Selecione o setor"}
                     </option>
                     {setoresDisponiveis.map((setor, index) => (
                       <option key={index} value={setor}>
@@ -270,7 +316,6 @@ export default function CriarUsuarioPage() {
                 </div>
               </div>
 
-              {/* Foto de Perfil */}
               <div
                 className="border rounded-lg p-4"
                 style={{
@@ -287,7 +332,6 @@ export default function CriarUsuarioPage() {
                 />
               </div>
 
-              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={loading}

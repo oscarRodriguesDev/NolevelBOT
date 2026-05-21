@@ -15,18 +15,9 @@ import { getServerSession } from "next-auth"
 export async function POST(req: NextRequest) {
   const session = await getSessionOrFail(["GOD", "ADMIN", "GESTOR"])
 
-  const empresaID = session?.user.empresaId
-
-  console.log("empresa id do usuario logado:", empresaID)
+  let empresaID = session?.user.empresaId
 
   try {
-    if (!empresaID) {
-      return NextResponse.json(
-        { error: "Usuário logado não possui empresa vinculada" },
-        { status: 400 }
-      )
-    }
-
     const formData = await req.formData()
     const roleFromFront = formData.get("role") as string
 
@@ -43,25 +34,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Papel inválido" }, { status: 400 })
     }
 
-    const userRole = session.user.role
-
-    if (userRole === "GOD") {
-      return NextResponse.json(
-        { error: "GOD deve usar a rota específica de criação" },
-        { status: 403 }
-      )
+    if (!session) {
+      return NextResponse.json({ error: "Não autenticado" }, { status: 401 })
     }
 
+    const userRole = session.user.role
     let canCreate = false
 
-    if (userRole === "ADMIN") {
+    if (userRole === "GOD") {
+      canCreate = true
+      const selectedEmpresa = formData.get("empresaId") as string
+      if (selectedEmpresa) {
+        empresaID = selectedEmpresa
+      }
+    } else if (userRole === "ADMIN") {
       canCreate =
         finalRole === "ADMIN" ||
         finalRole === "GESTOR" ||
         finalRole === "ATENDENTE"
-    }
-
-    if (userRole === "GESTOR") {
+    } else if (userRole === "GESTOR") {
       canCreate = finalRole === "ATENDENTE"
     }
 
@@ -69,6 +60,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: `Usuário não tem permissão para criar um ${finalRole}` },
         { status: 403 }
+      )
+    }
+
+    if (!empresaID) {
+      return NextResponse.json(
+        { error: "Empresa não encontrada" },
+        { status: 400 }
       )
     }
 
