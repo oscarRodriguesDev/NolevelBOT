@@ -303,6 +303,7 @@
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
 | 1 | `ab2654c` | feat: GOD cria usuarios no form padrao + lista de admins na pagina de CPFs | 20/05/2026 |
+| 2 | `f084359` | docs: atualiza memorias e checkpoint com feat GOD/admins | 20/05/2026 |
 
 | # | Fix | Descrição |
 |---|-----|-----------|
