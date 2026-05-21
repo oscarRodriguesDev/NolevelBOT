@@ -44,7 +44,7 @@ export default function TicketPage() {
   useEffect(() => {
     async function fetchChamado() {
       try {
-        const res = await fetch(`/api/tickets?ticket=${ticket}`);
+        const res = await fetch(`/api/tickets/search?ticket=${ticket}`);
 
         if (!res.ok) {
           throw new Error("Erro ao buscar chamado");

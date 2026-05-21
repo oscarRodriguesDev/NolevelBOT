@@ -169,6 +169,7 @@ export async function GET(req: NextRequest) {
     }
 
     const userSetor = session.user.setor
+    const userRole = session.user.role
     const empresaId = session.user.empresaId
     const { searchParams } = new URL(req.url)
     const ticket = searchParams.get("ticket")
@@ -183,7 +184,11 @@ export async function GET(req: NextRequest) {
 
     const where: Prisma.ChamadoWhereInput = {
       empresaId,
-      setor: userSetor,
+    }
+
+    // Apenas ATENDENTE filta por setor próprio; demais roles veem todos os setores da empresa
+    if (userRole === "ATENDENTE") {
+      where.setor = userSetor
     }
 
     if (ticket) where.ticket = ticket
@@ -191,7 +196,7 @@ export async function GET(req: NextRequest) {
     if (status) where.status = status
     if (prioridade) where.prioridade = prioridade
 
-    if (setor && setor === userSetor) {
+    if (setor) {
       where.setor = setor
     }
 
