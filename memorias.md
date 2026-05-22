@@ -864,3 +864,72 @@ Sistema centralizado de permissões com tipagem forte e regras desacopladas:
 - ✅ Impedido bypass de permissão via manipulação de payload
 - ✅ Todas as validações no backend + interface consistente
 - ✅ Separação clara entre autenticação (NextAuth) e autorização (RBAC)
+
+---
+
+## 25. TELAS DE USUÁRIOS — VISÃO POR EMPRESA (GOD) E GERAL (21/05/2026)
+
+### Objetivo
+Criar páginas dedicadas para visualização, edição inline e exclusão de usuários, respeitando o RBAC:
+- **GOD**: vê usuários de qualquer empresa, clicando nos cards de empresa
+- **ADMIN / GESTOR**: vê usuários da própria empresa em página geral `/usuarios`
+
+### Arquivos criados
+
+#### `src/app/(atendimento)/empresa/[id]/usuarios/page.tsx` (novo - GOD only)
+- **Acesso exclusivo GOD**: servido por `getServerSessionRBAC("GOD")` via RBAC
+- Lista todos os usuários da empresa em tabela com colunas: Nome, Email, CPF, Papel, Setor
+- **Edição inline**: inputs aparecem ao clicar no botão de editar (lápis)
+- **Exclusão**: botão vermelho com confirmação (toast)
+- Campos editáveis: nome, email, cpf, role (dropdown), setor
+- Role dropdown respeita `DELETE_ROLE_MAP` — GOD pode mudar para ADMIN/GESTOR/ATENDENTE
+- CPF editável com validação de unicidade por empresa
+
+#### `src/app/(atendimento)/usuarios/page.tsx` (novo - ADMIN/GESTOR/GOD)
+- **Acesso**: ADMIN, GESTOR e GOD via `getServerSessionRBAC("GOD", "ADMIN", "GESTOR")`
+- ADMIN/GESTOR veem apenas usuários da própria empresa
+- GOD vê coluna extra `empresaId` (truncado para 8 chars)
+- Mesma estrutura de edição inline e exclusão com validação RBAC
+- Role dropdown respeita o mapa de permissões (ADMIN pode definir GESTOR/ATENDENTE, etc.)
+
+### Arquivos modificados
+
+#### `src/app/api/empresa/route.ts`
+- Adicionados **PUT** e **DELETE**:
+  - PUT: GOD edita nome, cnpj, cor, logoUrl da empresa
+  - DELETE: GOD remove empresa (com verificação de existência)
+  - Valida unicidade de CNPJ na edição
+
+#### `src/app/api/users/route.ts`
+- **PUT** existente com RBAC: GOD edita qualquer usuário não-GOD, ADMIN edita GESTOR/ATENDENTE mesma empresa, GESTOR edita ATENDENTE mesmo setor
+- **GET** agora aceita `?empresaId=` para GOD filtrar usuários por empresa
+- Inclui `empresaId` no select do PUT para verificação de empresa
+
+#### `src/app/(atendimento)/empresa/page.tsx`
+- Cards de empresa agora são **clicáveis** (`onClick → router.push(/empresa/${id}/usuarios)`)
+- cursor-pointer + hover scale effect
+
+#### `src/app/(atendimento)/components/sidebar.tsx`
+- Novo menu **"Usuários"** (ícone LuUsers) — ADMIN/GESTOR/GOD
+- "Gestão de Usuarios" renomeado para **"Criar Usuário"** — ADMIN/GESTOR/GOD
+- "Empresas" — GOD apenas (mantido)
+
+### Fluxo de navegação
+```
+GOD:
+  Sidebar → Empresas → cards → clica empresa → /empresa/[id]/usuarios
+  Sidebar → Usuários → /usuarios (vê coluna empresaId extra)
+  Sidebar → Criar Usuário → /gestao-de-usuarios
+
+ADMIN/GESTOR:
+  Sidebar → Usuários → /usuarios (apenas própria empresa)
+  Sidebar → Criar Usuário → /gestao-de-usuarios
+```
+
+### Separação server/client (RBAC)
+- `src/lib/rbac.ts`: constantes e funções **puras** (CREATE_ROLE_MAP, DELETE_ROLE_MAP, etc.) — pode ser importado por client components
+- `src/lib/rbac-server.ts`: `getServerSessionRBAC()` — função **server-only** que valida sessão + role; importa `getServerSession` do next-auth
+
+### Build
+- `npm run build` — compilado com sucesso ✅
+- Commits: `54ecb1b`, `f044ee0`, `aeaf54d`
