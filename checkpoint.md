@@ -388,3 +388,4 @@
 - ~~`checkpoint.md` — Atualizado~~ ✅
 
 ### Commits realizados nesta sessão:
+| 1 | `9bcfe38` | feat: bloqueia auto-edição/exclusão, remove listagem de criação, profissionaliza frontend | 21/05/2026 |
