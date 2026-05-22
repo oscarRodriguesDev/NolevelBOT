@@ -64,3 +64,5 @@ Antes de concluir qualquer trabalho, execute obrigatoriamente:
 
 ```bash
 npm run build
+
+quando finalizar derrube os containers atuais e suba novamente eliminando os caches

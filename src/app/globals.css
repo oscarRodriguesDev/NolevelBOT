@@ -1,30 +1,26 @@
 @import "tailwindcss";
 
 :root {
-  /* Light theme */
   --background: #FAFAFA;
   --foreground: #1A1A1A;
   --surface: #FFFFFF;
   --surface-elevated: #F5F5F5;
   --border-subtle: #E8E8E8;
-  
-  /* Primary colors - Purple to Magenta gradient */
   --primary: #A000F2;
   --primary-hover: #7D00C7;
   --accent-secondary: #FF00FF;
-  
-  /* Status colors - Vibrant palette */
   --status-new: #5B3AFF;
   --status-in-progress: #FF5B3A;
   --status-waiting: #FF00FF;
   --status-completed: #00D084;
   --status-cancelled: #FF5B5B;
-  
-  /* Feedback states */
   --success-light: rgba(0, 208, 132, 0.15);
   --error-light: rgba(255, 91, 91, 0.15);
   --warning-light: rgba(255, 91, 58, 0.15);
   --info-light: rgba(91, 58, 255, 0.15);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 30px rgba(0,0,0,0.1);
 }
 
 [data-theme="dark"] {
@@ -33,11 +29,12 @@
   --surface: #1A1A2E;
   --surface-elevated: #2A2A42;
   --border-subtle: #3A3A52;
-  
-  /* Primary colors remain vibrant for dark mode */
   --primary: #B800FF;
   --primary-hover: #9400D4;
   --accent-secondary: #FF00FF;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 30px rgba(0,0,0,0.5);
 }
 
 @theme inline {

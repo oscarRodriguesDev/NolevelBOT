@@ -61,6 +61,13 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Usuário não encontrado ou não é ADMIN" }, { status: 404 })
     }
 
+    if (session.user.id === id) {
+      return NextResponse.json(
+        { error: "Você não pode editar seu próprio usuário" },
+        { status: 403 }
+      )
+    }
+
     const data: any = {}
     if (name) data.name = name
     if (email) data.email = email
@@ -112,6 +119,13 @@ export async function DELETE(req: NextRequest) {
 
     if (!user) {
       return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
+    }
+
+    if (session.user.id === id) {
+      return NextResponse.json(
+        { error: "Você não pode excluir seu próprio usuário" },
+        { status: 403 }
+      )
     }
 
     if (user.role === "GOD") {

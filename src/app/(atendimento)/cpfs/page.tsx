@@ -31,6 +31,7 @@ export default function CadastroCPFs() {
   const [searchTerm, setSearchTerm] = useState("")
 
   const [admins, setAdmins] = useState<Admin[]>([])
+  const currentUserId = session?.user?.id
   const [editingAdmin, setEditingAdmin] = useState<Admin | null>(null)
   const [editForm, setEditForm] = useState({ name: "", email: "", cpf: "", setor: "" })
 
@@ -222,24 +223,28 @@ export default function CadastroCPFs() {
         color: "var(--foreground)",
       }}
     >
-      <div className="flex flex-col lg:flex-row gap-8">
+      <div className="flex flex-col lg:flex-row gap-6">
 
         <div className="flex-1 max-w-lg">
           <div
-            className="p-6 sm:p-8 rounded-2xl shadow-lg space-y-8 border transition-colors duration-300"
+            className="p-6 sm:p-8 rounded-2xl shadow-lg space-y-8 border"
             style={{
               backgroundColor: "var(--surface)",
               borderColor: "var(--border-subtle)",
             }}
           >
+            <div>
+              <h3 className="text-lg font-semibold mb-1">Cadastrar CPF</h3>
+              <p className="text-xs opacity-60 mb-6">Adicione CPFs autorizados manualmente</p>
+            </div>
             <form onSubmit={cadastrarManual} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Nome</label>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-2 opacity-70">Nome</label>
                 <input
                   placeholder="Nome completo"
                   value={nome}
                   onChange={e => setNome(e.target.value)}
-                  className="w-full p-3 rounded-lg border outline-none transition-colors duration-300"
+                  className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                   style={{
                     backgroundColor: "var(--surface-elevated)",
                     borderColor: "var(--border-subtle)",
@@ -248,12 +253,12 @@ export default function CadastroCPFs() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">CPF</label>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-2 opacity-70">CPF</label>
                 <input
                   placeholder="000.000.000-00"
                   value={cpf}
                   onChange={e => setCpf(e.target.value)}
-                  className="w-full p-3 rounded-lg border outline-none transition-colors duration-300"
+                  className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent font-mono"
                   style={{
                     backgroundColor: "var(--surface-elevated)",
                     borderColor: "var(--border-subtle)",
@@ -263,7 +268,7 @@ export default function CadastroCPFs() {
               </div>
               <button
                 type="submit"
-                className="w-full text-white py-3 rounded transition-all duration-300 hover:scale-105 active:scale-95 font-medium"
+                className="w-full text-white py-3 rounded-xl font-semibold transition-all duration-200 hover:brightness-110 hover:shadow-lg active:scale-[0.98]"
                 style={{ backgroundColor: "var(--primary)" }}
               >
                 Cadastrar
@@ -272,32 +277,33 @@ export default function CadastroCPFs() {
 
             {podeImportarLote && (
               <div className="border-t pt-6" style={{ borderColor: "var(--border-subtle)" }}>
-                <h3 className="text-lg font-semibold mb-4">Ou importe em lote</h3>
+                <div>
+                  <h3 className="text-lg font-semibold mb-1">Importar em Lote</h3>
+                  <p className="text-xs opacity-60 mb-4">Upload de arquivos .csv, .txt ou .xlsx</p>
+                </div>
                 <form onSubmit={enviarArquivo} className="space-y-4">
-                  <div>
-                    <label className="flex items-center justify-between gap-4 w-full px-4 py-3 rounded-lg border transition-all cursor-pointer hover:opacity-80"
-                      style={{
-                        borderColor: "var(--border-subtle)",
-                        backgroundColor: "var(--surface-elevated)",
-                      }}>
-                      <span className="text-sm truncate flex-1">
-                        {file ? file.name : "Selecione um arquivo (.csv, .txt, .xlsx)"}
-                      </span>
-                      <span className="px-3 py-1 text-xs font-medium rounded text-white flex-shrink-0"
-                        style={{ backgroundColor: "var(--primary)" }}>
-                        Escolher
-                      </span>
-                      <input
-                        type="file"
-                        accept=".csv,.txt,.xlsx"
-                        onChange={(e) => setFile(e.target.files?.[0] || null)}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
+                  <label className="flex items-center justify-between gap-4 w-full px-4 py-3.5 rounded-xl border border-dashed transition-all cursor-pointer hover:brightness-95"
+                    style={{
+                      borderColor: "var(--border-subtle)",
+                      backgroundColor: "var(--surface-elevated)",
+                    }}>
+                    <span className="text-sm truncate flex-1">
+                      {file ? file.name : "Clique para selecionar arquivo"}
+                    </span>
+                    <span className="px-4 py-1.5 text-xs font-bold rounded-lg text-white flex-shrink-0"
+                      style={{ backgroundColor: "var(--primary)" }}>
+                      Escolher
+                    </span>
+                    <input
+                      type="file"
+                      accept=".csv,.txt,.xlsx"
+                      onChange={(e) => setFile(e.target.files?.[0] || null)}
+                      className="hidden"
+                    />
+                  </label>
                   <button
                     type="submit"
-                    className="w-full text-white py-3 rounded-lg transition-all duration-300 hover:scale-105 active:scale-95 font-medium"
+                    className="w-full text-white py-3 rounded-xl font-semibold transition-all duration-200 hover:brightness-110 hover:shadow-lg active:scale-[0.98]"
                     style={{ backgroundColor: "var(--status-completed)" }}
                   >
                     Importar Arquivo
@@ -316,13 +322,14 @@ export default function CadastroCPFs() {
               borderColor: "var(--border-subtle)",
             }}
           >
-            <h3 className="text-lg font-semibold mb-4">CPFs cadastrados</h3>
+            <h3 className="text-lg font-semibold mb-1">CPFs Cadastrados</h3>
+            <p className="text-xs opacity-60 mb-4">{cpfsFiltrados.length} registro(s)</p>
 
             <input
               placeholder="Buscar por Nome ou CPF..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full p-2 mb-4 rounded-lg border outline-none"
+              className="w-full px-4 py-2.5 mb-4 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
               style={{
                 backgroundColor: "var(--surface-elevated)",
                 borderColor: "var(--border-subtle)",
@@ -330,33 +337,36 @@ export default function CadastroCPFs() {
               }}
             />
 
-            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1 scrollbar-thin">
               {cpfsFiltrados.length > 0 ? (
                 cpfsFiltrados.map((item, idx) => (
                   <div
                     key={item.cpf || idx}
-                    className="p-3 rounded-lg border flex justify-between items-start transition-all hover:bg-black/5"
+                    className="p-3.5 rounded-xl border flex justify-between items-start transition-all duration-150 hover:brightness-95"
                     style={{
                       borderColor: "var(--border-subtle)",
                       backgroundColor: "var(--surface-elevated)",
                     }}
                   >
-                    <div>
-                      <p className="text-sm font-medium">{item.nome}</p>
-                      <p className="text-xs opacity-70">{item.cpf}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">{item.nome}</p>
+                      <p className="text-xs font-mono opacity-60 mt-0.5">{item.cpf}</p>
                     </div>
 
                     <button
                       onClick={() => handleDelete(item.cpf)}
-                      className="text-xs p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                      className="p-2 rounded-xl transition-all duration-150 hover:bg-[var(--error-light)] shrink-0 ml-2"
+                      style={{ color: "var(--status-cancelled)" }}
                       title="Deletar CPF"
                     >
-                      <FaTrash />
+                      <FaTrash size={12} />
                     </button>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-center opacity-60 py-4">Nenhum CPF encontrado.</p>
+                <div className="text-center py-10">
+                  <p className="text-sm opacity-40 font-medium">Nenhum CPF encontrado</p>
+                </div>
               )}
             </div>
           </div>
@@ -366,29 +376,42 @@ export default function CadastroCPFs() {
 
       {isGod && (
         <div
-          className="rounded-2xl shadow-lg border p-6 sm:p-8 transition-colors duration-300"
+          className="rounded-2xl shadow-lg border p-6 sm:p-8"
           style={{
             backgroundColor: "var(--surface)",
             borderColor: "var(--border-subtle)",
           }}
         >
-          <h3 className="text-lg font-semibold mb-4">Administradores Cadastrados</h3>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-lg font-semibold">Administradores</h3>
+              <p className="text-xs opacity-60 mt-0.5">Gerencie os administradores do sistema</p>
+            </div>
+            {admins.length > 0 && (
+              <span className="text-xs font-bold px-3 py-1 rounded-lg" style={{ backgroundColor: "var(--surface-elevated)", color: "var(--primary)" }}>
+                {admins.length} registro(s)
+              </span>
+            )}
+          </div>
 
           {editingAdmin && (
-            <div className="mb-6 p-4 rounded-lg border"
+            <div className="mb-6 p-5 rounded-xl border"
               style={{
                 backgroundColor: "var(--surface-elevated)",
                 borderColor: "var(--border-subtle)",
               }}
             >
-              <h4 className="font-semibold mb-3">Editando: {editingAdmin.name}</h4>
+              <h4 className="font-semibold mb-4 flex items-center gap-2">
+                <FaEdit size={14} style={{ color: "var(--primary)" }} />
+                Editando: {editingAdmin.name}
+              </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-xs font-medium mb-1">Nome</label>
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 opacity-70">Nome</label>
                   <input
                     value={editForm.name}
                     onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border outline-none"
+                    className="w-full px-3 py-2.5 rounded-xl border outline-none transition-all focus:ring-2 focus:ring-[var(--primary)]"
                     style={{
                       backgroundColor: "var(--background)",
                       borderColor: "var(--border-subtle)",
@@ -397,11 +420,11 @@ export default function CadastroCPFs() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium mb-1">Email</label>
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 opacity-70">Email</label>
                   <input
                     value={editForm.email}
                     onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border outline-none"
+                    className="w-full px-3 py-2.5 rounded-xl border outline-none transition-all focus:ring-2 focus:ring-[var(--primary)]"
                     style={{
                       backgroundColor: "var(--background)",
                       borderColor: "var(--border-subtle)",
@@ -410,11 +433,11 @@ export default function CadastroCPFs() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium mb-1">CPF</label>
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 opacity-70">CPF</label>
                   <input
                     value={editForm.cpf}
                     onChange={e => setEditForm(p => ({ ...p, cpf: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border outline-none"
+                    className="w-full px-3 py-2.5 rounded-xl border outline-none transition-all font-mono focus:ring-2 focus:ring-[var(--primary)]"
                     style={{
                       backgroundColor: "var(--background)",
                       borderColor: "var(--border-subtle)",
@@ -423,11 +446,11 @@ export default function CadastroCPFs() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium mb-1">Setor</label>
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 opacity-70">Setor</label>
                   <input
                     value={editForm.setor}
                     onChange={e => setEditForm(p => ({ ...p, setor: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border outline-none"
+                    className="w-full px-3 py-2.5 rounded-xl border outline-none transition-all focus:ring-2 focus:ring-[var(--primary)]"
                     style={{
                       backgroundColor: "var(--background)",
                       borderColor: "var(--border-subtle)",
@@ -439,15 +462,15 @@ export default function CadastroCPFs() {
               <div className="flex gap-3">
                 <button
                   onClick={saveEditAdmin}
-                  className="px-4 py-2 rounded-lg text-white font-medium text-sm"
+                  className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-white font-semibold text-sm transition-all hover:brightness-110 active:scale-95"
                   style={{ backgroundColor: "var(--primary)" }}
                 >
-                  Salvar
+                  <FaEdit size={12} /> Salvar
                 </button>
                 <button
                   onClick={() => setEditingAdmin(null)}
-                  className="px-4 py-2 rounded-lg font-medium text-sm"
-                  style={{ color: "var(--border-subtle)" }}
+                  className="px-5 py-2.5 rounded-xl font-semibold text-sm transition-all hover:brightness-95"
+                  style={{ backgroundColor: "var(--surface-elevated)", color: "var(--foreground)" }}
                 >
                   Cancelar
                 </button>
@@ -455,27 +478,22 @@ export default function CadastroCPFs() {
             </div>
           )}
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-xl border" style={{ borderColor: "var(--border-subtle)" }}>
             <table className="w-full text-sm">
-              <thead
-                style={{
-                  backgroundColor: "var(--surface-elevated)",
-                  borderBottom: "2px solid var(--border-subtle)",
-                }}
-              >
-                <tr>
-                  <th className="px-4 py-3 text-left font-semibold">Nome</th>
-                  <th className="px-4 py-3 text-left font-semibold">CPF</th>
-                  <th className="px-4 py-3 text-left font-semibold">Empresa</th>
-                  <th className="px-4 py-3 text-left font-semibold">Setor</th>
-                  <th className="px-4 py-3 text-center font-semibold">Ações</th>
+              <thead>
+                <tr style={{ backgroundColor: "var(--surface-elevated)", borderBottom: "2px solid var(--border-subtle)" }}>
+                  <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Nome</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">CPF</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Empresa</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Setor</th>
+                  <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {admins.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center opacity-60">
-                      Nenhum administrador cadastrado.
+                    <td colSpan={5} className="px-4 py-12 text-center opacity-40 text-sm font-medium">
+                      Nenhum administrador cadastrado
                     </td>
                   </tr>
                 ) : (
@@ -486,29 +504,38 @@ export default function CadastroCPFs() {
                         borderBottom: "1px solid var(--border-subtle)",
                         backgroundColor: idx % 2 === 0 ? "transparent" : "var(--surface-elevated)",
                       }}
+                      className="transition-all duration-150 hover:brightness-95"
                     >
                       <td className="px-4 py-3 font-medium">{admin.name}</td>
-                      <td className="px-4 py-3">{admin.cpf}</td>
+                      <td className="px-4 py-3 font-mono text-xs">{admin.cpf}</td>
                       <td className="px-4 py-3">{admin.Empresa?.nome || "-"}</td>
                       <td className="px-4 py-3">{admin.setor}</td>
                       <td className="px-4 py-3 text-center">
                         <div className="flex items-center justify-center gap-2">
-                          <button
-                            onClick={() => openEditAdmin(admin)}
-                            className="p-2 rounded-lg transition-colors hover:opacity-70"
-                            style={{ color: "var(--primary)" }}
-                            title="Editar"
-                          >
-                            <FaEdit size={16} />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteAdmin(admin.id, admin.name)}
-                            className="p-2 rounded-lg transition-colors hover:opacity-70"
-                            style={{ color: "var(--status-cancelled)" }}
-                            title="Apagar"
-                          >
-                            <FaTrash size={14} />
-                          </button>
+                          {admin.id !== currentUserId ? (
+                            <>
+                              <button
+                                onClick={() => openEditAdmin(admin)}
+                                className="p-2 rounded-xl transition-all duration-150 hover:bg-[var(--info-light)]"
+                                style={{ color: "var(--primary)" }}
+                                title="Editar"
+                              >
+                                <FaEdit size={14} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteAdmin(admin.id, admin.name)}
+                                className="p-2 rounded-xl transition-all duration-150 hover:bg-[var(--error-light)]"
+                                style={{ color: "var(--status-cancelled)" }}
+                                title="Apagar"
+                              >
+                                <FaTrash size={13} />
+                              </button>
+                            </>
+                          ) : (
+                            <span className="text-xs font-medium px-3 py-1 rounded-lg" style={{ backgroundColor: "var(--surface-elevated)", opacity: 0.6 }}>
+                              Você
+                            </span>
+                          )}
                         </div>
                       </td>
                     </tr>

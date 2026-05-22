@@ -933,3 +933,131 @@ ADMIN/GESTOR:
 ### Build
 - `npm run build` — compilado com sucesso ✅
 - Commits: `54ecb1b`, `f044ee0`, `aeaf54d`
+
+---
+
+## 26. SEGURANÇA — BLOQUEIO DE AUTO-EDIÇÃO E AUTO-EXCLUSÃO (21/05/2026)
+
+### Regra
+Nenhum usuário pode editar ou excluir o próprio perfil. A proteção é aplicada tanto no backend quanto no frontend.
+
+### Backend — `src/app/api/users/route.ts`
+- **PUT**: Adicionada verificação `session!.id === id` → retorna 403 "Você não pode editar seu próprio usuário"
+- **DELETE**: Adicionada verificação `session!.id === id` → retorna 403 "Você não pode excluir seu próprio usuário"
+
+### Backend — `src/app/api/users/admins/route.ts`
+- **PUT**: Adicionada verificação `session.user.id === id` → retorna 403
+- **DELETE**: Adicionada verificação `session.user.id === id` → retorna 403
+
+### Frontend
+- **`src/app/(atendimento)/usuarios/page.tsx`**: Botões de editar/excluir ocultos quando `u.id === currentUserId`
+- **`src/app/(atendimento)/empresa/[id]/usuarios/page.tsx`**: Mesma proteção
+- **`src/app/(atendimento)/cpfs/page.tsx`**: Seção de admins oculta ações para o próprio usuário GOD, exibe "Você"
+
+---
+
+## 27. REFATORAÇÃO — REMOÇÃO DE LISTAGEM DA TELA DE CRIAÇÃO (21/05/2026)
+
+### Mudança
+A tela de criação de usuários (`gestao-de-usuarios/page.tsx`) agora exibe **apenas o formulário de criação**, sem a tabela de usuários cadastrados.
+
+### Arquivos modificados
+- `src/app/(atendimento)/gestao-de-usuarios/page.tsx`:
+  - Removida interface `UserListItem`
+  - Removida função `fetchUsers()`
+  - Removido estado `userList` e `loadingUsers`
+  - Removida chamada a `/api/users` no `useEffect`
+  - Removida função `handleDeleteUser()`
+  - Removida variável `podeVerLista`
+  - Removida seção de listagem de usuários do JSX
+  - Import `roleParaDisplay` mantido (usado nos options do select)
+
+---
+
+## 28. ADMIN PERTENCE A TODOS OS SETORES (21/05/2026)
+
+### Comportamento verificado
+O papel ADMIN já possuía acesso a todos os setores da empresa nas seguintes camadas:
+
+| Camada | Comportamento | Arquivo |
+|--------|--------------|---------|
+| RBAC | `getSetorFilter()` retorna apenas `{ empresaId }` sem filtro de setor | `src/lib/rbac.ts:46-56` |
+| Tickets GET | Filtro de setor aplicado apenas para ATENDENTE e GESTOR | `src/app/api/tickets/route.ts:119-121` |
+| Tickets PUT | Validação de setor aplicada apenas para ATENDENTE e GESTOR | `src/app/api/tickets/route.ts:201-205` |
+| Tickets DELETE | Validação de setor aplicada apenas para ATENDENTE e GESTOR | `src/app/api/tickets/route.ts:287-291` |
+| Criação de usuário | ADMIN pode criar em qualquer setor da empresa | `src/app/api/users/route.ts:83-93` |
+| Listagem de usuários | ADMIN vê todos os usuários da empresa | `src/app/api/users/route.ts:166-168` |
+
+Nenhuma alteração de código foi necessária — o comportamento já estava correto.
+
+---
+
+## 29. PROFISSIONALIZAÇÃO DO FRONTEND (21/05/2026)
+
+### Objetivo
+Melhorar a aparência visual de todas as páginas internas (exceto landing page), mantendo consistência com o sistema de temas dark/light.
+
+### Mudanças globais
+- `src/app/globals.css`: Adicionadas variáveis `--shadow-sm`, `--shadow-md`, `--shadow-lg` para sombras consistentes entre temas
+
+### Páginas modificadas
+
+#### Login (`src/app/login/page.tsx`)
+- Substituída imagem de fundo por gradiente com efeito glass (iniciais "N" em destaque)
+- Inputs com `rounded-xl`, labels em uppercase tracking-wider
+- Botão com hover brightness/shadow e active scale
+- Spinner animado no estado de loading
+- Transições suaves em todos os elementos
+
+#### Chamados (`src/app/(atendimento)/all-tickets/page.tsx`)
+- Filtros com `rounded-xl` e `focus:ring-2` consistente
+- Tabela com headers uppercase tracking-wider
+- Hover suave nas linhas (`hover:brightness-95`)
+- Badges de status/prioridade com padding e fontes ajustados
+- Botões de toggle modo visual com padding consistente
+
+#### Avisos (`src/app/(atendimento)/avisos/page.tsx`)
+- Botão "Novo Aviso" com `rounded-xl` e hover shadow
+
+#### CPFs (`src/app/(atendimento)/cpfs/page.tsx`)
+- Cards com `rounded-xl`, inputs com foco ring primary
+- Seção de cadastro manual com descrição e labels modernos
+- Upload de arquivo com estilo dashed border e hover effect
+- Lista de CPFs com hover brightness, truncate para nomes longos
+- Seção de admins com header informativo (contagem), tabela com hover
+
+#### Gestão de Usuários (`src/app/(atendimento)/gestao-de-usuarios/page.tsx`)
+- Formulário com labels uppercase tracking-wider
+- Inputs com `rounded-xl` e foco ring primary
+- Upload de avatar com estilo file input customizado
+- Botão submit com hover shadow
+
+#### Usuários (`src/app/(atendimento)/usuarios/page.tsx`)
+- Header com ícone + contagem de registros
+- Loading state com spinner animado
+- Empty state com ícone e texto
+- Tabela com headers uppercase tracking-wider
+- Role exibida como badge estilizado
+- Botões de ação com hover bg colors (success/error/info light)
+
+#### Empresa → Usuários (`src/app/(atendimento)/empresa/[id]/usuarios/page.tsx`)
+- Mesmas melhorias da página de usuários geral
+- Link de voltar com efeito hover (`hover:gap-3`)
+
+#### Criar Empresa (`src/app/(atendimento)/empresa/create/page.tsx`)
+- Header com ícone + descrição
+- Inputs com `rounded-xl` e foco ring primary
+- Botões com hover shadow
+
+### Consistência visual
+Todos os inputs agora seguem o padrão:
+- `rounded-xl` (bordas arredondadas)
+- `focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent`
+- Labels em `text-xs font-bold uppercase tracking-wider opacity-70`
+
+Todos os botões primários seguem:
+- `rounded-xl font-bold`
+- `hover:brightness-110 hover:shadow-lg active:scale-[0.98]`
+
+### Build
+- `npm run build` — compilado com sucesso ✅

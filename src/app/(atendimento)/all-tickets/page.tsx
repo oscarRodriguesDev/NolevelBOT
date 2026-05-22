@@ -121,23 +121,20 @@ export default function TicketsPage() {
 
   return (
     <div className="py-10 px-4 transition-colors duration-300" style={{ backgroundColor: "var(--background)", color: "var(--foreground)" }}>
-      <div className="max-w-7xl mx-auto shadow-lg rounded-2xl border p-6 sm:p-8 lg:p-10 space-y-6" style={{ backgroundColor: "var(--surface)", borderColor: "var(--border-subtle)" }}>
+      <div className="max-w-7xl mx-auto shadow-lg rounded-2xl border p-5 sm:p-8 lg:p-10 space-y-6" style={{ backgroundColor: "var(--surface)", borderColor: "var(--border-subtle)" }}>
         
         <div className="space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-3">
-            <h2 className="text-xl font-bold flex items-center gap-2">
-               Filtros em tempo real
-               {loading && <span className="text-sm font-normal opacity-50 animate-pulse">(Atualizando...)</span>}
+            <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2">
+              Filtros
+              {loading && <span className="text-xs font-normal opacity-50 animate-pulse">(Atualizando...)</span>}
             </h2>
             <div className="flex items-center gap-2">
-              <div
-                className="flex rounded-lg border overflow-hidden"
-                style={{ borderColor: "var(--border-subtle)" }}
-              >
+              <div className="flex rounded-xl border overflow-hidden" style={{ borderColor: "var(--border-subtle)" }}>
                 <button
                   type="button"
                   onClick={() => setViewMode('list')}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors duration-200"
+                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold transition-all duration-200"
                   style={{
                     backgroundColor: viewMode === 'list' ? 'var(--primary)' : 'transparent',
                     color: viewMode === 'list' ? '#fff' : 'var(--foreground)',
@@ -149,7 +146,7 @@ export default function TicketsPage() {
                 <button
                   type="button"
                   onClick={() => setViewMode('kanban')}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors duration-200"
+                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold transition-all duration-200"
                   style={{
                     backgroundColor: viewMode === 'kanban' ? 'var(--primary)' : 'transparent',
                     color: viewMode === 'kanban' ? '#fff' : 'var(--foreground)',
@@ -159,30 +156,33 @@ export default function TicketsPage() {
                   Kanban
                 </button>
               </div>
-              <button type="button" onClick={clearFilters} className="text-sm text-[var(--primary)] hover:underline whitespace-nowrap">
-                Limpar todos
+              <button type="button" onClick={clearFilters} className="text-xs font-semibold px-3 py-2 rounded-xl transition-all hover:bg-[var(--surface-elevated)]" style={{ color: 'var(--primary)' }}>
+                Limpar
               </button>
             </div>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-[var(--border-subtle)]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-4 border-t" style={{ borderColor: "var(--border-subtle)" }}>
             <input
               placeholder="Filtrar por nome..."
               value={filters.nome}
               onChange={e => setFilters({ ...filters, nome: e.target.value })}
-              className="border p-3 rounded-lg bg-[var(--surface-elevated)] border-[var(--border-subtle)] focus:ring-2 focus:ring-[var(--primary)] outline-none"
+              className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+              style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
             />
             <input
               placeholder="Número do Ticket"
               value={filters.ticket}
               onChange={e => setFilters({ ...filters, ticket: e.target.value })}
-              className="border p-3 rounded-lg bg-[var(--surface-elevated)] border-[var(--border-subtle)] focus:ring-2 focus:ring-[var(--primary)] outline-none"
+              className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+              style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
             />
             
             <select
               value={filters.prioridade}
               onChange={e => setFilters({ ...filters, prioridade: e.target.value })}
-              className="border p-3 rounded-lg bg-[var(--surface-elevated)] border-[var(--border-subtle)] outline-none"
+              className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)]"
+              style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
             >
               <option value="">Prioridade (Todas)</option>
               <option value="baixa">Baixa</option>
@@ -193,7 +193,8 @@ export default function TicketsPage() {
             <select
               value={filters.status}
               onChange={e => setFilters({ ...filters, status: e.target.value })}
-              className="border p-3 rounded-lg bg-[var(--surface-elevated)] border-[var(--border-subtle)] outline-none"
+              className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)]"
+              style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
             >
               <option value="">Status (Todos)</option>
               <option value="NOVO">Novo</option>
@@ -206,46 +207,50 @@ export default function TicketsPage() {
         </div>
 
         {viewMode === 'list' ? (
-          <div className="overflow-x-auto rounded-xl border border-[var(--border-subtle)]">
+          <div className="overflow-x-auto rounded-xl border" style={{ borderColor: "var(--border-subtle)" }}>
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left border-b bg-[var(--surface-elevated)] border-[var(--border-subtle)]">
-                  <th className="py-3 px-4">Ticket</th>
-                  <th className="py-3 px-4">Nome</th>
-                  <th className="py-3 px-4">Setor</th>
-                  <th className="py-3 px-4">Prioridade</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4">Atendente</th>
-                  <th className="py-3 px-4">Data</th>
+                <tr className="text-left" style={{ backgroundColor: "var(--surface-elevated)", borderBottom: "2px solid var(--border-subtle)" }}>
+                  <th className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider">Ticket</th>
+                  <th className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider">Nome</th>
+                  <th className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider">Setor</th>
+                  <th className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider">Prioridade</th>
+                  <th className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider">Status</th>
+                  <th className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider">Atendente</th>
+                  <th className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider">Data</th>
                 </tr>
               </thead>
               <tbody>
                 {tickets.length === 0 && !loading ? (
-                  <tr><td colSpan={7} className="text-center py-10 opacity-50">Nenhum chamado encontrado.</td></tr>
+                  <tr><td colSpan={7} className="text-center py-16 opacity-40 text-sm font-medium">Nenhum chamado encontrado.</td></tr>
                 ) : (
-                  tickets.map(ticket => (
+                  tickets.map((ticket, idx) => (
                     <tr
                       key={ticket.id || ticket.ticket}
                       onClick={() => abrirModal(ticket.ticket)}
-                      className={`hover:bg-[var(--surface-elevated)] transition cursor-pointer border-b last:border-0 border-[var(--border-subtle)] ${loading ? 'opacity-50' : ''}`}
+                      className="transition-all duration-150 cursor-pointer hover:brightness-95"
+                      style={{
+                        borderBottom: "1px solid var(--border-subtle)",
+                        backgroundColor: idx % 2 === 0 ? "transparent" : "var(--surface-elevated)",
+                      }}
                     >
-                      <td className="py-4 px-4 font-bold text-[var(--primary)]">{ticket.ticket}</td>
-                      <td className="py-4 px-4">{ticket.nome}</td>
-                      <td className="py-4 px-4">{ticket.setor}</td>
-                      <td className="py-4 px-4">
-                        <span className="px-3 py-1 rounded-full text-[10px] font-bold text-white uppercase" style={{ backgroundColor: getPriorityColor(ticket.prioridade) }}>
+                      <td className="py-3.5 px-4 font-bold" style={{ color: "var(--primary)" }}>{ticket.ticket}</td>
+                      <td className="py-3.5 px-4">{ticket.nome}</td>
+                      <td className="py-3.5 px-4">{ticket.setor}</td>
+                      <td className="py-3.5 px-4">
+                        <span className="inline-block px-3 py-1 rounded-full text-[10px] font-bold text-white uppercase" style={{ backgroundColor: getPriorityColor(ticket.prioridade) }}>
                           {ticket.prioridade}
                         </span>
                       </td>
-                      <td className="py-4 px-4">
-                        <span className="px-3 py-1 rounded-full text-[10px] font-bold text-white uppercase" style={{ backgroundColor: getStatusColor(ticket.status) }}>
+                      <td className="py-3.5 px-4">
+                        <span className="inline-block px-3 py-1 rounded-full text-[10px] font-bold text-white uppercase" style={{ backgroundColor: getStatusColor(ticket.status) }}>
                           {ticket.status?.replace(/_/g, ' ')}
                         </span>
                       </td>
-                      <td className="py-4 px-4">
+                      <td className="py-3.5 px-4">
                         {typeof ticket.atendente === 'string' ? ticket.atendente : (ticket.atendente?.name || "Pendente")}
                       </td>
-                      <td className="py-4 px-4">{new Date(ticket.createdAt).toLocaleDateString("pt-BR")}</td>
+                      <td className="py-3.5 px-4">{new Date(ticket.createdAt).toLocaleDateString("pt-BR")}</td>
                     </tr>
                   ))
                 )}

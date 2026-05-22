@@ -27,6 +27,7 @@ export default function UsuariosPage() {
 
   const [users, setUsers] = useState<UserItem[]>([])
   const [loading, setLoading] = useState(true)
+  const currentUserId = session?.user?.id
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({ name: '', email: '', cpf: '', setor: '' })
@@ -110,86 +111,98 @@ export default function UsuariosPage() {
       style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)' }}>
       <div className="max-w-6xl mx-auto">
 
-        <div className="flex items-center gap-3 mb-8">
-          <div className="p-2.5 rounded-lg text-white" style={{ backgroundColor: 'var(--primary)' }}>
-            <Users size={20} />
+        <div className="flex items-center gap-4 mb-8">
+          <div className="p-3 rounded-xl text-white shadow-lg" style={{ backgroundColor: 'var(--primary)' }}>
+            <Users size={22} />
           </div>
-          <h1 className="text-xl font-bold">Usuários do Sistema</h1>
+          <div>
+            <h1 className="text-xl font-bold">Usuários do Sistema</h1>
+            {!loading && <p className="text-xs opacity-50 mt-0.5">{users.length} registro(s)</p>}
+          </div>
         </div>
 
         {loading ? (
-          <p className="opacity-60">Carregando...</p>
+          <div className="text-center py-20">
+            <div className="inline-block w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--primary)', borderTopColor: 'transparent' }} />
+            <p className="text-sm opacity-40 mt-3 font-medium">Carregando...</p>
+          </div>
         ) : users.length === 0 ? (
-          <div className="text-center py-16 rounded-2xl border border-dashed"
+          <div className="text-center py-20 rounded-2xl border border-dashed"
             style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border-subtle)' }}>
-            <p className="opacity-60">Nenhum usuário encontrado.</p>
+            <Users size={40} className="mx-auto mb-3" style={{ opacity: 0.2 }} />
+            <p className="text-sm font-medium opacity-40">Nenhum usuário encontrado</p>
           </div>
         ) : (
           <div className="overflow-x-auto rounded-2xl border shadow-lg"
             style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border-subtle)' }}>
             <table className="w-full text-sm">
-              <thead style={{ borderBottom: '2px solid var(--border-subtle)' }}>
-                <tr>
-                  <th className="px-4 py-3 text-left font-semibold">Nome</th>
-                  <th className="px-4 py-3 text-left font-semibold">Email</th>
-                  <th className="px-4 py-3 text-left font-semibold">CPF</th>
-                  <th className="px-4 py-3 text-left font-semibold">Papel</th>
-                  <th className="px-4 py-3 text-left font-semibold">Setor</th>
-                  {userRole === 'GOD' && <th className="px-4 py-3 text-left font-semibold">Empresa</th>}
-                  <th className="px-4 py-3 text-center font-semibold">Ações</th>
+              <thead>
+                <tr style={{ backgroundColor: 'var(--surface-elevated)', borderBottom: '2px solid var(--border-subtle)' }}>
+                  <th className="px-4 py-3.5 text-left text-xs font-bold uppercase tracking-wider">Nome</th>
+                  <th className="px-4 py-3.5 text-left text-xs font-bold uppercase tracking-wider">Email</th>
+                  <th className="px-4 py-3.5 text-left text-xs font-bold uppercase tracking-wider">CPF</th>
+                  <th className="px-4 py-3.5 text-left text-xs font-bold uppercase tracking-wider">Papel</th>
+                  <th className="px-4 py-3.5 text-left text-xs font-bold uppercase tracking-wider">Setor</th>
+                  {userRole === 'GOD' && <th className="px-4 py-3.5 text-left text-xs font-bold uppercase tracking-wider">Empresa</th>}
+                  <th className="px-4 py-3.5 text-center text-xs font-bold uppercase tracking-wider">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {users.map((u, idx) => (
                   <tr key={u.id}
+                    className="transition-all duration-150 hover:brightness-95"
                     style={{ borderBottom: '1px solid var(--border-subtle)', backgroundColor: idx % 2 === 0 ? 'transparent' : 'var(--surface-elevated)' }}>
                     {editingId === u.id ? (
                       <>
                         <td className="px-4 py-2">
                           <input value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))}
-                            className="w-full px-2 py-1 rounded border text-xs"
+                            className="w-full px-3 py-1.5 rounded-lg border text-xs outline-none focus:ring-2 focus:ring-[var(--primary)]"
                             style={{ backgroundColor: 'var(--surface-elevated)', borderColor: 'var(--border-subtle)', color: 'var(--foreground)' }} />
                         </td>
                         <td className="px-4 py-2">
                           <input value={editForm.email} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))}
-                            className="w-full px-2 py-1 rounded border text-xs"
+                            className="w-full px-3 py-1.5 rounded-lg border text-xs outline-none focus:ring-2 focus:ring-[var(--primary)]"
                             style={{ backgroundColor: 'var(--surface-elevated)', borderColor: 'var(--border-subtle)', color: 'var(--foreground)' }} />
                         </td>
                         <td className="px-4 py-2">
                           <input value={editForm.cpf} onChange={e => setEditForm(p => ({ ...p, cpf: e.target.value }))}
-                            className="w-full px-2 py-1 rounded border text-xs font-mono"
+                            className="w-full px-3 py-1.5 rounded-lg border text-xs font-mono outline-none focus:ring-2 focus:ring-[var(--primary)]"
                             style={{ backgroundColor: 'var(--surface-elevated)', borderColor: 'var(--border-subtle)', color: 'var(--foreground)' }} />
                         </td>
-                        <td className="px-4 py-2 text-xs">{roleParaDisplay(u.role)}</td>
+                        <td className="px-4 py-2 text-xs font-medium">{roleParaDisplay(u.role)}</td>
                         <td className="px-4 py-2">
                           <input value={editForm.setor} onChange={e => setEditForm(p => ({ ...p, setor: e.target.value }))}
-                            className="w-full px-2 py-1 rounded border text-xs"
+                            className="w-full px-3 py-1.5 rounded-lg border text-xs outline-none focus:ring-2 focus:ring-[var(--primary)]"
                             style={{ backgroundColor: 'var(--surface-elevated)', borderColor: 'var(--border-subtle)', color: 'var(--foreground)' }} />
                         </td>
-                        {userRole === 'GOD' && <td className="px-4 py-2 text-xs font-mono opacity-60">{u.empresaId?.slice(0, 8)}</td>}
+                        {userRole === 'GOD' && <td className="px-4 py-2 text-xs font-mono opacity-50">{u.empresaId?.slice(0, 8)}</td>}
                         <td className="px-4 py-2 text-center">
                           <div className="flex items-center justify-center gap-1">
-                            <button onClick={() => saveEdit(u.id)} className="p-1.5 rounded" style={{ color: 'var(--status-completed)' }} title="Salvar"><Check size={14} /></button>
-                            <button onClick={cancelEdit} className="p-1.5 rounded" style={{ color: 'var(--status-cancelled)' }} title="Cancelar"><X size={14} /></button>
+                            <button onClick={() => saveEdit(u.id)} className="p-1.5 rounded-lg hover:bg-[var(--success-light)] transition-all" style={{ color: 'var(--status-completed)' }} title="Salvar"><Check size={14} /></button>
+                            <button onClick={cancelEdit} className="p-1.5 rounded-lg hover:bg-[var(--error-light)] transition-all" style={{ color: 'var(--status-cancelled)' }} title="Cancelar"><X size={14} /></button>
                           </div>
                         </td>
                       </>
                     ) : (
                       <>
-                        <td className="px-4 py-3 font-medium">{u.name}</td>
-                        <td className="px-4 py-3">{u.email}</td>
-                        <td className="px-4 py-3 font-mono text-xs">{u.cpf}</td>
-                        <td className="px-4 py-3">{roleParaDisplay(u.role)}</td>
-                        <td className="px-4 py-3">{u.setor}</td>
-                        {userRole === 'GOD' && <td className="px-4 py-3 text-xs font-mono opacity-60">{u.empresaId?.slice(0, 8)}</td>}
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-4 py-3.5 font-medium">{u.name}</td>
+                        <td className="px-4 py-3.5 opacity-80">{u.email}</td>
+                        <td className="px-4 py-3.5 font-mono text-xs opacity-70">{u.cpf}</td>
+                        <td className="px-4 py-3.5">
+                          <span className="inline-block px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider" style={{ backgroundColor: 'var(--surface-elevated)', color: 'var(--primary)' }}>
+                            {roleParaDisplay(u.role)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3.5">{u.setor}</td>
+                        {userRole === 'GOD' && <td className="px-4 py-3.5 text-xs font-mono opacity-50">{u.empresaId?.slice(0, 8)}</td>}
+                        <td className="px-4 py-3.5 text-center">
                           <div className="flex items-center justify-center gap-2">
-                            {u.role !== 'GOD' && (
+                            {u.role !== 'GOD' && u.id !== currentUserId && (
                               <>
-                                <button onClick={() => startEdit(u)} className="p-1.5 rounded transition-colors hover:opacity-70" style={{ color: 'var(--primary)' }} title="Editar">
+                                <button onClick={() => startEdit(u)} className="p-2 rounded-xl transition-all duration-150 hover:bg-[var(--info-light)]" style={{ color: 'var(--primary)' }} title="Editar">
                                   <Pencil size={14} />
                                 </button>
-                                <button onClick={() => handleDelete(u.id, u.name)} className="p-1.5 rounded transition-colors hover:opacity-70" style={{ color: 'var(--status-cancelled)' }} title="Excluir">
+                                <button onClick={() => handleDelete(u.id, u.name)} className="p-2 rounded-xl transition-all duration-150 hover:bg-[var(--error-light)]" style={{ color: 'var(--status-cancelled)' }} title="Excluir">
                                   <Trash2 size={14} />
                                 </button>
                               </>

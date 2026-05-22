@@ -67,103 +67,94 @@ return (
       <ThemeToggle />
     </div>
 
-    <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-0 items-stretch rounded-3xl overflow-hidden shadow-2xl border"
+    <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-0 items-stretch rounded-3xl overflow-hidden shadow-2xl border animate-in fade-in duration-500"
       style={{
         borderColor: "var(--border-subtle)",
         backgroundColor: "var(--surface)"
       }}
     >
-      {/* Lado esquerdo - imagem */}
-      <div className="hidden md:block relative">
-
-        <img
-          src="/login/login.png"
-          alt="Sistema Nolevel"
-          className="w-full h-full object-cover"
-        />
-
-        {/* overlay leve para dar contraste */}
-        <div className="absolute inset-0 bg-black/30" />
-
-        <div className="absolute bottom-8 left-8 right-8 text-white z-10">
-          <h2 className="text-3xl font-bold mb-2">
-            Gestão inteligente de chamados
-          </h2>
-
-          <p className="font-bold text-white/80 ">
-            Elimine gargalos, automatize processos e aumente a eficiência.
-          </p>
+      <div className="hidden md:flex relative flex-col justify-end overflow-hidden">
+        <div
+          className="absolute inset-0 flex items-center justify-center"
+          style={{
+            background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%)",
+          }}
+        >
+          <div className="absolute inset-0 opacity-10" style={{
+            backgroundImage: "radial-gradient(circle at 25% 25%, white 0%, transparent 50%), radial-gradient(circle at 75% 75%, white 0%, transparent 50%)"
+          }} />
+          <div className="relative z-10 p-12 text-center">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center">
+              <span className="text-4xl font-black text-white">N</span>
+            </div>
+            <h2 className="text-3xl font-bold text-white mb-3">
+              Gestão inteligente
+            </h2>
+            <p className="text-lg text-white/80 font-medium max-w-xs mx-auto">
+              Elimine gargalos, automatize processos e aumente a eficiência do seu suporte.
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Lado direito - login */}
-      <div className="w-full p-8 sm:p-10 space-y-6">
-        {/* Logo */}
-        <div className="space-y-2 mb-4">
-          <h1 className="text-3xl sm:text-4xl font-bold" style={{ color: "var(--primary)" }}>
+      <div className="w-full p-8 sm:p-12 space-y-8">
+        <div className="space-y-2">
+          <h1 className="text-4xl sm:text-5xl font-black tracking-tight" style={{ color: "var(--primary)" }}>
             Nolevel
           </h1>
-          <p className="text-sm opacity-70">Acesse sua conta</p>
+          <p className="text-sm opacity-50 font-medium">Acesse sua conta para continuar</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium mb-2">
+          <div className="space-y-1.5">
+            <label htmlFor="email" className="text-xs font-bold uppercase tracking-wider opacity-70">
               Email
             </label>
             <div className="relative">
-              <LuMail
-                className="absolute left-4 top-1/2 -translate-y-1/2 opacity-50"
-                size={20}
-              />
+              <LuMail className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40" size={18} />
               <input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="seu@email.com"
-                className="w-full pl-12 pr-4 py-3 border rounded-xl outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
+                className="w-full pl-11 pr-4 py-3.5 border rounded-xl outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                 style={{
                   backgroundColor: "var(--surface-elevated)",
                   borderColor: "var(--border-subtle)",
                   color: "var(--foreground)",
-                  "--tw-ring-color": "var(--primary)"
-                } as never}
+                }}
                 disabled={loading}
                 required
               />
             </div>
           </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium mb-2">
+          <div className="space-y-1.5">
+            <label htmlFor="password" className="text-xs font-bold uppercase tracking-wider opacity-70">
               Senha
             </label>
             <div className="relative">
-              <LuLock
-                className="absolute left-4 top-1/2 -translate-y-1/2 opacity-50"
-                size={20}
-              />
+              <LuLock className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40" size={18} />
               <input
                 id="password"
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-12 pr-14 py-3 border rounded-xl outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
+                className="w-full pl-11 pr-14 py-3.5 border rounded-xl outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                 style={{
                   backgroundColor: "var(--surface-elevated)",
                   borderColor: "var(--border-subtle)",
                   color: "var(--foreground)",
-                  "--tw-ring-color": "var(--primary)"
-                } as never}
+                }}
                 disabled={loading}
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-sm opacity-60 hover:opacity-100"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold uppercase tracking-wider opacity-50 hover:opacity-100 transition-opacity"
                 disabled={loading}
               >
                 {showPassword ? "Ocultar" : "Mostrar"}
@@ -173,32 +164,37 @@ return (
 
           {error && (
             <div
-              className="p-4 rounded-xl text-sm border flex items-start gap-3"
+              className="p-4 rounded-xl text-sm border flex items-start gap-3 animate-in slide-in-from-top-2 duration-200"
               style={{
                 backgroundColor: "var(--error-light)",
                 borderColor: "var(--status-cancelled)",
                 color: "var(--status-cancelled)",
               }}
             >
-              {error}
+              <span className="font-medium">{error}</span>
             </div>
           )}
 
           <button
-          
             type="submit"
             disabled={loading || !email || !password}
-            className="w-full py-3 rounded-xl font-semibold text-white transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50"
-            style={{
-              backgroundColor: "var(--primary)",
-            }}
+            className="w-full py-3.5 rounded-xl font-bold text-white transition-all duration-200 hover:brightness-110 hover:shadow-lg active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100"
+            style={{ backgroundColor: "var(--primary)" }}
           >
-            {loading ? "Entrando..." : "Entrar"}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                Entrando...
+              </span>
+            ) : "Entrar"}
           </button>
         </form>
-        <Link href="/contact" className="text-sm opacity-70 hover:underline">
-          Não possui uma conta?
-        </Link>
+
+        <div className="pt-2">
+          <Link href="/contact" className="text-sm font-medium opacity-50 hover:opacity-100 hover:text-[var(--primary)] transition-all">
+            Não possui uma conta?
+          </Link>
+        </div>
       </div>
     </div>
   </div>

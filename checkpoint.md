@@ -362,3 +362,29 @@
 | 2 | `54ecb1b` | feat: adiciona PUT e DELETE em api/users com validacao RBAC para editar/excluir usuarios | 21/05/2026 |
 | 3 | `f044ee0` | feat: adiciona editar e excluir empresa com PUT/DELETE na API e botoes na pagina | 21/05/2026 |
 | 4 | `aeaf54d` | feat: GOD ve usuarios por empresa + pagina /usuarios para ADMIN/GESTOR com edicao inline | 21/05/2026 |
+
+---
+
+## Sessão: 21/05/2026 — Segurança, Refatoração e Frontend
+
+### Pendentes antes do commit:
+- ~~`src/app/api/users/route.ts` — Bloquear auto-edição (PUT) e auto-exclusão (DELETE)~~ ✅
+- ~~`src/app/api/users/admins/route.ts` — Bloquear auto-edição (PUT) e auto-exclusão (DELETE)~~ ✅
+- ~~`src/app/(atendimento)/usuarios/page.tsx` — Ocultar ações para o próprio usuário~~ ✅
+- ~~`src/app/(atendimento)/empresa/[id]/usuarios/page.tsx` — Ocultar ações para o próprio usuário~~ ✅
+- ~~`src/app/(atendimento)/cpfs/page.tsx` — Ocultar ações admin para o próprio GOD~~ ✅
+- ~~`src/app/(atendimento)/gestao-de-usuarios/page.tsx` — Remover listagem de usuários~~ ✅
+- ~~Profissionalizar frontend (exceto landing page)~~ ✅
+  - ~~Login~~ ✅
+  - ~~Chamados (all-tickets)~~ ✅
+  - ~~Avisos~~ ✅
+  - ~~CPFs~~ ✅
+  - ~~Gestão de Usuários~~ ✅
+  - ~~Usuários~~ ✅
+  - ~~Empresa Usuários~~ ✅
+  - ~~Criar Empresa~~ ✅
+- ~~`src/app/globals.css` — Adicionar variáveis de sombra~~ ✅
+- ~~`memorias.md` — Seções 26-29 documentando mudanças~~ ✅
+- ~~`checkpoint.md` — Atualizado~~ ✅
+
+### Commits realizados nesta sessão:

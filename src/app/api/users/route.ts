@@ -215,6 +215,13 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
     }
 
+    if (session!.id === id) {
+      return NextResponse.json(
+        { error: "Você não pode excluir seu próprio usuário" },
+        { status: 403 }
+      )
+    }
+
     if (targetUser.role === "GOD") {
       return NextResponse.json(
         { error: "Usuários GOD não podem ser deletados pela aplicação" },
@@ -276,6 +283,13 @@ export async function PUT(req: NextRequest) {
 
     if (!targetUser) {
       return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
+    }
+
+    if (session!.id === id) {
+      return NextResponse.json(
+        { error: "Você não pode editar seu próprio usuário" },
+        { status: 403 }
+      )
     }
 
     if (targetUser.role === "GOD") {

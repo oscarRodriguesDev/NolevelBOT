@@ -99,32 +99,31 @@ export default function CreateEmpresa() {
         </Link>
 
         <div
-          className="rounded-2xl border shadow-lg overflow-hidden transition-colors duration-300"
+          className="rounded-2xl border shadow-lg overflow-hidden"
           style={{
             backgroundColor: "var(--surface)",
             borderColor: "var(--border-subtle)",
           }}
         >
           <div
-            className="border-b p-6 sm:p-8"
+            className="border-b p-6 sm:p-8 flex items-center gap-4"
             style={{
               backgroundColor: "var(--surface-elevated)",
               borderColor: "var(--border-subtle)",
             }}
           >
-            <div className="flex items-center gap-4">
-              <div
-                className="p-3 rounded-lg text-white"
-                style={{ backgroundColor: "var(--primary)" }}
-              >
-                <Building2 size={24} />
-              </div>
+            <div className="p-3 rounded-xl text-white shadow-lg" style={{ backgroundColor: "var(--primary)" }}>
+              <Building2 size={24} />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold">Cadastrar Empresa</h2>
+              <p className="text-xs opacity-50">Preencha as informações da nova empresa</p>
             </div>
           </div>
 
           <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-6">
-            <div className="space-y-2">
-              <label htmlFor="nome" className="block text-sm font-semibold">
+            <div className="space-y-1.5">
+              <label htmlFor="nome" className="block text-xs font-bold uppercase tracking-wider opacity-70">
                 Nome Fantasia
               </label>
               <input
@@ -133,19 +132,18 @@ export default function CreateEmpresa() {
                 placeholder="Ex: Minha Empresa LTDA"
                 value={nome}
                 onChange={(e) => setNome(e.target.value)}
-                className="w-full px-4 py-3 border rounded-lg outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
+                className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                 style={{
                   backgroundColor: "var(--surface-elevated)",
                   borderColor: "var(--border-subtle)",
                   color: "var(--foreground)",
-                  "--tw-ring-color": "var(--primary)",
-                } as never}
+                }}
                 required
               />
             </div>
 
-            <div className="space-y-2">
-              <label htmlFor="cnpj" className="block text-sm font-semibold">
+            <div className="space-y-1.5">
+              <label htmlFor="cnpj" className="block text-xs font-bold uppercase tracking-wider opacity-70">
                 CNPJ
               </label>
               <input
@@ -154,19 +152,18 @@ export default function CreateEmpresa() {
                 placeholder="00.000.000/0000-00"
                 value={cnpj}
                 onChange={(e) => setCnpj(formatCNPJ(e.target.value))}
-                className="w-full px-4 py-3 border rounded-lg font-mono outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
+                className="w-full px-4 py-3 rounded-xl border font-mono outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                 style={{
                   backgroundColor: "var(--surface-elevated)",
                   borderColor: "var(--border-subtle)",
                   color: "var(--foreground)",
-                  "--tw-ring-color": "var(--primary)",
-                } as never}
+                }}
                 required
               />
             </div>
 
-            <div className="space-y-2">
-              <label htmlFor="setores" className="block text-sm font-semibold">
+            <div className="space-y-1.5">
+              <label htmlFor="setores" className="block text-xs font-bold uppercase tracking-wider opacity-70">
                 Setores de Atuação
               </label>
               <input
@@ -175,22 +172,21 @@ export default function CreateEmpresa() {
                 placeholder="Tecnologia, Varejo, Educação..."
                 value={setores}
                 onChange={(e) => setSetores(e.target.value)}
-                className="w-full px-4 py-3 border rounded-lg outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
+                className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                 style={{
                   backgroundColor: "var(--surface-elevated)",
                   borderColor: "var(--border-subtle)",
                   color: "var(--foreground)",
-                  "--tw-ring-color": "var(--primary)",
-                } as never}
+                }}
               />
-              <p className="text-xs opacity-70">Separe os setores utilizando vírgulas</p>
+              <p className="text-xs opacity-50 mt-1">Separe os setores utilizando vírgulas</p>
             </div>
 
             <div className="pt-4 flex flex-col sm:flex-row gap-3">
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-white transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
+                className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-bold text-white transition-all duration-200 hover:brightness-110 hover:shadow-lg active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100"
                 style={{ backgroundColor: "var(--primary)" }}
               >
                 {loading ? (
@@ -208,7 +204,7 @@ export default function CreateEmpresa() {
 
               <Link
                 href="/empresa"
-                className="px-6 py-3 font-semibold rounded-lg transition-colors duration-300 text-center"
+                className="px-6 py-3.5 font-bold rounded-xl text-center transition-all duration-200 hover:brightness-95"
                 style={{
                   backgroundColor: "var(--surface-elevated)",
                   color: "var(--foreground)",

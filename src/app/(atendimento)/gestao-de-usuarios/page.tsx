@@ -6,24 +6,12 @@ import { ROLE } from "@prisma/client"
 import usuarios from "../../../../public/users/usuarios.png"
 import { useHeader } from "../layout"
 import toast from "react-hot-toast"
-import { rolesQuePodeCriar, roleParaDisplay, VIEW_USERS_ROLES } from "@/lib/rbac"
+import { rolesQuePodeCriar, roleParaDisplay } from "@/lib/rbac"
 
 interface Empresa {
   id: string
   nome: string
   setores: string[]
-}
-
-interface UserListItem {
-  id: string
-  name: string
-  email: string
-  cpf: string
-  role: ROLE
-  setor: string
-  empresaId: string
-  avatarUrl: string | null
-  createdAt: string
 }
 
 const roleMap: Record<string, ROLE> = {
@@ -63,9 +51,6 @@ export default function CriarUsuarioPage() {
   const [loading, setLoading] = useState(false)
   const [loadingDados, setLoadingDados] = useState(true)
 
-  const [userList, setUserList] = useState<UserListItem[]>([])
-  const [loadingUsers, setLoadingUsers] = useState(false)
-
   const { setHeader } = useHeader()
 
   useEffect(() => {
@@ -75,35 +60,12 @@ export default function CriarUsuarioPage() {
     })
   }, [setHeader])
 
-  async function fetchUsers() {
-    if (!userRole) return
-    const viewConfig = VIEW_USERS_ROLES[userRole]
-    if (!viewConfig || viewConfig.roles.length === 0) return
-
-    setLoadingUsers(true)
-    try {
-      const res = await fetch("/api/users")
-      if (res.ok) {
-        const data = await res.json()
-        setUserList(data)
-      }
-    } catch (error) {
-      console.error("Erro ao buscar usuários", error)
-    } finally {
-      setLoadingUsers(false)
-    }
-  }
-
   useEffect(() => {
     async function fetchDados() {
       try {
         setLoadingDados(true)
 
-        const [empresaRes, usersRes] = await Promise.all([
-          fetch("/api/empresa"),
-          userRole ? fetch("/api/users") : Promise.resolve(null),
-        ])
-
+        const empresaRes = await fetch("/api/empresa")
         const data = await empresaRes.json()
 
         if (userRole === "GOD" && Array.isArray(data)) {
@@ -116,11 +78,6 @@ export default function CriarUsuarioPage() {
           setSetoresDisponiveis(data.setores)
         } else if (Array.isArray(data) && data.length > 0) {
           setSetoresDisponiveis(data[0].setores || [])
-        }
-
-        if (usersRes && usersRes.ok) {
-          const userData = await usersRes.json()
-          setUserList(userData)
         }
       } catch (error) {
         console.error("Erro ao carregar dados:", error)
@@ -185,7 +142,6 @@ export default function CriarUsuarioPage() {
           role: "", setor: "", empresaId: userRole === "GOD" ? form.empresaId : "",
           avatarFile: null,
         })
-        fetchUsers()
       } else {
         const errorData = await response.json()
         toast.error(errorData.error || "Erro ao criar usuário")
@@ -197,25 +153,7 @@ export default function CriarUsuarioPage() {
     }
   }
 
-  async function handleDeleteUser(userId: string, userName: string) {
-    if (!confirm(`Tem certeza que deseja remover "${userName}"?`)) return
-
-    try {
-      const res = await fetch(`/api/users?id=${userId}`, { method: "DELETE" })
-      if (!res.ok) {
-        const data = await res.json()
-        toast.error(data.error || "Erro ao remover")
-        return
-      }
-      toast.success("Usuário removido com sucesso")
-      fetchUsers()
-    } catch {
-      toast.error("Erro ao remover usuário")
-    }
-  }
-
   const rolesPermitidas = userRole ? rolesQuePodeCriar(userRole) : []
-  const podeVerLista = userRole ? VIEW_USERS_ROLES[userRole]?.roles.length > 0 : false
 
   return (
     <div
@@ -241,23 +179,27 @@ export default function CriarUsuarioPage() {
           />
 
           <div
-            className="rounded-2xl border shadow-lg p-6 sm:p-8 transition-colors duration-300"
+            className="rounded-2xl border shadow-lg p-6 sm:p-8"
             style={{
               backgroundColor: "var(--surface)",
               borderColor: "var(--border-subtle)",
             }}
           >
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold">Novo Usuário</h3>
+              <p className="text-xs opacity-50 mt-0.5">Preencha os dados para registrar</p>
+            </div>
             <form onSubmit={handleSubmit} className="space-y-5">
               {userRole === "GOD" && (
                 <div>
-                  <label className="block text-sm font-semibold mb-2">Empresa</label>
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-2 opacity-70">Empresa</label>
                   <select
                     name="empresaId"
                     value={form.empresaId}
                     onChange={handleChange}
                     required
                     disabled={loadingDados || empresas.length === 0}
-                    className="w-full px-4 py-3 border rounded-lg outline-none disabled:opacity-50"
+                    className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent disabled:opacity-50"
                     style={{
                       borderColor: "var(--border-subtle)",
                       backgroundColor: "var(--surface-elevated)",
@@ -275,26 +217,25 @@ export default function CriarUsuarioPage() {
               )}
 
               <div>
-                <label className="block text-sm font-semibold mb-2">Nome Completo</label>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-2 opacity-70">Nome Completo</label>
                 <input
                   name="name"
                   placeholder="Digite o nome"
                   value={form.name}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border rounded-lg outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
+                  className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                   style={{
                     borderColor: "var(--border-subtle)",
                     backgroundColor: "var(--surface-elevated)",
                     color: "var(--foreground)",
-                    "--tw-ring-color": "var(--primary)",
-                  } as never}
+                  }}
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold mb-2">Email</label>
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-2 opacity-70">Email</label>
                   <input
                     name="email"
                     type="email"
@@ -302,34 +243,34 @@ export default function CriarUsuarioPage() {
                     value={form.email}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 border rounded-lg outline-none"
+                    className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                     style={{
                       borderColor: "var(--border-subtle)",
                       backgroundColor: "var(--surface-elevated)",
                       color: "var(--foreground)",
-                    } as never}
+                    }}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-2">CPF</label>
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-2 opacity-70">CPF</label>
                   <input
                     name="cpf"
                     placeholder="000.000.000-00"
                     value={form.cpf}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 border rounded-lg outline-none"
+                    className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent font-mono"
                     style={{
                       borderColor: "var(--border-subtle)",
                       backgroundColor: "var(--surface-elevated)",
                       color: "var(--foreground)",
-                    } as never}
+                    }}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold mb-2">Senha</label>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-2 opacity-70">Senha</label>
                 <input
                   name="password"
                   type="password"
@@ -337,29 +278,29 @@ export default function CriarUsuarioPage() {
                   value={form.password}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border rounded-lg outline-none"
+                  className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                   style={{
                     borderColor: "var(--border-subtle)",
                     backgroundColor: "var(--surface-elevated)",
                     color: "var(--foreground)",
-                  } as never}
+                  }}
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold mb-2">Papel</label>
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-2 opacity-70">Papel</label>
                   <select
                     name="role"
                     value={form.role}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 border rounded-lg outline-none"
+                    className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)]"
                     style={{
                       borderColor: "var(--border-subtle)",
                       backgroundColor: "var(--surface-elevated)",
                       color: "var(--foreground)",
-                    } as never}
+                    }}
                   >
                     <option value="">Selecione um papel</option>
                     {rolesPermitidas.map(role => (
@@ -369,24 +310,24 @@ export default function CriarUsuarioPage() {
                     ))}
                   </select>
                   {rolesPermitidas.length === 0 && userRole && (
-                    <p className="text-xs mt-1 opacity-60">Seu perfil não permite criar usuários</p>
+                    <p className="text-xs mt-1.5 opacity-50">Seu perfil não permite criar usuários</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold mb-2">Setor</label>
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-2 opacity-70">Setor</label>
                   <select
                     name="setor"
                     value={form.setor}
                     onChange={handleChange}
                     required
                     disabled={loadingDados}
-                    className="w-full px-4 py-3 border rounded-lg outline-none disabled:opacity-50"
+                    className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] disabled:opacity-50"
                     style={{
                       borderColor: "var(--border-subtle)",
                       backgroundColor: "var(--surface-elevated)",
                       color: "var(--foreground)",
-                    } as never}
+                    }}
                   >
                     <option value="">
                       {loadingDados ? "Carregando setores..." : "Selecione o setor"}
@@ -401,25 +342,25 @@ export default function CriarUsuarioPage() {
               </div>
 
               <div
-                className="border rounded-lg p-4"
+                className="rounded-xl border border-dashed p-4 transition-all hover:brightness-95"
                 style={{
                   borderColor: "var(--border-subtle)",
                   backgroundColor: "var(--surface-elevated)",
                 }}
               >
-                <label className="block text-sm font-semibold mb-3">Foto de Perfil (Opcional)</label>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-3 opacity-70">Foto de Perfil</label>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={handleFileChange}
-                  className="w-full text-sm"
+                  className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:text-white file:bg-[var(--primary)] hover:file:brightness-110"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={loading || rolesPermitidas.length === 0}
-                className="w-full py-3 rounded-lg font-semibold text-white transition-all duration-300 hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+                className="w-full py-3.5 rounded-xl font-bold text-white transition-all duration-200 hover:brightness-110 hover:shadow-lg active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100"
                 style={{ backgroundColor: "var(--primary)" }}
               >
                 {loading ? "Criando usuário..." : "Criar Usuário"}
@@ -427,76 +368,6 @@ export default function CriarUsuarioPage() {
             </form>
           </div>
         </div>
-
-        {podeVerLista && (
-          <div
-            className="mt-8 rounded-2xl shadow-lg border p-6 sm:p-8 transition-colors duration-300"
-            style={{
-              backgroundColor: "var(--surface)",
-              borderColor: "var(--border-subtle)",
-            }}
-          >
-            <h3 className="text-lg font-semibold mb-4">Usuários Cadastrados</h3>
-
-            {loadingUsers ? (
-              <p className="text-sm opacity-60">Carregando...</p>
-            ) : userList.length === 0 ? (
-              <p className="text-sm opacity-60">Nenhum usuário cadastrado.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead
-                    style={{
-                      borderBottom: "2px solid var(--border-subtle)",
-                    }}
-                  >
-                    <tr>
-                      <th className="px-4 py-3 text-left font-semibold">Nome</th>
-                      <th className="px-4 py-3 text-left font-semibold">Email</th>
-                      <th className="px-4 py-3 text-left font-semibold">CPF</th>
-                      <th className="px-4 py-3 text-left font-semibold">Papel</th>
-                      <th className="px-4 py-3 text-left font-semibold">Setor</th>
-                      {userRole === "GOD" && <th className="px-4 py-3 text-left font-semibold">Empresa ID</th>}
-                      <th className="px-4 py-3 text-center font-semibold">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {userList.map((u, idx) => (
-                      <tr
-                        key={u.id}
-                        style={{
-                          borderBottom: "1px solid var(--border-subtle)",
-                          backgroundColor: idx % 2 === 0 ? "transparent" : "var(--surface-elevated)",
-                        }}
-                      >
-                        <td className="px-4 py-3 font-medium">{u.name}</td>
-                        <td className="px-4 py-3">{u.email}</td>
-                        <td className="px-4 py-3">{u.cpf}</td>
-                        <td className="px-4 py-3">{roleParaDisplay(u.role)}</td>
-                        <td className="px-4 py-3">{u.setor}</td>
-                        {userRole === "GOD" && <td className="px-4 py-3 text-xs font-mono">{u.empresaId.slice(0, 8)}</td>}
-                        <td className="px-4 py-3 text-center">
-                          {u.role !== "GOD" && (
-                            <button
-                              onClick={() => handleDeleteUser(u.id, u.name)}
-                              className="text-xs px-3 py-1.5 rounded-lg font-medium transition-all"
-                              style={{
-                                color: "#fff",
-                                backgroundColor: "var(--status-cancelled)",
-                              }}
-                            >
-                              Excluir
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   )
