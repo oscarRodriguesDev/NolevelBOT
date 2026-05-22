@@ -340,3 +340,9 @@
 - ~~src/app/(atendimento)/empresa/page.tsx — Redireciona não-GOD~~ ?
 - ~~src/app/(atendimento)/empresa/create/page.tsx — Redireciona não-GOD~~ ?
 - ~~memorias.md — Seção 24 documentando RBAC~~ ?
+
+### Commits realizados nesta sessao:
+
+| # | Hash | Mensagem | Data |
+|---|------|----------|------|
+| 1 | 1288fa5 | feat: implementa RBAC completo com validacoes backend, auto-registro de CPF, menus dinamicos e protecao contra exclusao de GOD | 21/05/2026 |
