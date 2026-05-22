@@ -69,7 +69,9 @@ export async function POST(req: NextRequest) {
     if (!email?.trim()) return NextResponse.json({ error: "Email é obrigatório" }, { status: 400 })
     if (!cpf) return NextResponse.json({ error: "CPF é obrigatório" }, { status: 400 })
     if (!password?.trim()) return NextResponse.json({ error: "Senha é obrigatória" }, { status: 400 })
-    if (!setor?.trim()) return NextResponse.json({ error: "Setor é obrigatório" }, { status: 400 })
+    if (finalRole !== "ADMIN" && !setor?.trim()) {
+      return NextResponse.json({ error: "Setor é obrigatório" }, { status: 400 })
+    }
 
     if (userRole === "GESTOR") {
       if (setor !== session!.setor) {

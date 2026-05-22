@@ -142,17 +142,15 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 })
     }
 
-    const usuariosVinculados = await prisma.user.count({ where: { empresaId: id } })
-    if (usuariosVinculados > 0) {
-      return NextResponse.json(
-        { error: `Não é possível excluir: existem ${usuariosVinculados} usuário(s) vinculado(s) a esta empresa` },
-        { status: 400 }
-      )
-    }
+    await prisma.$transaction([
+      prisma.avisos.deleteMany({ where: { empresaId: id } }),
+      prisma.chamado.deleteMany({ where: { empresaId: id } }),
+      prisma.cpfs.deleteMany({ where: { empresaId: id } }),
+      prisma.user.deleteMany({ where: { empresaId: id } }),
+      prisma.empresa.delete({ where: { id } }),
+    ])
 
-    await prisma.empresa.delete({ where: { id } })
-
-    return NextResponse.json({ message: "Empresa removida com sucesso" })
+    return NextResponse.json({ message: "Empresa e todos os dados vinculados foram removidos" })
   } catch (error) {
     return NextResponse.json({ error: "Erro ao remover empresa" }, { status: 500 })
   }

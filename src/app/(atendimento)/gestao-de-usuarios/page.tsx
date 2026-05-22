@@ -118,6 +118,14 @@ export default function CriarUsuarioPage() {
       setForm((prev) => ({ ...prev, cpf: formatCPF(value) }))
       return
     }
+    if (name === "role") {
+      setForm((prev) => ({
+        ...prev,
+        role: value,
+        setor: value === roleBackToFront("ADMIN") ? "" : prev.setor,
+      }))
+      return
+    }
     setForm((prev) => ({ ...prev, [name]: value }))
   }
 
@@ -346,6 +354,20 @@ export default function CriarUsuarioPage() {
                         }}
                       />
                       <p className="text-[10px] mt-1.5 opacity-50">Setor definido automaticamente</p>
+                    </div>
+                  ) : form.role === roleBackToFront("ADMIN") ? (
+                    <div>
+                      <input
+                        value="Todos os setores"
+                        disabled
+                        className="w-full px-4 py-3 rounded-xl border outline-none font-medium cursor-not-allowed opacity-60"
+                        style={{
+                          borderColor: "var(--border-subtle)",
+                          backgroundColor: "var(--surface-elevated)",
+                          color: "var(--foreground)",
+                        }}
+                      />
+                      <p className="text-[10px] mt-1.5 opacity-50">Administrador tem acesso a todos os setores</p>
                     </div>
                   ) : (
                     <select
