@@ -304,6 +304,7 @@
 |---|------|----------|------|
 | 1 | `ab2654c` | feat: GOD cria usuarios no form padrao + lista de admins na pagina de CPFs | 20/05/2026 |
 | 2 | `f084359` | docs: atualiza memorias e checkpoint com feat GOD/admins | 20/05/2026 |
+| 3 | `730a028` | docs: add hash f084359 ao checkpoint | 20/05/2026 |
 
 | # | Fix | DescriÃ§Ã£o |
 |---|-----|-----------|
@@ -320,3 +321,22 @@
 | 4 | `53a681c` | docs: add hash 19438aa ao checkpoint | 20/05/2026 |
 | 5 | `fdc5cf9` | fix: tickets GET role-aware + consulta publica usa search route | 20/05/2026 |
 | 6 | `faa6265` | docs: atualiza memorias e checkpoint com fixes 7 e 8 | 20/05/2026 |
+
+---
+
+## Sessão: 21/05/2026 — Implementação RBAC Completo
+
+### Pendentes antes do commit:
+- ~~src/lib/rbac.ts — Sistema centralizado de permissões RBAC~~ ?
+- ~~src/app/api/users/route.ts — RBAC completo + auto-registro CPF~~ ?
+- ~~src/app/api/users/admins/route.ts — Bloqueio exclusão GOD~~ ?
+- ~~src/app/api/userFacil/route.ts — Validação podeCriarRole + auto CPF~~ ?
+- ~~src/app/api/cpfs/route.ts — ATENDENTE só manual, lote restrito~~ ?
+- ~~src/app/api/tickets/route.ts — GET/PUT/DELETE com setor filter~~ ?
+- ~~src/app/api/tickets/search/route.ts — PUT/DELETE com setor filter~~ ?
+- ~~src/app/(atendimento)/components/sidebar.tsx — Menu dinâmico por role~~ ?
+- ~~src/app/(atendimento)/gestao-de-usuarios/page.tsx — Roles + lista RBAC~~ ?
+- ~~src/app/(atendimento)/cpfs/page.tsx — Lote escondido ATENDENTE~~ ?
+- ~~src/app/(atendimento)/empresa/page.tsx — Redireciona não-GOD~~ ?
+- ~~src/app/(atendimento)/empresa/create/page.tsx — Redireciona não-GOD~~ ?
+- ~~memorias.md — Seção 24 documentando RBAC~~ ?

@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
+import { ROLE } from "@prisma/client"
 import usuarios from "../../../../public/users/usuarios.png"
 import { useHeader } from "../layout"
 import toast from "react-hot-toast"
+import { rolesQuePodeCriar, roleParaDisplay, VIEW_USERS_ROLES } from "@/lib/rbac"
 
 interface Empresa {
   id: string
@@ -12,9 +14,38 @@ interface Empresa {
   setores: string[]
 }
 
+interface UserListItem {
+  id: string
+  name: string
+  email: string
+  cpf: string
+  role: ROLE
+  setor: string
+  empresaId: string
+  avatarUrl: string | null
+  createdAt: string
+}
+
+const roleMap: Record<string, ROLE> = {
+  "XX!": "GOD",
+  "X1X": "ADMIN",
+  "1XX": "GESTOR",
+  "X11": "ATENDENTE",
+}
+
+function roleBackToFront(role: ROLE): string {
+  const inv: Record<string, string> = {
+    GOD: "XX!",
+    ADMIN: "X1X",
+    GESTOR: "1XX",
+    ATENDENTE: "X11",
+  }
+  return inv[role]
+}
+
 export default function CriarUsuarioPage() {
   const { data: session } = useSession()
-  const isGod = session?.user?.role === "GOD"
+  const userRole = (session?.user?.role as ROLE) || null
 
   const [form, setForm] = useState({
     name: "",
@@ -32,6 +63,9 @@ export default function CriarUsuarioPage() {
   const [loading, setLoading] = useState(false)
   const [loadingDados, setLoadingDados] = useState(true)
 
+  const [userList, setUserList] = useState<UserListItem[]>([])
+  const [loadingUsers, setLoadingUsers] = useState(false)
+
   const { setHeader } = useHeader()
 
   useEffect(() => {
@@ -41,14 +75,38 @@ export default function CriarUsuarioPage() {
     })
   }, [setHeader])
 
+  async function fetchUsers() {
+    if (!userRole) return
+    const viewConfig = VIEW_USERS_ROLES[userRole]
+    if (!viewConfig || viewConfig.roles.length === 0) return
+
+    setLoadingUsers(true)
+    try {
+      const res = await fetch("/api/users")
+      if (res.ok) {
+        const data = await res.json()
+        setUserList(data)
+      }
+    } catch (error) {
+      console.error("Erro ao buscar usuários", error)
+    } finally {
+      setLoadingUsers(false)
+    }
+  }
+
   useEffect(() => {
     async function fetchDados() {
       try {
         setLoadingDados(true)
-        const res = await fetch("/api/empresa")
-        const data = await res.json()
 
-        if (isGod && Array.isArray(data)) {
+        const [empresaRes, usersRes] = await Promise.all([
+          fetch("/api/empresa"),
+          userRole ? fetch("/api/users") : Promise.resolve(null),
+        ])
+
+        const data = await empresaRes.json()
+
+        if (userRole === "GOD" && Array.isArray(data)) {
           setEmpresas(data)
           if (data.length > 0) {
             setForm(prev => ({ ...prev, empresaId: data[0].id }))
@@ -59,6 +117,11 @@ export default function CriarUsuarioPage() {
         } else if (Array.isArray(data) && data.length > 0) {
           setSetoresDisponiveis(data[0].setores || [])
         }
+
+        if (usersRes && usersRes.ok) {
+          const userData = await usersRes.json()
+          setUserList(userData)
+        }
       } catch (error) {
         console.error("Erro ao carregar dados:", error)
       } finally {
@@ -67,7 +130,7 @@ export default function CriarUsuarioPage() {
     }
 
     fetchDados()
-  }, [isGod])
+  }, [userRole])
 
   function handleEmpresaChange(empresaId: string) {
     setForm(prev => ({ ...prev, empresaId, setor: "" }))
@@ -75,9 +138,7 @@ export default function CriarUsuarioPage() {
     setSetoresDisponiveis(emp?.setores || [])
   }
 
-  function handleChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) {
+  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = e.target
     if (name === "empresaId") {
       handleEmpresaChange(value)
@@ -104,7 +165,7 @@ export default function CriarUsuarioPage() {
       formData.append("role", form.role)
       formData.append("setor", form.setor)
 
-      if (isGod && form.empresaId) {
+      if (userRole === "GOD" && form.empresaId) {
         formData.append("empresaId", form.empresaId)
       }
 
@@ -121,20 +182,40 @@ export default function CriarUsuarioPage() {
         toast.success("Usuário criado com sucesso!")
         setForm({
           name: "", email: "", cpf: "", password: "",
-          role: "", setor: "", empresaId: isGod ? form.empresaId : "",
+          role: "", setor: "", empresaId: userRole === "GOD" ? form.empresaId : "",
           avatarFile: null,
         })
+        fetchUsers()
       } else {
         const errorData = await response.json()
-        toast.error(`Erro: ${errorData.error}`)
+        toast.error(errorData.error || "Erro ao criar usuário")
       }
     } catch (error) {
-      console.error(error)
       toast.error("Erro ao conectar com o servidor.")
     } finally {
       setLoading(false)
     }
   }
+
+  async function handleDeleteUser(userId: string, userName: string) {
+    if (!confirm(`Tem certeza que deseja remover "${userName}"?`)) return
+
+    try {
+      const res = await fetch(`/api/users?id=${userId}`, { method: "DELETE" })
+      if (!res.ok) {
+        const data = await res.json()
+        toast.error(data.error || "Erro ao remover")
+        return
+      }
+      toast.success("Usuário removido com sucesso")
+      fetchUsers()
+    } catch {
+      toast.error("Erro ao remover usuário")
+    }
+  }
+
+  const rolesPermitidas = userRole ? rolesQuePodeCriar(userRole) : []
+  const podeVerLista = userRole ? VIEW_USERS_ROLES[userRole]?.roles.length > 0 : false
 
   return (
     <div
@@ -146,7 +227,6 @@ export default function CriarUsuarioPage() {
     >
       <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-
           <div
             className="rounded-2xl border shadow-lg p-6 sm:p-8 flex items-center justify-center min-h-96 lg:min-h-full transition-colors duration-300"
             style={{
@@ -168,7 +248,7 @@ export default function CriarUsuarioPage() {
             }}
           >
             <form onSubmit={handleSubmit} className="space-y-5">
-              {isGod && (
+              {userRole === "GOD" && (
                 <div>
                   <label className="block text-sm font-semibold mb-2">Empresa</label>
                   <select
@@ -282,11 +362,15 @@ export default function CriarUsuarioPage() {
                     } as never}
                   >
                     <option value="">Selecione um papel</option>
-                    {isGod && <option value="XX!">Master</option>}
-                    <option value="X1X">Admin</option>
-                    <option value="1XX">Gestor</option>
-                    <option value="X11">Atendente</option>
+                    {rolesPermitidas.map(role => (
+                      <option key={role} value={roleBackToFront(role)}>
+                        {roleParaDisplay(role)}
+                      </option>
+                    ))}
                   </select>
+                  {rolesPermitidas.length === 0 && userRole && (
+                    <p className="text-xs mt-1 opacity-60">Seu perfil não permite criar usuários</p>
+                  )}
                 </div>
 
                 <div>
@@ -334,17 +418,85 @@ export default function CriarUsuarioPage() {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || rolesPermitidas.length === 0}
                 className="w-full py-3 rounded-lg font-semibold text-white transition-all duration-300 hover:scale-[1.02] active:scale-95 disabled:opacity-50"
-                style={{
-                  backgroundColor: "var(--primary)",
-                }}
+                style={{ backgroundColor: "var(--primary)" }}
               >
                 {loading ? "Criando usuário..." : "Criar Usuário"}
               </button>
             </form>
           </div>
         </div>
+
+        {podeVerLista && (
+          <div
+            className="mt-8 rounded-2xl shadow-lg border p-6 sm:p-8 transition-colors duration-300"
+            style={{
+              backgroundColor: "var(--surface)",
+              borderColor: "var(--border-subtle)",
+            }}
+          >
+            <h3 className="text-lg font-semibold mb-4">Usuários Cadastrados</h3>
+
+            {loadingUsers ? (
+              <p className="text-sm opacity-60">Carregando...</p>
+            ) : userList.length === 0 ? (
+              <p className="text-sm opacity-60">Nenhum usuário cadastrado.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead
+                    style={{
+                      borderBottom: "2px solid var(--border-subtle)",
+                    }}
+                  >
+                    <tr>
+                      <th className="px-4 py-3 text-left font-semibold">Nome</th>
+                      <th className="px-4 py-3 text-left font-semibold">Email</th>
+                      <th className="px-4 py-3 text-left font-semibold">CPF</th>
+                      <th className="px-4 py-3 text-left font-semibold">Papel</th>
+                      <th className="px-4 py-3 text-left font-semibold">Setor</th>
+                      {userRole === "GOD" && <th className="px-4 py-3 text-left font-semibold">Empresa ID</th>}
+                      <th className="px-4 py-3 text-center font-semibold">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {userList.map((u, idx) => (
+                      <tr
+                        key={u.id}
+                        style={{
+                          borderBottom: "1px solid var(--border-subtle)",
+                          backgroundColor: idx % 2 === 0 ? "transparent" : "var(--surface-elevated)",
+                        }}
+                      >
+                        <td className="px-4 py-3 font-medium">{u.name}</td>
+                        <td className="px-4 py-3">{u.email}</td>
+                        <td className="px-4 py-3">{u.cpf}</td>
+                        <td className="px-4 py-3">{roleParaDisplay(u.role)}</td>
+                        <td className="px-4 py-3">{u.setor}</td>
+                        {userRole === "GOD" && <td className="px-4 py-3 text-xs font-mono">{u.empresaId.slice(0, 8)}</td>}
+                        <td className="px-4 py-3 text-center">
+                          {u.role !== "GOD" && (
+                            <button
+                              onClick={() => handleDeleteUser(u.id, u.name)}
+                              className="text-xs px-3 py-1.5 rounded-lg font-medium transition-all"
+                              style={{
+                                color: "#fff",
+                                backgroundColor: "var(--status-cancelled)",
+                              }}
+                            >
+                              Excluir
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

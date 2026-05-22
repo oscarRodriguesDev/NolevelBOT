@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getSessionOrFail } from "@/util/permission"
+import { limparCPF } from "@/util/limparcpfs"
 
 export async function GET() {
   const session = await getSessionOrFail(["GOD"])
@@ -30,7 +31,6 @@ export async function GET() {
 
     return NextResponse.json(admins)
   } catch (error) {
-    console.error("Erro ao listar admins:", error)
     return NextResponse.json(
       { error: "Erro ao listar administradores" },
       { status: 500 }
@@ -52,10 +52,19 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "ID é obrigatório" }, { status: 400 })
     }
 
+    const targetUser = await prisma.user.findUnique({
+      where: { id },
+      select: { role: true },
+    })
+
+    if (!targetUser || targetUser.role !== "ADMIN") {
+      return NextResponse.json({ error: "Usuário não encontrado ou não é ADMIN" }, { status: 404 })
+    }
+
     const data: any = {}
     if (name) data.name = name
     if (email) data.email = email
-    if (cpf) data.cpf = cpf
+    if (cpf) data.cpf = limparCPF(cpf)
     if (setor) data.setor = setor
     if (empresaId) data.empresaId = empresaId
 
@@ -75,7 +84,6 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json(updated)
   } catch (error) {
-    console.error("Erro ao atualizar admin:", error)
     return NextResponse.json(
       { error: "Erro ao atualizar administrador" },
       { status: 500 }
@@ -102,9 +110,20 @@ export async function DELETE(req: NextRequest) {
       select: { role: true },
     })
 
-    if (!user || user.role !== "ADMIN") {
+    if (!user) {
+      return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
+    }
+
+    if (user.role === "GOD") {
       return NextResponse.json(
-        { error: "Usuário não encontrado ou não é ADMIN" },
+        { error: "Usuários GOD não podem ser deletados pela aplicação" },
+        { status: 403 }
+      )
+    }
+
+    if (user.role !== "ADMIN") {
+      return NextResponse.json(
+        { error: "Usuário não é ADMIN" },
         { status: 404 }
       )
     }
@@ -113,7 +132,6 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({ message: "Administrador removido com sucesso" })
   } catch (error) {
-    console.error("Erro ao deletar admin:", error)
     return NextResponse.json(
       { error: "Erro ao remover administrador" },
       { status: 500 }

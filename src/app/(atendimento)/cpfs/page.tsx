@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
+import { ROLE } from "@prisma/client"
 import { useHeader } from "../layout"
 import { FaTrash, FaEdit } from "react-icons/fa"
 import toast from "react-hot-toast"
+import { CAN_BATCH_CPF } from "@/lib/rbac"
 
 interface Admin {
   id: string
@@ -18,12 +20,14 @@ interface Admin {
 
 export default function CadastroCPFs() {
   const { data: session } = useSession()
-  const isGod = session?.user?.role === "GOD"
+  const userRole = session?.user?.role as ROLE | null
+  const isGod = userRole === "GOD"
+  const podeImportarLote = userRole ? CAN_BATCH_CPF.includes(userRole) : false
 
   const [nome, setNome] = useState("")
   const [cpf, setCpf] = useState("")
   const [file, setFile] = useState<File | null>(null)
-  const [cpfs, setCpfs] = useState<{ id: string; nome: string; cpf: string }[]>([])
+  const [cpfs, setCpfs] = useState<{ id?: string; nome: string; cpf: string }[]>([])
   const [searchTerm, setSearchTerm] = useState("")
 
   const [admins, setAdmins] = useState<Admin[]>([])
@@ -61,7 +65,7 @@ export default function CadastroCPFs() {
       descricao: 'Gerencie e importe CPFs autorizados'
     })
     fetchCpfs()
-  }, [])
+  }, [setHeader])
 
   useEffect(() => {
     if (isGod) fetchAdmins()
@@ -218,10 +222,8 @@ export default function CadastroCPFs() {
         color: "var(--foreground)",
       }}
     >
-      {/* Linha superior: CPF e Admins lado a lado */}
       <div className="flex flex-col lg:flex-row gap-8">
 
-        {/* CPF Management */}
         <div className="flex-1 max-w-lg">
           <div
             className="p-6 sm:p-8 rounded-2xl shadow-lg space-y-8 border transition-colors duration-300"
@@ -268,43 +270,44 @@ export default function CadastroCPFs() {
               </button>
             </form>
 
-            <div className="border-t pt-6" style={{ borderColor: "var(--border-subtle)" }}>
-              <h3 className="text-lg font-semibold mb-4">Ou importe em lote</h3>
-              <form onSubmit={enviarArquivo} className="space-y-4">
-                <div>
-                  <label className="flex items-center justify-between gap-4 w-full px-4 py-3 rounded-lg border transition-all cursor-pointer hover:opacity-80"
-                    style={{
-                      borderColor: "var(--border-subtle)",
-                      backgroundColor: "var(--surface-elevated)",
-                    }}>
-                    <span className="text-sm truncate flex-1">
-                      {file ? file.name : "Selecione um arquivo (.csv, .txt, .xlsx)"}
-                    </span>
-                    <span className="px-3 py-1 text-xs font-medium rounded text-white flex-shrink-0"
-                      style={{ backgroundColor: "var(--primary)" }}>
-                      Escolher
-                    </span>
-                    <input
-                      type="file"
-                      accept=".csv,.txt,.xlsx"
-                      onChange={(e) => setFile(e.target.files?.[0] || null)}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-                <button
-                  type="submit"
-                  className="w-full text-white py-3 rounded-lg transition-all duration-300 hover:scale-105 active:scale-95 font-medium"
-                  style={{ backgroundColor: "var(--status-completed)" }}
-                >
-                  Importar Arquivo
-                </button>
-              </form>
-            </div>
+            {podeImportarLote && (
+              <div className="border-t pt-6" style={{ borderColor: "var(--border-subtle)" }}>
+                <h3 className="text-lg font-semibold mb-4">Ou importe em lote</h3>
+                <form onSubmit={enviarArquivo} className="space-y-4">
+                  <div>
+                    <label className="flex items-center justify-between gap-4 w-full px-4 py-3 rounded-lg border transition-all cursor-pointer hover:opacity-80"
+                      style={{
+                        borderColor: "var(--border-subtle)",
+                        backgroundColor: "var(--surface-elevated)",
+                      }}>
+                      <span className="text-sm truncate flex-1">
+                        {file ? file.name : "Selecione um arquivo (.csv, .txt, .xlsx)"}
+                      </span>
+                      <span className="px-3 py-1 text-xs font-medium rounded text-white flex-shrink-0"
+                        style={{ backgroundColor: "var(--primary)" }}>
+                        Escolher
+                      </span>
+                      <input
+                        type="file"
+                        accept=".csv,.txt,.xlsx"
+                        onChange={(e) => setFile(e.target.files?.[0] || null)}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full text-white py-3 rounded-lg transition-all duration-300 hover:scale-105 active:scale-95 font-medium"
+                    style={{ backgroundColor: "var(--status-completed)" }}
+                  >
+                    Importar Arquivo
+                  </button>
+                </form>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* CPFs cadastrados */}
         <div className="flex-1 max-w-md">
           <div
             className="p-6 rounded-2xl shadow-lg border"
@@ -329,9 +332,9 @@ export default function CadastroCPFs() {
 
             <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
               {cpfsFiltrados.length > 0 ? (
-                cpfsFiltrados.map(item => (
+                cpfsFiltrados.map((item, idx) => (
                   <div
-                    key={item.id}
+                    key={item.cpf || idx}
                     className="p-3 rounded-lg border flex justify-between items-start transition-all hover:bg-black/5"
                     style={{
                       borderColor: "var(--border-subtle)",
@@ -361,7 +364,6 @@ export default function CadastroCPFs() {
 
       </div>
 
-      {/* Lista de Administradores (apenas GOD) */}
       {isGod && (
         <div
           className="rounded-2xl shadow-lg border p-6 sm:p-8 transition-colors duration-300"

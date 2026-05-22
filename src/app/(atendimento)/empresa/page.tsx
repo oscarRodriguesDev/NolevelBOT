@@ -2,7 +2,10 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { Plus, Building2, MapPin, Search, ArrowRight } from 'lucide-react' // Opcional: instale lucide-react
+import { useRouter } from 'next/navigation'
+import { Plus, Building2, MapPin, Search, ArrowRight } from 'lucide-react'
+import { useSession } from 'next-auth/react'
+import { ROLE } from '@prisma/client'
 import { useHeader } from '../layout'
 
 interface Empresa {
@@ -14,19 +17,29 @@ interface Empresa {
 }
 
 export default function EmpresaPage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
   const [empresas, setEmpresas] = useState<Empresa[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
 
+  const { setHeader } = useHeader()
 
-    const { setHeader } = useHeader()
-  
-    useEffect(() => {
-      setHeader({
-        titulo: 'Empresas',
-        descricao: 'Gerencie e visualize todas as empresas parceiras do sistema'
-      })
-    }, [])
+  useEffect(() => {
+    if (status === 'loading') return
+    const role = session?.user?.role as ROLE | undefined
+    if (role !== 'GOD') {
+      router.replace('/dashboards')
+      return
+    }
+  }, [status, session, router])
+
+  useEffect(() => {
+    setHeader({
+      titulo: 'Empresas',
+      descricao: 'Gerencie e visualize todas as empresas parceiras do sistema'
+    })
+  }, [setHeader])
 
   useEffect(() => {
     async function fetchEmpresas() {
@@ -44,7 +57,7 @@ export default function EmpresaPage() {
     fetchEmpresas()
   }, [])
 
-  const filteredEmpresas = empresas.filter(emp => 
+  const filteredEmpresas = empresas.filter(emp =>
     emp.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
     emp.cnpj.includes(searchTerm)
   )
@@ -58,31 +71,17 @@ export default function EmpresaPage() {
       }}
     >
       <div className="max-w-5xl mx-auto">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 mb-8">
-    
-
           <Link
             href="/empresa/create"
             className="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-3 rounded-lg font-semibold text-white transition-all duration-300 hover:scale-105 active:scale-95"
             style={{ backgroundColor: "var(--primary)" }}
-            onMouseEnter={(e) => {
-              if (e.currentTarget instanceof HTMLElement) {
-                e.currentTarget.style.backgroundColor = "var(--primary-hover)";
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (e.currentTarget instanceof HTMLElement) {
-                e.currentTarget.style.backgroundColor = "var(--primary)";
-              }
-            }}
           >
             <Plus size={18} />
             Nova Empresa
           </Link>
         </div>
 
-        {/* Barra de Busca */}
         <div className="mb-8">
           <div
             className="relative rounded-lg border shadow-md transition-colors duration-300"
@@ -92,7 +91,7 @@ export default function EmpresaPage() {
             }}
           >
             <Search className="absolute left-4 top-1/2 -translate-y-1/2" size={18} style={{ color: "var(--foreground)", opacity: 0.5 }} />
-            <input 
+            <input
               type="text"
               placeholder="Buscar por nome ou CNPJ..."
               className="w-full pl-12 pr-4 py-3 rounded-lg outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
@@ -106,7 +105,6 @@ export default function EmpresaPage() {
           </div>
         </div>
 
-        {/* Listagem */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           {loading ? (
             <SkeletonLoader />
@@ -118,16 +116,6 @@ export default function EmpresaPage() {
                 style={{
                   backgroundColor: "var(--surface)",
                   borderColor: "var(--border-subtle)",
-                }}
-                onMouseEnter={(e) => {
-                  if (e.currentTarget instanceof HTMLElement) {
-                    e.currentTarget.style.boxShadow = "0 20px 40px rgba(0, 0, 0, 0.1)";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (e.currentTarget instanceof HTMLElement) {
-                    e.currentTarget.style.boxShadow = "0 10px 25px rgba(0, 0, 0, 0.05)";
-                  }
                 }}
               >
                 <div className="flex justify-between items-start mb-4">
@@ -164,7 +152,7 @@ export default function EmpresaPage() {
                     </span>
                   ))}
                 </div>
-                
+
                 <div className="absolute bottom-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <ArrowRight size={20} style={{ color: "var(--primary)" }} />
                 </div>

@@ -728,3 +728,139 @@ Agora: GOD pode criar qualquer papel e selecionar a empresa destino via campo `e
 
 ### Build
 - `npm run build` — compilado com sucesso ✅
+
+---
+
+## 24. RBAC COMPLETO — CONTROLE DE ACESSO POR PAPEL (21/05/2026)
+
+### Objetivo
+Implementar sistema completo de RBAC (Role Based Access Control) com validações obrigatórias no backend. Nenhuma regra depende apenas da interface visual. Todas as permissões são protegidas nas rotas, APIs e queries.
+
+### Arquivo central: `src/lib/rbac.ts` (novo)
+Sistema centralizado de permissões com tipagem forte e regras desacopladas:
+
+| Constante/Função | Descrição |
+|-----------------|-----------|
+| `CREATE_ROLE_MAP` | Quem pode criar qual papel: GOD→ADMIN, ADMIN→GESTOR/ATENDENTE, GESTOR→ATENDENTE |
+| `DELETE_ROLE_MAP` | Quem pode deletar qual papel: GOD→ADMIN/GESTOR/ATENDENTE, ADMIN→GESTOR/ATENDENTE, GESTOR→ATENDENTE |
+| `VIEW_USERS_ROLES` | Quem pode ver quais usuários, com escopo por empresa/setor |
+| `CAN_VIEW_EMPRESAS` | Apenas GOD vê lista de empresas |
+| `CAN_BATCH_CPF` | GOD, ADMIN e GESTOR podem importar CPF em lote |
+| `podeCriarRole()` | Verifica se um papel pode criar outro |
+| `podeDeletarRole()` | Verifica se um papel pode deletar outro (GOD nunca pode ser deletado) |
+| `getSetorFilter()` | Retorna filtro de setor baseado na role |
+| `getTicketWhereClause()` | Retorna cláusula where para tickets baseada na role |
+| `getServerSessionRBAC()` | Valida sessão + role + retorna erro padronizado |
+
+### Hierarquia de permissões de criação:
+| Quem cria | Pode criar |
+|-----------|-----------|
+| GOD | ADMIN |
+| ADMIN | GESTOR, ATENDENTE |
+| GESTOR | ATENDENTE (mesmo setor) |
+| ATENDENTE | Ninguém |
+
+### Hierarquia de exclusão:
+| Quem exclui | Pode excluir |
+|------------|-------------|
+| GOD | ADMIN, GESTOR, ATENDENTE (NUNCA GOD) |
+| ADMIN | GESTOR, ATENDENTE (mesma empresa) |
+| GESTOR | ATENDENTE (mesmo setor) |
+| ATENDENTE | Ninguém |
+
+### Proteções implementadas no backend:
+
+#### `src/app/api/users/route.ts`
+- **POST**: Valida:
+  - Se usuário logado pode criar o papel alvo (`podeCriarRole`)
+  - Se GESTOR: só cria no próprio setor
+  - Se ADMIN: setor deve pertencer à empresa
+  - Se GOD: empresa selecionada deve existir
+  - Unicidade de CPF (por empresa) e email (global)
+  - **Auto-registro de CPF** na tabela `cpfs` via `upsert`
+- **GET**: Filtra por:
+  - GOD: todos os usuários (todas empresas)
+  - ADMIN: usuários da própria empresa
+  - GESTOR: apenas ATENDENTES do próprio setor
+- **DELETE**: Valida:
+  - GOD nunca pode ser deletado (retorna 403)
+  - GOD deleta ADMIN/GESTOR/ATENDENTE
+  - ADMIN deleta GESTOR/ATENDENTE (mesma empresa)
+  - GESTOR deleta ATENDENTE (mesmo setor)
+
+#### `src/app/api/users/admins/route.ts`
+- GET/PUT/DELETE: Apenas GOD
+- DELETE: Bloqueia exclusão de GOD (retorna 403)
+- PUT: Só permite alterar ADMIN
+
+#### `src/app/api/userFacil/route.ts`
+- GET/POST: Apenas GOD
+- POST: Valida `podeCriarRole("GOD", finalRole)` — GOD só cria ADMIN
+- Auto-registro de CPF na tabela `cpfs`
+
+#### `src/app/api/cpfs/route.ts`
+- **POST multipart** (lote): Apenas GOD, ADMIN, GESTOR (valida via `CAN_BATCH_CPF`)
+- **POST json** (manual): GOD, ADMIN, GESTOR e ATENDENTE
+- **DELETE**: GOD, ADMIN, GESTOR — com validação extra: não permite deletar CPF de usuário do sistema
+- **GET**: Filtra por empresaId da sessão
+
+#### `src/app/api/tickets/route.ts`
+- **GET**: ATENDENTE e GESTOR filtram por setor (`getTicketWhereClause`)
+- **PUT**: ATENDENTE e GESTOR só podem atualizar chamados do próprio setor
+- **DELETE**: ATENDENTE e GESTOR só podem finalizar chamados do próprio setor
+
+#### `src/app/api/tickets/search/route.ts`
+- **PUT/DELETE**: Mesmas validações de setor para ATENDENTE e GESTOR
+
+### Proteções na interface:
+
+#### `src/app/(atendimento)/components/sidebar.tsx`
+- Menu "Empresas": visível apenas para GOD
+- Menu "Gestão de Usuarios": visível para GOD, ADMIN e GESTOR
+- Demais menus: visíveis para todos (Dashboard, Chamados, Avisos, CPFs)
+
+#### `src/app/(atendimento)/gestao-de-usuarios/page.tsx`
+- Filtro "Papel" mostra apenas roles que o usuário pode criar
+- GOD vê seletor de empresa, ADMIN e GESTOR não
+- GESTOR só vê setores disponíveis
+- ATENDENTE não vê o formulário (rolesPermitidas vazio)
+- Tabela de usuários cadastrados com RBAC (GOD vê todos, ADMIN vê empresa, GESTOR vê setor)
+- Botão "Excluir" nunca aparece para usuários GOD
+
+#### `src/app/(atendimento)/empresa/page.tsx`
+- Redireciona para `/dashboards` se usuário não é GOD
+- Só GOD pode acessar página de empresas
+
+#### `src/app/(atendimento)/empresa/create/page.tsx`
+- Redireciona para `/dashboards` se usuário não é GOD
+
+#### `src/app/(atendimento)/cpfs/page.tsx`
+- Seção de importação em lote: escondida para ATENDENTE
+- Seção de admins: apenas GOD vê
+
+### Arquivos criados:
+- `src/lib/rbac.ts` — Sistema centralizado de permissões RBAC
+
+### Arquivos modificados:
+- `src/util/permission.ts` — Tipagem ROLE no array
+- `src/app/api/users/route.ts` — RBAC completo + auto-registro CPF
+- `src/app/api/users/admins/route.ts` — Bloqueio exclusão GOD
+- `src/app/api/userFacil/route.ts` — Validação podeCriarRole + auto CPF
+- `src/app/api/cpfs/route.ts` — ATENDENTE só manual, lote restrito
+- `src/app/api/tickets/route.ts` — Setor filter por role
+- `src/app/api/tickets/search/route.ts` — Setor filter por role
+- `src/app/(atendimento)/components/sidebar.tsx` — Menu dinâmico por role
+- `src/app/(atendimento)/gestao-de-usuarios/page.tsx` — Roles permitidas, lista RBAC
+- `src/app/(atendimento)/cpfs/page.tsx` — Lote escondido para ATENDENTE
+- `src/app/(atendimento)/empresa/page.tsx` — Redireciona não-GOD
+- `src/app/(atendimento)/empresa/create/page.tsx` — Redireciona não-GOD
+
+### Regras de segurança reforçadas:
+- ✅ GOD nunca pode ser deletado via API (retorna 403)
+- ✅ GESTOR só cria ATENDENTE no próprio setor
+- ✅ ADMIN só cria nos setores da própria empresa
+- ✅ ATENDENTE só vê/atende chamados do próprio setor
+- ✅ Auto-registro de CPF ao criar qualquer usuário (via `upsert`)
+- ✅ Impedido bypass de permissão via manipulação de payload
+- ✅ Todas as validações no backend + interface consistente
+- ✅ Separação clara entre autenticação (NextAuth) e autorização (RBAC)

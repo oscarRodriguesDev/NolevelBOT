@@ -2,34 +2,43 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
+import { ROLE } from '@prisma/client'
 import Link from 'next/link'
 import { ArrowLeft, Building2, CheckCircle2, Loader2 } from 'lucide-react'
 import { useHeader } from '../../layout'
 import toast from 'react-hot-toast'
 
 export default function CreateEmpresa() {
+  const { data: session, status } = useSession()
   const router = useRouter()
+
+  useEffect(() => {
+    if (status === 'loading') return
+    const role = session?.user?.role as ROLE | undefined
+    if (role !== 'GOD') {
+      router.replace('/dashboards')
+    }
+  }, [status, session, router])
 
   const [nome, setNome] = useState('')
   const [cnpj, setCnpj] = useState('')
   const [setores, setSetores] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const { setHeader } = useHeader()
 
-      const { setHeader } = useHeader()
-    
-      useEffect(() => {
-        setHeader({
-          titulo: ' Cadastrar Empresa',
-          descricao: 'Preencha as informações abaixo para o registro de uma nova empresa',
-        })
-      }, [])
+  useEffect(() => {
+    setHeader({
+      titulo: ' Cadastrar Empresa',
+      descricao: 'Preencha as informações abaixo para o registro de uma nova empresa',
+    })
+  }, [setHeader])
 
-  // Função simples para formatar CNPJ enquanto digita
   const formatCNPJ = (value: string) => {
     return value
-      .replace(/\D/g, '') // Remove tudo que não é dígito
-      .replace(/^(\dt{2})(\dt{3})(\dt{3})(\dt{4})(\dt{2}).*/, '$1.$2.$3/$4-$5')
+      .replace(/\D/g, '')
+      .replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2}).*/, '$1.$2.$3/$4-$5')
       .substring(0, 18)
   }
 
@@ -43,12 +52,13 @@ export default function CreateEmpresa() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nome,
-          cnpj: cnpj.replace(/\D/g, ''), // Envia apenas números para o banco
+          cnpj: cnpj.replace(/\D/g, ''),
           setores: setores.split(',').map((s) => s.trim()).filter(Boolean),
         }),
       })
 
       if (!res.ok) throw new Error()
+      toast.success('Empresa criada com sucesso!')
       router.push('/empresa')
       router.refresh()
     } catch (error) {
@@ -67,9 +77,8 @@ export default function CreateEmpresa() {
       }}
     >
       <div className="max-w-2xl mx-auto">
-        {/* Botão Voltar */}
-        <Link 
-          href="/empresa" 
+        <Link
+          href="/empresa"
           className="inline-flex items-center gap-2 text-sm mb-8 transition-colors duration-300 group"
           style={{ color: "var(--foreground)", opacity: 0.7 }}
           onMouseEnter={(e) => {
@@ -89,7 +98,6 @@ export default function CreateEmpresa() {
           Voltar para a listagem
         </Link>
 
-        {/* Card Principal */}
         <div
           className="rounded-2xl border shadow-lg overflow-hidden transition-colors duration-300"
           style={{
@@ -97,7 +105,6 @@ export default function CreateEmpresa() {
             borderColor: "var(--border-subtle)",
           }}
         >
-          {/* Header do Form */}
           <div
             className="border-b p-6 sm:p-8"
             style={{
@@ -112,13 +119,10 @@ export default function CreateEmpresa() {
               >
                 <Building2 size={24} />
               </div>
-            
             </div>
           </div>
 
-          {/* Formulário */}
           <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-6">
-            {/* Nome */}
             <div className="space-y-2">
               <label htmlFor="nome" className="block text-sm font-semibold">
                 Nome Fantasia
@@ -140,7 +144,6 @@ export default function CreateEmpresa() {
               />
             </div>
 
-            {/* CNPJ */}
             <div className="space-y-2">
               <label htmlFor="cnpj" className="block text-sm font-semibold">
                 CNPJ
@@ -162,7 +165,6 @@ export default function CreateEmpresa() {
               />
             </div>
 
-            {/* Setores */}
             <div className="space-y-2">
               <label htmlFor="setores" className="block text-sm font-semibold">
                 Setores de Atuação
@@ -184,23 +186,12 @@ export default function CreateEmpresa() {
               <p className="text-xs opacity-70">Separe os setores utilizando vírgulas</p>
             </div>
 
-            {/* Ações */}
             <div className="pt-4 flex flex-col sm:flex-row gap-3">
               <button
                 type="submit"
                 disabled={loading}
                 className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-white transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
                 style={{ backgroundColor: "var(--primary)" }}
-                onMouseEnter={(e) => {
-                  if (e.currentTarget instanceof HTMLElement && !loading) {
-                    e.currentTarget.style.backgroundColor = "var(--primary-hover)";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (e.currentTarget instanceof HTMLElement) {
-                    e.currentTarget.style.backgroundColor = "var(--primary)";
-                  }
-                }}
               >
                 {loading ? (
                   <>
@@ -214,23 +205,13 @@ export default function CreateEmpresa() {
                   </>
                 )}
               </button>
-              
+
               <Link
                 href="/empresa"
                 className="px-6 py-3 font-semibold rounded-lg transition-colors duration-300 text-center"
                 style={{
                   backgroundColor: "var(--surface-elevated)",
                   color: "var(--foreground)",
-                }}
-                onMouseEnter={(e) => {
-                  if (e.currentTarget instanceof HTMLElement) {
-                    e.currentTarget.style.backgroundColor = "var(--border-subtle)";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (e.currentTarget instanceof HTMLElement) {
-                    e.currentTarget.style.backgroundColor = "var(--surface-elevated)";
-                  }
                 }}
               >
                 Cancelar
