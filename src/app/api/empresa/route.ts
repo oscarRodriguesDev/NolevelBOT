@@ -1,10 +1,7 @@
-// app/api/empresa/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionOrFail } from '@/util/permission'
-import { getSetores } from '@/lib/setores'
 
-// CREATE
 export async function POST(req: NextRequest) {
   const session = await getSessionOrFail(["GOD"])
   if (!session) {
@@ -27,7 +24,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// READ ALL
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -42,7 +38,6 @@ export async function GET(request: Request) {
       const userRole = session.user.role
       const userEmpresaId = session.user.empresaId
 
-      // GOD vê todas as empresas; demais roles vêem apenas a própria empresa
       if (userRole === "GOD") {
         const empresas = await prisma.empresa.findMany({
           select: {
@@ -66,10 +61,7 @@ export async function GET(request: Request) {
       })
 
       if (!empresa) {
-        return NextResponse.json(
-          { error: "Empresa não encontrada" },
-          { status: 404 }
-        )
+        return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 })
       }
 
       return NextResponse.json(empresa)
@@ -79,29 +71,89 @@ export async function GET(request: Request) {
       where: { cpf },
       select: {
         Empresa: {
-          select: {
-            id: true,
-            nome: true,
-            cnpj: true,
-            setores: true,
-          }
+          select: { id: true, nome: true, cnpj: true, setores: true }
         }
       }
     })
 
     if (!registro?.Empresa) {
-      return NextResponse.json(
-        { error: "Empresa não encontrada para este CPF" },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: "Empresa não encontrada para este CPF" }, { status: 404 })
     }
 
     return NextResponse.json(registro.Empresa)
-
   } catch (error) {
-    return NextResponse.json(
-      { error: "Erro ao buscar empresa" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: "Erro ao buscar empresa" }, { status: 500 })
+  }
+}
+
+export async function PUT(req: NextRequest) {
+  const session = await getSessionOrFail(["GOD"])
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  try {
+    const { searchParams } = new URL(req.url)
+    const id = searchParams.get("id")
+    const body = await req.json()
+
+    if (!id) {
+      return NextResponse.json({ error: "ID da empresa é obrigatório" }, { status: 400 })
+    }
+
+    const empresaExiste = await prisma.empresa.findUnique({ where: { id } })
+    if (!empresaExiste) {
+      return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 })
+    }
+
+    const data: any = {}
+    if (body.nome) data.nome = body.nome
+    if (body.cnpj) data.cnpj = body.cnpj
+    if (body.setores !== undefined) data.setores = body.setores
+
+    const empresa = await prisma.empresa.update({
+      where: { id },
+      data,
+      select: { id: true, nome: true, cnpj: true, setores: true },
+    })
+
+    return NextResponse.json(empresa)
+  } catch (error) {
+    return NextResponse.json({ error: "Erro ao atualizar empresa" }, { status: 500 })
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  const session = await getSessionOrFail(["GOD"])
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  try {
+    const { searchParams } = new URL(req.url)
+    const id = searchParams.get("id")
+
+    if (!id) {
+      return NextResponse.json({ error: "ID da empresa é obrigatório" }, { status: 400 })
+    }
+
+    const empresaExiste = await prisma.empresa.findUnique({ where: { id } })
+    if (!empresaExiste) {
+      return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 })
+    }
+
+    const usuariosVinculados = await prisma.user.count({ where: { empresaId: id } })
+    if (usuariosVinculados > 0) {
+      return NextResponse.json(
+        { error: `Não é possível excluir: existem ${usuariosVinculados} usuário(s) vinculado(s) a esta empresa` },
+        { status: 400 }
+      )
+    }
+
+    await prisma.empresa.delete({ where: { id } })
+
+    return NextResponse.json({ message: "Empresa removida com sucesso" })
+  } catch (error) {
+    return NextResponse.json({ error: "Erro ao remover empresa" }, { status: 500 })
   }
 }
