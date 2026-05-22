@@ -346,3 +346,9 @@
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
 | 1 | 1288fa5 | feat: implementa RBAC completo com validacoes backend, auto-registro de CPF, menus dinamicos e protecao contra exclusao de GOD | 21/05/2026 |
+
+### Commits realizados nesta sessao:
+
+| # | Hash | Mensagem | Data |
+|---|------|----------|------|
+| 1 | 044ee0 | feat: adiciona editar e excluir empresa com PUT/DELETE na API e botoes na pagina | 21/05/2026 |

@@ -175,7 +175,8 @@ export default function EmpresaPage() {
             filteredEmpresas.map((empresa) => (
               <div
                 key={empresa.id}
-                className="rounded-2xl border shadow-lg p-5 sm:p-6 transition-all duration-300 relative"
+                onClick={() => router.push(`/empresa/${empresa.id}/usuarios`)}
+                className="rounded-2xl border shadow-lg p-5 sm:p-6 transition-all duration-300 relative cursor-pointer hover:scale-[1.02]"
                 style={{
                   backgroundColor: "var(--surface)",
                   borderColor: "var(--border-subtle)",

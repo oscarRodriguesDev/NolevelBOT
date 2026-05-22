@@ -43,7 +43,13 @@ export function Sidebar() {
       show: true,
     },
     {
-      label: 'Gestão de Usuarios',
+      label: 'Usuários',
+      href: '/usuarios',
+      icon: LuUsers,
+      show: userRole === "GOD" || userRole === "ADMIN" || userRole === "GESTOR",
+    },
+    {
+      label: 'Criar Usuário',
       href: '/gestao-de-usuarios',
       icon: LuSettings,
       show: userRole === "GOD" || userRole === "ADMIN" || userRole === "GESTOR",

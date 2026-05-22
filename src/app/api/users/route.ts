@@ -152,6 +152,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const role = searchParams.get("role")
+    const empresaIdParam = searchParams.get("empresaId")
 
     const userRole = session!.role
     const empresaId = session!.empresaId
@@ -160,6 +161,7 @@ export async function GET(req: NextRequest) {
     const where: any = {}
 
     if (userRole === "GOD") {
+      if (empresaIdParam) where.empresaId = empresaIdParam
       if (role) where.role = role
     } else if (userRole === "ADMIN") {
       where.empresaId = empresaId
@@ -252,5 +254,104 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ message: "Usuário removido com sucesso" })
   } catch (error) {
     return NextResponse.json({ error: "Erro ao remover usuário" }, { status: 500 })
+  }
+}
+
+export async function PUT(req: NextRequest) {
+  const { session, error } = await getServerSessionRBAC(["GOD", "ADMIN", "GESTOR"])
+  if (error) return error
+
+  try {
+    const body = await req.json()
+    const { id, name, email, cpf, setor, empresaId, role } = body
+
+    if (!id) {
+      return NextResponse.json({ error: "ID é obrigatório" }, { status: 400 })
+    }
+
+    const targetUser = await prisma.user.findUnique({
+      where: { id },
+      select: { id: true, role: true, empresaId: true, setor: true, cpf: true, email: true, name: true },
+    })
+
+    if (!targetUser) {
+      return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
+    }
+
+    if (targetUser.role === "GOD") {
+      return NextResponse.json({ error: "Usuários GOD não podem ser editados pela aplicação" }, { status: 403 })
+    }
+
+    const userRole = session!.role
+    const userEmpresaId = session!.empresaId
+    const userSetor = session!.setor
+
+    if (userRole === "GOD") {
+      if (!["ADMIN", "GESTOR", "ATENDENTE"].includes(targetUser.role)) {
+        return NextResponse.json({ error: "Permissão negada" }, { status: 403 })
+      }
+    } else if (userRole === "ADMIN") {
+      if (!["GESTOR", "ATENDENTE"].includes(targetUser.role)) {
+        return NextResponse.json({ error: "Você só pode editar GESTOR ou ATENDENTE" }, { status: 403 })
+      }
+      if (targetUser.empresaId !== userEmpresaId) {
+        return NextResponse.json({ error: "Usuário não pertence à sua empresa" }, { status: 403 })
+      }
+    } else if (userRole === "GESTOR") {
+      if (targetUser.role !== "ATENDENTE") {
+        return NextResponse.json({ error: "Você só pode editar ATENDENTE" }, { status: 403 })
+      }
+      if (targetUser.empresaId !== userEmpresaId) {
+        return NextResponse.json({ error: "Usuário não pertence à sua empresa" }, { status: 403 })
+      }
+      if (targetUser.setor !== userSetor) {
+        return NextResponse.json({ error: "Atendente não pertence ao seu setor" }, { status: 403 })
+      }
+    }
+
+    const data: any = {}
+    if (name) data.name = name
+    if (email) data.email = email
+    if (cpf) data.cpf = limparCPF(cpf)
+    if (setor) data.setor = setor
+    if (empresaId && userRole === "GOD") data.empresaId = empresaId
+
+    if (email && email !== targetUser.email) {
+      const emailExiste = await prisma.user.findUnique({ where: { email } })
+      if (emailExiste && emailExiste.id !== id) {
+        return NextResponse.json({ error: "Email já cadastrado" }, { status: 400 })
+      }
+    }
+
+    if (cpf && limparCPF(cpf) !== targetUser.cpf) {
+      const cpfExiste = await prisma.user.findFirst({
+        where: { cpf: limparCPF(cpf), empresaId: empresaId || targetUser.empresaId },
+      })
+      if (cpfExiste && cpfExiste.id !== id) {
+        return NextResponse.json({ error: "CPF já cadastrado nesta empresa" }, { status: 400 })
+      }
+    }
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data,
+      select: {
+        id: true, name: true, email: true, cpf: true,
+        role: true, setor: true, empresaId: true, avatarUrl: true,
+      },
+    })
+
+    if (cpf && limparCPF(cpf)) {
+      const cleanCpf = limparCPF(cpf)
+      await prisma.cpfs.upsert({
+        where: { cpf: cleanCpf },
+        update: { nome: name || targetUser.name, empresaId: empresaId || targetUser.empresaId },
+        create: { cpf: cleanCpf, nome: name || targetUser.name, empresaId: empresaId || targetUser.empresaId },
+      })
+    }
+
+    return NextResponse.json(updated)
+  } catch (error) {
+    return NextResponse.json({ error: "Erro ao atualizar usuário" }, { status: 500 })
   }
 }
