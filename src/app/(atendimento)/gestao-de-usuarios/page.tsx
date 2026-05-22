@@ -31,9 +31,18 @@ function roleBackToFront(role: ROLE): string {
   return inv[role]
 }
 
+function formatCPF(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 11)
+  return digits
+    .replace(/^(\d{3})(\d)/, "$1.$2")
+    .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d)/, ".$1-$2")
+}
+
 export default function CriarUsuarioPage() {
   const { data: session } = useSession()
   const userRole = (session?.user?.role as ROLE) || null
+  const userSetor = session?.user?.setor
 
   const [form, setForm] = useState({
     name: "",
@@ -79,6 +88,10 @@ export default function CriarUsuarioPage() {
         } else if (Array.isArray(data) && data.length > 0) {
           setSetoresDisponiveis(data[0].setores || [])
         }
+
+        if (userRole === "GESTOR" && userSetor) {
+          setForm(prev => ({ ...prev, setor: userSetor }))
+        }
       } catch (error) {
         console.error("Erro ao carregar dados:", error)
       } finally {
@@ -87,7 +100,7 @@ export default function CriarUsuarioPage() {
     }
 
     fetchDados()
-  }, [userRole])
+  }, [userRole, userSetor])
 
   function handleEmpresaChange(empresaId: string) {
     setForm(prev => ({ ...prev, empresaId, setor: "" }))
@@ -99,6 +112,10 @@ export default function CriarUsuarioPage() {
     const { name, value } = e.target
     if (name === "empresaId") {
       handleEmpresaChange(value)
+      return
+    }
+    if (name === "cpf") {
+      setForm((prev) => ({ ...prev, cpf: formatCPF(value) }))
       return
     }
     setForm((prev) => ({ ...prev, [name]: value }))
@@ -117,7 +134,7 @@ export default function CriarUsuarioPage() {
       const formData = new FormData()
       formData.append("name", form.name)
       formData.append("email", form.email)
-      formData.append("cpf", form.cpf)
+      formData.append("cpf", form.cpf.replace(/\D/g, ""))
       formData.append("password", form.password)
       formData.append("role", form.role)
       formData.append("setor", form.setor)
@@ -316,28 +333,44 @@ export default function CriarUsuarioPage() {
 
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider mb-2 opacity-70">Setor</label>
-                  <select
-                    name="setor"
-                    value={form.setor}
-                    onChange={handleChange}
-                    required
-                    disabled={loadingDados}
-                    className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] disabled:opacity-50"
-                    style={{
-                      borderColor: "var(--border-subtle)",
-                      backgroundColor: "var(--surface-elevated)",
-                      color: "var(--foreground)",
-                    }}
-                  >
-                    <option value="">
-                      {loadingDados ? "Carregando setores..." : "Selecione o setor"}
-                    </option>
-                    {setoresDisponiveis.map((setor, index) => (
-                      <option key={index} value={setor}>
-                        {setor}
+                  {userRole === "GESTOR" ? (
+                    <div>
+                      <input
+                        value={form.setor}
+                        disabled
+                        className="w-full px-4 py-3 rounded-xl border outline-none font-medium cursor-not-allowed opacity-60"
+                        style={{
+                          borderColor: "var(--border-subtle)",
+                          backgroundColor: "var(--surface-elevated)",
+                          color: "var(--foreground)",
+                        }}
+                      />
+                      <p className="text-[10px] mt-1.5 opacity-50">Setor definido automaticamente</p>
+                    </div>
+                  ) : (
+                    <select
+                      name="setor"
+                      value={form.setor}
+                      onChange={handleChange}
+                      required
+                      disabled={loadingDados}
+                      className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] disabled:opacity-50"
+                      style={{
+                        borderColor: "var(--border-subtle)",
+                        backgroundColor: "var(--surface-elevated)",
+                        color: "var(--foreground)",
+                      }}
+                    >
+                      <option value="">
+                        {loadingDados ? "Carregando setores..." : "Selecione o setor"}
                       </option>
-                    ))}
-                  </select>
+                      {setoresDisponiveis.map((setor, index) => (
+                        <option key={index} value={setor}>
+                          {setor}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
               </div>
 

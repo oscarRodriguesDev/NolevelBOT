@@ -389,3 +389,20 @@
 
 ### Commits realizados nesta sessão:
 | 1 | `9bcfe38` | feat: bloqueia auto-edição/exclusão, remove listagem de criação, profissionaliza frontend | 21/05/2026 |
+| 2 | `68831a6` | docs: atualiza checkpoint e memorias com hash 9bcfe38 | 21/05/2026 |
+
+---
+
+## Sessão: 21/05/2026 — Melhorias Criação de Usuário (GESTOR + CPF)
+
+### Pendentes antes do commit:
+- ~~`src/app/(atendimento)/gestao-de-usuarios/page.tsx` — GESTOR: setor auto-preenchido e bloqueado~~ ✅
+- ~~`src/app/(atendimento)/gestao-de-usuarios/page.tsx` — CPF: apenas números + formatação XXX.XXX.XXX-XX~~ ✅
+- ~~`memorias.md` — Seção 30 documentando mudanças~~ ✅
+- ~~`checkpoint.md` — Atualizado~~ ✅
+- ~~Build validado~~ ✅
+
+### Commits realizados nesta sessão:
+| # | Hash | Mensagem | Data |
+|---|------|----------|------|
+| 1 | | `feat: gestor setor auto-preenchido, cpf formatado e numerico` | 21/05/2026 |

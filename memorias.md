@@ -1061,3 +1061,42 @@ Todos os botões primários seguem:
 
 ### Build
 - `npm run build` — compilado com sucesso ✅
+
+---
+
+## 30. MELHORIAS NA CRIAÇÃO DE USUÁRIOS — GESTOR + CPF (21/05/2026)
+
+### Objetivo
+Três melhorias na tela de criação de usuários (`gestao-de-usuarios/page.tsx`):
+1. GESTOR cria ATENDENTE com setor auto-preenchido e bloqueado
+2. CPF aceita apenas números (rejeita letras)
+3. CPF exibe formatação `XXX.XXX.XXX-XX` durante digitação
+
+### Mudanças em `src/app/(atendimento)/gestao-de-usuarios/page.tsx`
+
+#### 1. Setor auto-preenchido para GESTOR
+- Adicionada const `userSetor` extraída de `session?.user?.setor`
+- No `useEffect(fetchDados)`, quando `userRole === "GESTOR" && userSetor`, seta `form.setor = userSetor`
+- No JSX, quando `userRole === "GESTOR"` renderiza um `<input disabled>` (em vez do `<select>`) com o valor do setor e legenda "Setor definido automaticamente"
+
+#### 2. Função `formatCPF(value: string): string`
+```typescript
+function formatCPF(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 11)
+  return digits
+    .replace(/^(\d{3})(\d)/, "$1.$2")
+    .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d)/, ".$1-$2")
+}
+```
+- Remove qualquer caractere não-dígito (rejeita letras automaticamente)
+- Limita a 11 dígitos
+- Formata progressivamente: `XXX.XXX.XXX-XX`
+
+#### 3. CPF tratado no `handleChange` e `handleSubmit`
+- `handleChange`: quando `name === "cpf"`, aplica `formatCPF(value)` e salva formatado no estado
+- `handleSubmit`: envia `form.cpf.replace(/\D/g, "")` no FormData — apenas números para a API
+- Backend já usa `limparCPF()` que também strip non-digits (redundância segura)
+
+### Build
+- `npm run build` — compilado com sucesso ✅
