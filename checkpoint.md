@@ -460,5 +460,10 @@ No `DELETE` de `api/users/route.ts`:
 - Se não houver substituto, retorna 400 com mensagem clara
 - ATENDENTES não precisam de substituto (já implementado)
 
+### Commits realizados nesta sessão:
+| # | Hash | Mensagem | Data |
+|---|------|----------|------|
+| 1 | `d0c4a9d` | `feat: tasks do tasks.txt - notificacoes whatsapp, empresa dinamica, botao voltar, chat alinhado webhook24, leads fix, rbac substitutos, card role` | 23/05/2026 |
+
 ### Build
 - `npm run build` — compilado com sucesso ✅
