@@ -1296,3 +1296,44 @@ Consulta por CPF (`?cpf=`) agora é **pública** — não exige sessão (escopo 
 
 ### Build
 - `npm run build` — compilado com sucesso ✅
+
+---
+
+## 33. REDIRECIONAMENTO PARA /CHAMADO QUANDO PRECISAR DE DOCUMENTOS (23/05/2026)
+
+### Objetivo
+Quando um usuário solicitar um serviço que precise de envio de documentos (fotos, comprovantes, PDFs, etc.) pelo **chatbot-app** (via `/api/chat`) ou **webhook24**, o bot deve redirecioná-lo para abrir um chamado pelo portal web (`/chamado`), onde é possível anexar arquivos.
+
+### Mudanças
+
+#### 1. `src/lib/useIA.ts` — Prompt da IA
+- Seção `UPLOAD` substituída por `UPLOAD DE DOCUMENTOS` com instruções mais explícitas
+- IA agora tem regra clara: se usuário pedir serviço que precise de documentos, NÃO prosseguir com fluxo normal — redirecionar para `/chamado`
+- Lista de palavras-chave para detectar necessidade de documentos
+- Instrução para nunca tentar coletar documentos pelo chat
+
+#### 2. `src/app/api/webhook24/route.ts` — Detecção programática
+- No estado `COLETAR_MOTIVO`, após receber o motivo do usuário, verifica se contém palavras-chave de documentos
+- Se detectado: envia mensagem com link para `/chamado` e volta ao menu principal
+- Se não: prossegue com fluxo normal
+
+#### 3. `src/app/api/chat/route.ts` — Mesma detecção
+- Mesma lógica do webhook24 aplicada ao chat
+
+### Fluxo
+```
+Usuário → "Preciso enviar um comprovante"
+  → Bot detecta palavra "comprovante"
+  → "Para este tipo de serviço, você precisa abrir um chamado pelo nosso portal... Acesse: [URL]/chamado"
+  → Volta ao menu principal
+```
+
+### Arquivos modificados
+| Arquivo | Mudança |
+|---------|---------|
+| `src/lib/useIA.ts` | Prompt da IA atualizado com regras de redirecionamento |
+| `src/app/api/webhook24/route.ts` | Detecção de documentos no COLETAR_MOTIVO |
+| `src/app/api/chat/route.ts` | Detecção de documentos no coletar_motivo |
+
+### Build
+- `npm run build` — compilado com sucesso ✅

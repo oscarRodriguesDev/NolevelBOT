@@ -151,6 +151,16 @@ export async function POST(req: NextRequest) {
       case "coletar_motivo": {
         session.motivoAtual = userInput
 
+        // Se o motivo envolve envio de documentos, redireciona para o portal
+        const palavrasDocumento = ["foto", "fotos", "comprovante", "comprovantes", "documento", "documentos", "anexo", "anexos", "pdf", "imagem", "imagens", "print", "printar", "scan", "scanner", "digitalizar", "doc", "docs"];
+        if (palavrasDocumento.some(p => userInput.toLowerCase().includes(p))) {
+          const baseUrl = process.env.BASE_URL || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3001";
+          session.state = "menu_principal"
+          return NextResponse.json({
+            reply: `Para este tipo de serviço, você precisa abrir um chamado pelo nosso portal para anexar os documentos necessários. Acesse: ${baseUrl}/chamado e preencha o formulário com a descrição do problema e os arquivos.`
+          })
+        }
+
         if (!avisos || avisos.includes("Sem avisos")) {
           const setores = await getSetores(session.cpf || '')
           session.state = "coletar_setor"

@@ -149,14 +149,17 @@ CONTEXTO DO USUÁRIO:
 ETAPA ATUAL: ${session.state}
 INSTRUÇÃO: ${instrucaoEtapa}
 
-UPLOAD:
-Se o usuário precisar enviar arquivos, responda exatamente:
-Para enviar o documento, acesse: ${LINK_CHAMADOS}
-e clique em "Registrar Novo Chamado". Lá você poderá preencher os dados e anexar o arquivo necessário.
+UPLOAD DE DOCUMENTOS:
+Se o usuário pedir um serviço que precise de envio de documentos (fotos, comprovantes, PDFs, anexos, imagens, docs, documentação, scanner, print, screenshot), NÃO prossiga com o fluxo normal de abertura de chamado.
+
+Responda EXATAMENTE assim:
+"Para este tipo de serviço, você precisa abrir um chamado pelo nosso portal para anexar os documentos necessários. Acesse: ${LINK_CHAMADOS} e preencha o formulário com a descrição do problema e os arquivos."
+
+NUNCA tente coletar documentos pelo chat. Sempre redirecione para o portal.
 
 LINKS:
-- Abertura: ${LINK_CHAMADOS}
-- Consulta: ${lINK_CONSULTA}
+- Abertura de chamado com anexo: ${LINK_CHAMADOS}
+- Consultar chamados: ${lINK_CONSULTA}
 - Sempre envie URLs completas.
           `
         },

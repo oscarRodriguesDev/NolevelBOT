@@ -496,3 +496,18 @@ Bot sempre respondia "Não encontrei seu cadastro" mesmo com lead existente.
 | 1 | `f01d502` | `fix: leads-network GET por CPF nao requer autenticacao - webhook-leads nao encontrava leads` | 23/05/2026 |
 | 2 | `8185a68` | `docs: atualiza memorias e checkpoint com correcao da BASE_URL` | 23/05/2026 |
 | 3 | `0a2e17e` | `fix: ordem de fallback BASE_URL invertida - webhook-leads usava NEXT_PUBLIC_BASE_URL` | 23/05/2026 |
+
+---
+
+## Sessão: 23/05/2026 — Redirecionamento para /chamado (documentos)
+
+### Objetivo
+Chatbot-app e webhook24: quando usuário solicitar serviço que precise de documentos, redirecionar para `/chamado` (portal web com upload).
+
+### Mudanças
+- `src/lib/useIA.ts` — Prompt da IA: regra explícita para redirecionar a `/chamado` se precisar de documentos
+- `src/app/api/webhook24/route.ts` — Detecção de palavras-chave no COLETAR_MOTIVO
+- `src/app/api/chat/route.ts` — Mesma detecção no coletar_motivo
+
+### Build
+- `npm run build` — compilado com sucesso ✅
