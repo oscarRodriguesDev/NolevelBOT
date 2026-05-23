@@ -82,6 +82,17 @@ export default function UserCard(props: Props) {
             <span className="text-xs opacity-60 truncate">
               {user.email || ""}
             </span>
+            {user.role && (
+              <span className="text-[10px] font-bold mt-0.5 inline-block w-fit px-2 py-0.5 rounded-md"
+                style={{
+                  backgroundColor: "var(--primary)",
+                  color: "#fff",
+                  opacity: 0.85,
+                }}
+              >
+                {user.role}
+              </span>
+            )}
           </div>
         </div>
 

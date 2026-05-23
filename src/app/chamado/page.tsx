@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { LuCheck, LuLoader, LuArrowRight } from 'react-icons/lu'
 import { ThemeToggle } from '../components/theme-toggle'
 import { FileUpload } from '../components/fileInput'
+import toast from 'react-hot-toast'
 
 
 export default function TicketPageDirect() {
@@ -36,6 +37,7 @@ export default function TicketPageDirect() {
     cpf: '',
     setor: '',
     descricao: '',
+    telefone: '',
   })
 
   const [file, setFile] = useState<File | null>(null)
@@ -70,6 +72,10 @@ export default function TicketPageDirect() {
       form.append('descricao', formData.descricao)
       form.append('prioridade', 'normal')
 
+      if (formData.telefone) {
+        form.append('telefone', formData.telefone)
+      }
+
       if (file) {
         form.append('anexo', file)
       }
@@ -85,7 +91,7 @@ export default function TicketPageDirect() {
 
       setSubmitted(true)
     } catch {
-      alert('Erro ao processar. Tente novamente.')
+      toast.error('Erro ao processar. Tente novamente.')
     } finally {
       setLoading(false)
     }
@@ -209,6 +215,26 @@ export default function TicketPageDirect() {
                   "--tw-ring-color": "var(--primary)",
                 } as never}
                 placeholder="00000000000"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold mb-2">
+                Telefone <span className="opacity-50 font-normal">(opcional — para notificação via WhatsApp)</span>
+              </label>
+              <input
+                type="text"
+                name="telefone"
+                value={formData.telefone}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border rounded-lg outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
+                style={{
+                  backgroundColor: "var(--surface-elevated)",
+                  borderColor: "var(--border-subtle)",
+                  color: "var(--foreground)",
+                  "--tw-ring-color": "var(--primary)",
+                } as never}
+                placeholder="5511999999999"
               />
             </div>
 

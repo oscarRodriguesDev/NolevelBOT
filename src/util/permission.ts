@@ -1,7 +1,8 @@
 import { authOptions } from "@/lib/nextauth"
 import { getServerSession } from "next-auth"
+import { ROLE } from "@prisma/client"
 
-export async function getSessionOrFail(roles: string[] = []) {
+export async function getSessionOrFail(roles: ROLE[] = []) {
   const session = await getServerSession(authOptions)
 
   if (!session || !session.user) {
@@ -9,8 +10,7 @@ export async function getSessionOrFail(roles: string[] = []) {
   }
 
   if (roles.length > 0) {
-    const userRole = session.user.role
-
+    const userRole = session.user.role as ROLE
     if (!roles.includes(userRole)) {
       return null
     }

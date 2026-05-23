@@ -114,7 +114,7 @@ export default function AvisosPage() {
               if (open) resetForm()
               else setOpen(true)
             }}
-            className="px-5 py-2.5 text-white rounded-lg font-bold transition-all duration-300 hover:brightness-110 active:scale-95 shadow-md"
+            className="inline-flex items-center gap-2 px-5 py-2.5 text-white rounded-xl font-bold transition-all duration-300 hover:brightness-110 hover:shadow-lg active:scale-95"
             style={{ backgroundColor: "var(--primary)" }}
           >
             {open ? "Fechar Formulário" : "Novo Aviso"}

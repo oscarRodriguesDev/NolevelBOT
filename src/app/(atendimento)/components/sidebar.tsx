@@ -3,7 +3,9 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { LuMenu, LuX, LuTickets, LuBell, LuUsers, LuHouse, LuSettings } from 'react-icons/lu'
+import { LuMenu, LuX, LuTickets, LuBell, LuUsers, LuHouse, LuSettings, LuBuilding2 } from 'react-icons/lu'
+import { useSession } from 'next-auth/react'
+import { ROLE } from '@prisma/client'
 import packageJson from '../../../../package.json'
 import Image from 'next/image'
 import icone from '../../../../public/header/favicon.png'
@@ -12,40 +14,53 @@ import UserCard from './cardUser'
 export function Sidebar() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
+  const { data: session } = useSession()
+  const userRole = session?.user?.role as ROLE | undefined
 
   const menuItems = [
     {
       label: 'Dashboard',
       href: '/dashboards',
       icon: LuHouse,
+      show: true,
     },
     {
       label: 'Chamados',
       href: '/all-tickets',
       icon: LuTickets,
+      show: true,
     },
     {
       label: 'Avisos',
       href: '/avisos',
       icon: LuBell,
+      show: true,
     },
     {
       label: 'CPFs Autorizados',
       href: '/cpfs',
       icon: LuUsers,
+      show: true,
     },
-
     {
-      label: 'Gestão de Usuarios',
-      href: '/gestao-de-usuarios',
+      label: 'Usuários',
+      href: '/usuarios',
       icon: LuUsers,
+      show: userRole === "GOD" || userRole === "ADMIN" || userRole === "GESTOR",
+    },
+    {
+      label: 'Criar Usuário',
+      href: '/gestao-de-usuarios',
+      icon: LuSettings,
+      show: userRole === "GOD" || userRole === "ADMIN" || userRole === "GESTOR",
     },
     {
       label: 'Empresas',
       href: '/empresa',
-      icon: LuUsers,
-    }
-  ]
+      icon: LuBuilding2,
+      show: userRole === "GOD",
+    },
+  ].filter(item => item.show)
 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/'
@@ -54,7 +69,6 @@ export function Sidebar() {
 
   return (
    <>
-  {/* Mobile Toggle Button */}
   <button
     onClick={() => setIsOpen(!isOpen)}
     className="fixed top-4 left-4 z-40 lg:hidden p-2 rounded-lg transition-colors duration-300 hover:scale-110"
@@ -67,7 +81,6 @@ export function Sidebar() {
     {isOpen ? <LuX size={24} /> : <LuMenu size={24} />}
   </button>
 
-  {/* Overlay Mobile */}
   {isOpen && (
     <div
       className="fixed inset-0 bg-black/50 z-30 lg:hidden"
@@ -75,7 +88,6 @@ export function Sidebar() {
     />
   )}
 
-  {/* Sidebar */}
   <aside
     className={`sticky top-0 h-screen w-64 transition-all duration-300 z-40 lg:z-0 ${
       isOpen ? 'translate-x-0' : '-translate-x-full'
@@ -86,7 +98,6 @@ export function Sidebar() {
     }}
   >
     <div className="h-full flex flex-col">
-      {/* Header */}
       <div className="flex items-center gap-3 p-4">
         <div className="p-2 sm:p-3 rounded-lg flex-shrink-0">
           <Image
@@ -111,7 +122,6 @@ export function Sidebar() {
 
       <hr className="mx-4" style={{ borderColor: 'var(--border-subtle)' }} />
 
-      {/* Navigation */}
       <nav className="flex-1 overflow-y-auto p-4 space-y-2">
         {menuItems.map((item) => {
           const Icon = item.icon
@@ -140,17 +150,11 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Footer */}
       <div
         className="border-t p-4 text-xs opacity-50"
         style={{ borderColor: 'var(--border-subtle)' }}
       >
-        <UserCard
-          name={'Administrador'}
-          email={'adm@nolevel.com.br'}
-          role={'Admin'}
-          avatarUrl={icone.src}
-        />
+        <UserCard />
 
         <p className="mt-4">Nolevel</p>
         <p>Versão: {packageJson.version}</p>

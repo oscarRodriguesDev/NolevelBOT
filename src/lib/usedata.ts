@@ -13,22 +13,45 @@ const baseUrl = process.env.BASE_URL;
 }
  */
 
-export async function buscarAvisos(cpf?: string, req?: Request) {
+export async function buscarAvisos(cpf?: string, _req?: Request) {
   try {
-    const res = await fetch(`${baseUrl}/api/quadro-avisos/mostrar-avisos?cpf=${cpf || ""}`, {
-      headers: {
-        cookie: req?.headers.get("cookie") || "",
-      },
+    const { prisma } = await import("@/lib/prisma");
+    const { getEmpresaIdByCpf } = await import("@/lib/searchEmpresa");
+
+    let empresaId: string | null = null;
+
+    if (cpf) {
+      empresaId = await getEmpresaIdByCpf(cpf);
+    }
+
+    const avisos = await prisma.avisos.findMany({
+      where: empresaId ? { empresaId } : undefined,
+      orderBy: { createdAt: "desc" },
     });
 
-    if (!res.ok) return "Sem avisos no momento.";
+    const agora = new Date();
+    const validos: { titulo: string; conteudo: string }[] = [];
 
-    type Aviso = { titulo: string; conteudo: string };
-    const data: Aviso[] = await res.json();
+    for (const aviso of avisos) {
+      if (!aviso.duracao) {
+        validos.push(aviso);
+        continue;
+      }
+      const dias = Number(aviso.duracao);
+      if (isNaN(dias)) {
+        validos.push(aviso);
+        continue;
+      }
+      const dataExpiracao = new Date(aviso.createdAt);
+      dataExpiracao.setDate(dataExpiracao.getDate() + dias);
+      if (agora <= dataExpiracao) {
+        validos.push(aviso);
+      }
+    }
 
-    return data.length > 0
-      ? data.map(a => `📢 *${a.titulo}*: ${a.conteudo}`).join("\n")
-      : "Sem avisos.";
+    if (validos.length === 0) return "Sem avisos.";
+
+    return validos.map(a => `📢 *${a.titulo}*: ${a.conteudo}`).join("\n");
   } catch {
     return "Sem avisos no momento.";
   }
@@ -85,25 +108,28 @@ export function saudacao() {
 
 
 //status dos chamados
-export async function StatusChamado(filtro: string, req?: Request) {
+export async function StatusChamado(filtro: string, _req?: Request) {
   try {
-    const isTicket = filtro.toUpperCase().includes("TKT") || filtro.length > 11;
-    const param = isTicket ? `ticket=${filtro}` : `cpf=${filtro}`;
-    const url = `${baseUrl}/api/tickets/search?${param}`;
-    console.log(url)
+    const { prisma } = await import("@/lib/prisma");
 
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        cookie: req?.headers.get("cookie") || "",
+    const isTicket = filtro.toUpperCase().includes("TKT") || filtro.length > 11;
+
+    const where: Record<string, string> = isTicket
+      ? { ticket: filtro }
+      : { cpf: filtro };
+
+    const chamados = await prisma.chamado.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      include: {
+        atendente: {
+          select: { id: true, name: true, email: true, avatarUrl: true },
+        },
       },
     });
 
-    if (!response.ok) return [];
-
-    return await response.json();
+    return chamados;
   } catch (error) {
-
     console.error("Erro ao buscar status do chamado:", error);
     return [];
   }
@@ -113,14 +139,29 @@ export async function StatusChamado(filtro: string, req?: Request) {
 //enviar o chamado
 export async function enviarChamado(nome: string, cpf: string, setor: string, descricao: string) {
   try {
-    const formData = new FormData();
-    formData.append('nome', nome);
-    formData.append('cpf', cpf);
-    formData.append('setor', setor);
-    formData.append('descricao', descricao);
-    const res = await fetch(`${baseUrl}/api/tickets`, { method: "POST", body: formData });
-    return res.ok;
-  } catch { return false; }
+    const { prisma } = await import("@/lib/prisma");
+
+    const cpfRecord = await prisma.cpfs.findFirst({ where: { cpf } });
+    if (!cpfRecord) return false;
+
+    const ticket = `TKT-${Date.now()}`;
+
+    await prisma.chamado.create({
+      data: {
+        ticket,
+        nome,
+        cpf,
+        setor,
+        descricao,
+        prioridade: "normal",
+        empresaId: cpfRecord.empresaId,
+      },
+    });
+
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 
@@ -141,29 +182,19 @@ export async function validarCpf(cpf: string) {
     const cpfLimpo = cpf.replace(/\D/g, "");
     if (!cpfLimpo) return { valido: false };
 
-    const res = await fetch(`${baseUrl}/api/cpfs/general_cpf?cpf=${cpfLimpo}`);
+    const { prisma } = await import("@/lib/prisma");
 
-    if (!res.ok) return { valido: false };
+    const registro = await prisma.cpfs.findUnique({
+      where: { cpf: cpfLimpo },
+      select: { nome: true, cpf: true },
+    });
 
-    const data = await res.json();
-
-    // Lógica para lidar tanto com Array quanto com Objeto único
-    if (Array.isArray(data)) {
-      const registro = data.find(r => r.cpf.replace(/\D/g, "") === cpfLimpo);
-      if (registro) {
-        return { valido: true, nome: registro.nome, cpf: registro.cpf };
-      }
-    } else if (data && data.valido) {
-      // Se a API já retorna o objeto no formato {"valido": true, ...}
-      return {
-        valido: true,
-        nome: data.nome,
-        cpf: data.cpf
-      };
+    if (registro) {
+      return { valido: true, nome: registro.nome, cpf: registro.cpf };
     }
     return { valido: false };
   } catch (err) {
-    console.error("Erro ao validar CPF na API:", err);
+    console.error("Erro ao validar CPF:", err);
     return { valido: false };
   }
 }

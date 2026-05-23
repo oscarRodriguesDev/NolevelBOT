@@ -10,6 +10,7 @@ import {
 } from "@/lib/usedata";
 import { Chamado } from "@prisma/client";
 import { getSetores } from "@/lib/setores";
+import { registerPhone } from "@/lib/phoneMap";
 
 
 
@@ -25,6 +26,11 @@ const FlowState = {
 } as const;
 
 const menuString = "1. Abrir Chamado, 2. Consultar Chamado";
+const statusLabels: Record<string, string> = {
+  novo: "📌 Novo", aberto: "📂 Aberto", em_atendimento: "🔄 Em Atendimento",
+  aguardando: "⏳ Aguardando", concluido: "✅ Concluído", fechado: "🔒 Fechado",
+  NOVO: "📌 Novo", EM_ANDAMENTO: "🔄 Em Andamento", FECHADO: "🔒 Fechado",
+};
 const sessions = new Map<string, UserSession>();
 type FlowStateValues = typeof FlowState[keyof typeof FlowState];
 type UserSession = {
@@ -125,17 +131,32 @@ export async function POST(req: NextRequest) {
           session.state = FlowState.COLETAR_MOTIVO;
         }
         else if (["2", "status", "consultar", "ver"].some(v => lowerInput.includes(v))) {
-          const status = await StatusChamado(session.cpf || "");
-          const lista = status.length > 0
-            ? status.map((t: Chamado) => `🎫 *Ticket:* ${t.ticket}\n🔄 *Status:* ${t.status}`).join("\n\n")
+          const chamados = await StatusChamado(session.cpf || "");
+          const lista = chamados.length > 0
+            ? chamados.map((t: any) => {
+                const label = statusLabels[t.status] || t.status;
+                const atendente = t.atendente?.name ? `🧑‍💻 *Atendente:* ${t.atendente.name}` : '';
+                const dataCriacao = new Date(t.createdAt).toLocaleDateString('pt-BR');
+                const descricao = t.descricao ? `📄 *Descrição:* ${t.descricao.substring(0, 100)}${t.descricao.length > 100 ? '...' : ''}` : '';
+                const ultimoHistorico = t.historico ? (() => {
+                  try {
+                    const h = JSON.parse(t.historico);
+                    return h.length > 0 ? `📋 *Última ação:* ${statusLabels[h[h.length - 1].acao] || h[h.length - 1].acao}${h[h.length - 1].observacao ? ` — ${h[h.length - 1].observacao}` : ''}` : '';
+                  } catch { return ''; }
+                })() : '';
+
+                return [
+                  `🎫 *${t.ticket}* — ${label}`,
+                  `📅 *Abertura:* ${dataCriacao}`,
+                  `📍 *Setor:* ${t.setor}`,
+                  atendente,
+                  ultimoHistorico,
+                  descricao,
+                ].filter(Boolean).join('\n');
+              }).join('\n\n━━━━━━━━━━━━━━━━\n\n')
             : "Não encontrei chamados abertos no seu CPF.";
 
-          await sendEvolutionText(instance, number, `Aqui estão seus chamados:\n\n${lista}\n\nPosso ajudar com algo mais?`);
-        } else {
-          const resposta = await botIA(session, userInput, `Tente identificar o que ele quer, caso não consiga encerre 
-          amigavelmente.Não faça suposições, apenas encerre o atendimento, ao finalizar não precisa dizer boa tarde, bom dia ou boa noite,
-          apenas encerre`,avisos)
-          await sendEvolutionText(instance, number, resposta);
+          await sendEvolutionText(instance, number, `📋 *SEUS CHAMADOS*\n\n${lista}\n\nPosso ajudar com algo mais?\n\n${menuString}`);
         }
         break;
       }
@@ -303,6 +324,8 @@ export async function POST(req: NextRequest) {
           session.cpf = cleanCPF;
           session.nome = resCpf.nome;
 
+          registerPhone(cleanCPF, number, instance);
+
           avisos = await buscarAvisos(cleanCPF, req);
 
           const instrucao = session.nome
@@ -422,7 +445,11 @@ export async function POST(req: NextRequest) {
 
       case FlowState.COLETAR_SETOR: {
         const setores = await getSetores(session.cpf || '');
-        const setor = setores.find(s => lowerInput.includes(s.toLowerCase()));
+        const input = lowerInput.trim();
+        const setor = setores.find(s => {
+          const nomeSetor = s.toLowerCase();
+          return nomeSetor.includes(input) || input.includes(nomeSetor);
+        });
 
         if (setor) {
           const ok = await enviarChamado(

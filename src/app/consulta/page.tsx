@@ -27,7 +27,7 @@ export default function ConsultaTickets() {
     setLoading(true)
 
     try {
-      const res = await fetch(`/api/tickets?cpf=${cpf}`)
+      const res = await fetch(`/api/tickets/search?cpf=${cpf}`)
       const data = await res.json()
 
       const chamados: Chamado[] = data.map((c: Chamado) => ({

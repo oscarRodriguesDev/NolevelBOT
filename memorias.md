@@ -1,0 +1,1339 @@
+# MEMÓRIAS DO PROJETO - NolevelBOT
+
+## 1. VISÃO GERAL
+
+**NolevelBOT** é um sistema de gestão de chamados (tickets) multi-empresa com chatbot integrado via WhatsApp. O sistema permite que empresas cadastrem usuários, gerenciem chamados, configurem avisos internos, e ofereçam atendimento automatizado via bot com IA (OpenAI).
+
+---
+
+## 2. TECH STACK
+
+| Tecnologia | Versão | Uso |
+|------------|--------|-----|
+| Next.js | 16.1.6 | Framework full-stack |
+| React | 19.2.3 | UI |
+| TypeScript | 5.x | Tipagem |
+| Tailwind CSS | 4.x | Estilização |
+| Prisma | 7.4.1 | ORM + Migrations |
+| PostgreSQL | - | Banco de dados |
+| Supabase | - | Storage (uploads) + DB Host |
+| NextAuth | 4.24.13 | Autenticação |
+| OpenAI | 6.22.0 | IA do chatbot |
+| Framer Motion | 12.38.0 | Animações |
+| Recharts | 3.8.0 | Gráficos/dashboards |
+| jsPDF | 4.2.0 | Exportar PDF |
+| xlsx | 0.18.5 | Exportar Excel |
+| Lucide React | 0.577.0 | Ícones |
+| React Hot Toast | 2.6.0 | Notificações |
+| bcryptjs | 3.0.3 | Hash de senhas |
+
+---
+
+## 3. ESTRUTURA DE DIRETÓRIOS
+
+```
+nolevel/
+├── prisma/
+│   ├── schema.prisma          # Schema do banco de dados
+│   └── migrations/            # Migrations do Prisma
+├── src/
+│   ├── app/
+│   │   ├── globals.css        # Variáveis CSS (tema claro/escuro)
+│   │   ├── layout.tsx         # Root layout (servidor)
+│   │   ├── layout-client.tsx  # Wrapper cliente (ThemeProvider + SessionProvider)
+│   │   ├── providers.tsx      # Contexto de tema (useTheme)
+│   │   ├── page.tsx           # Landing page
+│   │   ├── (atendimento)/     # Área logada (layout com sidebar)
+│   │   │   ├── layout.tsx     # Layout com HeaderContext, Sidebar, Header
+│   │   │   ├── all-tickets/   # Lista de chamados
+│   │   │   ├── avisos/        # Quadro de avisos CRUD
+│   │   │   ├── cpfs/          # Gerenciamento de CPFs
+│   │   │   ├── dashboards/    # Dashboard com gráficos
+│   │   │   ├── empresa/       # Gerenciamento de empresas
+│   │   │   ├── gestao-de-usuarios/ # Criar usuários
+│   │   │   └── components/    # Sidebar, Header, CardUser, Modais
+│   │   ├── api/               # Rotas de API
+│   │   │   ├── auth/          # NextAuth
+│   │   │   ├── chat/          # Chatbot OpenAI
+│   │   │   ├── cpfs/          # CRUD CPFs
+│   │   │   ├── dashboards/    # Dados dos dashboards
+│   │   │   ├── empresa/       # CRUD empresas
+│   │   │   ├── leads-network/ # Captura de leads
+│   │   │   ├── memories/      # Memórias do bot (resumoPersona)
+│   │   │   ├── quadro-avisos/ # CRUD avisos
+│   │   │   ├── send-form/     # Formulário de contato → Google Forms
+│   │   │   ├── tickets/       # CRUD chamados
+│   │   │   ├── userFacil/     # Criar usuário (modo GOD)
+│   │   │   ├── users/         # CRUD usuários
+│   │   │   ├── webhook22/     # Webhook WhatsApp (instância 22)
+│   │   │   ├── webhook23/     # Webhook WhatsApp (instância 23)
+│   │   │   └── webhook-leads/ # Webhook para captação de leads em eventos
+│   │   ├── chamado/           # Página pública de abrir chamado
+│   │   ├── chatbot-app/       # Interface mobile do bot Hevelyn
+│   │   ├── components/        # Componentes globais
+│   │   │   ├── back.tsx       # Botão voltar
+│   │   │   ├── fileInput.tsx  # Upload de arquivo drag-and-drop
+│   │   │   └── theme-toggle.tsx # Alternador de tema
+│   │   ├── consulta/          # Consulta pública de chamados
+│   │   ├── contact/           # Página de contato
+│   │   ├── leads/             # Página de captura de leads
+│   │   ├── login/             # Página de login
+│   │   └── userFacil/         # Criação de usuário (modo GOD)
+│   ├── lib/
+│   │   ├── nextauth.ts        # Config NextAuth
+│   │   ├── prisma.ts          # Singleton Prisma Client
+│   │   ├── searchEmpresa.ts   # Buscar empresaId por CPF
+│   │   ├── setores.ts         # Buscar setores por CPF
+│   │   ├── upload.ts          # Upload para Supabase Storage
+│   │   ├── useIA.ts           # Integração OpenAI (chatbot)
+│   │   └── usedata.ts         # Funções utilitárias diversas
+│   ├── types/
+│   │   ├── leads.ts           # Interface Lead
+│   │   └── next-auth.d.ts     # Tipos estendidos do NextAuth
+│   ├── proxy.ts               # (proxy config)
+│   └── tarefas.txt            # Lista de tarefas do projeto
+├── dockerfile
+├── docker-compose.yml
+├── next.config.ts
+├── package.json
+├── tsconfig.json
+├── postcss.config.mjs
+├── eslint.config.mjs
+├── THEME_SYSTEM.md
+└── .env
+```
+
+---
+
+## 4. BANCO DE DADOS (Prisma Schema)
+
+### Modelos:
+
+| Modelo | Descrição |
+|--------|-----------|
+| `empresa` | Empresa inquilina (multi-tenant) |
+| `User` | Usuário do sistema |
+| `Chamado` | Ticket/Chamado de suporte |
+| `cpfs` | CPFs autorizados a usar o chatbot |
+| `tickets_fechados` | Histórico de chamados concluídos |
+| `avisos` | Quadro de avisos por empresa |
+| `resumoPersona` | Memória do bot sobre personalidade do usuário |
+| `CompanyConfig` | Configurações de IA por empresa |
+| `cpfsLeads` | Leads capturados (novo) |
+
+### Roles (enum `ROLE`):
+- `GOD` - Acesso total ao sistema
+- `ADMIN` - Administra empresa
+- `GESTOR` - Gerencia chamados e equipe
+- `ATENDENTE` - Atende chamados
+
+### Regras de negócio no banco:
+- Cada `User` pertence a uma `empresa`
+- Cada `Chamado` pertence a uma `empresa` e opcionalmente a um `User` (atendente)
+- `cpfs` são vinculados a uma `empresa` (para validação no bot)
+- `avisos` são vinculados a uma `empresa` e podem ter `setor` e `expiresAt`
+- `cpfsLeads` NÃO tem vinculo com empresa (lead externo)
+
+---
+
+## 5. AUTENTICAÇÃO (NextAuth)
+
+- **Provider:** Credentials (email + senha)
+- **Estratégia:** JWT (não usa sessão de banco)
+- **Senhas:** Hash com bcryptjs
+- **Fluxo:**
+  1. Usuário faz login com email + senha
+  2. NextAuth valida contra banco (prisma)
+  3. JWT armazena: id, email, cpf, empresaId, name, role, avatarUrl, setor
+  4. Session disponibiliza esses dados nos componentes cliente
+- **Proteção:** Rotas em `(atendimento)` exigem sessão válida
+
+---
+
+## 6. SISTEMA DE TEMAS
+
+- Provider: `src/app/providers.tsx`
+- Hook: `useTheme()` retorna `{ theme, toggleTheme }`
+- Padrão: `dark`
+- Persistência: `localStorage` (chave: `"theme"`)
+- Implementação: Atributo `data-theme` no `<html>`
+- Variáveis CSS em `globals.css` com fallback light/dark
+- Transições: `transition-colors duration-300` em todos os elementos
+
+### Cores principais:
+- Fundo escuro: `#0F172A` / Claro: `#F8FAFC`
+- Primária: `#3B82F6`
+- Hover: `#2563EB`
+
+---
+
+## 7. PADRÕES DE CÓDIGO
+
+### Estilização:
+- Usar variáveis CSS `var(--cor)` em vez de valores fixos
+- Aderir ao sistema de temas (dark/light)
+- Transições suaves de cor
+
+### Componentes:
+- Componentes de página em `src/app/rota/page.tsx`
+- Componentes compartilhados em `src/app/components/`
+- "use client" quando necessário (hooks, estado, eventos)
+- Preferir Server Components quando possível
+
+### API Routes:
+- Arquivos em `src/app/api/nome-da-rota/route.ts`
+- Exportar funções `GET`, `POST`, `PUT`, `DELETE`
+- Retornar `NextResponse.json()`
+- Tratar erros com try/catch
+
+### Prisma:
+- Singleton em `src/lib/prisma.ts`
+- Usar `prisma` importado de `@/lib/prisma`
+
+### Autenticação em APIs:
+- Rotas protegidas: verificar `getServerSession(authOptions)`
+- Rotas públicas: Não verificar sessão
+
+---
+
+## 8. WEBHOOKS / CHATBOT WHATSAPP
+
+### Webhooks de Atendimento (webhook22 e webhook23)
+- Duas instâncias: webhook22 e webhook23
+- Fluxo completo do bot:
+  1. Saudação → CPF
+  2. Valida CPF na tabela `cpfs`
+  3. Busca setores do CPF
+  4. Exibe menu de opções (abrir chamado, consultar status, falar com atendente)
+  5. Se "abrir chamado": pergunta motivo, setor → cria chamado
+  6. Se "consultar": busca chamados pelo CPF
+  7. Se "avisos": busca avisos da empresa
+- IA integrada via `useIA.ts` (OpenAI) para processar linguagem natural
+- Envio de mensagens via Evolution API (`sendEvolutionText`)
+
+### Webhook de Leads (webhook-leads) — Evento/Feira
+- Webhook específico para captação de leads em eventos/feiras
+- **Não requer validação de CPF** — conversa fluida e sem travas
+- Toda lógica contida no próprio `route.ts` (exceto `sendEvolutionText` e `buscarAvisos`)
+- Usa OpenAI diretamente (não passa por `useIA.ts`)
+- Estados: `apresentacao` → `coletando_nome` → `coletando_telefone` → `conversando`
+- Salva leads na tabela `cpfsLeads` via Prisma direto
+- Suporta extração estruturada de dados via tags `[NOME:]`, `[TELEFONE:]`, `[CPF:]`, `[EMPRESA:]`
+- Temperatura da IA: 0.7 (mais criativa)
+- Sessão expira após 2h de inatividade
+
+---
+
+## 9. LEADS (NOVO - Sessão Atual)
+
+- Modelo `cpfsLeads` no Prisma (sem vinculo com empresa)
+- Campos: id, cpf, nome, telefone, empresa (opcional)
+- API: `GET /api/leads-network` (listar), `POST /api/leads-network` (criar)
+- Página: `/leads` - formulário que redireciona para WhatsApp após cadastro
+- Validação: CPF, nome e telefone obrigatórios; CPF único
+
+---
+
+## 10. DECISÕES DE ARQUITETURA
+
+- **Multi-tenant por empresa:** Cada empresa tem seus próprios dados (chamados, usuários, CPFs, avisos)
+- **Banco único:** Todas as empresas no mesmo banco PostgreSQL, separadas por `empresaId`
+- **Storage:** Supabase Storage para uploads de avatar e anexos
+- **Bot WhatsApp:** Evolution API gerenciando duas instâncias
+- **IA:** OpenAI para processar intenções do usuário no chatbot
+- **Autenticação:** NextAuth com JWT stateless
+- **Tema:** CSS Variables + Context API, sem bibliotecas externas
+
+---
+
+## 11. VARIÁVEIS DE AMBIENTE (.env)
+
+| Variável | Descrição |
+|----------|-----------|
+| `EVOLUTION_API_KEY` | Chave da API Evolution |
+| `EVOLUTION_API_URL` | URL da Evolution API |
+| `OPENAI_API_KEY` | Chave da OpenAI |
+| `DATABASE_URL` | URL do PostgreSQL |
+| `DIRECT_URL` | URL direta do PostgreSQL |
+| `NEXT_PUBLIC_SUPABASE_URL` | URL do Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | Chave de serviço Supabase |
+| `NEXTAUTH_SECRET` | Segredo do NextAuth |
+| `NEXTAUTH_URL` | URL base para NextAuth |
+| `PUBLIC_NAME_EMPRESA` | Nome público da empresa |
+| `NEXT_PUBLIC_CNPJ` | CNPJ público |
+| `BASE_URL` | URL interna (container) |
+
+---
+
+## 12. CONFIGURAÇÃO DOCKER
+
+- **Dockerfile:** Next.js standalone build
+- **Docker Compose:** Serviço `nolevel-app` na porta 3000
+- **Container name:** `nolevel-app`
+
+---
+
+## 13. RESPONSIVIDADE
+
+- Layout adaptável para mobile/desktop
+- Sidebar colapsável em mobile
+- Tabelas com overflow-x em telas pequenas
+- Grid responsivo nos cards
+
+---
+
+## 14. OBSERVAÇÕES IMPORTANTES
+
+- O arquivo `src/tarefas.txt` contém a lista de tarefas pendentes e concluídas
+- O commit `ecc69f2` quebrou o bot porque a URL base ainda não foi atualizada no servidor
+- O projeto já passou por várias tentativas de deploy (homologação)
+- A branch principal de trabalho é `vibecode`
+- Alterações drásticas devem ser consultadas antes de implementar
+- Sempre manter consistência com o sistema de temas (dark/light)
+
+---
+
+## 15. CORREÇÕES IMPORTANTES (17/05/2026)
+
+### Webhook Evolution × leads-network
+
+**Problema:** A Evolution API estava configurada para chamar `/api/leads-network`, mas esse endpoint esperava `{ cpf, nome, telefone }` no body. A Evolution envia eventos no formato `{ event: "messages.upsert", data: {...}, instance: "..." }`, resultando em erro 400 e o webhook não era reconhecido.
+
+**Solução em `src/app/api/leads-network/route.ts`:**
+- O POST agora detecta se o body contém `event === "messages.upsert"` (formato Evolution)
+- Se for evento da Evolution, faz um proxy interno via fetch para `/api/webhook-leads`
+- Se não for, mantém o fluxo normal de CRUD de leads
+
+**Bug corrigido em `src/app/api/webhook-leads/route.ts`:**
+- A função `consultarLeadPorCpf` usava fetch com URL relativa (`/api/leads-network?cpf=...`), que não funciona em ambiente server-side
+- Corrigido para usar `NEXT_PUBLIC_BASE_URL` (ou `BASE_URL` como fallback) com URL absoluta
+
+---
+
+## 16. REFATORAÇÃO WEBHOOK-LEADS — BOT DO ESTANDE (17/05/2026)
+
+### Mudança de propósito
+O bot foi reposicionado: antes era um "atendente do evento ESX" que tirava dúvidas sobre a feira. Agora é um **representante da NoLevel no estande da ESX**, focado em apresentar o produto NoLevel para visitantes.
+
+### Estratégia de IA (refinada)
+- Avisos são a **fonte de verdade**, mas IA **resume e naturaliza** as respostas
+- IA nunca lê o aviso literalmente — reformula de forma conversacional
+- **`parseAvisos`** — transforma string raw em array estruturado `{ titulo, conteudo }`
+- **`encontrarAvisoRelevante`** — matching inteligente PT-BR:
+  - Normalização de acentos (NFD)
+  - Remoção de stop words portuguesas
+  - Score ponderado: match no título vale 2x, match no conteúdo vale 1x
+  - Bônus proporcional de palavras do título vs pergunta
+- **`gerarRespostaComAviso`** — quando encontra aviso relevante:
+  - Usa `role: "system"` (conhecimento assimilado, não texto lido)
+  - Prompt: "Você estudou e domina este assunto... Explique com SUAS PALAVRAS, como se estivesse ensinando alguém"
+  - NUNCA repete frases inteiras do texto original
+  - NUNCA usa formatos como "Sobre X:" ou "De acordo com..."
+  - Temperature 0.3, max_tokens 100
+  - Fallback: "Desculpe, pode repetir?" (nunca devolve texto bruto)
+- **`gerarRespostaFallback`** — quando NENHUM aviso casa:
+  - Usa `role: "system"` com múltiplos tópicos assimilados
+  - Mesmas regras de paraphrase obrigatória
+  - Se não souber: "Nao sei informar, mas posso anotar seu contato"
+- **Greetings sem IA**: saudações simples respondem sem chamar OpenAI
+
+### Fluxo atual do bot
+1. Visitante envia CPF → valida na `leads-network`
+2. Mensagem → se for saudação → responde sem IA
+3. Mensagem → `parseAvisos` + `encontrarAvisoRelevante` (matching local)
+4. Se matched → `gerarRespostaComAviso` (IA só com aquele aviso = contexto mínimo)
+5. Se não matched → `gerarRespostaFallback` (IA com todos os avisos)
+6. Ao encerrar → salva memória do resumo da conversa
+
+### Como usar
+Os avisos cadastrados no sistema (tabela `avisos`) devem conter **informações sobre a NoLevel** no formato:
+- **Título:** assunto (ex: "Integração WhatsApp")
+- **Conteúdo:** descrição detalhada (ex: "O NoLevel se integra com WhatsApp via Evolution API...")
+
+Quando um visitante perguntar "Como funciona a integração com WhatsApp?", o matching encontra o aviso, and a IA resume numa resposta natural e conversacional.
+
+---
+
+## 17. NOTIFICAÇÕES PROATIVAS WEBHOOK24 (19/05/2026)
+
+### Objetivo
+O webhook24 agora envia mensagens proativas no WhatsApp do usuário em 3 momentos do ciclo de vida do chamado:
+1. **Chamado criado** (status `NOVO`) — aviso de criação com número do ticket
+2. **Chamado em atendimento** (status `EM_ANDAMENTO`) — aviso que começou a ser tratado
+3. **Chamado finalizado** (movido para `tickets_fechados`) — aviso de conclusão
+
+### Arquitetura
+
+```
+Usuário → Webhook24 (valida CPF)
+  → phoneMap.ts salva: CPF → { telefone, instance }
+  → Usuário abre chamado via webhook24
+  → Atendente atualiza/finaliza via sistema web
+    → api/tickets/route.ts busca telefone pelo CPF no phoneMap
+    → sendEvolutionText envia notificação proativa
+```
+
+### Componentes criados/modificados
+
+#### `src/lib/phoneMap.ts` (novo)
+- Persistência em arquivo JSON (`data/phoneMap.json`)
+- Mapa: `CPF → { telefone, instance, updatedAt }`
+- Funções: `registerPhone()`, `getPhoneByCpf()`, `removePhone()`
+
+#### `src/app/api/webhook24/route.ts` (modificado)
+- Importa `registerPhone` do phoneMap
+- Na etapa `IDENTIFICACAO_CPF`, após validar CPF, chama `registerPhone(cleanCPF, number, instance)`
+- Vincula o número de WhatsApp ao CPF para notificações futuras
+
+#### `src/app/api/tickets/route.ts` (modificado)
+- Importa `getPhoneByCpf` e `sendEvolutionText`
+- Função auxiliar `notificarCliente(cpf, ticket, etapa, nomeAtendente?)`
+- **POST** (criação): notifica "Seu chamado *TKT-xxx* foi criado com sucesso!"
+- **PUT** (status → `EM_ANDAMENTO`): notifica "Seu chamado *TKT-xxx* começou a ser tratado!"
+- **DELETE** (finalização): notifica "Seu chamado *TKT-xxx* foi finalizado."
+
+### Regras de negócio
+- Apenas usuários que interagiram com o webhook24 recebem notificações (precisam ter CPF mapeado)
+- Chamados abertos pelo portal web NÃO geram notificação (sem telefone registrado)
+- Falha na notificação não quebra o fluxo principal (try/catch isolado)
+- O número de WhatsApp é registrado automaticamente na primeira interação com o bot
+
+---
+
+## 18. CORREÇÃO: MATCHING BIDIRECIONAL DE SETORES (19/05/2026)
+
+### Problema
+O matching de setores nos webhooks (22, 23, 24) e chat usava apenas:
+```typescript
+setores.find(s => lowerInput.includes(s.toLowerCase()))
+```
+Isso falhava quando o nome do setor no banco era mais específico que a resposta do usuário. Ex:
+- Setor no banco: `"Suporte Técnico"` → usuário digita `"suporte"` → `"suporte".includes("suporte técnico")` → **false** ❌
+
+### Solução aplicada em `webhook22`, `webhook23`, `webhook24` e `chat/route.ts`
+```typescript
+const setor = setores.find(s => {
+  const nomeSetor = s.toLowerCase();
+  return nomeSetor.includes(input) || input.includes(nomeSetor);
+});
+```
+Matching bidirecional: checa se o **nome do setor contém o input** OU se o **input contém o nome do setor**.
+
+---
+
+## 19. VISUALIZAÇÃO KANBAN (19/05/2026)
+
+### Objetivo
+Adicionar visualização em quadro Kanban para os chamados abertos, permitindo que o atendente alterne entre visualização em lista (tabela) e visualização em colunas (Kanban) para gerenciar chamados de forma mais visual e intuitiva.
+
+### Status padronizados
+Os status foram padronizados para valores consistentes e profissionais:
+| Valor | Display | Cor |
+|-------|---------|-----|
+| `NOVO` | Novo | Roxo (`--status-new`) |
+| `EM_ATENDIMENTO` | Em Atendimento | Laranja (`--status-in-progress`) |
+| `AGUARDANDO` | Aguardando | Magenta (`--status-waiting`) |
+| `CONCLUIDO` | Concluído | Verde (`--status-completed`) |
+| `CANCELADO` | Cancelado | Vermelho (`--status-cancelled`) |
+
+### Arquivos criados/modificados
+
+#### `src/app/(atendimento)/all-tickets/kanban-board.tsx` (novo)
+- Componente KanbanBoard que renderiza **5 colunas**: **Novo**, **Em Atendimento**, **Aguardando**, **Concluído**, **Cancelado**
+- Cada coluna exibe cards com: número do ticket, nome, setor, prioridade, data e atendente
+- Cores dos cards de prioridade: Baixa (verde), Normal (laranja), Alta (vermelho), Crítica (vermelho escuro)
+- Função `normalizeStatus()` que normaliza variações de status do banco para os 5 grupos
+- **Drag and drop nativo (HTML5):** cards podem ser arrastados entre colunas
+  - `draggable` nos cards, `onDragStart`/`onDragEnd` no card, `onDragOver`/`onDragLeave`/`onDrop` na coluna
+  - Feedback visual: card arrastado fica semi-transparente e rotacionado; coluna alvo destaca borda
+  - Drop zone vazia exibe "Solte aqui" quando hover
+- Ao soltar card em coluna diferente, faz `PUT /api/tickets?atendimento=X&estagio=NOVO_STATUS` com `userId` da sessão
+- Se o drop for na mesma coluna, não faz nada (evita chamada desnecessária)
+- Clique em qualquer card abre o `ModalChamado` existente (reúso completo)
+- Ao concluir/fechar o modal, o Kanban faz refresh automático da lista
+- Grid responsivo: `grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5`
+
+#### `src/app/(atendimento)/all-tickets/page.tsx` (modificado)
+- Adicionado estado `viewMode: 'list' | 'kanban'` para alternar entre visualizações
+- Botões de toggle no header dos filtros com ícones (`LayoutList` e `Columns3` da Lucide)
+- Botão ativo recebe cor primária com texto branco; inativo fica transparente
+- Filtro de status agora preserva case (não aplica `.toLowerCase()`) para corresponder exatamente aos valores padronizados
+- Função `refreshTickets()` criada para permitir refresh manual do Kanban
+- Exibição de status na tabela agora usa `replace(/_/g, ' ')` (todas as ocorrências)
+
+#### `src/app/(atendimento)/components/modal_tandimento.tsx` (modificado)
+- Dropdown de status atualizado com valores padronizados:
+  - ~~`aberto`~~ → `NOVO`
+  - ~~`em_atendimento`~~ → `EM_ATENDIMENTO`
+  - ~~`aguardando`~~ → `AGUARDANDO`
+  - ~~`concluido`~~ → `CONCLUIDO`
+  - **Novo:** `CANCELADO`
+
+### Arquitetura do Kanban
+```
+all-tickets/page.tsx
+  ├── [viewMode=list]  → Tabela (existente)
+  └── [viewMode=kanban] → KanbanBoard (drag-and-drop)
+                            ├── Coluna "Novo" (status NOVO)
+                            ├── Coluna "Em Atendimento" (status ATENDIMENTO/ANDAMENTO)
+                            ├── Coluna "Aguardando" (status AGUARDANDO)
+                            ├── Coluna "Concluído" (status CONCLUIDO)
+                            ├── Coluna "Cancelado" (status CANCELADO)
+                            └── Card → clique → ModalChamado (mesmo componente da lista)
+                                  → arrastar → soltar em coluna → PUT /api/tickets
+```
+
+### Regras de negócio
+- Kanban mostra **todas as 5 colunas** de status disponíveis
+- Drag and drop move o chamado entre colunas, atualizando o status via API
+- Se o card for solto na mesma coluna, a operação é ignorada (sem chamada à API)
+- Filtros de nome, ticket, setor, prioridade funcionam em ambos os modos
+- Filtro de status funciona nos dois modos (em Kanban, filtra quais tickets aparecem nas colunas)
+- Refresh automático ao fechar modal garante consistência dos dados
+
+---
+
+## 20. MELHORIAS DE SEGURANÇA E QUALIDADE (19/05/2026)
+
+### Implementação dos itens 1-11 do `ideias.md`
+
+| Item | Mudança | Arquivos |
+|------|---------|----------|
+| 1 | Removido log de senha em plaintext | `api/auth/[...nextauth]/route.ts` |
+| 2 | Auth real em PUT/DELETE de tickets (usando session.user.id) | `api/tickets/route.ts`, `api/tickets/search/route.ts` |
+| 3 | GET empresas protegido (exceto consulta por CPF pública) | `api/empresa/route.ts` |
+| 4 | GET leads-network protegido | `api/leads-network/route.ts` |
+| 5-6 | Dependências fantasmas removidas | `package.json` |
+| 7 | Vitest configurado (scripts + vitest.config.ts) | `vitest.config.ts`, `package.json` |
+| 8 | Error boundaries (global + atendimento) | `src/app/error.tsx`, `src/app/(atendimento)/error.tsx` |
+| 9 | 26 `alert()` substituídos por `react-hot-toast` | 8 arquivos de UI |
+| 10 | Zod + React Hook Form instalados, schemas criados | `src/lib/validation.ts` |
+| 11 | Normalização de status nas rotas PUT de tickets | `api/tickets/route.ts`, `api/tickets/search/route.ts` |
+
+### Detalhes técnicos
+
+#### Autenticação em PUT/DELETE de tickets
+Antes: `getSessionOrFail()` era chamado sem `await` e o retorno era descartado — qualquer requisição com `userId` no body conseguia alterar qualquer chamado.
+Depois: `const session = await getSessionOrFail()` com verificação de `!session`, e `userId` passa a vir de `session.user.id` (ignorando o body).
+
+#### Toast notifications
+`react-hot-toast` já estava no `package.json` mas nunca era importado. Agora está configurado no `layout-client.tsx` com `<Toaster />` e todos os 26 `alert()` foram substituídos por `toast.success()` / `toast.error()`.
+
+#### Normalização de status
+Função `normalizarStatus()` adicionada nas rotas PUT que normaliza qualquer variação de status (maiúscula/minúscula, `em_andamento`, `aberto`, `concluido`) para os 5 valores padronizados: `NOVO`, `EM_ATENDIMENTO`, `AGUARDANDO`, `CONCLUIDO`, `CANCELADO`.
+
+#### Validação com Zod
+Schemas de validação centralizados em `src/lib/validation.ts` para: CPF, email, senha, criação de usuário, chamado, empresa e lead.
+
+---
+
+## 21. ITENS 13-28 DO IDEIAS.MD — IMPLEMENTAÇÃO (19/05/2026)
+
+### Resumo
+
+Implementação dos itens 13 a 28 do `ideias.md` (excluindo item 12 e 18, que eram testes propositais de webhooks, e item 26 já implementado no item 1).
+
+### Item 13 — Índices no Banco de Dados
+
+Adicionados `@@index` nos modelos do Prisma para performance:
+
+| Modelo | Índices |
+|--------|---------|
+| `empresa` | `nome`, `cnpj` |
+| `User` | `empresaId`, `cpf`, `email` |
+| `Chamado` | `empresaId`, `cpf`, `status`, `[empresaId, status]`, `ticket` |
+| `cpfs` | `empresaId`, `cpf` |
+| `tickets_fechados` | `empresaId`, `cpf`, `ticket` |
+| `avisos` | `empresaId`, `setor` |
+| `resumoPersona` | `cpf` |
+| `cpfsLeads` | `cpf`, `telefone` |
+
+### Item 14 — Tema Consistente
+
+- **`src/app/(atendimento)/components/modal-edit-user.tsx`**: Substituídas classes `dark:bg-zinc-900`, `dark:text-zinc-100`, etc. por variáveis CSS (`var(--surface)`, `var(--foreground)`, etc.)
+- **`src/app/userFacil/page.tsx`**: Adicionado suporte completo ao tema com variáveis CSS (antes usava apenas `border p-2 rounded` sem tema)
+
+### Item 15 — Skeleton Loaders
+
+- **`src/app/components/skeleton.tsx`** (novo): Componentes `Skeleton`, `SkeletonTable`, `SkeletonCard`
+- **`src/app/(atendimento)/all-tickets/loading.tsx`** (novo): Loading state com SkeletonTable
+
+### Item 16 — Componentes UI Reutilizáveis
+
+| Componente | Arquivo |
+|------------|---------|
+| `StatusBadge` | `src/app/components/status-badge.tsx` |
+| `PriorityBadge` | `src/app/components/priority-badge.tsx` |
+| `Spinner` | `src/app/components/spinner.tsx` |
+
+### Item 17 — Acessibilidade (ARIA)
+
+- **`modal_tandimento.tsx`**: Adicionado `role="dialog"`, `aria-modal="true"`, `aria-labelledby` no container; fechamento com tecla Escape
+- **`modal-edit-user.tsx`**: Mesmas melhorias de ARIA + Escape key
+
+### Item 19 — Docker USER node
+
+- **`dockerfile`**: Adicionado `USER node` antes do `EXPOSE` para segurança (container não roda mais como root)
+- **`dockerfile`**: Adicionado `RUN mkdir -p /app/data && chown -R node:node /app/data` para que o `phoneMap.json` possa ser escrito pelo usuário `node`
+
+### Item 20 — CI/CD com Validação
+
+- **`.github/workflows/deploy.yml`** e **`deploy-homologa.yml`**: Adicionados steps de `checkout`, `setup-node`, `npm ci`, `npm run lint`, `npm run build` antes do deploy
+
+### Item 21 — Typo no layout
+
+- **`src/app/layout.tsx`**: Corrigido `ransition-colors` → `transition-colors`
+
+### Item 22 — .env.example
+
+- **`.env.example`** (novo): Template com todas as variáveis de ambiente documentadas (valores placeholder)
+
+### Item 23 — Typo no Schema
+
+- **`prisma/schema.prisma`**: Corrigido `chammados` → `chamados` no model `empresa`
+
+### Item 24 — Prettier
+
+- **`.prettierrc`** e **`.prettierignore`** (novos): Configuração de formatação automática
+
+### Item 25 — Documentação da API
+
+- **`src/app/api-docs/page.tsx`** (novo): Página com tabela de todos os endpoints, métodos, autenticação e descrição
+
+### Item 27 — Tipos Centralizados
+
+- **`src/types/chamado.ts`** (novo): Tipos `Chamado`, `HistoricoItem` + funções `getStatusColor()`, `getPriorityColor()`, `normalizarStatus()` centralizadas
+- Removidos tipos duplicados de `modal_tandimento.tsx`, `tickets/route.ts`, `tickets/search/route.ts`, `consulta/[ticket]/page.tsx`, `all-tickets/page.tsx`, `kanban-board.tsx`
+- Funções de cor e normalização agora importadas do arquivo central
+
+### Item 28 — Telefone Opcional no Portal
+
+- **`src/app/chamado/page.tsx`**: Adicionado campo "Telefone (opcional)" no formulário de abertura de chamado
+- **`src/app/api/tickets/route.ts`**: POST agora aceita `telefone` e registra no `phoneMap` via `registerPhone()` para permitir notificações WhatsApp mesmo para chamados abertos pelo portal web
+
+---
+
+## 22. CORREÇÃO DE MULTI-TENANCY — DADOS ENTRE EMPRESAS (20/05/2026)
+
+### Problemas identificados
+
+Diversos bugs críticos de **vazamento de dados entre empresas (multi-tenancy)** foram encontrados e corrigidos:
+
+| # | Severidade | Arquivo | Problema |
+|---|-----------|---------|----------|
+| 1 | 🔴 Crítico | `api/cpfs/route.ts` — DELETE | Deletava CPF de QUALQUER empresa sem verificar empresaId |
+| 2 | 🔴 Crítico | `api/tickets/route.ts` — PUT | Atualizava chamado de QUALQUER empresa sem verificar empresaId |
+| 3 | 🔴 Crítico | `api/tickets/route.ts` — DELETE | Movia chamado para fechados de QUALQUER empresa sem verificar empresaId |
+| 4 | 🔴 Crítico | `api/tickets/search/route.ts` — GET | Retornava chamados de TODAS as empresas sem autenticação |
+| 5 | 🔴 Crítico | `gestao-de-usuarios/page.tsx` | Exibia setores da primeira empresa do banco, não da empresa do usuário |
+| 6 | 🔴 Crítico | `api/empresa/route.ts` — GET | Retornava TODAS as empresas para qualquer usuário logado |
+
+### Correções aplicadas
+
+#### Fix 1 — CPF DELETE escopado por empresaId (`api/cpfs/route.ts`)
+```typescript
+// Antes: deletava qualquer CPF sem verificar empresa
+await prisma.cpfs.delete({ where: { cpf } })
+
+// Depois: verifica se o CPF pertence à empresa do usuário
+const registro = await prisma.cpfs.findFirst({ where: { cpf, empresaId } })
+if (!registro) return error 404
+await prisma.cpfs.delete({ where: { cpf } })
+```
+
+#### Fix 2 — Empresa GET filtrando por role (`api/empresa/route.ts`)
+- Se o usuário é **GOD**: retorna todas as empresas (admin)
+- Se o usuário é **ADMIN/GESTOR**: retorna apenas a própria empresa
+- A página `gestao-de-usuarios/page.tsx` passa a receber os setores corretos
+
+#### Fix 3 — Tickets PUT escopado por empresaId (`api/tickets/route.ts`)
+```typescript
+// Adicionado empresaId no where do findFirst
+const chamadoExistente = await prisma.chamado.findFirst({
+  where: { ticket: ticketNumber.trim(), empresaId }
+})
+```
+
+#### Fix 4 — Tickets DELETE escopado por empresaId (`api/tickets/route.ts`)
+```typescript
+// Adicionado empresaId no where do findFirst
+const chamado = await prisma.chamado.findFirst({
+  where: { ticket: ticketNumber.trim(), empresaId }
+})
+```
+
+#### Fix 5 — Tickets search com empresaId quando autenticado (`api/tickets/search/route.ts`)
+- Quando chamado com sessão (web UI): filtra por empresaId
+- Quando chamado sem sessão (bot via `StatusChamado`): mantém busca por CPF/ticket (escopo natural)
+
+### Impacto
+- ✅ GOD continua vendo todas as empresas (admin)
+- ✅ ADMIN/GESTOR vêem apenas dados da própria empresa
+- ✅ Bot WhatsApp continua funcionando via CPF (escopo natural)
+- ✅ Webhooks mantidos (CPF → empresaId via registro)
+- Build validado com `npm run build` — sem erros
+
+### Correções adicionais (20/05/2026)
+
+#### Fix 7 — Tickets GET role-aware para filtro de setor
+**Problema:** O GET de tickets SEMPRE filtrava por `setor: userSetor`, fazendo com que ADMIN e GESTOR só vissem chamados do próprio setor, não da empresa inteira.
+**Correção:** Apenas ATENDENTE tem filtro de setor automático. ADMIN, GESTOR e GOD veem todos os setores da empresa.
+```typescript
+if (userRole === "ATENDENTE") {
+  where.setor = userSetor
+}
+```
+
+#### Fix 8 — Páginas públicas de consulta usando API errada
+**Problema:** As páginas `/consulta` e `/consulta/[ticket]` chamavam `/api/tickets?cpf=X` e `/api/tickets?ticket=X`, que exigem autenticação. Por serem páginas públicas, retornavam 401.
+**Correção:** Agora chamam `/api/tickets/search?cpf=X` e `/api/tickets/search?ticket=X`, que funcionam sem autenticação (escopo natural por CPF/ticket).
+- `src/app/consulta/page.tsx` — URL alterada
+- `src/app/consulta/[ticket]/page.tsx` — URL alterada
+
+---
+
+## 23. GOD CRIA USUÁRIOS NO FORM PADRÃO + LISTA DE ADMINS (20/05/2026)
+
+### Mudanças
+
+#### 1. GOD liberado no form de criação de usuários (`api/users/route.ts`)
+Antes: GOD era bloqueado com "GOD deve usar a rota específica de criação".
+Agora: GOD pode criar qualquer papel e selecionar a empresa destino via campo `empresaId` no form.
+
+#### 2. Nova API `/api/users/admins` (restrita a GOD)
+| Método | Função |
+|--------|--------|
+| `GET` | Lista todos usuários com role ADMIN (nome, CPF, email, empresa, setor) |
+| `PUT` | Edita dados de um admin (nome, email, CPF, setor) |
+| `DELETE` | Remove um admin por ID |
+
+#### 3. Formulário `gestao-de-usuarios/page.tsx`
+- GOD vê campo extra "Empresa" (dropdown com todas empresas)
+- GOD também vê opção "Master" no seletor de Papel
+- Demais usuários: comportamento inalterado
+
+#### 4. Página `cpfs/page.tsx` — Lista de Administradores
+- Apenas GOD vê a seção "Administradores Cadastrados"
+- Tabela com: Nome, CPF, Empresa, Setor, Ações (Editar/Apagar)
+- Edição inline com formulário dentro da própria página
+- Exclusão com confirmação (`confirm()`)
+
+### Arquivos criados
+- `src/app/api/users/admins/route.ts` — CRUD de administradores
+
+### Arquivos modificados
+- `src/app/api/users/route.ts` — GOD liberado + empresaId opcional
+- `src/app/(atendimento)/gestao-de-usuarios/page.tsx` — GOD mode + empresa selector
+- `src/app/(atendimento)/cpfs/page.tsx` — Lista de admins (só GOD)
+
+### Build
+- `npm run build` — compilado com sucesso ✅
+
+---
+
+## 24. RBAC COMPLETO — CONTROLE DE ACESSO POR PAPEL (21/05/2026)
+
+### Objetivo
+Implementar sistema completo de RBAC (Role Based Access Control) com validações obrigatórias no backend. Nenhuma regra depende apenas da interface visual. Todas as permissões são protegidas nas rotas, APIs e queries.
+
+### Arquivo central: `src/lib/rbac.ts` (novo)
+Sistema centralizado de permissões com tipagem forte e regras desacopladas:
+
+| Constante/Função | Descrição |
+|-----------------|-----------|
+| `CREATE_ROLE_MAP` | Quem pode criar qual papel: GOD→ADMIN, ADMIN→GESTOR/ATENDENTE, GESTOR→ATENDENTE |
+| `DELETE_ROLE_MAP` | Quem pode deletar qual papel: GOD→ADMIN/GESTOR/ATENDENTE, ADMIN→GESTOR/ATENDENTE, GESTOR→ATENDENTE |
+| `VIEW_USERS_ROLES` | Quem pode ver quais usuários, com escopo por empresa/setor |
+| `CAN_VIEW_EMPRESAS` | Apenas GOD vê lista de empresas |
+| `CAN_BATCH_CPF` | GOD, ADMIN e GESTOR podem importar CPF em lote |
+| `podeCriarRole()` | Verifica se um papel pode criar outro |
+| `podeDeletarRole()` | Verifica se um papel pode deletar outro (GOD nunca pode ser deletado) |
+| `getSetorFilter()` | Retorna filtro de setor baseado na role |
+| `getTicketWhereClause()` | Retorna cláusula where para tickets baseada na role |
+| `getServerSessionRBAC()` | Valida sessão + role + retorna erro padronizado |
+
+### Hierarquia de permissões de criação:
+| Quem cria | Pode criar |
+|-----------|-----------|
+| GOD | ADMIN |
+| ADMIN | GESTOR, ATENDENTE |
+| GESTOR | ATENDENTE (mesmo setor) |
+| ATENDENTE | Ninguém |
+
+### Hierarquia de exclusão:
+| Quem exclui | Pode excluir |
+|------------|-------------|
+| GOD | ADMIN, GESTOR, ATENDENTE (NUNCA GOD) |
+| ADMIN | GESTOR, ATENDENTE (mesma empresa) |
+| GESTOR | ATENDENTE (mesmo setor) |
+| ATENDENTE | Ninguém |
+
+### Proteções implementadas no backend:
+
+#### `src/app/api/users/route.ts`
+- **POST**: Valida:
+  - Se usuário logado pode criar o papel alvo (`podeCriarRole`)
+  - Se GESTOR: só cria no próprio setor
+  - Se ADMIN: setor deve pertencer à empresa
+  - Se GOD: empresa selecionada deve existir
+  - Unicidade de CPF (por empresa) e email (global)
+  - **Auto-registro de CPF** na tabela `cpfs` via `upsert`
+- **GET**: Filtra por:
+  - GOD: todos os usuários (todas empresas)
+  - ADMIN: usuários da própria empresa
+  - GESTOR: apenas ATENDENTES do próprio setor
+- **DELETE**: Valida:
+  - GOD nunca pode ser deletado (retorna 403)
+  - GOD deleta ADMIN/GESTOR/ATENDENTE
+  - ADMIN deleta GESTOR/ATENDENTE (mesma empresa)
+  - GESTOR deleta ATENDENTE (mesmo setor)
+
+#### `src/app/api/users/admins/route.ts`
+- GET/PUT/DELETE: Apenas GOD
+- DELETE: Bloqueia exclusão de GOD (retorna 403)
+- PUT: Só permite alterar ADMIN
+
+#### `src/app/api/userFacil/route.ts`
+- GET/POST: Apenas GOD
+- POST: Valida `podeCriarRole("GOD", finalRole)` — GOD só cria ADMIN
+- Auto-registro de CPF na tabela `cpfs`
+
+#### `src/app/api/cpfs/route.ts`
+- **POST multipart** (lote): Apenas GOD, ADMIN, GESTOR (valida via `CAN_BATCH_CPF`)
+- **POST json** (manual): GOD, ADMIN, GESTOR e ATENDENTE
+- **DELETE**: GOD, ADMIN, GESTOR — com validação extra: não permite deletar CPF de usuário do sistema
+- **GET**: Filtra por empresaId da sessão
+
+#### `src/app/api/tickets/route.ts`
+- **GET**: ATENDENTE e GESTOR filtram por setor (`getTicketWhereClause`)
+- **PUT**: ATENDENTE e GESTOR só podem atualizar chamados do próprio setor
+- **DELETE**: ATENDENTE e GESTOR só podem finalizar chamados do próprio setor
+
+#### `src/app/api/tickets/search/route.ts`
+- **PUT/DELETE**: Mesmas validações de setor para ATENDENTE e GESTOR
+
+### Proteções na interface:
+
+#### `src/app/(atendimento)/components/sidebar.tsx`
+- Menu "Empresas": visível apenas para GOD
+- Menu "Gestão de Usuarios": visível para GOD, ADMIN e GESTOR
+- Demais menus: visíveis para todos (Dashboard, Chamados, Avisos, CPFs)
+
+#### `src/app/(atendimento)/gestao-de-usuarios/page.tsx`
+- Filtro "Papel" mostra apenas roles que o usuário pode criar
+- GOD vê seletor de empresa, ADMIN e GESTOR não
+- GESTOR só vê setores disponíveis
+- ATENDENTE não vê o formulário (rolesPermitidas vazio)
+- Tabela de usuários cadastrados com RBAC (GOD vê todos, ADMIN vê empresa, GESTOR vê setor)
+- Botão "Excluir" nunca aparece para usuários GOD
+
+#### `src/app/(atendimento)/empresa/page.tsx`
+- Redireciona para `/dashboards` se usuário não é GOD
+- Só GOD pode acessar página de empresas
+
+#### `src/app/(atendimento)/empresa/create/page.tsx`
+- Redireciona para `/dashboards` se usuário não é GOD
+
+#### `src/app/(atendimento)/cpfs/page.tsx`
+- Seção de importação em lote: escondida para ATENDENTE
+- Seção de admins: apenas GOD vê
+
+### Arquivos criados:
+- `src/lib/rbac.ts` — Sistema centralizado de permissões RBAC
+
+### Arquivos modificados:
+- `src/util/permission.ts` — Tipagem ROLE no array
+- `src/app/api/users/route.ts` — RBAC completo + auto-registro CPF
+- `src/app/api/users/admins/route.ts` — Bloqueio exclusão GOD
+- `src/app/api/userFacil/route.ts` — Validação podeCriarRole + auto CPF
+- `src/app/api/cpfs/route.ts` — ATENDENTE só manual, lote restrito
+- `src/app/api/tickets/route.ts` — Setor filter por role
+- `src/app/api/tickets/search/route.ts` — Setor filter por role
+- `src/app/(atendimento)/components/sidebar.tsx` — Menu dinâmico por role
+- `src/app/(atendimento)/gestao-de-usuarios/page.tsx` — Roles permitidas, lista RBAC
+- `src/app/(atendimento)/cpfs/page.tsx` — Lote escondido para ATENDENTE
+- `src/app/(atendimento)/empresa/page.tsx` — Redireciona não-GOD
+- `src/app/(atendimento)/empresa/create/page.tsx` — Redireciona não-GOD
+
+### Regras de segurança reforçadas:
+- ✅ GOD nunca pode ser deletado via API (retorna 403)
+- ✅ GESTOR só cria ATENDENTE no próprio setor
+- ✅ ADMIN só cria nos setores da própria empresa
+- ✅ ATENDENTE só vê/atende chamados do próprio setor
+- ✅ Auto-registro de CPF ao criar qualquer usuário (via `upsert`)
+- ✅ Impedido bypass de permissão via manipulação de payload
+- ✅ Todas as validações no backend + interface consistente
+- ✅ Separação clara entre autenticação (NextAuth) e autorização (RBAC)
+
+---
+
+## 25. TELAS DE USUÁRIOS — VISÃO POR EMPRESA (GOD) E GERAL (21/05/2026)
+
+### Objetivo
+Criar páginas dedicadas para visualização, edição inline e exclusão de usuários, respeitando o RBAC:
+- **GOD**: vê usuários de qualquer empresa, clicando nos cards de empresa
+- **ADMIN / GESTOR**: vê usuários da própria empresa em página geral `/usuarios`
+
+### Arquivos criados
+
+#### `src/app/(atendimento)/empresa/[id]/usuarios/page.tsx` (novo - GOD only)
+- **Acesso exclusivo GOD**: servido por `getServerSessionRBAC("GOD")` via RBAC
+- Lista todos os usuários da empresa em tabela com colunas: Nome, Email, CPF, Papel, Setor
+- **Edição inline**: inputs aparecem ao clicar no botão de editar (lápis)
+- **Exclusão**: botão vermelho com confirmação (toast)
+- Campos editáveis: nome, email, cpf, role (dropdown), setor
+- Role dropdown respeita `DELETE_ROLE_MAP` — GOD pode mudar para ADMIN/GESTOR/ATENDENTE
+- CPF editável com validação de unicidade por empresa
+
+#### `src/app/(atendimento)/usuarios/page.tsx` (novo - ADMIN/GESTOR/GOD)
+- **Acesso**: ADMIN, GESTOR e GOD via `getServerSessionRBAC("GOD", "ADMIN", "GESTOR")`
+- ADMIN/GESTOR veem apenas usuários da própria empresa
+- GOD vê coluna extra `empresaId` (truncado para 8 chars)
+- Mesma estrutura de edição inline e exclusão com validação RBAC
+- Role dropdown respeita o mapa de permissões (ADMIN pode definir GESTOR/ATENDENTE, etc.)
+
+### Arquivos modificados
+
+#### `src/app/api/empresa/route.ts`
+- Adicionados **PUT** e **DELETE**:
+  - PUT: GOD edita nome, cnpj, cor, logoUrl da empresa
+  - DELETE: GOD remove empresa (com verificação de existência)
+  - Valida unicidade de CNPJ na edição
+
+#### `src/app/api/users/route.ts`
+- **PUT** existente com RBAC: GOD edita qualquer usuário não-GOD, ADMIN edita GESTOR/ATENDENTE mesma empresa, GESTOR edita ATENDENTE mesmo setor
+- **GET** agora aceita `?empresaId=` para GOD filtrar usuários por empresa
+- Inclui `empresaId` no select do PUT para verificação de empresa
+
+#### `src/app/(atendimento)/empresa/page.tsx`
+- Cards de empresa agora são **clicáveis** (`onClick → router.push(/empresa/${id}/usuarios)`)
+- cursor-pointer + hover scale effect
+
+#### `src/app/(atendimento)/components/sidebar.tsx`
+- Novo menu **"Usuários"** (ícone LuUsers) — ADMIN/GESTOR/GOD
+- "Gestão de Usuarios" renomeado para **"Criar Usuário"** — ADMIN/GESTOR/GOD
+- "Empresas" — GOD apenas (mantido)
+
+### Fluxo de navegação
+```
+GOD:
+  Sidebar → Empresas → cards → clica empresa → /empresa/[id]/usuarios
+  Sidebar → Usuários → /usuarios (vê coluna empresaId extra)
+  Sidebar → Criar Usuário → /gestao-de-usuarios
+
+ADMIN/GESTOR:
+  Sidebar → Usuários → /usuarios (apenas própria empresa)
+  Sidebar → Criar Usuário → /gestao-de-usuarios
+```
+
+### Separação server/client (RBAC)
+- `src/lib/rbac.ts`: constantes e funções **puras** (CREATE_ROLE_MAP, DELETE_ROLE_MAP, etc.) — pode ser importado por client components
+- `src/lib/rbac-server.ts`: `getServerSessionRBAC()` — função **server-only** que valida sessão + role; importa `getServerSession` do next-auth
+
+### Build
+- `npm run build` — compilado com sucesso ✅
+- Commits: `54ecb1b`, `f044ee0`, `aeaf54d`
+
+---
+
+## 26. SEGURANÇA — BLOQUEIO DE AUTO-EDIÇÃO E AUTO-EXCLUSÃO (21/05/2026)
+
+### Regra
+Nenhum usuário pode editar ou excluir o próprio perfil. A proteção é aplicada tanto no backend quanto no frontend.
+
+### Backend — `src/app/api/users/route.ts`
+- **PUT**: Adicionada verificação `session!.id === id` → retorna 403 "Você não pode editar seu próprio usuário"
+- **DELETE**: Adicionada verificação `session!.id === id` → retorna 403 "Você não pode excluir seu próprio usuário"
+
+### Backend — `src/app/api/users/admins/route.ts`
+- **PUT**: Adicionada verificação `session.user.id === id` → retorna 403
+- **DELETE**: Adicionada verificação `session.user.id === id` → retorna 403
+
+### Frontend
+- **`src/app/(atendimento)/usuarios/page.tsx`**: Botões de editar/excluir ocultos quando `u.id === currentUserId`
+- **`src/app/(atendimento)/empresa/[id]/usuarios/page.tsx`**: Mesma proteção
+- **`src/app/(atendimento)/cpfs/page.tsx`**: Seção de admins oculta ações para o próprio usuário GOD, exibe "Você"
+
+---
+
+## 27. REFATORAÇÃO — REMOÇÃO DE LISTAGEM DA TELA DE CRIAÇÃO (21/05/2026)
+
+### Mudança
+A tela de criação de usuários (`gestao-de-usuarios/page.tsx`) agora exibe **apenas o formulário de criação**, sem a tabela de usuários cadastrados.
+
+### Arquivos modificados
+- `src/app/(atendimento)/gestao-de-usuarios/page.tsx`:
+  - Removida interface `UserListItem`
+  - Removida função `fetchUsers()`
+  - Removido estado `userList` e `loadingUsers`
+  - Removida chamada a `/api/users` no `useEffect`
+  - Removida função `handleDeleteUser()`
+  - Removida variável `podeVerLista`
+  - Removida seção de listagem de usuários do JSX
+  - Import `roleParaDisplay` mantido (usado nos options do select)
+
+---
+
+## 28. ADMIN PERTENCE A TODOS OS SETORES (21/05/2026)
+
+### Comportamento verificado
+O papel ADMIN já possuía acesso a todos os setores da empresa nas seguintes camadas:
+
+| Camada | Comportamento | Arquivo |
+|--------|--------------|---------|
+| RBAC | `getSetorFilter()` retorna apenas `{ empresaId }` sem filtro de setor | `src/lib/rbac.ts:46-56` |
+| Tickets GET | Filtro de setor aplicado apenas para ATENDENTE e GESTOR | `src/app/api/tickets/route.ts:119-121` |
+| Tickets PUT | Validação de setor aplicada apenas para ATENDENTE e GESTOR | `src/app/api/tickets/route.ts:201-205` |
+| Tickets DELETE | Validação de setor aplicada apenas para ATENDENTE e GESTOR | `src/app/api/tickets/route.ts:287-291` |
+| Criação de usuário | ADMIN pode criar em qualquer setor da empresa | `src/app/api/users/route.ts:83-93` |
+| Listagem de usuários | ADMIN vê todos os usuários da empresa | `src/app/api/users/route.ts:166-168` |
+
+Nenhuma alteração de código foi necessária — o comportamento já estava correto.
+
+---
+
+## 29. PROFISSIONALIZAÇÃO DO FRONTEND (21/05/2026)
+
+### Objetivo
+Melhorar a aparência visual de todas as páginas internas (exceto landing page), mantendo consistência com o sistema de temas dark/light.
+
+### Mudanças globais
+- `src/app/globals.css`: Adicionadas variáveis `--shadow-sm`, `--shadow-md`, `--shadow-lg` para sombras consistentes entre temas
+
+### Páginas modificadas
+
+#### Login (`src/app/login/page.tsx`)
+- Substituída imagem de fundo por gradiente com efeito glass (iniciais "N" em destaque)
+- Inputs com `rounded-xl`, labels em uppercase tracking-wider
+- Botão com hover brightness/shadow e active scale
+- Spinner animado no estado de loading
+- Transições suaves em todos os elementos
+
+#### Chamados (`src/app/(atendimento)/all-tickets/page.tsx`)
+- Filtros com `rounded-xl` e `focus:ring-2` consistente
+- Tabela com headers uppercase tracking-wider
+- Hover suave nas linhas (`hover:brightness-95`)
+- Badges de status/prioridade com padding e fontes ajustados
+- Botões de toggle modo visual com padding consistente
+
+#### Avisos (`src/app/(atendimento)/avisos/page.tsx`)
+- Botão "Novo Aviso" com `rounded-xl` e hover shadow
+
+#### CPFs (`src/app/(atendimento)/cpfs/page.tsx`)
+- Cards com `rounded-xl`, inputs com foco ring primary
+- Seção de cadastro manual com descrição e labels modernos
+- Upload de arquivo com estilo dashed border e hover effect
+- Lista de CPFs com hover brightness, truncate para nomes longos
+- Seção de admins com header informativo (contagem), tabela com hover
+
+#### Gestão de Usuários (`src/app/(atendimento)/gestao-de-usuarios/page.tsx`)
+- Formulário com labels uppercase tracking-wider
+- Inputs com `rounded-xl` e foco ring primary
+- Upload de avatar com estilo file input customizado
+- Botão submit com hover shadow
+
+#### Usuários (`src/app/(atendimento)/usuarios/page.tsx`)
+- Header com ícone + contagem de registros
+- Loading state com spinner animado
+- Empty state com ícone e texto
+- Tabela com headers uppercase tracking-wider
+- Role exibida como badge estilizado
+- Botões de ação com hover bg colors (success/error/info light)
+
+#### Empresa → Usuários (`src/app/(atendimento)/empresa/[id]/usuarios/page.tsx`)
+- Mesmas melhorias da página de usuários geral
+- Link de voltar com efeito hover (`hover:gap-3`)
+
+#### Criar Empresa (`src/app/(atendimento)/empresa/create/page.tsx`)
+- Header com ícone + descrição
+- Inputs com `rounded-xl` e foco ring primary
+- Botões com hover shadow
+
+### Consistência visual
+Todos os inputs agora seguem o padrão:
+- `rounded-xl` (bordas arredondadas)
+- `focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent`
+- Labels em `text-xs font-bold uppercase tracking-wider opacity-70`
+
+Todos os botões primários seguem:
+- `rounded-xl font-bold`
+- `hover:brightness-110 hover:shadow-lg active:scale-[0.98]`
+
+### Build
+- `npm run build` — compilado com sucesso ✅
+
+---
+
+## 30. MELHORIAS NA CRIAÇÃO DE USUÁRIOS — GESTOR + CPF (21/05/2026)
+
+### Objetivo
+Três melhorias na tela de criação de usuários (`gestao-de-usuarios/page.tsx`):
+1. GESTOR cria ATENDENTE com setor auto-preenchido e bloqueado
+2. CPF aceita apenas números (rejeita letras)
+3. CPF exibe formatação `XXX.XXX.XXX-XX` durante digitação
+
+### Mudanças em `src/app/(atendimento)/gestao-de-usuarios/page.tsx`
+
+#### 1. Setor auto-preenchido para GESTOR
+- Adicionada const `userSetor` extraída de `session?.user?.setor`
+- No `useEffect(fetchDados)`, quando `userRole === "GESTOR" && userSetor`, seta `form.setor = userSetor`
+- No JSX, quando `userRole === "GESTOR"` renderiza um `<input disabled>` (em vez do `<select>`) com o valor do setor e legenda "Setor definido automaticamente"
+
+#### 2. Função `formatCPF(value: string): string`
+```typescript
+function formatCPF(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 11)
+  return digits
+    .replace(/^(\d{3})(\d)/, "$1.$2")
+    .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d)/, ".$1-$2")
+}
+```
+- Remove qualquer caractere não-dígito (rejeita letras automaticamente)
+- Limita a 11 dígitos
+- Formata progressivamente: `XXX.XXX.XXX-XX`
+
+#### 3. CPF tratado no `handleChange` e `handleSubmit`
+- `handleChange`: quando `name === "cpf"`, aplica `formatCPF(value)` e salva formatado no estado
+- `handleSubmit`: envia `form.cpf.replace(/\D/g, "")` no FormData — apenas números para a API
+- Backend já usa `limparCPF()` que também strip non-digits (redundância segura)
+
+### Build
+- `npm run build` — compilado com sucesso ✅
+
+---
+
+## 31. TASKS DO ARQUIVO tasks.txt (23/05/2026)
+
+### Tasks implementadas
+
+| # | Task | Status |
+|---|------|--------|
+| 1 | Notificações WhatsApp — associar número ao chamado mesmo sem sessão ativa | ✅ |
+| 2 | Bot reconhecer empresa para qual está respondendo | ✅ |
+| 3 | Botão voltar em `consulta/[ticket]` | ✅ |
+| 4 | `api/chat` com mesmo comportamento do `webhook24` (adaptado para chat) | ✅ |
+| 5 | Corrigir erro no formulário `/leads` | ✅ |
+| 6 | Gestores poderem apagar atendentes do seu setor (já implementado) | ✅ |
+| 7 | Admin deleta gestor com regra de substituto | ✅ |
+| 8 | Admin deleta admin com regra de substituto | ✅ |
+| 9 | Card de usuário mostrar cargo/função (Role) | ✅ |
+
+---
+
+### Task 1 — Persistência de telefone para notificações WhatsApp
+
+**Problema original:** O `phoneMap.ts` mapeia CPF → telefone em arquivo JSON (`data/phoneMap.json`), que é perdido ao reconstruir o container Docker. Além disso, apenas o webhook24 registrava o telefone — webhook22 e webhook23 não chamavam `registerPhone`.
+
+**Solução em `src/app/api/tickets/route.ts`:**
+- Criada função `buscarContato(cpf, chamadoId)` que:
+  1. Primeiro consulta `phoneMap` (mais rápido, tem a instância correta)
+  2. Se não encontrar ou instância for `'web'`, busca no `historico` do chamado por entrada `{ acao: "TELEFONE" }`
+- `notificarCliente()` agora aceita `chamadoId` e usa `buscarContato()` em vez de `getPhoneByCpf()` direto
+- Se a instância for `'web'` (portal web), a notificação é ignorada (impossível enviar WhatsApp sem Evolution API)
+- Ao criar chamado com telefone via portal web, o telefone é salvo no `historico` como `[{ data, acao: "TELEFONE", observacao: telefone }]`
+- Chamadas a `notificarCliente` em PUT e DELETE agora passam `chamado.id`
+
+**Solução em webhooks:**
+- `webhook22/route.ts`: Adicionado `import { registerPhone } + registerPhone(cleanCPF, number, instance)` no fluxo de validação de CPF
+- `webhook23/route.ts`: Mesma correção
+- webhook24 já possuía a chamada
+
+**Arquivos modificados:**
+| Arquivo | Mudança |
+|---------|---------|
+| `src/app/api/tickets/route.ts` | `notificarCliente` usa fallback historico; POST salva telefone no historico; PUT/DELETE passam chamadoId |
+| `src/app/api/webhook22/route.ts` | Import + chamada `registerPhone` |
+| `src/app/api/webhook23/route.ts` | Import + chamada `registerPhone` |
+
+---
+
+### Task 2 — Bot reconhece empresa
+
+**Problema:** A constante `empresa = 'Nolevel'` em `useIA.ts` era hardcoded — o bot sempre se apresentava como "atendente virtual da Nolevel" independente da empresa do usuário.
+
+**Solução em `src/lib/useIA.ts`:**
+- Constante `empresa` hardcoded removida
+- Criada função `getEmpresaName(cpf)` que:
+  1. Busca empresaId pelo CPF do usuário (`getEmpresaIdByCpf`)
+  2. Busca o nome da empresa na tabela `empresa`
+  3. Retorna o nome real ou fallback `'Nolevel'`
+- `botIA()` agora chama `getEmpresaName(session.cpf)` dinamicamente a cada interação
+- O prompt da IA sempre contém o nome correto da empresa
+
+**Arquivos modificados:**
+| Arquivo | Mudança |
+|---------|---------|
+| `src/lib/useIA.ts` | `empresa` dinâmico via `getEmpresaName()` |
+
+---
+
+### Task 3 — Botão voltar em consulta/[ticket]
+
+**Problema:** A página de detalhe do chamado não tinha como voltar para a página de consulta anterior.
+
+**Solução em `src/app/consulta/[ticket]/page.tsx`:**
+- Adicionado botão "Voltar" no canto superior esquerdo
+- Usa `window.history.back()` para retornar à página anterior (que manteve o resultado da pesquisa)
+- Ícone `FaArrowLeft` importado do `react-icons/fa`
+- Estilo consistente: `rounded-xl`, borda sutil, hover scale, transições
+
+**Arquivos modificados:**
+| Arquivo | Mudança |
+|---------|---------|
+| `src/app/consulta/[ticket]/page.tsx` | Botão voltar com `window.history.back()` |
+
+---
+
+### Task 4 — api/chat alinhado com webhook24
+
+**Problema:** O `api/chat/route.ts` tinha comportamento diferente do `webhook24` — exibição simplificada de chamados, sessão expira em 1h, sem fallback em erro de criação, sem labels de status.
+
+**Solução em `src/app/api/chat/route.ts`:**
+- `statusLabels` com emojis e labels padronizados (mesmo do webhook24)
+- Sessão expira em 2h (antes 1h)
+- Comando de saída padronizado: apenas `sair`, `encerrar`, `cancelar`
+- Exibição de chamados agora mostra: ticket, status com label, data, setor, atendente, último historico, descrição resumida
+- `generateRandomTicket` como fallback quando criação de chamado falha
+- Mensagens de confirmação e fluxo alinhados com webhook24
+
+**Arquivos modificados:**
+| Arquivo | Mudança |
+|---------|---------|
+| `src/app/api/chat/route.ts` | Reescrita completa para espelhar webhook24 |
+
+---
+
+### Task 5 — Correção formulário /leads
+
+**Problema:** O formulário de leads em `/leads` enviava CPF com formatação (pontos e traços) para a API, que não limpava o CPF antes de salvar. Erros da API não eram exibidos.
+
+**Solução em `src/app/leads/page.tsx`:**
+- Função `cleanCpf()` que remove tudo que não é dígito
+- CPF é limpo antes de enviar no JSON
+- Tratamento de erro agora exibe a mensagem específica retornada pela API (via `errData?.error`)
+
+**Arquivos modificados:**
+| Arquivo | Mudança |
+|---------|---------|
+| `src/app/leads/page.tsx` | CPF limpo + erro detalhado |
+
+---
+
+### Tasks 7-8 — Regras de substituto na exclusão
+
+**Problema:** Admins podiam excluir gestores sem criar substitutos, deixando a empresa sem gestores. Admins podiam ser excluídos sem reposição.
+
+**Solução em `src/app/api/users/route.ts`:**
+- **DELETE GESTOR (por ADMIN):** verifica se existe outro GESTOR na mesma empresa (`id: { not: id }`). Se não, retorna 400 com mensagem "É necessário criar outro GESTOR antes de excluir este."
+- **DELETE ADMIN (por GOD ou ADMIN):** verifica se existe outro ADMIN na mesma empresa. Se não, retorna 400 com mensagem "É necessário ter outro ADMIN antes de excluir este."
+- A regra se aplica a TODOS os que podem deletar ADMIN (GOD e ADMIN)
+
+**Arquivos modificados:**
+| Arquivo | Mudança |
+|---------|---------|
+| `src/app/api/users/route.ts` | Validação de substituto em DELETE de GESTOR e ADMIN |
+
+---
+
+### Task 9 — Card de usuário mostra Role
+
+**Problema:** O card do usuário na sidebar exibia nome e email, mas não mostrava o papel/cargo.
+
+**Solução em `src/app/(atendimento)/components/cardUser.tsx`:**
+- Adicionado badge abaixo do email exibindo `user.role`
+- Badge com fundo primary, texto branco, `text-[10px]`, padding horizontal
+- Exibido apenas se `user.role` existe
+
+**Arquivos modificados:**
+| Arquivo | Mudança |
+|---------|---------|
+| `src/app/(atendimento)/components/cardUser.tsx` | Badge de role no card |
+
+---
+
+### Build
+- `npm run build` — compilado com sucesso ✅
+
+---
+
+## 32. CORREÇÃO: WEBHOOK-LEADS NÃO ENCONTRAVA LEADS (23/05/2026)
+
+### Problema
+O webhook-leads consulta leads via `consultarLeadPorCpf()` fazendo um fetch server-side para `GET /api/leads-network?cpf=xxx`. O bot sempre respondia "Não encontrei seu cadastro" mesmo com lead existente.
+
+### Causas (3 problemas empilhados)
+
+| # | Problema | Arquivo | Impacto |
+|---|----------|---------|---------|
+| 1 | `process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL` — ordem invertida | `webhook-leads/route.ts:64` | Usava `NEXT_PUBLIC_BASE_URL=http://localhost:3001` (porta **host**) dentro do container — **conexão recusada** |
+| 2 | `BASE_URL` com porta `:300` em vez de `:3000` | `.env` local | Mesmo se a ordem estivesse correta, a porta estava errada |
+| 3 | `GET /api/leads-network?cpf=` exigia autenticação | `leads-network/route.ts:6` | Fetch server-side não tem cookie de sessão → 401 |
+
+### Soluções
+
+#### Fix 1 — Ordem de fallback `consultarLeadPorCpf` (`webhook-leads/route.ts:64`)
+```typescript
+// Antes (ERRADO):
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL
+
+// Depois (CORRETO — igual usedata.ts):
+const baseUrl = process.env.BASE_URL || process.env.NEXT_PUBLIC_BASE_URL
+```
+`BASE_URL=http://nolevel-app:3000` (Docker internal) agora é usado primeiro.
+
+#### Fix 2 — Porta do `.env` local
+`BASE_URL` ajustada de `:300` para `:3000`. `.env.example` já estava correto.
+
+#### Fix 3 — Auth no GET leads-network (`leads-network/route.ts`)
+Consulta por CPF (`?cpf=`) agora é **pública** — não exige sessão (escopo natural pelo CPF). Listagem geral mantém autenticação.
+
+### Arquivos modificados
+| Arquivo | Mudança |
+|---------|---------|
+| `src/app/api/webhook-leads/route.ts` | `BASE_URL` usado primeiro (ordem de fallback corrigida) |
+| `src/app/api/leads-network/route.ts` | GET com `?cpf=` não requer mais autenticação |
+
+### Build
+- `npm run build` — compilado com sucesso ✅
+
+---
+
+## 33. REDIRECIONAMENTO PARA /CHAMADO QUANDO PRECISAR DE DOCUMENTOS (23/05/2026)
+
+### Objetivo
+Quando um usuário solicitar um serviço que precise de envio de documentos (fotos, comprovantes, PDFs, etc.) pelo **chatbot-app** (via `/api/chat`) ou **webhook24**, o bot deve redirecioná-lo para abrir um chamado pelo portal web (`/chamado`), onde é possível anexar arquivos.
+
+### Mudanças
+
+#### 1. `src/lib/useIA.ts` — Prompt da IA
+- Seção `UPLOAD` substituída por `UPLOAD DE DOCUMENTOS` com instruções mais explícitas
+- IA agora tem regra clara: se usuário pedir serviço que precise de documentos, NÃO prosseguir com fluxo normal — redirecionar para `/chamado`
+- Lista de palavras-chave para detectar necessidade de documentos
+- Instrução para nunca tentar coletar documentos pelo chat
+
+#### 2. `src/app/api/webhook24/route.ts` — Detecção programática
+- No estado `COLETAR_MOTIVO`, após receber o motivo do usuário, verifica se contém palavras-chave de documentos
+- Se detectado: envia mensagem com link para `/chamado` e volta ao menu principal
+- Se não: prossegue com fluxo normal
+
+#### 3. `src/app/api/chat/route.ts` — Mesma detecção
+- Mesma lógica do webhook24 aplicada ao chat
+
+### Fluxo
+```
+Usuário → "Preciso enviar um comprovante"
+  → Bot detecta palavra "comprovante"
+  → "Para este tipo de serviço, você precisa abrir um chamado pelo nosso portal... Acesse: [URL]/chamado"
+  → Volta ao menu principal
+```
+
+### Arquivos modificados
+| Arquivo | Mudança |
+|---------|---------|
+| `src/lib/useIA.ts` | Prompt da IA atualizado com regras de redirecionamento |
+| `src/app/api/webhook24/route.ts` | Detecção de documentos no COLETAR_MOTIVO |
+| `src/app/api/chat/route.ts` | Detecção de documentos no coletar_motivo |
+
+### Build
+- `npm run build` — compilado com sucesso ✅

@@ -16,7 +16,6 @@ const FlowState = {
   COLETAR_SETOR: "coletar_setor"
 } as const;
 
-const empresa = 'Nolevel'; //buscar o nome da empresa no bd
 const LINK_PORTAL = process.env.NEXT_PUBLIC_BASE_URL
 const LINK_CHAMADOS = `${LINK_PORTAL}/chamado`; 
 const lINK_CONSULTA = `${LINK_PORTAL}/consulta`;
@@ -86,6 +85,23 @@ export async function botIA(session: UserSession, userInput: string, instrucaoEt
 
  */
 
+async function getEmpresaName(cpf?: string): Promise<string> {
+  if (!cpf) return 'Nolevel'
+  try {
+    const { prisma } = await import('@/lib/prisma')
+    const { getEmpresaIdByCpf } = await import('@/lib/searchEmpresa')
+    const empresaId = await getEmpresaIdByCpf(cpf)
+    if (!empresaId) return 'Nolevel'
+    const empresa = await prisma.empresa.findUnique({
+      where: { id: empresaId },
+      select: { nome: true },
+    })
+    return empresa?.nome || 'Nolevel'
+  } catch {
+    return 'Nolevel'
+  }
+}
+
 export async function botIA(
   session: UserSession,
   userInput: string,
@@ -97,6 +113,7 @@ export async function botIA(
     : "Nenhum CPF informado"
 
   const isColetarMotivo = session.state === "coletar_motivo"
+  const empresa = await getEmpresaName(session.cpf)
 
   try {
     const response = await openai.chat.completions.create({
@@ -132,14 +149,17 @@ CONTEXTO DO USUÁRIO:
 ETAPA ATUAL: ${session.state}
 INSTRUÇÃO: ${instrucaoEtapa}
 
-UPLOAD:
-Se o usuário precisar enviar arquivos, responda exatamente:
-Para enviar o documento, acesse: ${LINK_CHAMADOS}
-e clique em "Registrar Novo Chamado". Lá você poderá preencher os dados e anexar o arquivo necessário.
+UPLOAD DE DOCUMENTOS:
+Se o usuário pedir um serviço que precise de envio de documentos (fotos, comprovantes, PDFs, anexos, imagens, docs, documentação, scanner, print, screenshot), NÃO prossiga com o fluxo normal de abertura de chamado.
+
+Responda EXATAMENTE assim:
+"Para este tipo de serviço, você precisa abrir um chamado pelo nosso portal para anexar os documentos necessários. Acesse: ${LINK_CHAMADOS} e preencha o formulário com a descrição do problema e os arquivos."
+
+NUNCA tente coletar documentos pelo chat. Sempre redirecione para o portal.
 
 LINKS:
-- Abertura: ${LINK_CHAMADOS}
-- Consulta: ${lINK_CONSULTA}
+- Abertura de chamado com anexo: ${LINK_CHAMADOS}
+- Consultar chamados: ${lINK_CONSULTA}
 - Sempre envie URLs completas.
           `
         },

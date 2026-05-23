@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { ThemeToggle } from "@/app/components/theme-toggle";
+import { getStatusColor } from "@/types/chamado";
 import {
   FaTicketAlt,
   FaUser,
@@ -13,6 +14,7 @@ import {
   FaFlag,
   FaUserTie,
   FaClipboardList,
+  FaArrowLeft,
 } from "react-icons/fa";
 
 interface Chamado {
@@ -43,7 +45,7 @@ export default function TicketPage() {
   useEffect(() => {
     async function fetchChamado() {
       try {
-        const res = await fetch(`/api/tickets?ticket=${ticket}`);
+        const res = await fetch(`/api/tickets/search?ticket=${ticket}`);
 
         if (!res.ok) {
           throw new Error("Erro ao buscar chamado");
@@ -122,23 +124,7 @@ export default function TicketPage() {
         ? "bg-yellow-500"
         : "bg-blue-600";
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "NOVO":
-        return "var(--status-new)";
-      case "EM_ANDAMENTO":
-        return "var(--status-in-progress)";
-      case "AGUARDANDO":
-        return "var(--status-waiting)";
-      case "CONCLUIDO":
-      case "FINALIZADO":
-        return "var(--status-completed)";
-      case "CANCELADO":
-        return "var(--status-cancelled)";
-      default:
-        return "var(--primary)";
-    }
-  };
+
 
   return (
     <div
@@ -150,6 +136,20 @@ export default function TicketPage() {
     >
       <div className="absolute right-4 top-4 z-50">
         <ThemeToggle />
+      </div>
+      <div className="absolute left-4 top-4 z-50">
+        <button
+          onClick={() => window.history.back()}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 hover:scale-105 active:scale-95"
+          style={{
+            backgroundColor: "var(--surface)",
+            border: "1px solid var(--border-subtle)",
+            color: "var(--foreground)",
+          }}
+        >
+          <FaArrowLeft size={14} />
+          Voltar
+        </button>
       </div>
       <div
         className="w-full max-w-2xl rounded-2xl shadow-2xl border p-6 sm:p-8 space-y-6 transition-colors duration-300"

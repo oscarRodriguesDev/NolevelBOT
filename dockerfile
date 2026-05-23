@@ -6,7 +6,7 @@ WORKDIR /app
 FROM base AS deps
 COPY package*.json ./
 COPY prisma ./prisma
-RUN npm ci
+RUN npm install
 
 # ---------- Builder ----------
 FROM base AS builder
@@ -27,6 +27,10 @@ COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/next.config.* ./
+
+RUN mkdir -p /app/data && chown -R node:node /app/data
+
+USER node
 
 EXPOSE 3000
 

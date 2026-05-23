@@ -1,0 +1,326 @@
+import { NextRequest, NextResponse } from "next/server";
+import { botIA } from "@/lib/useIA";
+import {
+  validarCpf,
+  StatusChamado,
+  enviarChamado,
+  sendEvolutionText,
+  generateRandomTicket,
+  buscarAvisos
+} from "@/lib/usedata";
+import { registerPhone } from "@/lib/phoneMap";
+import { Chamado } from "@prisma/client";
+import { getSetores } from "@/lib/setores";
+
+
+
+const FlowState = {
+  INICIO: "inicio",
+  IDENTIFICACAO_CPF: "identificacao_cpf",
+  IDENTIFICACAO_NOME: "identificacao_nome",
+  MENU_PRINCIPAL: "menu_principal",
+  COLETAR_MOTIVO: "coletar_motivo",
+  VERIFICAR_AVISOS: "verificar_aviso",
+  ESCOLHER_ABERTURA: "escolher_abertura",
+  COLETAR_SETOR: "coletar_setor"
+} as const;
+
+const menuString = "1. Abrir Chamado, 2. Consultar Chamado";
+
+const statusLabels: Record<string, string> = {
+  novo: "📌 Novo",
+  aberto: "📂 Aberto",
+  em_atendimento: "🔄 Em Atendimento",
+  aguardando: "⏳ Aguardando",
+  concluido: "✅ Concluído",
+  fechado: "🔒 Fechado",
+  NOVO: "📌 Novo",
+  EM_ANDAMENTO: "🔄 Em Andamento",
+  FECHADO: "🔒 Fechado",
+};
+const sessions = new Map<string, UserSession>();
+type FlowStateValues = typeof FlowState[keyof typeof FlowState];
+type UserSession = {
+  state: FlowStateValues;
+  nome?: string;
+  cpf?: string;
+  resumoHistorico?: string;
+  motivoAtual?: string;
+  lastInteraction: number;
+};
+
+
+
+
+
+// --- WEBHOOK POST ---
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    if (body.event !== "messages.upsert") return NextResponse.json({ ok: true });
+
+    const data = body.data;
+    if (!data?.message || data.key?.fromMe) return NextResponse.json({ ok: true });
+
+    const number = data.key.remoteJid;
+    const instance = body.instance;
+    const userInput = (data.message.conversation || data.message.extendedTextMessage?.text || "").trim();
+    const lowerInput = userInput.toLowerCase();
+
+    let session = sessions.get(number);
+
+    if (!session || Date.now() - session.lastInteraction > 1000 * 60 * 60 * 2) {
+      session = { state: FlowState.INICIO, lastInteraction: Date.now() };
+      sessions.set(number, session);
+    }
+
+    session.lastInteraction = Date.now();
+
+    let avisos = "Sem avisos no momento.";
+    if (session.cpf) {
+      avisos = await buscarAvisos(session.cpf, req);
+    }
+
+    if (["sair", "encerrar", "cancelar"].includes(lowerInput)) {
+      await sendEvolutionText(instance, number, "Atendimento encerrado. Se precisar de novo, é só chamar!");
+      sessions.delete(number);
+      return NextResponse.json({ ok: true });
+    }
+
+    switch (session.state) {
+      case FlowState.INICIO: {
+        const resposta = await botIA(
+          session,
+          userInput,
+          "O usuário acabou de chegar. Dê as boas-vindas e peça OBRIGATORIAMENTE o CPF para começar o atendimento.",
+          avisos
+        );
+        await sendEvolutionText(instance, number, resposta);
+        session.state = FlowState.IDENTIFICACAO_CPF;
+        break;
+      }
+
+      case FlowState.IDENTIFICACAO_CPF: {
+        const cleanCPF = userInput.replace(/\D/g, "");
+
+        if (cleanCPF.length !== 11) {
+          await sendEvolutionText(instance, number, "Por favor, informe um CPF válido (apenas os 11 números).");
+          return NextResponse.json({ ok: true });
+        }
+
+        const resCpf = await validarCpf(cleanCPF);
+
+        if (resCpf && resCpf.valido) {
+          session.cpf = cleanCPF;
+          session.nome = resCpf.nome;
+
+          registerPhone(cleanCPF, number, instance);
+
+          avisos = await buscarAvisos(cleanCPF, req);
+
+          const instrucao = session.nome
+            ? `CPF ${cleanCPF} validado. O nome dele é ${session.nome}. Saude-o e apresente as opções: ${menuString}`
+            : `CPF ${cleanCPF} encontrado. Pergunte como o usuário gostaria de ser chamado.`;
+
+          const resposta = await botIA(session, userInput, instrucao, avisos);
+          await sendEvolutionText(instance, number, resposta);
+
+          session.state = session.nome ? FlowState.MENU_PRINCIPAL : FlowState.IDENTIFICACAO_NOME;
+        } else {
+          await sendEvolutionText(instance, number, "Hum, não consegui validar esse CPF! Por favor, tente novamente.");
+        }
+        break;
+      }
+
+      case FlowState.IDENTIFICACAO_NOME: {
+        session.nome = userInput;
+        const resposta = await botIA(
+          session,
+          userInput,
+          `Agora que já sabe o nome (${userInput}), apresente o menu: ${menuString}`,
+          avisos
+        );
+        await sendEvolutionText(instance, number, resposta);
+        session.state = FlowState.MENU_PRINCIPAL;
+        break;
+      }
+
+      case FlowState.MENU_PRINCIPAL: {
+        if (["1", "abrir", "chamado"].some(v => lowerInput.includes(v))) {
+          await sendEvolutionText(instance, number, "Com certeza! Me conta o que está acontecendo? (Pode descrever o problema detalhadamente)");
+          session.state = FlowState.COLETAR_MOTIVO;
+        }
+        else if (["2", "status", "consultar", "ver"].some(v => lowerInput.includes(v))) {
+          const chamados = await StatusChamado(session.cpf || "");
+          const lista = chamados.length > 0
+            ? chamados.map((t: any) => {
+                const label = statusLabels[t.status] || t.status;
+                const atendente = t.atendente?.name ? `🧑‍💻 *Atendente:* ${t.atendente.name}` : '';
+                const dataCriacao = new Date(t.createdAt).toLocaleDateString('pt-BR');
+                const descricao = t.descricao ? `📄 *Descrição:* ${t.descricao.substring(0, 100)}${t.descricao.length > 100 ? '...' : ''}` : '';
+                const ultimoHistorico = t.historico ? (() => {
+                  try {
+                    const h = JSON.parse(t.historico);
+                    return h.length > 0 ? `📋 *Última ação:* ${statusLabels[h[h.length - 1].acao] || h[h.length - 1].acao}${h[h.length - 1].observacao ? ` — ${h[h.length - 1].observacao}` : ''}` : '';
+                  } catch { return ''; }
+                })() : '';
+
+                return [
+                  `🎫 *${t.ticket}* — ${label}`,
+                  `📅 *Abertura:* ${dataCriacao}`,
+                  `📍 *Setor:* ${t.setor}`,
+                  atendente,
+                  ultimoHistorico,
+                  descricao,
+                ].filter(Boolean).join('\n');
+              }).join('\n\n━━━━━━━━━━━━━━━━\n\n')
+            : "Não encontrei chamados abertos no seu CPF.";
+
+          await sendEvolutionText(instance, number, `📋 *SEUS CHAMADOS*\n\n${lista}\n\nPosso ajudar com algo mais?\n\n${menuString}`);
+        } else {
+          const resposta = await botIA(
+            session,
+            userInput,
+            `Tente identificar o que ele quer, caso não consiga encerre 
+            amigavelmente.Não faça suposições, apenas encerre o atendimento.`,
+            avisos
+          );
+          await sendEvolutionText(instance, number, resposta);
+        }
+        break;
+      }
+
+      case FlowState.COLETAR_MOTIVO: {
+        session.motivoAtual = userInput;
+
+        // Se o motivo envolve envio de documentos, redireciona para o portal
+        const palavrasDocumento = ["foto", "fotos", "comprovante", "comprovantes", "documento", "documentos", "anexo", "anexos", "pdf", "imagem", "imagens", "print",
+           "printar", "scan", "scanner", "digitalizar", "doc", "docs","arquivo", "arquivos", "enviar", "subir", "upload","atestatado", 
+           "atestados", "laudo", "laudos", "receita", "receitas","printscreen", "print screens", "printscreens", "foto do problema", 
+           "fotos do problema", "comprovante do problema", "comprovantes do problema", "documento do problema", "documentos do problema", 
+           "anexo do problema", "anexos do problema"];
+        if (palavrasDocumento.some(p => userInput.toLowerCase().includes(p))) {
+          const baseUrl = process.env.BASE_URL || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3001";
+          await sendEvolutionText(
+            instance,
+            number,
+            `Para este tipo de serviço, você precisa abrir um chamado pelo nosso portal para anexar os documentos necessários. Acesse: ${baseUrl}/chamado e preencha o formulário com a descrição do problema e os arquivos.`
+          );
+          session.state = FlowState.MENU_PRINCIPAL;
+          break;
+        }
+
+        if (!avisos || avisos.includes("Sem avisos")) {
+          const setores = await getSetores(session.cpf || '');
+
+          await sendEvolutionText(
+            instance,
+            number,
+            `Entendido. Para qual setor devo enviar?\n\n📍 *Setores:* ${setores.join(", ")}`
+          );
+
+          session.state = FlowState.COLETAR_SETOR;
+          break;
+        }
+
+        const analiseIA = await botIA(
+          session,
+          userInput,
+          "INSTRUÇÃO: Verifique se o problema relatado bate com os 'Avisos' do sistema. Se bater, explique o aviso e pergunte se quer abrir o chamado mesmo assim. Se NÃO bater, responda apenas: PROSSEGUIR_FLUXO.",
+          avisos
+        );
+
+        if (analiseIA.includes("PROSSEGUIR_FLUXO")) {
+          const setores = await getSetores(session.cpf || '');
+
+          await sendEvolutionText(
+            instance,
+            number,
+            `Entendido. Para qual setor devo enviar?\n\n📍 *Setores:* ${setores.join(", ")}`
+          );
+
+          session.state = FlowState.COLETAR_SETOR;
+        } else {
+          await sendEvolutionText(instance, number, analiseIA);
+          session.state = FlowState.VERIFICAR_AVISOS;
+        }
+        break;
+      }
+
+      case FlowState.VERIFICAR_AVISOS: {
+        if (["1", "sim", "quero", "continuar", "prosseguir"].some(v => lowerInput.includes(v))) {
+          const setores = await getSetores(session.cpf || '');
+
+          await sendEvolutionText(
+            instance,
+            number,
+            `Perfeito, vou dar seguimento. Para qual setor deseja enviar?\n\n📍 *Setores:* ${setores.join(", ")}`
+          );
+
+          session.state = FlowState.COLETAR_SETOR;
+        } else {
+          await sendEvolutionText(
+            instance,
+            number,
+            "Sem problemas! Se precisar de outra coisa, é só escolher uma opção do menu.\n\n" + menuString
+          );
+
+          session.state = FlowState.MENU_PRINCIPAL;
+        }
+        break;
+      }
+
+      case FlowState.COLETAR_SETOR: {
+        const setores = await getSetores(session.cpf || '');
+        const input = lowerInput.trim();
+        const setor = setores.find(s => {
+          const nomeSetor = s.toLowerCase();
+          return nomeSetor.includes(input) || input.includes(nomeSetor);
+        });
+
+        if (setor) {
+          const ok = await enviarChamado(
+            session.nome || "Usuário",
+            session.cpf || "",
+            setor,
+            session.motivoAtual || ""
+          );
+
+          if (ok) {
+            await sendEvolutionText(instance, number, `✅ Tudo pronto! Seu chamado para *${setor}* foi registrado.`);
+          } else {
+            const ticketErr = generateRandomTicket();
+            await sendEvolutionText(
+              instance,
+              number,
+              `O sistema de registro automático oscilou, mas seu protocolo é *${ticketErr}*. Nossa equipe já está ciente.`
+            );
+          }
+
+          session.state = FlowState.MENU_PRINCIPAL;
+
+          await sendEvolutionText(
+            instance,
+            number,
+            "Deseja tratar de mais algum assunto?\n\n" + menuString
+          );
+
+        } else {
+          await sendEvolutionText(
+            instance,
+            number,
+            `Não reconheci esse setor. Por favor, escolha um destes: ${setores.join(", ")}`
+          );
+        }
+
+        break;
+      }
+    }
+
+    sessions.set(number, session);
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("Erro crítico no webhook:", error);
+    return NextResponse.json({ ok: true });
+  }
+}
