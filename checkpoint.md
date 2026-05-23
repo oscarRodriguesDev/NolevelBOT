@@ -470,24 +470,29 @@ No `DELETE` de `api/users/route.ts`:
 
 ---
 
-## Sessão: 23/05/2026 — Fix GET /api/leads-network (consulta pública por CPF)
+## Sessão: 23/05/2026 — Fix webhook-leads não encontra leads
 
 ### Problema
-O webhook-leads faz fetch server-side para `GET /api/leads-network?cpf=xxx`, mas o endpoint exigia autenticação. Sem cookie de sessão, retornava 401, e o bot dizia "Não encontrei seu cadastro" mesmo com lead existente.
+Bot sempre respondia "Não encontrei seu cadastro" mesmo com lead existente.
 
-### Solução
-Consulta por CPF agora é pública (escopo natural). Listagem geral mantém autenticação.
+### Causas (3 problemas empilhados)
 
-### Arquivo modificado
-- `src/app/api/leads-network/route.ts` — GET com `?cpf=` não requer mais autenticação
+| # | Problema | Fix |
+|---|----------|-----|
+| 1 | `consultarLeadPorCpf()` usava `NEXT_PUBLIC_BASE_URL` (host:3001) antes de `BASE_URL` (container:3000) — conexão recusada dentro do Docker | Ordem invertida: `BASE_URL` primeiro (igual `usedata.ts`) |
+| 2 | `.env` local com `BASE_URL=http://nolevel-app:300` (porta `:300` em vez de `:3000`) | Corrigido no `.env` local |
+| 3 | `GET /api/leads-network?cpf=` exigia autenticação (401) | Consulta por CPF agora é pública |
+
+### Arquivos modificados
+- `src/app/api/webhook-leads/route.ts` — Ordem de fallback `BASE_URL` primeiro
+- `src/app/api/leads-network/route.ts` — GET com `?cpf=` público
 
 ### Build
 - `npm run build` — compilado com sucesso ✅
-
-### Causa raiz adicional
-O `.env` local também tinha `BASE_URL` com porta `:300` em vez de `:3000`. O `consultarLeadPorCpf()` nunca conseguia conectar no servidor — retornava `null`. Corrigido no `.env` local.
 
 ### Commits realizados nesta sessão:
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
 | 1 | `f01d502` | `fix: leads-network GET por CPF nao requer autenticacao - webhook-leads nao encontrava leads` | 23/05/2026 |
+| 2 | `8185a68` | `docs: atualiza memorias e checkpoint com correcao da BASE_URL` | 23/05/2026 |
+| 3 | `0a2e17e` | `fix: ordem de fallback BASE_URL invertida - webhook-leads usava NEXT_PUBLIC_BASE_URL` | 23/05/2026 |

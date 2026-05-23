@@ -1257,25 +1257,42 @@ function formatCPF(value: string): string {
 
 ---
 
-## 32. CORREÇÃO: GET /API/LEADS-NETWORK — CONSULTA PÚBLICA POR CPF (23/05/2026)
+## 32. CORREÇÃO: WEBHOOK-LEADS NÃO ENCONTRAVA LEADS (23/05/2026)
 
 ### Problema
-O webhook-leads consulta leads via `consultarLeadPorCpf()` fazendo um fetch server-side para `GET /api/leads-network?cpf=xxx`. Porém, o GET do `leads-network` exigia autenticação (`getSessionOrFail(["GOD", "ADMIN", "GESTOR"])`). Como o fetch server-side não carrega cookie de sessão, o `getServerSession` retornava `null`, resultando em 401. O bot então exibia "Não encontrei seu cadastro" mesmo quando o lead existia no banco.
+O webhook-leads consulta leads via `consultarLeadPorCpf()` fazendo um fetch server-side para `GET /api/leads-network?cpf=xxx`. O bot sempre respondia "Não encontrei seu cadastro" mesmo com lead existente.
 
-### Solução em `src/app/api/leads-network/route.ts`
-- Consulta por CPF (`?cpf=`) agora é **pública** — não exige sessão (escopo natural pelo CPF)
-- Listagem geral (sem parâmetros) mantém autenticação exigida
-- Mesmo padrão do Fix 8 (seção 22): `/api/tickets/search` permite consulta pública por CPF/ticket
+### Causas (3 problemas empilhados)
+
+| # | Problema | Arquivo | Impacto |
+|---|----------|---------|---------|
+| 1 | `process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL` — ordem invertida | `webhook-leads/route.ts:64` | Usava `NEXT_PUBLIC_BASE_URL=http://localhost:3001` (porta **host**) dentro do container — **conexão recusada** |
+| 2 | `BASE_URL` com porta `:300` em vez de `:3000` | `.env` local | Mesmo se a ordem estivesse correta, a porta estava errada |
+| 3 | `GET /api/leads-network?cpf=` exigia autenticação | `leads-network/route.ts:6` | Fetch server-side não tem cookie de sessão → 401 |
+
+### Soluções
+
+#### Fix 1 — Ordem de fallback `consultarLeadPorCpf` (`webhook-leads/route.ts:64`)
+```typescript
+// Antes (ERRADO):
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL
+
+// Depois (CORRETO — igual usedata.ts):
+const baseUrl = process.env.BASE_URL || process.env.NEXT_PUBLIC_BASE_URL
+```
+`BASE_URL=http://nolevel-app:3000` (Docker internal) agora é usado primeiro.
+
+#### Fix 2 — Porta do `.env` local
+`BASE_URL` ajustada de `:300` para `:3000`. `.env.example` já estava correto.
+
+#### Fix 3 — Auth no GET leads-network (`leads-network/route.ts`)
+Consulta por CPF (`?cpf=`) agora é **pública** — não exige sessão (escopo natural pelo CPF). Listagem geral mantém autenticação.
 
 ### Arquivos modificados
 | Arquivo | Mudança |
 |---------|---------|
+| `src/app/api/webhook-leads/route.ts` | `BASE_URL` usado primeiro (ordem de fallback corrigida) |
 | `src/app/api/leads-network/route.ts` | GET com `?cpf=` não requer mais autenticação |
-
-### Causa raiz adicional — BASE_URL com porta errada
-O `.env` local estava com `BASE_URL=http://nolevel-app:300` (porta `300` em vez de `3000`). Isso impedia o `consultarLeadPorCpf()` de conectar no próprio servidor — o fetch caía no `catch` e retornava `null`.
-
-**Correção:** `BASE_URL` ajustada de `:300` para `:3000` (porta interna do container). O `.env.example` já estava correto, portanto só o `.env` local precisou ser corrigido.
 
 ### Build
 - `npm run build` — compilado com sucesso ✅
