@@ -194,7 +194,11 @@ export async function POST(req: NextRequest) {
         session.motivoAtual = userInput;
 
         // Se o motivo envolve envio de documentos, redireciona para o portal
-        const palavrasDocumento = ["foto", "fotos", "comprovante", "comprovantes", "documento", "documentos", "anexo", "anexos", "pdf", "imagem", "imagens", "print", "printar", "scan", "scanner", "digitalizar", "doc", "docs"];
+        const palavrasDocumento = ["foto", "fotos", "comprovante", "comprovantes", "documento", "documentos", "anexo", "anexos", "pdf", "imagem", "imagens", "print",
+           "printar", "scan", "scanner", "digitalizar", "doc", "docs","arquivo", "arquivos", "enviar", "subir", "upload","atestatado", 
+           "atestados", "laudo", "laudos", "receita", "receitas","printscreen", "print screens", "printscreens", "foto do problema", 
+           "fotos do problema", "comprovante do problema", "comprovantes do problema", "documento do problema", "documentos do problema", 
+           "anexo do problema", "anexos do problema"];
         if (palavrasDocumento.some(p => userInput.toLowerCase().includes(p))) {
           const baseUrl = process.env.BASE_URL || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3001";
           await sendEvolutionText(
