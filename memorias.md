@@ -1267,10 +1267,15 @@ O webhook-leads consulta leads via `consultarLeadPorCpf()` fazendo um fetch serv
 - Listagem geral (sem parâmetros) mantém autenticação exigida
 - Mesmo padrão do Fix 8 (seção 22): `/api/tickets/search` permite consulta pública por CPF/ticket
 
-### Arquivo modificado
+### Arquivos modificados
 | Arquivo | Mudança |
 |---------|---------|
 | `src/app/api/leads-network/route.ts` | GET com `?cpf=` não requer mais autenticação |
+
+### Causa raiz adicional — BASE_URL com porta errada
+O `.env` local estava com `BASE_URL=http://nolevel-app:300` (porta `300` em vez de `3000`). Isso impedia o `consultarLeadPorCpf()` de conectar no próprio servidor — o fetch caía no `catch` e retornava `null`.
+
+**Correção:** `BASE_URL` ajustada de `:300` para `:3000` (porta interna do container). O `.env.example` já estava correto, portanto só o `.env` local precisou ser corrigido.
 
 ### Build
 - `npm run build` — compilado com sucesso ✅

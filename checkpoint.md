@@ -484,7 +484,10 @@ Consulta por CPF agora é pública (escopo natural). Listagem geral mantém aute
 ### Build
 - `npm run build` — compilado com sucesso ✅
 
+### Causa raiz adicional
+O `.env` local também tinha `BASE_URL` com porta `:300` em vez de `:3000`. O `consultarLeadPorCpf()` nunca conseguia conectar no servidor — retornava `null`. Corrigido no `.env` local.
+
 ### Commits realizados nesta sessão:
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
-| 1 | `PENDENTE` | `fix: leads-network GET por CPF nao requer autenticacao - webhook-leads nao encontrava leads` | 23/05/2026 |
+| 1 | `f01d502` | `fix: leads-network GET por CPF nao requer autenticacao - webhook-leads nao encontrava leads` | 23/05/2026 |
