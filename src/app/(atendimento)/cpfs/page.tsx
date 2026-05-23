@@ -60,17 +60,24 @@ export default function CadastroCPFs() {
     }
   }
 
-  useEffect(() => {
-    setHeader({
-      titulo: 'Cadastro de CPFs',
-      descricao: 'Gerencie e importe CPFs autorizados'
-    })
-    fetchCpfs()
-  }, [setHeader])
+useEffect(() => {
+  setHeader({
+    titulo: "Cadastro de CPFs",
+    descricao: "Gerencie e importe CPFs autorizados",
+  })
 
-  useEffect(() => {
-    if (isGod) fetchAdmins()
-  }, [isGod])
+  const loadData = async () => {
+    try {
+      const res = await fetch("/api/cpfs")
+      const data = await res.json()
+      setCpfs(data)
+    } catch (error) {
+      console.error("Erro ao buscar CPFs", error)
+    }
+  }
+
+  loadData()
+}, [setHeader])
 
   async function handleDelete(cpfToDelete: string) {
     try {
@@ -374,178 +381,7 @@ export default function CadastroCPFs() {
 
       </div>
 
-      {isGod && (
-        <div
-          className="rounded-2xl shadow-lg border p-6 sm:p-8"
-          style={{
-            backgroundColor: "var(--surface)",
-            borderColor: "var(--border-subtle)",
-          }}
-        >
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-lg font-semibold">Administradores</h3>
-              <p className="text-xs opacity-60 mt-0.5">Gerencie os administradores do sistema</p>
-            </div>
-            {admins.length > 0 && (
-              <span className="text-xs font-bold px-3 py-1 rounded-lg" style={{ backgroundColor: "var(--surface-elevated)", color: "var(--primary)" }}>
-                {admins.length} registro(s)
-              </span>
-            )}
-          </div>
-
-          {editingAdmin && (
-            <div className="mb-6 p-5 rounded-xl border"
-              style={{
-                backgroundColor: "var(--surface-elevated)",
-                borderColor: "var(--border-subtle)",
-              }}
-            >
-              <h4 className="font-semibold mb-4 flex items-center gap-2">
-                <FaEdit size={14} style={{ color: "var(--primary)" }} />
-                Editando: {editingAdmin.name}
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 opacity-70">Nome</label>
-                  <input
-                    value={editForm.name}
-                    onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))}
-                    className="w-full px-3 py-2.5 rounded-xl border outline-none transition-all focus:ring-2 focus:ring-[var(--primary)]"
-                    style={{
-                      backgroundColor: "var(--background)",
-                      borderColor: "var(--border-subtle)",
-                      color: "var(--foreground)",
-                    }}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 opacity-70">Email</label>
-                  <input
-                    value={editForm.email}
-                    onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))}
-                    className="w-full px-3 py-2.5 rounded-xl border outline-none transition-all focus:ring-2 focus:ring-[var(--primary)]"
-                    style={{
-                      backgroundColor: "var(--background)",
-                      borderColor: "var(--border-subtle)",
-                      color: "var(--foreground)",
-                    }}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 opacity-70">CPF</label>
-                  <input
-                    value={editForm.cpf}
-                    onChange={e => setEditForm(p => ({ ...p, cpf: e.target.value }))}
-                    className="w-full px-3 py-2.5 rounded-xl border outline-none transition-all font-mono focus:ring-2 focus:ring-[var(--primary)]"
-                    style={{
-                      backgroundColor: "var(--background)",
-                      borderColor: "var(--border-subtle)",
-                      color: "var(--foreground)",
-                    }}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 opacity-70">Setor</label>
-                  <input
-                    value={editForm.setor}
-                    onChange={e => setEditForm(p => ({ ...p, setor: e.target.value }))}
-                    className="w-full px-3 py-2.5 rounded-xl border outline-none transition-all focus:ring-2 focus:ring-[var(--primary)]"
-                    style={{
-                      backgroundColor: "var(--background)",
-                      borderColor: "var(--border-subtle)",
-                      color: "var(--foreground)",
-                    }}
-                  />
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={saveEditAdmin}
-                  className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-white font-semibold text-sm transition-all hover:brightness-110 active:scale-95"
-                  style={{ backgroundColor: "var(--primary)" }}
-                >
-                  <FaEdit size={12} /> Salvar
-                </button>
-                <button
-                  onClick={() => setEditingAdmin(null)}
-                  className="px-5 py-2.5 rounded-xl font-semibold text-sm transition-all hover:brightness-95"
-                  style={{ backgroundColor: "var(--surface-elevated)", color: "var(--foreground)" }}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div className="overflow-x-auto rounded-xl border" style={{ borderColor: "var(--border-subtle)" }}>
-            <table className="w-full text-sm">
-              <thead>
-                <tr style={{ backgroundColor: "var(--surface-elevated)", borderBottom: "2px solid var(--border-subtle)" }}>
-                  <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Nome</th>
-                  <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">CPF</th>
-                  <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Empresa</th>
-                  <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Setor</th>
-                  <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {admins.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-12 text-center opacity-40 text-sm font-medium">
-                      Nenhum administrador cadastrado
-                    </td>
-                  </tr>
-                ) : (
-                  admins.map((admin, idx) => (
-                    <tr
-                      key={admin.id}
-                      style={{
-                        borderBottom: "1px solid var(--border-subtle)",
-                        backgroundColor: idx % 2 === 0 ? "transparent" : "var(--surface-elevated)",
-                      }}
-                      className="transition-all duration-150 hover:brightness-95"
-                    >
-                      <td className="px-4 py-3 font-medium">{admin.name}</td>
-                      <td className="px-4 py-3 font-mono text-xs">{admin.cpf}</td>
-                      <td className="px-4 py-3">{admin.Empresa?.nome || "-"}</td>
-                      <td className="px-4 py-3">{admin.setor}</td>
-                      <td className="px-4 py-3 text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          {admin.id !== currentUserId ? (
-                            <>
-                              <button
-                                onClick={() => openEditAdmin(admin)}
-                                className="p-2 rounded-xl transition-all duration-150 hover:bg-[var(--info-light)]"
-                                style={{ color: "var(--primary)" }}
-                                title="Editar"
-                              >
-                                <FaEdit size={14} />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteAdmin(admin.id, admin.name)}
-                                className="p-2 rounded-xl transition-all duration-150 hover:bg-[var(--error-light)]"
-                                style={{ color: "var(--status-cancelled)" }}
-                                title="Apagar"
-                              >
-                                <FaTrash size={13} />
-                              </button>
-                            </>
-                          ) : (
-                            <span className="text-xs font-medium px-3 py-1 rounded-lg" style={{ backgroundColor: "var(--surface-elevated)", opacity: 0.6 }}>
-                              Você
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+     
     </div>
   )
 }
