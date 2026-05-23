@@ -3,14 +3,19 @@
 import toast from "react-hot-toast"
 
 export default function LeadForm() {
+  function cleanCpf(value: string): string {
+    return value.replace(/\D/g, "")
+  }
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     const formData = new FormData(e.currentTarget)
+    const rawCpf = (formData.get("cpf") as string) || ""
 
     const data = {
       nome: formData.get("nome"),
-      cpf: formData.get("cpf"),
+      cpf: cleanCpf(rawCpf),
       telefone: formData.get("telefone"),
       empresa: formData.get("empresa"),
     }
@@ -25,7 +30,8 @@ export default function LeadForm() {
       })
 
       if (!response.ok) {
-        throw new Error("Erro ao enviar lead")
+        const errData = await response.json().catch(() => null)
+        throw new Error(errData?.error || "Erro ao enviar lead")
       }
 
       const numeroWhatsapp = "5527998982410"
@@ -36,7 +42,8 @@ export default function LeadForm() {
 
       window.location.href = `https://wa.me/${numeroWhatsapp}?text=${mensagem}`
     } catch (error) {
-      toast.error("Erro ao enviar formulário")
+      const msg = error instanceof Error ? error.message : "Erro ao enviar formulário"
+      toast.error(msg)
     }
   }
 

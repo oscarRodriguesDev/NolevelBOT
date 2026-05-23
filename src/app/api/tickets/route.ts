@@ -11,10 +11,35 @@ import { normalizarStatus } from '@/types/chamado'
 import { getTicketWhereClause } from '@/lib/rbac'
 import { ROLE } from '@prisma/client'
 
-async function notificarCliente(cpf: string, ticket: string, etapa: 'criado' | 'atualizado' | 'finalizado', nomeAtendente?: string, observacao?: string) {
+type ContatoTelefone = { telefone: string; instance: string } | null
+
+async function buscarContato(cpf: string, chamadoId?: string): Promise<ContatoTelefone> {
+  const contato = getPhoneByCpf(cpf)
+  if (contato && contato.instance !== 'web') return contato
+
+  if (chamadoId) {
+    try {
+      const chamado = await prisma.chamado.findUnique({
+        where: { id: chamadoId },
+        select: { historico: true },
+      })
+      if (chamado?.historico) {
+        const historico: HistoricoItem[] = JSON.parse(chamado.historico)
+        const entradaTel = historico.find(h => h.acao === "TELEFONE")
+        if (entradaTel?.observacao) {
+          return { telefone: entradaTel.observacao, instance: 'web' }
+        }
+      }
+    } catch {}
+  }
+
+  return contato
+}
+
+async function notificarCliente(cpf: string, ticket: string, etapa: 'criado' | 'atualizado' | 'finalizado', nomeAtendente?: string, observacao?: string, chamadoId?: string) {
   try {
-    const contato = getPhoneByCpf(cpf)
-    if (!contato) return
+    const contato = await buscarContato(cpf, chamadoId)
+    if (!contato || contato.instance === 'web') return
 
     let mensagem = ''
     if (etapa === 'criado') {
@@ -63,6 +88,10 @@ export async function POST(req: NextRequest) {
 
     const ticket = `TKT-${Date.now()}`
 
+    const historicoTelefone = telefone
+      ? JSON.stringify([{ data: new Date().toISOString(), acao: "TELEFONE", observacao: telefone }])
+      : undefined
+
     const chamado = await prisma.chamado.create({
       data: {
         ticket,
@@ -73,6 +102,7 @@ export async function POST(req: NextRequest) {
         prioridade,
         anexoUrl,
         empresaId,
+        historico: historicoTelefone,
       },
     })
 
@@ -80,7 +110,7 @@ export async function POST(req: NextRequest) {
       registerPhone(cpf, telefone, 'web')
     }
 
-    notificarCliente(cpf, ticket, 'criado')
+    notificarCliente(cpf, ticket, 'criado', undefined, undefined, chamado.id)
 
     return NextResponse.json(chamado, { status: 201 })
   } catch (error) {
@@ -243,7 +273,7 @@ export async function PUT(req: NextRequest) {
     } catch {}
 
     const etapa = estagio.toLowerCase() === 'concluido' ? 'finalizado' : 'atualizado'
-    notificarCliente(chamadoExistente.cpf, chamadoExistente.ticket, etapa, chamadoAtualizado.atendente?.name, observacao)
+    notificarCliente(chamadoExistente.cpf, chamadoExistente.ticket, etapa, chamadoAtualizado.atendente?.name, observacao, chamadoExistente.id)
 
     return NextResponse.json(chamadoAtualizado, { status: 200 })
   } catch (error) {
@@ -306,7 +336,7 @@ export async function DELETE(req: NextRequest) {
 
     await prisma.chamado.delete({ where: { id: chamado.id } })
 
-    notificarCliente(chamado.cpf, chamado.ticket, 'finalizado', chamado.atendente?.name)
+    notificarCliente(chamado.cpf, chamado.ticket, 'finalizado', chamado.atendente?.name, undefined, chamado.id)
 
     return NextResponse.json({ message: "Chamado movido para tickets fechados" }, { status: 200 })
   } catch (error) {

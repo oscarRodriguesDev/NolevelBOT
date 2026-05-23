@@ -10,6 +10,7 @@ import {
 } from "@/lib/usedata";
 import { Chamado } from "@prisma/client";
 import { getSetores } from "@/lib/setores";
+import { registerPhone } from "@/lib/phoneMap";
 
 
 
@@ -101,6 +102,8 @@ export async function POST(req: NextRequest) {
         if (resCpf && resCpf.valido) {
           session.cpf = cleanCPF;
           session.nome = resCpf.nome;
+
+          registerPhone(cleanCPF, number, instance);
 
           avisos = await buscarAvisos(cleanCPF, req);
 

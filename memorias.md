@@ -1100,3 +1100,157 @@ function formatCPF(value: string): string {
 
 ### Build
 - `npm run build` — compilado com sucesso ✅
+
+---
+
+## 31. TASKS DO ARQUIVO tasks.txt (23/05/2026)
+
+### Tasks implementadas
+
+| # | Task | Status |
+|---|------|--------|
+| 1 | Notificações WhatsApp — associar número ao chamado mesmo sem sessão ativa | ✅ |
+| 2 | Bot reconhecer empresa para qual está respondendo | ✅ |
+| 3 | Botão voltar em `consulta/[ticket]` | ✅ |
+| 4 | `api/chat` com mesmo comportamento do `webhook24` (adaptado para chat) | ✅ |
+| 5 | Corrigir erro no formulário `/leads` | ✅ |
+| 6 | Gestores poderem apagar atendentes do seu setor (já implementado) | ✅ |
+| 7 | Admin deleta gestor com regra de substituto | ✅ |
+| 8 | Admin deleta admin com regra de substituto | ✅ |
+| 9 | Card de usuário mostrar cargo/função (Role) | ✅ |
+
+---
+
+### Task 1 — Persistência de telefone para notificações WhatsApp
+
+**Problema original:** O `phoneMap.ts` mapeia CPF → telefone em arquivo JSON (`data/phoneMap.json`), que é perdido ao reconstruir o container Docker. Além disso, apenas o webhook24 registrava o telefone — webhook22 e webhook23 não chamavam `registerPhone`.
+
+**Solução em `src/app/api/tickets/route.ts`:**
+- Criada função `buscarContato(cpf, chamadoId)` que:
+  1. Primeiro consulta `phoneMap` (mais rápido, tem a instância correta)
+  2. Se não encontrar ou instância for `'web'`, busca no `historico` do chamado por entrada `{ acao: "TELEFONE" }`
+- `notificarCliente()` agora aceita `chamadoId` e usa `buscarContato()` em vez de `getPhoneByCpf()` direto
+- Se a instância for `'web'` (portal web), a notificação é ignorada (impossível enviar WhatsApp sem Evolution API)
+- Ao criar chamado com telefone via portal web, o telefone é salvo no `historico` como `[{ data, acao: "TELEFONE", observacao: telefone }]`
+- Chamadas a `notificarCliente` em PUT e DELETE agora passam `chamado.id`
+
+**Solução em webhooks:**
+- `webhook22/route.ts`: Adicionado `import { registerPhone } + registerPhone(cleanCPF, number, instance)` no fluxo de validação de CPF
+- `webhook23/route.ts`: Mesma correção
+- webhook24 já possuía a chamada
+
+**Arquivos modificados:**
+| Arquivo | Mudança |
+|---------|---------|
+| `src/app/api/tickets/route.ts` | `notificarCliente` usa fallback historico; POST salva telefone no historico; PUT/DELETE passam chamadoId |
+| `src/app/api/webhook22/route.ts` | Import + chamada `registerPhone` |
+| `src/app/api/webhook23/route.ts` | Import + chamada `registerPhone` |
+
+---
+
+### Task 2 — Bot reconhece empresa
+
+**Problema:** A constante `empresa = 'Nolevel'` em `useIA.ts` era hardcoded — o bot sempre se apresentava como "atendente virtual da Nolevel" independente da empresa do usuário.
+
+**Solução em `src/lib/useIA.ts`:**
+- Constante `empresa` hardcoded removida
+- Criada função `getEmpresaName(cpf)` que:
+  1. Busca empresaId pelo CPF do usuário (`getEmpresaIdByCpf`)
+  2. Busca o nome da empresa na tabela `empresa`
+  3. Retorna o nome real ou fallback `'Nolevel'`
+- `botIA()` agora chama `getEmpresaName(session.cpf)` dinamicamente a cada interação
+- O prompt da IA sempre contém o nome correto da empresa
+
+**Arquivos modificados:**
+| Arquivo | Mudança |
+|---------|---------|
+| `src/lib/useIA.ts` | `empresa` dinâmico via `getEmpresaName()` |
+
+---
+
+### Task 3 — Botão voltar em consulta/[ticket]
+
+**Problema:** A página de detalhe do chamado não tinha como voltar para a página de consulta anterior.
+
+**Solução em `src/app/consulta/[ticket]/page.tsx`:**
+- Adicionado botão "Voltar" no canto superior esquerdo
+- Usa `window.history.back()` para retornar à página anterior (que manteve o resultado da pesquisa)
+- Ícone `FaArrowLeft` importado do `react-icons/fa`
+- Estilo consistente: `rounded-xl`, borda sutil, hover scale, transições
+
+**Arquivos modificados:**
+| Arquivo | Mudança |
+|---------|---------|
+| `src/app/consulta/[ticket]/page.tsx` | Botão voltar com `window.history.back()` |
+
+---
+
+### Task 4 — api/chat alinhado com webhook24
+
+**Problema:** O `api/chat/route.ts` tinha comportamento diferente do `webhook24` — exibição simplificada de chamados, sessão expira em 1h, sem fallback em erro de criação, sem labels de status.
+
+**Solução em `src/app/api/chat/route.ts`:**
+- `statusLabels` com emojis e labels padronizados (mesmo do webhook24)
+- Sessão expira em 2h (antes 1h)
+- Comando de saída padronizado: apenas `sair`, `encerrar`, `cancelar`
+- Exibição de chamados agora mostra: ticket, status com label, data, setor, atendente, último historico, descrição resumida
+- `generateRandomTicket` como fallback quando criação de chamado falha
+- Mensagens de confirmação e fluxo alinhados com webhook24
+
+**Arquivos modificados:**
+| Arquivo | Mudança |
+|---------|---------|
+| `src/app/api/chat/route.ts` | Reescrita completa para espelhar webhook24 |
+
+---
+
+### Task 5 — Correção formulário /leads
+
+**Problema:** O formulário de leads em `/leads` enviava CPF com formatação (pontos e traços) para a API, que não limpava o CPF antes de salvar. Erros da API não eram exibidos.
+
+**Solução em `src/app/leads/page.tsx`:**
+- Função `cleanCpf()` que remove tudo que não é dígito
+- CPF é limpo antes de enviar no JSON
+- Tratamento de erro agora exibe a mensagem específica retornada pela API (via `errData?.error`)
+
+**Arquivos modificados:**
+| Arquivo | Mudança |
+|---------|---------|
+| `src/app/leads/page.tsx` | CPF limpo + erro detalhado |
+
+---
+
+### Tasks 7-8 — Regras de substituto na exclusão
+
+**Problema:** Admins podiam excluir gestores sem criar substitutos, deixando a empresa sem gestores. Admins podiam ser excluídos sem reposição.
+
+**Solução em `src/app/api/users/route.ts`:**
+- **DELETE GESTOR (por ADMIN):** verifica se existe outro GESTOR na mesma empresa (`id: { not: id }`). Se não, retorna 400 com mensagem "É necessário criar outro GESTOR antes de excluir este."
+- **DELETE ADMIN (por GOD ou ADMIN):** verifica se existe outro ADMIN na mesma empresa. Se não, retorna 400 com mensagem "É necessário ter outro ADMIN antes de excluir este."
+- A regra se aplica a TODOS os que podem deletar ADMIN (GOD e ADMIN)
+
+**Arquivos modificados:**
+| Arquivo | Mudança |
+|---------|---------|
+| `src/app/api/users/route.ts` | Validação de substituto em DELETE de GESTOR e ADMIN |
+
+---
+
+### Task 9 — Card de usuário mostra Role
+
+**Problema:** O card do usuário na sidebar exibia nome e email, mas não mostrava o papel/cargo.
+
+**Solução em `src/app/(atendimento)/components/cardUser.tsx`:**
+- Adicionado badge abaixo do email exibindo `user.role`
+- Badge com fundo primary, texto branco, `text-[10px]`, padding horizontal
+- Exibido apenas se `user.role` existe
+
+**Arquivos modificados:**
+| Arquivo | Mudança |
+|---------|---------|
+| `src/app/(atendimento)/components/cardUser.tsx` | Badge de role no card |
+
+---
+
+### Build
+- `npm run build` — compilado com sucesso ✅

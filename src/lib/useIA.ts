@@ -16,7 +16,6 @@ const FlowState = {
   COLETAR_SETOR: "coletar_setor"
 } as const;
 
-const empresa = 'Nolevel'; //buscar o nome da empresa no bd
 const LINK_PORTAL = process.env.NEXT_PUBLIC_BASE_URL
 const LINK_CHAMADOS = `${LINK_PORTAL}/chamado`; 
 const lINK_CONSULTA = `${LINK_PORTAL}/consulta`;
@@ -86,6 +85,23 @@ export async function botIA(session: UserSession, userInput: string, instrucaoEt
 
  */
 
+async function getEmpresaName(cpf?: string): Promise<string> {
+  if (!cpf) return 'Nolevel'
+  try {
+    const { prisma } = await import('@/lib/prisma')
+    const { getEmpresaIdByCpf } = await import('@/lib/searchEmpresa')
+    const empresaId = await getEmpresaIdByCpf(cpf)
+    if (!empresaId) return 'Nolevel'
+    const empresa = await prisma.empresa.findUnique({
+      where: { id: empresaId },
+      select: { nome: true },
+    })
+    return empresa?.nome || 'Nolevel'
+  } catch {
+    return 'Nolevel'
+  }
+}
+
 export async function botIA(
   session: UserSession,
   userInput: string,
@@ -97,6 +113,7 @@ export async function botIA(
     : "Nenhum CPF informado"
 
   const isColetarMotivo = session.state === "coletar_motivo"
+  const empresa = await getEmpresaName(session.cpf)
 
   try {
     const response = await openai.chat.completions.create({

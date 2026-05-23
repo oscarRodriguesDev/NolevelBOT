@@ -246,6 +246,17 @@ export async function DELETE(req: NextRequest) {
       if (targetUser.empresaId !== userEmpresaId) {
         return NextResponse.json({ error: "Usuário não pertence à sua empresa" }, { status: 403 })
       }
+      if (targetUser.role === "GESTOR") {
+        const outroGestor = await prisma.user.findFirst({
+          where: { empresaId: userEmpresaId, role: "GESTOR", id: { not: id } },
+        })
+        if (!outroGestor) {
+          return NextResponse.json(
+            { error: "É necessário criar outro GESTOR antes de excluir este. A empresa não pode ficar sem gestores." },
+            { status: 400 }
+          )
+        }
+      }
     } else if (userRole === "GESTOR") {
       if (targetUser.role !== "ATENDENTE") {
         return NextResponse.json({ error: "Permissão negada" }, { status: 403 })
@@ -255,6 +266,18 @@ export async function DELETE(req: NextRequest) {
       }
       if (targetUser.setor !== userSetor) {
         return NextResponse.json({ error: "Atendente não pertence ao seu setor" }, { status: 403 })
+      }
+    }
+
+    if (targetUser.role === "ADMIN") {
+      const outroAdmin = await prisma.user.findFirst({
+        where: { empresaId: targetUser.empresaId, role: "ADMIN", id: { not: id } },
+      })
+      if (!outroAdmin) {
+        return NextResponse.json(
+          { error: "É necessário ter outro ADMIN antes de excluir este. A empresa não pode ficar sem administradores." },
+          { status: 400 }
+        )
       }
     }
 

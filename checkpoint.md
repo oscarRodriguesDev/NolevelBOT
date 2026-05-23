@@ -405,4 +405,60 @@
 ### Commits realizados nesta sessão:
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
-| 1 | | `feat: gestor setor auto-preenchido, cpf formatado e numerico` | 21/05/2026 |
+| 1 | `ad81aa5` | `feat: gestor setor auto-preenchido, cpf formatado e numerico` | 21/05/2026 |
+| 2 | `33ad2b9` | `atualização: usadoata refatorado para prisma direto, admin setor livre, exclusao empresa em cascata` | 22/05/2026 |
+| 3 | `5d6f112` | `testes: remove seção de admins da pagina cpfs` | 23/05/2026 |
+
+---
+
+## Sessão: 23/05/2026 — Tasks do `tasks.txt`
+
+### Resumo
+Implementação completa de todas as tasks do arquivo `src/tasks.txt`, incluindo notificações WhatsApp, reconhecimento de empresa pelo bot, botão voltar, alinhamento chat/webhook24, correção do formulário de leads e regras RBAC de exclusão com substitutos.
+
+### Tasks implementadas
+
+| # | Task | Descrição | Arquivos |
+|---|------|-----------|----------|
+| 1 | Notificações WhatsApp | registerPhone adicionado ao webhook22 e webhook23; fallback de telefone via historico do chamado; notificação ignora instância 'web' | `webhook22/route.ts`, `webhook23/route.ts`, `tickets/route.ts` |
+| 2 | Bot reconhece empresa | Empresa name não é mais hardcoded — `botIA()` busca nome real da empresa pelo CPF do usuário | `useIA.ts` |
+| 3 | Botão voltar | Adicionado botão Voltar com `window.history.back()` + ícone FaArrowLeft | `consulta/[ticket]/page.tsx` |
+| 4 | Chat = webhook24 | Chat API reescrita para espelhar webhook24: exibição rica de status, fallback `generateRandomTicket`, sessão 2h, labels com emojis | `api/chat/route.ts` |
+| 5 | Form /leads | CPF é limpo (só dígitos) antes de enviar; erro mostra mensagem específica da API | `leads/page.tsx` |
+| 6 | Gestor deleta atendente | Já implementado anteriormente; verificado que GESTOR só deleta ATENDENTE do mesmo setor | `api/users/route.ts` |
+| 7 | Admin deleta gestor | Admin pode deletar GESTOR, mas deve existir outro GESTOR na empresa como substituto | `api/users/route.ts` |
+| 8 | Admin deleta admin | Admin só pode ser deletado se houver outro ADMIN na mesma empresa; GOD também respeita esta regra | `api/users/route.ts` |
+| 9 | Card mostra Role | CardUser agora exibe o papel do usuário (GOD/ADMIN/GESTOR/ATENDENTE) em badge | `cardUser.tsx` |
+
+### Detalhes técnicos
+
+#### Task 1 — Phone persistence em chamado
+- `tickets/route.ts`: `buscarContato()` criada — primeiro checa phoneMap, depois busca no historico do chamado por entrada `{ acao: "TELEFONE" }`
+- Ao criar chamado com telefone via portal web, o telefone é salvo no historico como JSON
+- `notificarCliente()` agora aceita `chamadoId` e usa `buscarContato()` em vez de `getPhoneByCpf()` diretamente
+- Se a instância for 'web', a notificação é ignorada (não há como enviar WhatsApp sem Evolution API)
+- `registerPhone()` adicionado nos webhooks 22 e 23 (que não tinham)
+
+#### Task 2 — Nome da empresa dinâmico
+- `useIA.ts`: Constante `empresa = 'Nolevel'` removida
+- Função `getEmpresaName(cpf)` criada — busca empresaId pelo CPF, depois o nome da empresa no banco
+- Chamada dentro de `botIA()` a cada interação, garantindo que o contexto da IA tenha o nome correto da empresa
+- Fallback para 'Nolevel' se não encontrar
+
+#### Task 4 — Chat API alinhada com webhook24
+- `statusLabels` com emojis e labels padronizados
+- Sessão expira em 2h (antes era 1h)
+- Comando de saída padronizado (apenas "sair", "encerrar", "cancelar")
+- Exibição de chamados agora inclui: ticket, status com label, data, setor, atendente, último histórico, descrição
+- `generateRandomTicket` como fallback quando criação de chamado falha
+- Mensagens de confirmação alinhadas com webhook24
+
+#### Tasks 7-8 — Regras de substituto na exclusão
+No `DELETE` de `api/users/route.ts`:
+- Ao deletar GESTOR (por ADMIN): verifica se existe outro GESTOR na mesma empresa
+- Ao deletar ADMIN (por GOD/ADMIN): verifica se existe outro ADMIN na mesma empresa
+- Se não houver substituto, retorna 400 com mensagem clara
+- ATENDENTES não precisam de substituto (já implementado)
+
+### Build
+- `npm run build` — compilado com sucesso ✅

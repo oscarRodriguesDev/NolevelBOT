@@ -14,6 +14,7 @@ import {
   FaFlag,
   FaUserTie,
   FaClipboardList,
+  FaArrowLeft,
 } from "react-icons/fa";
 
 interface Chamado {
@@ -135,6 +136,20 @@ export default function TicketPage() {
     >
       <div className="absolute right-4 top-4 z-50">
         <ThemeToggle />
+      </div>
+      <div className="absolute left-4 top-4 z-50">
+        <button
+          onClick={() => window.history.back()}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 hover:scale-105 active:scale-95"
+          style={{
+            backgroundColor: "var(--surface)",
+            border: "1px solid var(--border-subtle)",
+            color: "var(--foreground)",
+          }}
+        >
+          <FaArrowLeft size={14} />
+          Voltar
+        </button>
       </div>
       <div
         className="w-full max-w-2xl rounded-2xl shadow-2xl border p-6 sm:p-8 space-y-6 transition-colors duration-300"
