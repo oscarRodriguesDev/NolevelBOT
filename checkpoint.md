@@ -467,3 +467,24 @@ No `DELETE` de `api/users/route.ts`:
 
 ### Build
 - `npm run build` — compilado com sucesso ✅
+
+---
+
+## Sessão: 23/05/2026 — Fix GET /api/leads-network (consulta pública por CPF)
+
+### Problema
+O webhook-leads faz fetch server-side para `GET /api/leads-network?cpf=xxx`, mas o endpoint exigia autenticação. Sem cookie de sessão, retornava 401, e o bot dizia "Não encontrei seu cadastro" mesmo com lead existente.
+
+### Solução
+Consulta por CPF agora é pública (escopo natural). Listagem geral mantém autenticação.
+
+### Arquivo modificado
+- `src/app/api/leads-network/route.ts` — GET com `?cpf=` não requer mais autenticação
+
+### Build
+- `npm run build` — compilado com sucesso ✅
+
+### Commits realizados nesta sessão:
+| # | Hash | Mensagem | Data |
+|---|------|----------|------|
+| 1 | `PENDENTE` | `fix: leads-network GET por CPF nao requer autenticacao - webhook-leads nao encontrava leads` | 23/05/2026 |

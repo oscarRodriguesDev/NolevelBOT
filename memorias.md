@@ -1254,3 +1254,23 @@ function formatCPF(value: string): string {
 
 ### Build
 - `npm run build` — compilado com sucesso ✅
+
+---
+
+## 32. CORREÇÃO: GET /API/LEADS-NETWORK — CONSULTA PÚBLICA POR CPF (23/05/2026)
+
+### Problema
+O webhook-leads consulta leads via `consultarLeadPorCpf()` fazendo um fetch server-side para `GET /api/leads-network?cpf=xxx`. Porém, o GET do `leads-network` exigia autenticação (`getSessionOrFail(["GOD", "ADMIN", "GESTOR"])`). Como o fetch server-side não carrega cookie de sessão, o `getServerSession` retornava `null`, resultando em 401. O bot então exibia "Não encontrei seu cadastro" mesmo quando o lead existia no banco.
+
+### Solução em `src/app/api/leads-network/route.ts`
+- Consulta por CPF (`?cpf=`) agora é **pública** — não exige sessão (escopo natural pelo CPF)
+- Listagem geral (sem parâmetros) mantém autenticação exigida
+- Mesmo padrão do Fix 8 (seção 22): `/api/tickets/search` permite consulta pública por CPF/ticket
+
+### Arquivo modificado
+| Arquivo | Mudança |
+|---------|---------|
+| `src/app/api/leads-network/route.ts` | GET com `?cpf=` não requer mais autenticação |
+
+### Build
+- `npm run build` — compilado com sucesso ✅

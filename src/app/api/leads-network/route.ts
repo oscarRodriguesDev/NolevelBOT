@@ -3,15 +3,11 @@ import { prisma } from "@/lib/prisma"
 import { getSessionOrFail } from "@/util/permission"
 
 export async function GET(req: NextRequest) {
-  const session = await getSessionOrFail(["GOD", "ADMIN", "GESTOR"])
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-
   try {
     const { searchParams } = new URL(req.url)
     const cpf = searchParams.get("cpf")
 
+    // Consulta por CPF é pública (escopo natural) — usada pelo webhook-leads
     if (cpf) {
       const cpfLimpo = cpf.replace(/\D/g, "")
       const lead = await prisma.cpfsLeads.findUnique({
@@ -23,6 +19,12 @@ export async function GET(req: NextRequest) {
       }
 
       return NextResponse.json(lead, { status: 200 })
+    }
+
+    // Listagem geral requer autenticação
+    const session = await getSessionOrFail(["GOD", "ADMIN", "GESTOR"])
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const leads = await prisma.cpfsLeads.findMany({
