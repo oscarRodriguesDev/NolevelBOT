@@ -61,7 +61,7 @@ ${historico ? historico : "Início da conversa."}`
 
 async function consultarLeadPorCpf(cpf: string) {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL
+    const baseUrl = process.env.BASE_URL || process.env.NEXT_PUBLIC_BASE_URL
     if (!baseUrl) return null
     const res = await fetch(`${baseUrl}/api/leads-network?cpf=${cpf}`)
     if (!res.ok) return null
