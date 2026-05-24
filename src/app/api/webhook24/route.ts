@@ -153,27 +153,27 @@ export async function POST(req: NextRequest) {
         else if (["2", "status", "consultar", "ver"].some(v => lowerInput.includes(v))) {
           const chamados = await StatusChamado(session.cpf || "");
           const lista = chamados.length > 0
-            ? chamados.map((t: any) => {
-                const label = statusLabels[t.status] || t.status;
-                const atendente = t.atendente?.name ? `🧑‍💻 *Atendente:* ${t.atendente.name}` : '';
-                const dataCriacao = new Date(t.createdAt).toLocaleDateString('pt-BR');
-                const descricao = t.descricao ? `📄 *Descrição:* ${t.descricao.substring(0, 100)}${t.descricao.length > 100 ? '...' : ''}` : '';
-                const ultimoHistorico = t.historico ? (() => {
-                  try {
-                    const h = JSON.parse(t.historico);
-                    return h.length > 0 ? `📋 *Última ação:* ${statusLabels[h[h.length - 1].acao] || h[h.length - 1].acao}${h[h.length - 1].observacao ? ` — ${h[h.length - 1].observacao}` : ''}` : '';
-                  } catch { return ''; }
-                })() : '';
+            ? chamados.map((t:any) => {
+              const label = statusLabels[t.status] || t.status;
+              const atendente = t.atendente?.name ? `🧑‍💻 *Atendente:* ${t.atendente.name}` : '';
+              const dataCriacao = new Date(t.createdAt).toLocaleDateString('pt-BR');
+              const descricao = t.descricao ? `📄 *Descrição:* ${t.descricao.substring(0, 100)}${t.descricao.length > 100 ? '...' : ''}` : '';
+              const ultimoHistorico = t.historico ? (() => {
+                try {
+                  const h = JSON.parse(t.historico);
+                  return h.length > 0 ? `📋 *Última ação:* ${statusLabels[h[h.length - 1].acao] || h[h.length - 1].acao}${h[h.length - 1].observacao ? ` — ${h[h.length - 1].observacao}` : ''}` : '';
+                } catch { return ''; }
+              })() : '';
 
-                return [
-                  `🎫 *${t.ticket}* — ${label}`,
-                  `📅 *Abertura:* ${dataCriacao}`,
-                  `📍 *Setor:* ${t.setor}`,
-                  atendente,
-                  ultimoHistorico,
-                  descricao,
-                ].filter(Boolean).join('\n');
-              }).join('\n\n━━━━━━━━━━━━━━━━\n\n')
+              return [
+                `🎫 *${t.ticket}* — ${label}`,
+                `📅 *Abertura:* ${dataCriacao}`,
+                `📍 *Setor:* ${t.setor}`,
+                atendente,
+                ultimoHistorico,
+                descricao,
+              ].filter(Boolean).join('\n');
+            }).join('\n\n━━━━━━━━━━━━━━━━\n\n')
             : "Não encontrei chamados abertos no seu CPF.";
 
           await sendEvolutionText(instance, number, `📋 *SEUS CHAMADOS*\n\n${lista}\n\nPosso ajudar com algo mais?\n\n${menuString}`);
@@ -195,10 +195,10 @@ export async function POST(req: NextRequest) {
 
         // Se o motivo envolve envio de documentos, redireciona para o portal
         const palavrasDocumento = ["foto", "fotos", "comprovante", "comprovantes", "documento", "documentos", "anexo", "anexos", "pdf", "imagem", "imagens", "print",
-           "printar", "scan", "scanner", "digitalizar", "doc", "docs","arquivo", "arquivos", "enviar", "subir", "upload","atestatado", 
-           "atestados", "laudo", "laudos", "receita", "receitas","printscreen", "print screens", "printscreens", "foto do problema", 
-           "fotos do problema", "comprovante do problema", "comprovantes do problema", "documento do problema", "documentos do problema", 
-           "anexo do problema", "anexos do problema"];
+          "printar", "scan", "scanner", "digitalizar", "doc", "docs", "arquivo", "arquivos", "enviar", "subir", "upload", "atestatado",
+          "atestados", "laudo", "laudos", "receita", "receitas", "printscreen", "print screens", "printscreens", "foto do problema",
+          "fotos do problema", "comprovante do problema", "comprovantes do problema", "documento do problema", "documentos do problema",
+          "anexo do problema", "anexos do problema"];
         if (palavrasDocumento.some(p => userInput.toLowerCase().includes(p))) {
           const baseUrl = process.env.BASE_URL || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3001";
           await sendEvolutionText(
@@ -226,7 +226,41 @@ export async function POST(req: NextRequest) {
         const analiseIA = await botIA(
           session,
           userInput,
-          "INSTRUÇÃO: Verifique se o problema relatado bate com os 'Avisos' do sistema. Se bater, explique o aviso e pergunte se quer abrir o chamado mesmo assim. Se NÃO bater, responda apenas: PROSSEGUIR_FLUXO.",
+          `INSTRUÇÃO CRÍTICA
+
+Sua tarefa é verificar se a mensagem do usuário pode ser respondida total ou parcialmente por um ou mais itens da lista de "Avisos".
+
+REGRAS:
+
+1. Compare a solicitação do usuário com todos os "Avisos" disponíveis.
+
+2. Considere uma correspondência válida quando:
+   - o problema relatado for exatamente o mesmo do Aviso; ou
+   - o problema estiver claramente relacionado ao assunto tratado pelo Aviso; ou
+   - o Aviso contiver a solução, explicação ou orientação necessária para responder ao usuário.
+
+3. Se existir pelo menos uma correspondência:
+   - responda utilizando exclusivamente as informações contidas no(s) Aviso(s) correspondente(s);
+   - não invente informações adicionais;
+   - procure encerrar o atendimento de forma natural após fornecer a orientação;
+   - NÃO retorne "PROSSEGUIR_FLUXO";
+   - somente permita que o atendimento continue caso o usuário demonstre claramente que a resposta não resolveu sua dúvida ou problema.
+
+4. Se NÃO existir qualquer correspondência relevante:
+   - responda EXATAMENTE com:
+     PROSSEGUIR_FLUXO
+   - não adicione explicações, cumprimentos, pontuação ou qualquer outro texto.
+
+5. Em caso de dúvida entre responder com um Aviso ou retornar "PROSSEGUIR_FLUXO":
+   - utilize o Aviso apenas quando a relação for clara e útil para resolver a solicitação;
+   - caso contrário, responda EXATAMENTE:
+     PROSSEGUIR_FLUXO
+
+SAÍDA ESPERADA:
+
+- Encontrou Aviso relevante → responder usando o(s) Aviso(s).
+- Não encontrou Aviso relevante → responder apenas:
+PROSSEGUIR_FLUXO`,
           avisos
         );
 
