@@ -34,10 +34,5 @@ jobs:
               cp .env.dev .env || echo "sem .env.dev encontrado"
             fi
 
-            docker compose -p nolevel-dev down --remove-orphans || true
-
-            docker ps -aq --filter "name=^nolevel-app-dev$" | xargs -r docker rm -f
-
-            docker compose -p nolevel-dev up -d --build --force-recreate
-
-            docker image prune -f
+            docker compose -p nolevel-dev down
+            docker compose -p nolevel-dev up -d --build
