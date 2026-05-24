@@ -15,7 +15,10 @@ services:
       - "3001:3000"
     networks:
       - rede_gera
+      - supabase_default
 
 networks:
   rede_gera:
+    external: true
+  supabase_default:
     external: true
