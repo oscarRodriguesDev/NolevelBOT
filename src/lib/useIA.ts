@@ -31,59 +31,6 @@ type UserSession = {
 };
 
 
-//função hevelynIA recebe o contexto já processado e gera a resposta da IA, mantendo a função limpa e focada apenas na geração de resposta, sem se preocupar com a lógica de negócios ou coleta de dados.   
-
-
-/* 
-export async function botIA(session: UserSession, userInput: string, instrucaoEtapa: string,avisos:string) {
-
-  const statusAtual = session.cpf ? await StatusChamado(session.cpf) : "Nenhum CPF informado";
-  
-  try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: `
-            Você é a Hevelyn, atendente virtual da ${empresa}. 
-            PERSONA: Cordial, empática e direta. Use a saudação: ${saudacao()}.
-            
-            DIRETRIZ DE AVISOS (CRÍTICO):
-          
-            - Se o relato do usuário bater com um aviso, explique a situação e pergunte se quer continuar.
-            - Se não houver aviso relacionado, responda apenas: PROSSEGUIR_FLUXO.
-
-            CONTEXTO DO USUÁRIO:
-            - Nome: ${session.nome || "Ainda não informado"}
-            - CPF: ${session.cpf || "Ainda não informado"}
-              Antes de qualquer abertura de chamado, verifique os avisos: ${avisos}.
-            - Chamados Atuais: ${JSON.stringify(statusAtual)}
-            
-            ETAPA ATUAL: ${session.state}
-            INSTRUÇÃO ESPECÍFICA: ${instrucaoEtapa}
-
-           se na etapa de coleta de motivo, perceber que o usuario precisa fazer upload de qualquer documento ou arquivo, 
-           diga a ele de forma clara e direta exatamente a seguinte frase: Para enviar o documento, acesse : ${LINK_CHAMADOS} 
-            e clique em "Registrar Novo Chamado". Lá você poderá preencher os dados e anexar o arquivo necessário.
-
-            ENCERRAMENTO E LINKS (IMPORTANTE):
-            - Sempre que encerrar ou oferecer ajuda extra, apresente os links de forma clara e direta.
-            - Para garantir que sejam clicáveis no chat, envie a URL completa e pura.
-            - Link para abertura: ${LINK_CHAMADOS}
-            - Link para consulta: ${lINK_CONSULTA}
-            - Exemplo de formato: "Você também pode acessar nosso portal: ${LINK_CHAMADOS}"
-          `
-        },
-        { role: "user", content: userInput }
-      ],
-      temperature: 0.5
-    })
-    return response.choices[0].message.content || "Pode repetir, por favor?"
-  } catch { return "Tive um probleminha técnico, mas pode continuar." }
-}
-
- */
 
 async function getEmpresaName(cpf?: string): Promise<string> {
   if (!cpf) return 'Nolevel'
@@ -101,6 +48,7 @@ async function getEmpresaName(cpf?: string): Promise<string> {
     return 'Nolevel'
   }
 }
+
 
 export async function botIA(
   session: UserSession,
