@@ -1,4 +1,4 @@
-import { buscarAvisos,StatusChamado,saudacao } from "./usedata";
+import { buscarAvisos, StatusChamado, saudacao } from "./usedata";
 import OpenAI from "openai";
 
 // alterando config atoa
@@ -17,7 +17,7 @@ const FlowState = {
 } as const;
 
 const LINK_PORTAL = process.env.NEXT_PUBLIC_BASE_URL
-const LINK_CHAMADOS = `${LINK_PORTAL}/chamado`; 
+const LINK_CHAMADOS = `${LINK_PORTAL}/chamado`;
 const lINK_CONSULTA = `${LINK_PORTAL}/consulta`;
 
 type FlowStateValues = typeof FlowState[keyof typeof FlowState];
@@ -71,7 +71,7 @@ export async function botIA(
           role: "system",
           content: `
 Você é a Hevelyn, atendente virtual da ${empresa}.
-PERSONA: cordial, empática e direta. Use a saudação: ${saudacao()}.
+PERSONA: cordial, empática e direta. Use a saudação: ${saudacao()} informe obrigatoria a empresa ${empresa}.
 
 REGRAS GERAIS:
 - Seja objetiva.
