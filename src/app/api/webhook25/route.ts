@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { botIA, FlowState } from "@/lib/useIA";
+import { FlowState } from "@/lib/useIA";
 import type { UserSession } from "@/lib/useIA";
+import { botIA2, detectFileIntent } from "@/lib/useIA2";
 import {
   validarCpf,
   StatusChamado,
@@ -13,7 +14,7 @@ import {
 import { uploadBuffer } from "@/lib/upload";
 import { registerPhone } from "@/lib/phoneMap";
 import { getSetores } from "@/lib/setores";
-import { detectFileIntent } from "@/lib/useIA2";
+
 
 const menuString = "1. Abrir Chamado, 2. Consultar Chamado";
 
@@ -150,7 +151,7 @@ export async function POST(req: NextRequest) {
 
           await sendEvolutionText(instance, number, `📋 *SEUS CHAMADOS*\n\n${lista}\n\nMais alguma coisa?\n\n${menuString}`);
         } else {
-          const resposta = await botIA(
+          const resposta = await botIA2(
             session,
             userInput,
             `Tente entender o que ele quer. Se não conseguir, encerre de forma educada dizendo que não entendeu e ofereça o menu: ${menuString}.`,
@@ -186,7 +187,7 @@ export async function POST(req: NextRequest) {
           break;
         }
 
-        const analiseIA = await botIA(
+        const analiseIA = await botIA2(
           session,
           userInput,
           `Veja se o problema do usuário tem relação com algum Aviso abaixo. Se tiver, responda com base no aviso e pergunte se resolveu. Se não tiver, responda apenas: PROSSEGUIR_FLUXO`,
