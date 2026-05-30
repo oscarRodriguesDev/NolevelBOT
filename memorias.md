@@ -1594,3 +1594,52 @@ Depois: Se o upload falhar, o chamado é criado mesmo sem anexo (try/catch isola
 
 ### Build
 - `npm run build` — compilado com sucesso ✅
+
+---
+
+## 41. CORREÇÃO WEBHOOK25 — DOWNLOAD DE MÍDIA VIA WEBHOOKBASE64 (30/05/2026)
+
+### Problema
+Fotos enviadas via WhatsApp bot (webhook25) não chegavam ao Supabase Storage. O bot respondia "obrigado" mas o anexo nunca era salvo.
+
+### Causa raiz
+A Evolution API v2.3.0 não possui o endpoint REST `/message/downloadMedia/{instance}`. A função `downloadEvolutionMedia()` (que fazia POST para este endpoint) sempre recebia 404, retornava `null`, e o upload nunca acontecia.
+
+### Soluções aplicadas
+
+#### 1. `webhookBase64: true` habilitado na instância Hevelyn
+A Evolution API v2.3.0 permite incluir a mídia como base64 diretamente no payload do webhook quando `webhookBase64: true` está configurado. Descoberto que:
+- O campo na API REST chama-se `base64` (não `webhookBase64`)
+- Está aninhado em `webhook.base64` no body da requisição
+- A API mapeia `webhook.base64` → `webhookBase64` no banco
+
+Endpoint usado: `POST /webhook/set/Hevelyn`
+```json
+{
+  "webhook": {
+    "url": "http://nolevel-app-dev:3000/api/webhook25",
+    "enabled": true,
+    "events": ["MESSAGES_UPSERT"],
+    "byEvents": false,
+    "base64": true
+  }
+}
+```
+
+#### 2. `downloadEvolutionMedia()` atualizada em `src/lib/usedata.ts`
+- Adicionado parâmetro opcional `base64Override?: string`
+- Se fornecido, decodifica o base64 diretamente (sem chamar Evolution API)
+- Mantém fallback para a chamada REST (retrocompatibilidade)
+
+#### 3. Webhook25 passa `data.message.base64` em `src/app/api/webhook25/route.ts`
+- Ao chamar `downloadEvolutionMedia()`, passa `data.message?.base64` como terceiro argumento
+- Se o webhook incluir base64 (habilitado), o buffer é obtido sem chamada REST
+
+### Arquivos modificados
+| Arquivo | Mudança |
+|---------|---------|
+| `src/lib/usedata.ts` | `downloadEvolutionMedia()` aceita `base64Override` |
+| `src/app/api/webhook25/route.ts` | Passa `data.message?.base64` para `downloadEvolutionMedia()` |
+
+### Build
+- `npm run build` — compilado com sucesso ✅

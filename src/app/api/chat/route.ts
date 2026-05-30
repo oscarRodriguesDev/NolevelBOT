@@ -4,6 +4,8 @@ import { getSetores } from "@/lib/setores"
 import { botIA } from "@/lib/useIA"
 import { validarCpf, StatusChamado, enviarChamado, buscarAvisos, generateRandomTicket } from "@/lib/usedata"
 
+const BOT_NAME = process.env.BOT_NAME || "Hevelyn"
+
 const menuString = "1. Abrir Chamado, 2. Consultar Chamado"
 
 const statusLabels: Record<string, string> = {
@@ -61,7 +63,8 @@ export async function POST(req: NextRequest) {
           session,
           userInput,
           "O usuário acabou de chegar. Dê as boas-vindas e peça OBRIGATORIAMENTE o CPF para começar o atendimento.",
-          avisos
+          avisos,
+          BOT_NAME
         )
         session.state = "identificacao_cpf"
         return NextResponse.json({ reply: resp })
@@ -84,7 +87,7 @@ export async function POST(req: NextRequest) {
             ? `CPF ${cleanCPF} validado. O nome dele é ${session.nome}. Saude-o e apresente as opções: ${menuString}`
             : `CPF ${cleanCPF} encontrado. Pergunte como o usuário gostaria de ser chamado.`
 
-          const resposta = await botIA(session, userInput, instrucao, avisos)
+          const resposta = await botIA(session, userInput, instrucao, avisos, BOT_NAME)
           session.state = session.nome ? "menu_principal" : "identificacao_nome"
           return NextResponse.json({ reply: resposta })
         } else {
@@ -98,7 +101,8 @@ export async function POST(req: NextRequest) {
           session,
           userInput,
           `Agora que já sabe o nome (${userInput}), apresente o menu: ${menuString}`,
-          avisos
+          avisos,
+          BOT_NAME
         )
         session.state = "menu_principal"
         return NextResponse.json({ reply: resposta })
@@ -143,7 +147,8 @@ export async function POST(req: NextRequest) {
           session,
           userInput,
           `Tente identificar o que ele quer, caso não consiga encerre amigavelmente. Não faça suposições, apenas encerre o atendimento.`,
-          avisos
+          avisos,
+          BOT_NAME
         )
         return NextResponse.json({ reply: resposta })
       }
@@ -177,7 +182,8 @@ export async function POST(req: NextRequest) {
           session,
           userInput,
           "INSTRUÇÃO: Verifique se o problema relatado bate com os 'Avisos' do sistema. Se bater, explique o aviso e pergunte se quer abrir o chamado mesmo assim. Se NÃO bater, responda apenas: PROSSEGUIR_FLUXO.",
-          avisos
+          avisos,
+          BOT_NAME
         )
 
         if (analiseIA.includes("PROSSEGUIR_FLUXO")) {

@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
 
     switch (session.state) {
       case FlowState.INICIO: {
-        const saudacao = `Olá! Eu sou a Hevelyn, sua assistente virtual. 😊\n\nPara começar, me informe seu CPF (só os números) que eu te ajudo.`;
+        const saudacao = `Olá! Eu sou a ${instance}, sua assistente virtual. 😊\n\nPara começar, me informe seu CPF (só os números) que eu te ajudo.`;
         await sendEvolutionText(instance, number, saudacao);
         session.state = FlowState.IDENTIFICACAO_CPF;
         break;
@@ -150,7 +150,8 @@ export async function POST(req: NextRequest) {
             session,
             userInput,
             `Tente entender o que ele quer. Se não conseguir, encerre de forma educada dizendo que não entendeu e ofereça o menu: ${menuString}.`,
-            avisos
+            avisos,
+            instance
           );
           await sendEvolutionText(instance, number, resposta);
         }
@@ -186,7 +187,8 @@ export async function POST(req: NextRequest) {
           session,
           userInput,
           `Veja se o problema do usuário tem relação com algum Aviso abaixo. Se tiver, responda com base no aviso e pergunte se resolveu. Se não tiver, responda apenas: PROSSEGUIR_FLUXO`,
-          avisos
+          avisos,
+          instance
         );
 
         if (analiseIA.includes("PROSSEGUIR_FLUXO")) {

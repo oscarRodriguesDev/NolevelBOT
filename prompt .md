@@ -74,3 +74,12 @@ npm run build
 tudo certo? derrube o container da e suba novamente usando o docker compose
 
 
+#gerar: networks
+#supabase_network_supabase
+#supabase_default
+#rede_gera
+#docker network create supabase_network_supabase
+#docker network create supabase_default
+#docker network create rede_gera
+#
+#http://nolevel-app-dev:3000/api/webhook25

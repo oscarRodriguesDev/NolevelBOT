@@ -48,6 +48,9 @@ export async function POST(req: NextRequest) {
     const hasImage = !!data.message.imageMessage;
     const hasDocument = !!data.message.documentMessage;
     const hasMedia = hasImage || hasDocument;
+    const hasBase64 = !!data.message?.base64;
+
+    console.error(`[webhook25] msgId=${data.key?.id} instance=${instance} type=${data.messageType} hasImage=${hasImage} hasDocument=${hasDocument} hasBase64=${hasBase64} base64Len=${(data.message?.base64 || "").length}`);
 
     const caption = data.message.imageMessage?.caption || data.message.documentMessage?.caption || "";
     const userInput = (data.message.conversation || data.message.extendedTextMessage?.text || caption || "").trim();
@@ -73,9 +76,47 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
+    async function processMediaAndAdvance(
+      data: any, instance: string, number: string, session: UserSession, hasImage: boolean
+    ) {
+      const mediaMsg = data.message.imageMessage || data.message.documentMessage;
+      const mimeType = mediaMsg.mimetype || "application/octet-stream";
+      const ext = (mimeType.split("/").pop() || "bin").replace(/[^a-z0-9]/g, "");
+      const nomeArquivo = data.message.documentMessage?.fileName || `anexo_${Date.now()}.${ext}`;
+
+      const buffer = await downloadEvolutionMedia(instance, data.key, data.message?.base64, mediaMsg);
+
+      if (buffer) {
+        const url = await uploadBuffer({
+          buffer,
+          fileName: nomeArquivo,
+          mimeType,
+          folder: session.cpf || "unknown",
+        });
+
+        if (url) {
+          session.anexoUrl = url;
+          const tipo = hasImage ? "foto" : "documento";
+          await sendEvolutionText(instance, number, `Recebi seu ${tipo}! ✅ Já vou anexar ao chamado.`);
+        } else {
+          await sendEvolutionText(instance, number, "Ops, tive um problema ao salvar o arquivo. Mas vou seguir com seu chamado mesmo assim.");
+        }
+      } else {
+        await sendEvolutionText(instance, number, "Não consegui baixar o arquivo. Pode tentar enviar de novo? Se preferir, sigo sem ele.");
+      }
+
+      const setores = await getSetores(session.cpf || '');
+      await sendEvolutionText(
+        instance,
+        number,
+        `Pra qual setor devo encaminhar?\n\n📍 *Setores disponíveis:* ${setores.join(", ")}`
+      );
+      session.state = FlowState.COLETAR_SETOR;
+    }
+
     switch (session.state) {
       case FlowState.INICIO: {
-        await sendEvolutionText(instance, number, "Olá! Eu sou a Hevelyn, sua assistente virtual. 😊\n\nPara começar, me informe seu CPF (só os números) que eu te ajudo.");
+        await sendEvolutionText(instance, number, `Olá! Eu sou a ${instance}, sua assistente virtual. 😊\n\nPara começar, me informe seu CPF (só os números) que eu te ajudo.`);
         session.state = FlowState.IDENTIFICACAO_CPF;
         break;
       }
@@ -154,7 +195,8 @@ export async function POST(req: NextRequest) {
             session,
             userInput,
             `Tente entender o que ele quer. Se não conseguir, encerre de forma educada dizendo que não entendeu e ofereça o menu: ${menuString}.`,
-            avisos
+            avisos,
+            instance
           );
           await sendEvolutionText(instance, number, resposta);
         }
@@ -190,7 +232,8 @@ export async function POST(req: NextRequest) {
           session,
           userInput,
           `Veja se o problema do usuário tem relação com algum Aviso abaixo. Se tiver, responda com base no aviso e pergunte se resolveu. Se não tiver, responda apenas: PROSSEGUIR_FLUXO`,
-          avisos
+          avisos,
+          instance
         );
 
         if (analiseIA.includes("PROSSEGUIR_FLUXO")) {
@@ -227,6 +270,10 @@ export async function POST(req: NextRequest) {
       }
 
       case FlowState.PERGUNTAR_ANEXO: {
+        if (hasMedia) {
+          await processMediaAndAdvance(data, instance, number, session, hasImage);
+          break;
+        }
         const intent = detectFileIntent(userInput);
         if (intent === "send_file") {
           await sendEvolutionText(instance, number, "Pode enviar! Manda a foto ou o arquivo aqui mesmo. 📎");
@@ -245,39 +292,7 @@ export async function POST(req: NextRequest) {
 
       case FlowState.COLETAR_MIDIA: {
         if (hasMedia) {
-          const mediaMsg = data.message.imageMessage || data.message.documentMessage;
-          const mimeType = mediaMsg.mimetype || "application/octet-stream";
-          const ext = (mimeType.split("/").pop() || "bin").replace(/[^a-z0-9]/g, "");
-          const nomeArquivo = data.message.documentMessage?.fileName || `anexo_${Date.now()}.${ext}`;
-
-          const buffer = await downloadEvolutionMedia(instance, data.key);
-
-          if (buffer) {
-            const url = await uploadBuffer({
-              buffer,
-              fileName: nomeArquivo,
-              mimeType,
-              folder: session.cpf || "unknown",
-            });
-
-            if (url) {
-              session.anexoUrl = url;
-              const tipo = hasImage ? "foto" : "documento";
-              await sendEvolutionText(instance, number, `Recebi seu ${tipo}! ✅ Já vou anexar ao chamado.`);
-            } else {
-              await sendEvolutionText(instance, number, "Ops, tive um problema ao salvar o arquivo. Mas vou seguir com seu chamado mesmo assim.");
-            }
-          } else {
-            await sendEvolutionText(instance, number, "Não consegui baixar o arquivo. Pode tentar enviar de novo? Se preferir, sigo sem ele.");
-          }
-
-          const setores = await getSetores(session.cpf || '');
-          await sendEvolutionText(
-            instance,
-            number,
-            `Pra qual setor devo encaminhar?\n\n📍 *Setores disponíveis:* ${setores.join(", ")}`
-          );
-          session.state = FlowState.COLETAR_SETOR;
+          await processMediaAndAdvance(data, instance, number, session, hasImage);
         } else if (detectFileIntent(userInput) === "no_file") {
           const setores = await getSetores(session.cpf || '');
           await sendEvolutionText(

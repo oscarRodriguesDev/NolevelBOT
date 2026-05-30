@@ -23,6 +23,7 @@ export type UserSession = {
   cpf?: string;
   resumoHistorico?: string;
   motivoAtual?: string;
+  anexoUrl?: string;
   lastInteraction: number;
 };
 
@@ -37,7 +38,7 @@ export function detectFileIntent(input: string): FileIntent {
     "enviar", "mandar", "subir", "upload", "arquivo", "arquivos",
     "scan", "scanner", "digitalizar", "doc", "docs",
   ];
-  const palavrasNegacao = ["não", "nao", "sem", "nenhum", "precisar", "preciso"];
+  const palavrasNegacao = ["não", "nao", "sem", "nenhum"];
   const palavrasConfirmacao = ["sim", "quero", "ok", "claro", "pode", "mando", "vou enviar", "tenho"];
 
   const hasFileWord = palavrasEnvio.some(p => lower.includes(p));
@@ -73,7 +74,8 @@ export async function botIA2(
   session: UserSession,
   userInput: string,
   instrucaoEtapa: string,
-  avisos: string
+  avisos: string,
+  botName?: string
 ) {
   const statusAtual = session.cpf
     ? await StatusChamado(session.cpf)
@@ -93,7 +95,7 @@ export async function botIA2(
         {
           role: "system",
           content: [
-            `Você é a Hevelyn, atendente da ${empresa}. Seja breve, calorosa e direta. ${saudacao()}`,
+            `Você é ${botName || "Hevelyn"}, atendente da ${empresa}. Seja breve, calorosa e direta. ${saudacao()}`,
             `Contexto: ${session.nome || "anonimo"}, chamados: ${chamadosResumo}`,
             isColetarMotivo ? `Avisos p/ consultar:\n${avisos}\nSe o assunto bater, responda conforme o aviso. Se não, responda só: PROSSEGUIR_FLUXO` : "",
             `Instrução: ${instrucaoEtapa}`,

@@ -1,3 +1,4 @@
+import crypto from "crypto";
 
 const baseUrl = process.env.BASE_URL;
 //buscar os avisos no banco
@@ -165,24 +166,127 @@ export async function enviarChamado(nome: string, cpf: string, setor: string, de
   }
 }
 
-export async function downloadEvolutionMedia(instance: string, key: { id: string; remoteJid: string; fromMe: boolean }): Promise<Buffer | null> {
-  try {
-    const res = await fetch(`${process.env.EVOLUTION_API_URL}/message/downloadMedia/${instance}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: process.env.EVOLUTION_API_KEY!,
-      },
-      body: JSON.stringify({ key }),
-    });
+const MEDIA_HKDF_MAP: Record<string, string> = {
+  image: "Image", document: "Document", video: "Video",
+  audio: "Audio", sticker: "Image", gif: "Video",
+};
 
+function toBuffer(val: any): Buffer | undefined {
+  if (!val) return undefined;
+  if (val instanceof Buffer) return val;
+  if (val instanceof Uint8Array) return Buffer.from(val);
+  if (typeof val === "string") return Buffer.from(val, "base64");
+  if (Array.isArray(val)) return Buffer.from(val);
+  if (val.type === "Buffer" && Array.isArray(val.data)) return Buffer.from(val.data);
+  return undefined;
+}
+
+export async function downloadWhatsAppMedia(mediaMessage: any): Promise<Buffer | null> {
+  try {
+    const { url, directPath, mediaKey: rawKey, mimetype } = mediaMessage || {};
+    if (!url && !directPath) { console.error("[WAMedia] No url/directPath"); return null; }
+    const mediaKey = toBuffer(rawKey);
+    if (!mediaKey) { console.error("[WAMedia] No mediaKey"); return null; }
+
+    const type = mimetype?.startsWith("image") ? "image"
+      : mimetype?.startsWith("video") ? "video"
+      : mimetype?.startsWith("audio") ? "audio"
+      : "document";
+    const info = `WhatsApp ${MEDIA_HKDF_MAP[type] || "Document"} Keys`;
+
+    const expanded = Buffer.from(crypto.hkdfSync("sha256", mediaKey, Buffer.alloc(0), info, 112));
+    const iv = expanded.subarray(0, 16);
+    const cipherKey = expanded.subarray(16, 48);
+
+    const downloadUrl = url || (directPath
+      ? `https://mmg.whatsapp.net${directPath.startsWith("/") ? "" : "/"}${directPath}`
+      : null);
+    if (!downloadUrl) { console.error("[WAMedia] No download URL"); return null; }
+
+    console.error(`[WAMedia] Baixando ${downloadUrl}`);
+    const res = await fetch(downloadUrl, { headers: { Origin: "https://web.whatsapp.com" } });
     if (!res.ok) {
-      console.error("Erro ao baixar mídia da Evolution:", res.status, res.statusText);
+      const text = await res.text().catch(() => "");
+      console.error(`[WAMedia] HTTP ${res.status}, body=${text.substring(0, 200)}`);
       return null;
     }
 
-    const arrayBuffer = await res.arrayBuffer();
-    return Buffer.from(arrayBuffer);
+    const encrypted = Buffer.from(await res.arrayBuffer());
+    console.error(`[WAMedia] Baixado ${encrypted.length} bytes, content-type=${res.headers.get("content-type")}`);
+
+    if (encrypted.length === 0 || encrypted.length % 16 !== 0) {
+      console.error(`[WAMedia] Tamanho inválido: ${encrypted.length} (precisa ser múltiplo de 16)`);
+      return null;
+    }
+
+    const decipher = crypto.createDecipheriv("aes-256-cbc", cipherKey, iv);
+    const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
+    const plaintext = decrypted.subarray(0, decrypted.length - 32);
+    console.error(`[WAMedia] OK, ${plaintext.length} bytes`);
+    return Buffer.from(plaintext);
+  } catch (err: any) {
+    console.error(`[WAMedia] Error: ${err.message}`);
+    return null;
+  }
+}
+
+export async function downloadEvolutionMedia(
+  instance: string,
+  key: { id: string; remoteJid: string; fromMe: boolean },
+  base64Override?: string,
+  mediaMessage?: any
+): Promise<Buffer | null> {
+  const msgId = key?.id || "unknown";
+  console.error(`[downloadMedia] msgId=${msgId} hasBase64=${!!base64Override} hasMediaMsg=${!!mediaMessage}`);
+
+  try {
+    if (base64Override) {
+      const buf = Buffer.from(base64Override, "base64");
+      console.error(`[downloadMedia] base64 OK, ${buf.length} bytes`);
+      return buf;
+    }
+
+    if (mediaMessage?.url || mediaMessage?.directPath) {
+      const buf = await downloadWhatsAppMedia(mediaMessage);
+      if (buf) return buf;
+    }
+
+    console.error(`[downloadMedia] REST Evolution...`);
+
+    const headers = { "Content-Type": "application/json", apikey: process.env.EVOLUTION_API_KEY! };
+    const baseUrl = process.env.EVOLUTION_API_URL || "http://evolution-api:8080";
+
+    // V1: /chat/downloadMediaMessage/{instance}
+    const body = {
+      key,
+      message: { imageMessage: mediaMessage },
+      contextInfo: undefined,
+    };
+    const res = await fetch(`${baseUrl}/chat/downloadMediaMessage/${instance}`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    });
+    if (res.ok) return Buffer.from(await res.arrayBuffer());
+
+    console.error(`[downloadMedia] REST downloadMediaMessage falhou (${res.status}), tentando getBase64...`);
+
+    // V2: /chat/getBase64FromMediaMessage/{instance}
+    const res2 = await fetch(`${baseUrl}/chat/getBase64FromMediaMessage/${instance}`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ message: { key } }),
+    });
+    if (res2.ok) {
+      const data = await res2.json() as any;
+      const b64 = data?.base64 || data?.media || (typeof data === "string" ? data : null);
+      if (b64) return Buffer.from(b64, "base64");
+      console.error(`[downloadMedia] getBase64 sem base64 no response`);
+      return null;
+    }
+
+    console.error(`[downloadMedia] REST getBase64 falhou (${res2.status})`);
+    return null;
   } catch (error) {
     console.error("Erro ao baixar mídia:", error);
     return null;

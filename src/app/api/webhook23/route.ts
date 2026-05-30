@@ -82,7 +82,8 @@ export async function POST(req: NextRequest) {
           session,
           userInput,
           "O usuário acabou de chegar. Dê as boas-vindas e peça OBRIGATORIAMENTE o CPF para começar o atendimento.",
-          avisos
+          avisos,
+          instance
         );
         await sendEvolutionText(instance, number, resposta);
         session.state = FlowState.IDENTIFICACAO_CPF;
@@ -111,7 +112,7 @@ export async function POST(req: NextRequest) {
             ? `CPF ${cleanCPF} validado. O nome dele é ${session.nome}. Saude-o e apresente as opções: ${menuString}`
             : `CPF ${cleanCPF} encontrado. Pergunte como o usuário gostaria de ser chamado.`;
 
-          const resposta = await botIA(session, userInput, instrucao, avisos);
+          const resposta = await botIA(session, userInput, instrucao, avisos, instance);
           await sendEvolutionText(instance, number, resposta);
 
           session.state = session.nome ? FlowState.MENU_PRINCIPAL : FlowState.IDENTIFICACAO_NOME;
@@ -127,7 +128,8 @@ export async function POST(req: NextRequest) {
           session,
           userInput,
           `Agora que já sabe o nome (${userInput}), apresente o menu: ${menuString}`,
-          avisos
+          avisos,
+          instance
         );
         await sendEvolutionText(instance, number, resposta);
         session.state = FlowState.MENU_PRINCIPAL;
@@ -172,7 +174,8 @@ export async function POST(req: NextRequest) {
             userInput,
             `Tente identificar o que ele quer, caso não consiga encerre 
             amigavelmente.Não faça suposições, apenas encerre o atendimento.`,
-            avisos
+            avisos,
+            instance
           );
           await sendEvolutionText(instance, number, resposta);
         }
@@ -199,7 +202,8 @@ export async function POST(req: NextRequest) {
           session,
           userInput,
           "INSTRUÇÃO: Verifique se o problema relatado bate com os 'Avisos' do sistema. Se bater, explique o aviso e pergunte se quer abrir o chamado mesmo assim. Se NÃO bater, responda apenas: PROSSEGUIR_FLUXO.",
-          avisos
+          avisos,
+          instance
         );
 
         if (analiseIA.includes("PROSSEGUIR_FLUXO")) {

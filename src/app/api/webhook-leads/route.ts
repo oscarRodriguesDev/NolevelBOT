@@ -23,13 +23,13 @@ type UserSession = {
 const sessions = new Map<string, UserSession>()
 const ESTANDE_NOME = 'NoLevel na ESX 2026'
 
-async function gerarRespostaInteligente(pergunta: string, nome: string, baseDeConhecimento: string, historico?: string): Promise<string> {
+async function gerarRespostaInteligente(pergunta: string, nome: string, baseDeConhecimento: string, historico?: string, botName?: string): Promise<string> {
   const response = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [
       {
         role: "system",
-        content: `Você é a Hevelyn, a assistente virtual super carismática, empática e humana da NoLevel. Você está atendendo no estande da ESX 2026.
+        content: `Você é ${botName || "Hevelyn"}, a assistente virtual super carismática, empática e humana da NoLevel. Você está atendendo no estande da ESX 2026.
 
 Aqui estão as informações e regras do produto que você domina:
 ---
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
       }
       await sendEvolutionText(
         instance, number,
-        `${saudacao()}! Foi um prazer falar com você, ${session.nome || "visitante"}. Se quiser saber mais sobre a NoLevel, é só chamar ou passar aqui no estande! 😊`
+        `${saudacao()}! Foi um prazer falar com você, ${session.nome || "visitante"}. Se quiser saber mais sobre as soluções, é só chamar ou passar aqui no estande! 😊`
       )
       sessions.delete(number)
       return NextResponse.json({ ok: true })
@@ -143,7 +143,7 @@ export async function POST(req: NextRequest) {
 
       await sendEvolutionText(
         instance, number,
-        `${saudacao()}, ${lead.nome}! ${cumprimentoMemoria} 👋 Sou a Hevelyn, assistente virtual da NoLevel. Posso tirar suas dúvidas sobre nosso produto, funcionalidades, planos ou integrações. O que você gostaria de saber hoje?`
+        `${saudacao()}, ${lead.nome}! ${cumprimentoMemoria} 👋 Sou a ${instance}, assistente virtual da NoLevel. Posso tirar suas dúvidas sobre nosso produto, funcionalidades, planos ou integrações. O que você gostaria de saber hoje?`
       )
 
       session.state = FlowState.CONVERSANDO
@@ -155,7 +155,7 @@ export async function POST(req: NextRequest) {
     if (saudacoes.has(lowerInput)) {
       await sendEvolutionText(
         instance, number,
-        `${saudacao()}, ${session.nome}! Como posso te ajudar com as soluções da NoLevel hoje?`
+        `${saudacao()}, ${session.nome}! Como posso te ajudar com as soluções hoje?`
       )
       sessions.set(number, session)
       return NextResponse.json({ ok: true })
@@ -168,7 +168,8 @@ export async function POST(req: NextRequest) {
         userInput, 
         session.nome || "Visitante", 
         baseDeConhecimento, 
-        session.ultimoResumo
+        session.ultimoResumo,
+        instance
     )
     
     // 3. Salva na memória e envia

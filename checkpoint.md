@@ -470,21 +470,22 @@ No `DELETE` de `api/users/route.ts`:
 
 ---
 
-## Sessão: 30/05/2026 — Fix Upload: Criação automática do bucket "anexo" + Tratamento de erros
+### Build
+- `npm run build` — compilado com sucesso ✅
+
+---
+
+## Sessão: 30/05/2026 — Fix Webhook25: Download de mídia via webhookBase64
 
 ### Problema
-Uploads para bucket `anexo` falhavam silenciosamente. Bucket `profile` funcionava (já existia), mas `anexo` nunca foi criado no Supabase.
+Fotos enviadas via WhatsApp (webhook25) não chegavam ao Supabase Storage porque `downloadEvolutionMedia()` chamava o endpoint inexistente `/message/downloadMedia/{instance}` na Evolution API v2.3.0 (sempre 404).
 
-### Mudanças em `src/lib/upload.ts`
-1. **`ensureBucket(bucket)`** — tenta criar bucket como público antes de todo upload, ignora "already exists"
-2. **`contentType` explícito** — `uploadFile()` agora passa `contentType: file.type`
-3. **Log melhorado** — erros do Supabase são exibidos no console
+### Solução
+1. **Habilitado `webhookBase64: true`** na instância Hevelyn via `POST /webhook/set/Hevelyn` com `{ webhook: { ..., base64: true } }` (o campo chama-se `base64` na API REST, mapeado para `webhookBase64` no banco)
+2. **`downloadEvolutionMedia()` modificado** em `src/lib/usedata.ts` — aceita `base64Override?: string` para decodificar base64 diretamente
+3. **Webhook25 atualizado** em `src/app/api/webhook25/route.ts` — passa `data.message?.base64` como terceiro argumento
 
 ### Commits realizados nesta sessão:
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
-| 1 | `6699e80` | `fix: upload para bucket anexo - cria bucket automaticamente no Supabase e adiciona contentType explicito` | 30/05/2026 |
-| 2 | `87675d4` | `fix: upload nao quebra chamado, erro 400 detalhado, uploadFile retorna fallback` | 30/05/2026 |
-
-### Build
-- `npm run build` — compilado com sucesso ✅
+| 1 | `pending` | `fix: webhook25 download de midia via webhookBase64 ao inves de endpoint REST inexistente` | 30/05/2026 |
