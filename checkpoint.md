@@ -572,4 +572,25 @@ Criação de uma suíte completa de 135 testes unitários e de segurança, com p
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
 | 1 | `0d7fc2e` | `feat: central de testes automatizados com 135 testes e pagina interativa /testes` | 30/05/2026 |
-| 2 | `pending` | `feat: teste de acessos por papel com autenticacao e matriz de permissoes` | 30/05/2026 |
+| 2 | `d1d43ff` | `feat: teste de acessos por papel com autenticacao e matriz de permissoes` | 30/05/2026 |
+
+---
+
+## Sessão: 30/05/2026 — Proteção de Branch `testes` + Git Hooks
+
+### Pendentes antes do commit:
+- ~~`src/middleware.ts` — Middleware que bloqueia rotas de teste fora da branch testes~~ ✅
+- ~~`.env.example` — Adicionado `ENABLE_TESTES` documentado~~ ✅
+- ~~`.githooks/pre-merge-commit` — Bloqueia merge de testes em outras branches~~ ✅
+- ~~`.githooks/pre-push` — Bloqueia push de testes para refs que não sejam testes~~ ✅
+- ~~`.githooks/README.md` — Instruções de ativação~~ ✅
+- ~~`memorias.md` — Seções 46 e 47~~ ✅
+
+### Resumo
+1. **Middleware `src/middleware.ts`**: Rotas `/testes` e `/api/testes` retornam 404 a menos que `ENABLE_TESTES=true`
+2. **Git hooks**: `pre-merge-commit` bloqueia merge de `testes` em outras branches; `pre-push` bloqueia push de `testes` para refs não-`testes`
+3. **`.env.example`**: Documentado `ENABLE_TESTES` (comentado por padrão)
+4. **`.env`**: `ENABLE_TESTES=true` ativado no dev local
+
+### Build
+- Pendente (aguardando `npm run build` antes do commit)

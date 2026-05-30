@@ -1652,3 +1652,83 @@ Evolution API envia webhook com { instance: "Hevelyn", ... }
 
 ### Build
 - `npm run build` — compilado com sucesso ✅
+
+---
+
+## 46. Proteção de Branch `testes` — Proxy (Next.js 16) + Env Var
+
+### Objetivo
+Bloquear acesso às rotas `/testes` e `/api/testes` em qualquer branch que não seja `testes`, sem modificar o código das próprias rotas.
+
+### Contexto
+Next.js 16 usa `src/proxy.ts` (não `middleware.ts`). O proxy já existia para controle de autenticação (redirecionar não-logados para `/login`, etc.). A lógica de bloqueio das rotas de teste foi adicionada no início do proxy existente.
+
+### Solução
+Adicionado no topo de `src/proxy.ts`:
+
+```typescript
+if (process.env.ENABLE_TESTES !== 'true') {
+  if (
+    pathname === '/testes' ||
+    pathname.startsWith('/testes/') ||
+    pathname === '/api/testes' ||
+    pathname.startsWith('/api/testes/')
+  ) {
+    return new NextResponse(null, { status: 404 })
+  }
+}
+```
+
+### Matcher atualizado
+Adicionado ao `config.matcher`:
+```typescript
+"/testes/:path*",
+"/api/testes/:path*",
+```
+
+### Funcionamento
+- Se `ENABLE_TESTES=true` → proxy ignora as rotas de teste, que funcionam normalmente
+- Se `ENABLE_TESTES` não está definido ou não é `true` → retorna **404 Not Found** (não revela que a rota existe)
+- O matcher faz o proxy ser invocado apenas nas rotas necessárias, sem overhead nas demais
+
+### Como usar
+- **Local (dev)**: Adicionar `ENABLE_TESTES=true` no `.env`
+- **Deploy `testes`**: Passar `ENABLE_TESTES=true` no ambiente do container (docker-compose, `-e`, etc.)
+- **Deploy `main`/`dev`/`homologa`**: Não definir o env var → rotas de teste ficam 404
+
+### Arquivos
+| Arquivo | Ação |
+|---------|------|
+| `src/proxy.ts` | Modificado — adicionado bloqueio de rotas de teste + matcher |
+| `src/middleware.ts` | Removido (Next.js 16 usa proxy.ts) |
+| `.env.example` | Atualizado com `ENABLE_TESTES` comentado |
+| `.env` | Atualizado com `ENABLE_TESTES=true` (apenas dev local) |
+
+---
+
+## 47. Git Hooks — Sink-Only Branch `testes`
+
+### Fluxo estabelecido
+- **`testes` pode fazer pull de qualquer branch** (`git pull origin dev`, `git pull origin main`, etc.)
+- **Nenhuma branch pode fazer pull de `testes`** (merge bloqueado)
+- **Push da `testes`** só é permitido para `origin/testes`
+
+### Hooks criados
+
+#### `.githooks/pre-merge-commit`
+Executado antes de um merge commit ser criado. Se a branch atual não é `testes` e o merge source contém `testes`, o hook aborta com erro.
+
+#### `.githooks/pre-push`
+Executado antes de um push. Se a branch atual é `testes` e o remote ref não é `refs/heads/testes`, o hook aborta.
+
+### Ativação
+```bash
+git config core.hooksPath .githooks
+```
+
+### Arquivos
+| Arquivo | Descrição |
+|---------|-----------|
+| `.githooks/pre-merge-commit` | Bloqueia merge de `testes` em outras branches |
+| `.githooks/pre-push` | Bloqueia push de `testes` para refs que não sejam `testes` |
+| `.githooks/README.md` | Instruções de ativação |

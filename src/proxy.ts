@@ -3,9 +3,21 @@ import type { NextRequest } from "next/server"
 import { getToken } from "next-auth/jwt"
 
 export async function proxy(req: NextRequest) {
-  const token = await getToken({ req })
-
   const { pathname } = req.nextUrl
+
+  // Bloqueio de rotas de teste fora da branch testes
+  if (process.env.ENABLE_TESTES !== 'true') {
+    if (
+      pathname === '/testes' ||
+      pathname.startsWith('/testes/') ||
+      pathname === '/api/testes' ||
+      pathname.startsWith('/api/testes/')
+    ) {
+      return new NextResponse(null, { status: 404 })
+    }
+  }
+
+  const token = await getToken({ req })
 
   const protectedRoutes = [
     "/dashboards",
@@ -48,5 +60,7 @@ export const config = {
     "/avisos/:path*",
     "/cpfs/:path*",
     "/admin/:path*",
+    "/testes/:path*",
+    "/api/testes/:path*",
   ],
 }
