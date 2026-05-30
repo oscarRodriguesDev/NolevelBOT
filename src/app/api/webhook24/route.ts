@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { botIA } from "@/lib/useIA";
+import { botIA, FlowState } from "@/lib/useIA";
+import type { UserSession } from "@/lib/useIA";
 import {
   validarCpf,
   StatusChamado,
@@ -9,21 +10,7 @@ import {
   buscarAvisos
 } from "@/lib/usedata";
 import { registerPhone } from "@/lib/phoneMap";
-import { Chamado } from "@prisma/client";
 import { getSetores } from "@/lib/setores";
-
-
-
-const FlowState = {
-  INICIO: "inicio",
-  IDENTIFICACAO_CPF: "identificacao_cpf",
-  IDENTIFICACAO_NOME: "identificacao_nome",
-  MENU_PRINCIPAL: "menu_principal",
-  COLETAR_MOTIVO: "coletar_motivo",
-  VERIFICAR_AVISOS: "verificar_aviso",
-  ESCOLHER_ABERTURA: "escolher_abertura",
-  COLETAR_SETOR: "coletar_setor"
-} as const;
 
 const menuString = "1. Abrir Chamado, 2. Consultar Chamado";
 
@@ -39,21 +26,14 @@ const statusLabels: Record<string, string> = {
   FECHADO: "🔒 Fechado",
 };
 const sessions = new Map<string, UserSession>();
-type FlowStateValues = typeof FlowState[keyof typeof FlowState];
-type UserSession = {
-  state: FlowStateValues;
-  nome?: string;
-  cpf?: string;
-  resumoHistorico?: string;
-  motivoAtual?: string;
-  lastInteraction: number;
-};
 
+const palavrasDocumento = ["foto", "comprovante", "documento", "anexo", "pdf", "imagem", "print", "scan", "scanner", "digitalizar", "arquivo", "upload", "atestado", "laudo", "receita"];
 
+function temPalavraDocumento(texto: string): boolean {
+  const t = texto.toLowerCase();
+  return palavrasDocumento.some(p => t.includes(p));
+}
 
-
-
-// --- WEBHOOK POST ---
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -82,20 +62,15 @@ export async function POST(req: NextRequest) {
     }
 
     if (["sair", "encerrar", "cancelar"].includes(lowerInput)) {
-      await sendEvolutionText(instance, number, "Atendimento encerrado. Se precisar de novo, é só chamar!");
+      await sendEvolutionText(instance, number, "Tudo bem, atendimento encerrado. Quando precisar é só me chamar de volta!");
       sessions.delete(number);
       return NextResponse.json({ ok: true });
     }
 
     switch (session.state) {
       case FlowState.INICIO: {
-        const resposta = await botIA(
-          session,
-          userInput,
-          "O usuário acabou de chegar. Dê as boas-vindas e peça OBRIGATORIAMENTE o CPF para começar o atendimento.",
-          avisos
-        );
-        await sendEvolutionText(instance, number, resposta);
+        const saudacao = `Olá! Eu sou a Hevelyn, sua assistente virtual. 😊\n\nPara começar, me informe seu CPF (só os números) que eu te ajudo.`;
+        await sendEvolutionText(instance, number, saudacao);
         session.state = FlowState.IDENTIFICACAO_CPF;
         break;
       }
@@ -104,7 +79,7 @@ export async function POST(req: NextRequest) {
         const cleanCPF = userInput.replace(/\D/g, "");
 
         if (cleanCPF.length !== 11) {
-          await sendEvolutionText(instance, number, "Por favor, informe um CPF válido (apenas os 11 números).");
+          await sendEvolutionText(instance, number, "Hum, esse CPF não parece completo… Pode digitar só os 11 números?");
           return NextResponse.json({ ok: true });
         }
 
@@ -118,36 +93,29 @@ export async function POST(req: NextRequest) {
 
           avisos = await buscarAvisos(cleanCPF, req);
 
-          const instrucao = session.nome
-            ? `CPF ${cleanCPF} validado. O nome dele é ${session.nome}. Saude-o e apresente as opções: ${menuString}`
-            : `CPF ${cleanCPF} encontrado. Pergunte como o usuário gostaria de ser chamado.`;
-
-          const resposta = await botIA(session, userInput, instrucao, avisos);
-          await sendEvolutionText(instance, number, resposta);
-
-          session.state = session.nome ? FlowState.MENU_PRINCIPAL : FlowState.IDENTIFICACAO_NOME;
+          if (session.nome) {
+            await sendEvolutionText(instance, number, `${session.nome}, que bom te ver por aqui! 😄\n\nO que você precisa?\n\n${menuString}`);
+            session.state = FlowState.MENU_PRINCIPAL;
+          } else {
+            await sendEvolutionText(instance, number, "CPF encontrado! Como prefere ser chamado?");
+            session.state = FlowState.IDENTIFICACAO_NOME;
+          }
         } else {
-          await sendEvolutionText(instance, number, "Hum, não consegui validar esse CPF! Por favor, tente novamente.");
+          await sendEvolutionText(instance, number, "Esse CPF não está cadastrado no sistema. Pode verificar e tentar de novo?");
         }
         break;
       }
 
       case FlowState.IDENTIFICACAO_NOME: {
         session.nome = userInput;
-        const resposta = await botIA(
-          session,
-          userInput,
-          `Agora que já sabe o nome (${userInput}), apresente o menu: ${menuString}`,
-          avisos
-        );
-        await sendEvolutionText(instance, number, resposta);
+        await sendEvolutionText(instance, number, `Prazer, ${userInput}! 😊\n\nO que você precisa?\n\n${menuString}`);
         session.state = FlowState.MENU_PRINCIPAL;
         break;
       }
 
       case FlowState.MENU_PRINCIPAL: {
         if (["1", "abrir", "chamado"].some(v => lowerInput.includes(v))) {
-          await sendEvolutionText(instance, number, "Com certeza! Me conta o que está acontecendo? (Pode descrever o problema detalhadamente)");
+          await sendEvolutionText(instance, number, "Claro! Me conta o que está acontecendo? Pode descrever com detalhes que eu anoto tudo.");
           session.state = FlowState.COLETAR_MOTIVO;
         }
         else if (["2", "status", "consultar", "ver"].some(v => lowerInput.includes(v))) {
@@ -155,34 +123,33 @@ export async function POST(req: NextRequest) {
           const lista = chamados.length > 0
             ? chamados.map((t: any) => {
                 const label = statusLabels[t.status] || t.status;
-                const atendente = t.atendente?.name ? `🧑‍💻 *Atendente:* ${t.atendente.name}` : '';
+                const atendente = t.atendente?.name ? `🧑‍💻 Atendente: ${t.atendente.name}` : '';
                 const dataCriacao = new Date(t.createdAt).toLocaleDateString('pt-BR');
-                const descricao = t.descricao ? `📄 *Descrição:* ${t.descricao.substring(0, 100)}${t.descricao.length > 100 ? '...' : ''}` : '';
+                const descricao = t.descricao ? `📄 ${t.descricao.substring(0, 100)}${t.descricao.length > 100 ? '...' : ''}` : '';
                 const ultimoHistorico = t.historico ? (() => {
                   try {
                     const h = JSON.parse(t.historico);
-                    return h.length > 0 ? `📋 *Última ação:* ${statusLabels[h[h.length - 1].acao] || h[h.length - 1].acao}${h[h.length - 1].observacao ? ` — ${h[h.length - 1].observacao}` : ''}` : '';
+                    return h.length > 0 ? `📋 Última ação: ${statusLabels[h[h.length - 1].acao] || h[h.length - 1].acao}${h[h.length - 1].observacao ? ` — ${h[h.length - 1].observacao}` : ''}` : '';
                   } catch { return ''; }
                 })() : '';
 
                 return [
                   `🎫 *${t.ticket}* — ${label}`,
-                  `📅 *Abertura:* ${dataCriacao}`,
-                  `📍 *Setor:* ${t.setor}`,
+                  `📅 Abertura: ${dataCriacao}`,
+                  `📍 Setor: ${t.setor}`,
                   atendente,
                   ultimoHistorico,
                   descricao,
                 ].filter(Boolean).join('\n');
               }).join('\n\n━━━━━━━━━━━━━━━━\n\n')
-            : "Não encontrei chamados abertos no seu CPF.";
+            : "Nenhum chamado aberto encontrado no seu CPF.";
 
-          await sendEvolutionText(instance, number, `📋 *SEUS CHAMADOS*\n\n${lista}\n\nPosso ajudar com algo mais?\n\n${menuString}`);
+          await sendEvolutionText(instance, number, `📋 *SEUS CHAMADOS*\n\n${lista}\n\nMais alguma coisa?\n\n${menuString}`);
         } else {
           const resposta = await botIA(
             session,
             userInput,
-            `Tente identificar o que ele quer, caso não consiga encerre 
-            amigavelmente.Não faça suposições, apenas encerre o atendimento.`,
+            `Tente entender o que ele quer. Se não conseguir, encerre de forma educada dizendo que não entendeu e ofereça o menu: ${menuString}.`,
             avisos
           );
           await sendEvolutionText(instance, number, resposta);
@@ -193,18 +160,12 @@ export async function POST(req: NextRequest) {
       case FlowState.COLETAR_MOTIVO: {
         session.motivoAtual = userInput;
 
-        // Se o motivo envolve envio de documentos, redireciona para o portal
-        const palavrasDocumento = ["foto", "fotos", "comprovante", "comprovantes", "documento", "documentos", "anexo", "anexos", "pdf", "imagem", "imagens", "print",
-           "printar", "scan", "scanner", "digitalizar", "doc", "docs","arquivo", "arquivos", "enviar", "subir", "upload","atestatado", 
-           "atestados", "laudo", "laudos", "receita", "receitas","printscreen", "print screens", "printscreens", "foto do problema", 
-           "fotos do problema", "comprovante do problema", "comprovantes do problema", "documento do problema", "documentos do problema", 
-           "anexo do problema", "anexos do problema"];
-        if (palavrasDocumento.some(p => userInput.toLowerCase().includes(p))) {
+        if (temPalavraDocumento(userInput)) {
           const baseUrl = process.env.BASE_URL || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3001";
           await sendEvolutionText(
             instance,
             number,
-            `Para este tipo de serviço, você precisa abrir um chamado pelo nosso portal para anexar os documentos necessários. Acesse: ${baseUrl}/chamado e preencha o formulário com a descrição do problema e os arquivos.`
+            `Entendi! Como esse caso precisa de documentos ou anexos, vou precisar que você abra um chamado pelo nosso portal pra enviar os arquivos com segurança.\n\nAcesse: ${baseUrl}/chamado\n\nQualquer dúvida é só chamar de volta!`
           );
           session.state = FlowState.MENU_PRINCIPAL;
           break;
@@ -212,13 +173,11 @@ export async function POST(req: NextRequest) {
 
         if (!avisos || avisos.includes("Sem avisos")) {
           const setores = await getSetores(session.cpf || '');
-
           await sendEvolutionText(
             instance,
             number,
-            `Entendido. Para qual setor devo enviar?\n\n📍 *Setores:* ${setores.join(", ")}`
+            `Anotado! Pra qual setor devo encaminhar?\n\n📍 *Setores disponíveis:* ${setores.join(", ")}`
           );
-
           session.state = FlowState.COLETAR_SETOR;
           break;
         }
@@ -226,22 +185,17 @@ export async function POST(req: NextRequest) {
         const analiseIA = await botIA(
           session,
           userInput,
-          `INSTRUÇÃO: Verifique se o problema relatado corresponda com  algum dos 'Avisos' do sistema.
-           Se corresponder ou relacionar, responda o questionamento de acordo com o(s) 'Aviso(s)' especificado(s) e tente finalizar o atendimento, e nesse caso prossiga 
-           apenas se o usuario dar a entender que a resposta não foi satisfatória. 
-           Se não encontrar um 'Aviso' que corresponda, responda apenas com "PROSSEGUIR_FLUXO" para que o atendimento continue normalmente.`,
+          `Veja se o problema do usuário tem relação com algum Aviso abaixo. Se tiver, responda com base no aviso e pergunte se resolveu. Se não tiver, responda apenas: PROSSEGUIR_FLUXO`,
           avisos
         );
 
         if (analiseIA.includes("PROSSEGUIR_FLUXO")) {
           const setores = await getSetores(session.cpf || '');
-
           await sendEvolutionText(
             instance,
             number,
-            `Entendido. Para qual setor devo enviar?\n\n📍 *Setores:* ${setores.join(", ")}`
+            `Entendi. Pra qual setor devo encaminhar?\n\n📍 *Setores:* ${setores.join(", ")}`
           );
-
           session.state = FlowState.COLETAR_SETOR;
         } else {
           await sendEvolutionText(instance, number, analiseIA);
@@ -253,21 +207,18 @@ export async function POST(req: NextRequest) {
       case FlowState.VERIFICAR_AVISOS: {
         if (["1", "sim", "quero", "continuar", "prosseguir"].some(v => lowerInput.includes(v))) {
           const setores = await getSetores(session.cpf || '');
-
           await sendEvolutionText(
             instance,
             number,
-            `Perfeito, vou dar seguimento. Para qual setor deseja enviar?\n\n📍 *Setores:* ${setores.join(", ")}`
+            `Beleza! Pra qual setor devo encaminhar?\n\n📍 *Setores:* ${setores.join(", ")}`
           );
-
           session.state = FlowState.COLETAR_SETOR;
         } else {
           await sendEvolutionText(
             instance,
             number,
-            "Sem problemas! Se precisar de outra coisa, é só escolher uma opção do menu.\n\n" + menuString
+            `Sem problema! Se precisar de mais algo é só me falar.\n\n${menuString}`
           );
-
           session.state = FlowState.MENU_PRINCIPAL;
         }
         break;
@@ -290,13 +241,13 @@ export async function POST(req: NextRequest) {
           );
 
           if (ok) {
-            await sendEvolutionText(instance, number, `✅ Tudo pronto! Seu chamado para *${setor}* foi registrado.`);
+            await sendEvolutionText(instance, number, `✅ Prontinho! Seu chamado pra *${setor}* foi registrado com sucesso.`);
           } else {
             const ticketErr = generateRandomTicket();
             await sendEvolutionText(
               instance,
               number,
-              `O sistema de registro automático oscilou, mas seu protocolo é *${ticketErr}*. Nossa equipe já está ciente.`
+              `O sistema deu uma oscilada, mas não se preocupe! Seu protocolo é *${ticketErr}*. Nossa equipe já foi avisada.`
             );
           }
 
@@ -305,14 +256,14 @@ export async function POST(req: NextRequest) {
           await sendEvolutionText(
             instance,
             number,
-            "Deseja tratar de mais algum assunto?\n\n" + menuString
+            `Quer resolver mais alguma coisa?\n\n${menuString}`
           );
 
         } else {
           await sendEvolutionText(
             instance,
             number,
-            `Não reconheci esse setor. Por favor, escolha um destes: ${setores.join(", ")}`
+            `Não encontrei esse setor. Os disponíveis são: ${setores.join(", ")}. Qual deles atende seu caso?`
           );
         }
 

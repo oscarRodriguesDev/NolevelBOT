@@ -511,3 +511,19 @@ Chatbot-app e webhook24: quando usuário solicitar serviço que precise de docum
 
 ### Build
 - `npm run build` — compilado com sucesso ✅
+
+---
+
+## Sessão: 29/05/2026 — Otimização de Tokens e Naturalidade (useIA + webhook24)
+
+### Mudanças
+- `src/lib/useIA.ts` — Prompt comprimido (~60% menos tokens), temperature 0.7, max_tokens 120, exporta FlowState/UserSession
+- `src/app/api/webhook24/route.ts` — Remove chamadas IA desnecessárias (saudação, nome), mensagens mais naturais, importa FlowState de useIA
+
+### Commits realizados nesta sessão:
+| # | Hash | Mensagem | Data |
+|---|------|----------|------|
+| 1 | `COMMIT_HASH` | `feat: otimiza useIA e webhook24 - -60% tokens, respostas mais humanas` | 29/05/2026 |
+
+### Build
+- `npm run build` — compilado com sucesso ✅
