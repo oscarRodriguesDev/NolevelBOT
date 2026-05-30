@@ -5,6 +5,24 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+const createdBuckets = new Set<string>()
+
+async function ensureBucket(bucket: string) {
+  if (createdBuckets.has(bucket)) return
+  try {
+    const { error } = await supabase.storage.createBucket(bucket, { public: true })
+    if (error && !error.message?.toLowerCase().includes("already exists") && !error.message?.toLowerCase().includes("duplicate")) {
+      console.warn(`Erro ao criar bucket "${bucket}":`, error.message)
+    }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message.toLowerCase() : ""
+    if (!msg.includes("already exists") && !msg.includes("duplicate")) {
+      console.warn(`Erro ao criar bucket "${bucket}":`, err)
+    }
+  }
+  createdBuckets.add(bucket)
+}
+
 type UploadOptions = {
   bucket: string
   folder?: string
@@ -22,6 +40,8 @@ export async function uploadFile({
 }: UploadOptions): Promise<string | null> {
   if (!file) return defaultUrl
 
+  await ensureBucket(bucket)
+
   const fileExt = file.name.split(".").pop()
   const fileName = `${crypto.randomUUID()}.${fileExt}`
   const filePath = folder ? `${folder}/${fileName}` : fileName
@@ -29,6 +49,7 @@ export async function uploadFile({
   const { error } = await supabase.storage
     .from(bucket)
     .upload(filePath, file, {
+      contentType: file.type || undefined,
       cacheControl: "3600",
       upsert,
     })
@@ -58,6 +79,8 @@ export async function uploadBuffer({
   bucket?: string
   folder?: string
 }): Promise<string | null> {
+  await ensureBucket(bucket)
+
   const filePath = folder ? `${folder}/${fileName}` : fileName
 
   const { error } = await supabase.storage

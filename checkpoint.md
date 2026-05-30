@@ -575,7 +575,29 @@ Chatbot-app e webhook24: quando usuário solicitar serviço que precise de docum
 ### Commits realizados nesta sessão:
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
-| 1 | `(pendente)` | `fix: evolution api webhook hevelyn apontado para webhook25` | 30/05/2026 |
+| 1 | `b239d7d` | `fix: evolution api webhook hevelyn apontado para webhook25` | 30/05/2026 |
+| 2 | `631bc79` | `fix: bucket documents para anexo em upload.ts, tickets routes` | 30/05/2026 |
 
 ### Build
-- N/A (apenas configuração externa, sem alteração de código)
+- `npm run build` — compilado com sucesso ✅
+- Container rebuildado sem cache e reiniciado ✅
+
+---
+
+## Sessão: 30/05/2026 — Fix Upload: Criação automática do bucket "anexo"
+
+### Problema
+Uploads para bucket `anexo` falhavam silenciosamente. Bucket `profile` funcionava (já existia), mas `anexo` nunca foi criado no Supabase.
+
+### Mudanças em `src/lib/upload.ts`
+1. **`ensureBucket(bucket)`** — tenta criar bucket como público antes de todo upload, ignora "already exists"
+2. **`contentType` explícito** — `uploadFile()` agora passa `contentType: file.type`
+3. **Log melhorado** — erros do Supabase são exibidos no console
+
+### Commits realizados nesta sessão:
+| # | Hash | Mensagem | Data |
+|---|------|----------|------|
+| 1 | | `fix: upload para bucket anexo - cria bucket automaticamente no Supabase e adiciona contentType explicito` | 30/05/2026 |
+
+### Build
+- `npm run build` — compilado com sucesso ✅

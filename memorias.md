@@ -1529,18 +1529,40 @@ O bucket correto no Supabase para anexos de chamados é **`anexo`** (público), 
 
 Buckets de avatar (`profile`) permanecem corretos.
 
-### Buckets disponíveis no Supabase
-| Bucket | Público | Uso |
-|--------|---------|-----|
-| `profile` | ✅ | Avatares de usuário |
-| `anexo` | ✅ | Anexos de chamados (webhook25, portal web) |
-| `documents` | ✅ | Antigo (não usado mais) |
-| `document` | ✅ | Não utilizado |
-| `file` | ❌ | Não utilizado |
-| `documento` | ❌ | Não utilizado |
+### Build
+- ✅ Compilado com sucesso
+
+---
+
+## 39. FIX UPLOAD — CRIAÇÃO AUTOMÁTICA DO BUCKET E MELHORIAS (30/05/2026)
+
+### Problema
+Uploads para o bucket `anexo` falhavam silenciosamente. O bucket `profile` funcionava porque já existia no Supabase, mas o bucket `anexo` nunca foi criado na instância — o Supabase não cria buckets automaticamente.
+
+### Causa raiz
+O bucket `anexo` não existia no Supabase Storage (`http://177.153.33.179:8000`). Tentativas de upload para bucket inexistente retornavam erro, mas:
+- `uploadFile()` lançava exceção → quebrava o fluxo com 500
+- `uploadBuffer()` retornava `null` → webhook25 exibia "Ops, tive um problema" sem informar o motivo real
+
+### Mudanças em `src/lib/upload.ts`
+
+#### 1. Criação automática do bucket (`ensureBucket`)
+- Função `ensureBucket(bucket)` chamada antes de todo upload
+- Tenta criar o bucket como público via `supabase.storage.createBucket()`
+- Ignora erro "already exists" (bucket já criado em chamada anterior)
+- Usa `Set` para evitar múltiplas tentativas de criação no mesmo processo
+
+#### 2. `contentType` explícito no `uploadFile`
+- Adicionado `contentType: file.type || undefined` no upload
+- Garante compatibilidade com Supabase auto-hospedado que pode falhar na detecção automática de MIME
+
+#### 3. Log de erro melhorado no `uploadBuffer`
+- Agora exibe o erro real do Supabase no console (bucket não existe, permissão negada, etc.)
+
+### Arquivos modificados
+| Arquivo | Mudança |
+|---------|---------|
+| `src/lib/upload.ts` | Adicionado `ensureBucket()`, `contentType` no uploadFile, error logging |
 
 ### Build
-- Pendente
-
-### Próximo passo
-- **Testar**: Enviar mensagem para o número Hevelyn (5527998982410) dizendo "preciso enviar um atestado" e verificar se webhook25 responde sem redirecionar ao portal
+- `npm run build` — compilado com sucesso ✅
