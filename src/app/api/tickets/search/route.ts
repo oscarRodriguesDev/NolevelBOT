@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     const empresaId = cpfRecord.empresaId
 
     const anexoUrl = await uploadFile({
-      bucket: "documents",
+      bucket: "anexo",
       folder: cpf,
       file,
       defaultUrl: "",

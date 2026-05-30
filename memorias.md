@@ -1351,8 +1351,8 @@ Criar uma nova instância do bot WhatsApp (webhook25) capaz de receber fotos e d
 Usuário → WhatsApp → Evolution API → webhook25
   → Detecta mensagem com imagem/documento
   → downloadEvolutionMedia() → Evolution API download
-  → uploadBuffer() → Supabase Storage (bucket "documents")
-  → Anexa URL ao chamado (anexoUrl)
+   → uploadBuffer() → Supabase Storage (bucket "anexo")
+   → Anexa URL ao chamado (anexoUrl)
 ```
 
 ### Fluxo do bot
@@ -1405,7 +1405,7 @@ INICIO → IDENTIFICACAO_CPF → [nome?] → MENU_PRINCIPAL
 - Se fornecido, salva no campo `anexoUrl` do Chamado
 
 ### Supabase Storage
-- Bucket: `documents` (mesmo usado pelo portal web)
+- Bucket: `anexo` (mesmo usado pelo portal web)
 - Path: `{cpf}/{nome_do_arquivo}`
 - Público: URL pública gerada pelo Supabase
 
@@ -1513,6 +1513,34 @@ fetch('http://evolution-api:8080/webhook/set/Hevelyn', {
 |-----------|--------|--------|---------|
 | `testes` | 5527992221643 | connecting | — |
 | `Hevelyn` | 5527998982410 | **open** | `http://nolevel-app-dev:3000/api/webhook25` ✅ |
+
+---
+
+## 38. CORREÇÃO BUCKET — "documents" → "anexo" (30/05/2026)
+
+### Problema
+O bucket correto no Supabase para anexos de chamados é **`anexo`** (público), mas o código utilizava `"documents"` em 3 lugares:
+
+| Arquivo | Linha | Antes | Depois |
+|---------|-------|-------|--------|
+| `src/lib/upload.ts` | 52 | `bucket = "documents"` (default) | `bucket = "anexo"` |
+| `src/app/api/tickets/route.ts` | 83 | `bucket: "documents"` | `bucket: "anexo"` |
+| `src/app/api/tickets/search/route.ts` | 34 | `bucket: "documents"` | `bucket: "anexo"` |
+
+Buckets de avatar (`profile`) permanecem corretos.
+
+### Buckets disponíveis no Supabase
+| Bucket | Público | Uso |
+|--------|---------|-----|
+| `profile` | ✅ | Avatares de usuário |
+| `anexo` | ✅ | Anexos de chamados (webhook25, portal web) |
+| `documents` | ✅ | Antigo (não usado mais) |
+| `document` | ✅ | Não utilizado |
+| `file` | ❌ | Não utilizado |
+| `documento` | ❌ | Não utilizado |
+
+### Build
+- Pendente
 
 ### Próximo passo
 - **Testar**: Enviar mensagem para o número Hevelyn (5527998982410) dizendo "preciso enviar um atestado" e verificar se webhook25 responde sem redirecionar ao portal

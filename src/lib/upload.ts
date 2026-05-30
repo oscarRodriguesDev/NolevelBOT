@@ -49,7 +49,7 @@ export async function uploadBuffer({
   buffer,
   fileName,
   mimeType,
-  bucket = "documents",
+  bucket = "anexo",
   folder = "",
 }: {
   buffer: Buffer
