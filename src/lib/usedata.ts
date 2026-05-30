@@ -137,7 +137,7 @@ export async function StatusChamado(filtro: string, _req?: Request) {
 
 
 //enviar o chamado
-export async function enviarChamado(nome: string, cpf: string, setor: string, descricao: string) {
+export async function enviarChamado(nome: string, cpf: string, setor: string, descricao: string, anexoUrl?: string) {
   try {
     const { prisma } = await import("@/lib/prisma");
 
@@ -155,12 +155,37 @@ export async function enviarChamado(nome: string, cpf: string, setor: string, de
         descricao,
         prioridade: "normal",
         empresaId: cpfRecord.empresaId,
+        ...(anexoUrl && { anexoUrl }),
       },
     });
 
     return true;
   } catch {
     return false;
+  }
+}
+
+export async function downloadEvolutionMedia(instance: string, key: { id: string; remoteJid: string; fromMe: boolean }): Promise<Buffer | null> {
+  try {
+    const res = await fetch(`${process.env.EVOLUTION_API_URL}/message/downloadMedia/${instance}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: process.env.EVOLUTION_API_KEY!,
+      },
+      body: JSON.stringify({ key }),
+    });
+
+    if (!res.ok) {
+      console.error("Erro ao baixar mídia da Evolution:", res.status, res.statusText);
+      return null;
+    }
+
+    const arrayBuffer = await res.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+  } catch (error) {
+    console.error("Erro ao baixar mídia:", error);
+    return null;
   }
 }
 

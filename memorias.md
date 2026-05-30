@@ -1340,7 +1340,89 @@ Usuário → "Preciso enviar um comprovante"
 
 ---
 
-## 34. OTIMIZAÇÃO DE TOKENS E NATURALIDADE — useIA + webhook24 (29/05/2026)
+## 35. WEBHOOK25 — RECEPÇÃO DE FOTOS/DOCUMENTOS VIA WHATSAPP (29/05/2026)
+
+### Objetivo
+Criar uma nova instância do bot WhatsApp (webhook25) capaz de receber fotos e documentos enviados pelo usuário (atestados, comprovantes, laudos, etc.) e anexá-los automaticamente ao chamado aberto.
+
+### Arquitetura
+
+```
+Usuário → WhatsApp → Evolution API → webhook25
+  → Detecta mensagem com imagem/documento
+  → downloadEvolutionMedia() → Evolution API download
+  → uploadBuffer() → Supabase Storage (bucket "documents")
+  → Anexa URL ao chamado (anexoUrl)
+```
+
+### Fluxo do bot
+
+```
+INICIO → IDENTIFICACAO_CPF → [nome?] → MENU_PRINCIPAL
+  → COLETAR_MOTIVO (descreve problema)
+    → PERGUNTAR_ANEXO (bot pergunta se quer enviar arquivo)
+      → "sim" → COLETAR_MIDIA (aguarda o arquivo)
+        → Usuário envia foto/documento
+        → downloadEvolutionMedia() baixa da Evolution API
+        → uploadBuffer() envia ao Supabase Storage
+        → URL salva em session.anexoUrl
+        → COLETAR_SETOR
+      → "não" → COLETAR_SETOR (pula anexo)
+    → COLETAR_SETOR → enviarChamado() com anexoUrl
+```
+
+### Novos componentes
+
+#### `src/lib/usedata.ts` — `downloadEvolutionMedia()`
+- Faz POST para `{EVOLUTION_API_URL}/message/downloadMedia/{instance}` com a key da mensagem
+- Retorna Buffer com o conteúdo binário do arquivo
+- Usa mesma autenticação (apikey) do `sendEvolutionText`
+
+#### `src/lib/upload.ts` — `uploadBuffer()`
+- Aceita Buffer, fileName, mimeType
+- Envia para Supabase Storage no bucket "documents"
+- Retorna URL pública do arquivo
+- Similar ao `uploadFile()` existente, mas para upload server-side (sem File API)
+
+#### `src/lib/useIA.ts` — Novos estados
+- `PERGUNTAR_ANEXO` e `COLETAR_MIDIA` adicionados ao `FlowState`
+
+#### `src/app/api/webhook25/route.ts` (novo)
+- Baseado no webhook24 (importa FlowState de useIA.ts)
+- **PERGUNTAR_ANEXO**: Bot pergunta se quer enviar arquivo anexo
+- **COLETAR_MIDIA**: Aceita imageMessage ou documentMessage da Evolution API
+  - Extrai mimeType, extensão, nome do arquivo
+  - Baixa o binário via `downloadEvolutionMedia()`
+  - Envia ao Supabase via `uploadBuffer()`
+  - Salva `session.anexoUrl`
+  - Se usuário enviar texto "não"/"sem arquivo", pula para setor
+  - Se texto não reconhecido, instrui a enviar arquivo ou responder "não"
+- **COLETAR_SETOR**: Chamada `enviarChamado(nome, cpf, setor, descricao, anexoUrl)`
+  - Mensagem de confirmação inclui "📎 O arquivo enviado foi anexado automaticamente" se houver anexo
+
+#### `enviarChamado()` modificado
+- Parâmetro `anexoUrl?: string` adicionado (opcional, retrocompatível)
+- Se fornecido, salva no campo `anexoUrl` do Chamado
+
+### Supabase Storage
+- Bucket: `documents` (mesmo usado pelo portal web)
+- Path: `{cpf}/{nome_do_arquivo}`
+- Público: URL pública gerada pelo Supabase
+
+### Arquivos criados
+| Arquivo | Descrição |
+|---------|-----------|
+| `src/app/api/webhook25/route.ts` | Webhook com suporte a mídia |
+
+### Arquivos modificados
+| Arquivo | Mudança |
+|---------|---------|
+| `src/lib/useIA.ts` | Adicionados estados PERGUNTAR_ANEXO e COLETAR_MIDIA ao FlowState |
+| `src/lib/upload.ts` | Adicionada função `uploadBuffer()` |
+| `src/lib/usedata.ts` | Adicionada `downloadEvolutionMedia()`, `enviarChamado()` aceita anexoUrl |
+
+### Build
+- `npm run build` — compilado com sucesso ✅ DE TOKENS E NATURALIDADE — useIA + webhook24 (29/05/2026)
 
 ### Objetivo
 Tornar o atendente virtual Hevelyn mais natural/humano e reduzir o consumo de tokens do GPT-4o-mini, sem perder qualidade nas respostas.

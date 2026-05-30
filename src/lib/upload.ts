@@ -44,3 +44,38 @@ export async function uploadFile({
 
   return data.publicUrl
 }
+
+export async function uploadBuffer({
+  buffer,
+  fileName,
+  mimeType,
+  bucket = "documents",
+  folder = "",
+}: {
+  buffer: Buffer
+  fileName: string
+  mimeType: string
+  bucket?: string
+  folder?: string
+}): Promise<string | null> {
+  const filePath = folder ? `${folder}/${fileName}` : fileName
+
+  const { error } = await supabase.storage
+    .from(bucket)
+    .upload(filePath, buffer, {
+      contentType: mimeType,
+      cacheControl: "3600",
+      upsert: false,
+    })
+
+  if (error) {
+    console.error("UPLOAD BUFFER ERROR:", error)
+    return null
+  }
+
+  const { data } = supabase.storage
+    .from(bucket)
+    .getPublicUrl(filePath)
+
+  return data.publicUrl
+}

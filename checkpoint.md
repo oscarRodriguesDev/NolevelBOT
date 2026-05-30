@@ -523,7 +523,25 @@ Chatbot-app e webhook24: quando usuário solicitar serviço que precise de docum
 ### Commits realizados nesta sessão:
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
-| 1 | `COMMIT_HASH` | `feat: otimiza useIA e webhook24 - -60% tokens, respostas mais humanas` | 29/05/2026 |
+| 1 | `85f4bd7` | `feat: otimiza useIA e webhook24 - -60% tokens, respostas mais humanas` | 29/05/2026 |
+
+### Build
+- `npm run build` — compilado com sucesso ✅
+
+---
+
+## Sessão: 29/05/2026 — Webhook25 com Recepção de Fotos/Documentos
+
+### Mudanças
+- `src/lib/useIA.ts` — Adicionados estados PERGUNTAR_ANEXO e COLETAR_MIDIA ao FlowState
+- `src/lib/upload.ts` — Adicionada função `uploadBuffer()` para upload server-side de Buffer
+- `src/lib/usedata.ts` — Adicionada `downloadEvolutionMedia()`, `enviarChamado()` aceita `anexoUrl` opcional
+- `src/app/api/webhook25/route.ts` (novo) — Webhook com fluxo: motivo → pergunta anexo → recebe mídia → cria chamado com anexo
+
+### Commits realizados nesta sessão:
+| # | Hash | Mensagem | Data |
+|---|------|----------|------|
+| 1 | `COMMIT_HASH` | `feat: webhook25 - recebe fotos/documentos via WhatsApp e anexa aos chamados` | 29/05/2026 |
 
 ### Build
 - `npm run build` — compilado com sucesso ✅
