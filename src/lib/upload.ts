@@ -56,7 +56,7 @@ export async function uploadFile({
 
   if (error) {
     console.error("UPLOAD ERROR:", error)
-    throw error
+    return defaultUrl
   }
 
   const { data } = supabase.storage

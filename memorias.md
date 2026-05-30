@@ -1566,3 +1566,31 @@ O bucket `anexo` não existia no Supabase Storage (`http://177.153.33.179:8000`)
 
 ### Build
 - `npm run build` — compilado com sucesso ✅
+
+---
+
+## 40. MELHORIAS NO UPLOAD — ERRO 400 E TRATAMENTO DE FALHAS (30/05/2026)
+
+### Problemas corrigidos
+
+#### 1. `uploadFile()` lançava exceção em vez de retornar null
+Antes: `throw error` no `uploadFile()` quebrava o fluxo da API, retornando 500 mesmo quando o erro era recuperável (bucket não existia, etc.)
+Depois: retorna `defaultUrl` (fallback) em caso de erro, consistente com `uploadBuffer()`
+
+#### 2. Validação de campos retornava 400 sem detalhes
+Antes: `"Campos obrigatórios não preenchidos"` sem informar quais
+Depois: Lista os campos faltantes: `"Campos obrigatórios: nome, cpf, setor, descricao"`
+
+#### 3. Upload de anexo não quebrava mais o chamado inteiro
+Antes: Se o upload falhasse, o chamado nem era criado (try/catch genérico retornava 500)
+Depois: Se o upload falhar, o chamado é criado mesmo sem anexo (try/catch isolado no upload)
+
+### Arquivos modificados
+| Arquivo | Mudança |
+|---------|---------|
+| `src/lib/upload.ts` | `uploadFile()` retorna `defaultUrl` em vez de `throw` |
+| `src/app/api/tickets/route.ts` | Validação detalhada + try/catch isolado no upload |
+| `src/app/api/tickets/search/route.ts` | try/catch isolado no upload |
+
+### Build
+- `npm run build` — compilado com sucesso ✅

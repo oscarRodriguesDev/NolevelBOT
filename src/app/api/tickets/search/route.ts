@@ -30,12 +30,19 @@ export async function POST(req: NextRequest) {
 
     const empresaId = cpfRecord.empresaId
 
-    const anexoUrl = await uploadFile({
-      bucket: "anexo",
-      folder: cpf,
-      file,
-      defaultUrl: "",
-    })
+    let anexoUrl: string | null = null
+    if (file) {
+      try {
+        anexoUrl = await uploadFile({
+          bucket: "anexo",
+          folder: cpf,
+          file,
+          defaultUrl: "",
+        })
+      } catch (uploadError) {
+        console.error("ERRO AO FAZER UPLOAD DO ANEXO:", uploadError)
+      }
+    }
 
     const ticket = `TKT-${Date.now()}`
 
