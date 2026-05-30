@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { FlowState } from "@/lib/useIA";
-import type { UserSession } from "@/lib/useIA";
-import { botIA2, detectFileIntent } from "@/lib/useIA2";
+import { FlowState, detectFileIntent, botIA2 } from "@/lib/useIA2";
+import type { UserSession } from "@/lib/useIA2";
 import {
   validarCpf,
   StatusChamado,

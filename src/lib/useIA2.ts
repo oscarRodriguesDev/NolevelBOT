@@ -1,8 +1,30 @@
 import OpenAI from "openai";
-import { buscarAvisos, StatusChamado, saudacao } from "./usedata";
-import type { UserSession } from "./useIA";
+import { StatusChamado, saudacao } from "./usedata";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+export const FlowState = {
+  INICIO: "inicio",
+  IDENTIFICACAO_CPF: "identificacao_cpf",
+  IDENTIFICACAO_NOME: "identificacao_nome",
+  MENU_PRINCIPAL: "menu_principal",
+  COLETAR_MOTIVO: "coletar_motivo",
+  VERIFICAR_AVISOS: "verificar_aviso",
+  ESCOLHER_ABERTURA: "escolher_abertura",
+  COLETAR_SETOR: "coletar_setor",
+  PERGUNTAR_ANEXO: "perguntar_anexo",
+  COLETAR_MIDIA: "coletar_midia"
+} as const;
+
+type FlowStateValues = typeof FlowState[keyof typeof FlowState];
+export type UserSession = {
+  state: FlowStateValues;
+  nome?: string;
+  cpf?: string;
+  resumoHistorico?: string;
+  motivoAtual?: string;
+  lastInteraction: number;
+};
 
 type FileIntent = "send_file" | "no_file" | "continue";
 
