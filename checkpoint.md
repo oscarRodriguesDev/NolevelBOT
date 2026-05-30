@@ -562,3 +562,20 @@ Chatbot-app e webhook24: quando usuário solicitar serviço que precise de docum
 
 ### Build
 - `npm run build` — compilado com sucesso ✅
+
+---
+
+## Sessão: 30/05/2026 — Evolution API: Webhook Hevelyn apontado para webhook25
+
+### O que foi feito
+- Verificado que a instância **Hevelyn** na Evolution API estava configurada com webhook URL `http://nolevel-app-dev:3000/api/webhook24`
+- Alterado via API (`POST /webhook/set/Hevelyn`) para `http://nolevel-app-dev:3000/api/webhook25`
+- Confirmado: webhook atualizado com sucesso (status 201)
+
+### Commits realizados nesta sessão:
+| # | Hash | Mensagem | Data |
+|---|------|----------|------|
+| 1 | `(pendente)` | `fix: evolution api webhook hevelyn apontado para webhook25` | 30/05/2026 |
+
+### Build
+- N/A (apenas configuração externa, sem alteração de código)

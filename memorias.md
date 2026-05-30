@@ -1471,3 +1471,48 @@ COLETAR_MOTIVO: usuário descreve problema
 
 ### Build
 - `npm run build` — compilado com sucesso ✅
+
+---
+
+## 37. EVOLUTION API CONFIGURADA — WEBHOOK HEVELYN → WEBHOOK25 (30/05/2026)
+
+### Problema
+A instância **Hevelyn** na Evolution API estava configurada para enviar webhooks para `http://nolevel-app-dev:3000/api/webhook24`. Por isso, mesmo com todo o código do webhook25 corrigido, as mensagens nunca chegavam ao webhook25 — iam para o webhook24, que redirecionava ao portal.
+
+### Solução
+Descoberto o endpoint correto da Evolution API v2.3.0 via `docker exec`:
+- `GET /webhook/find/Hevelyn` → retornou URL antiga (`webhook24`)
+- `POST /webhook/set/Hevelyn` com body `{ webhook: { url, enabled, events } }` → alterou para `webhook25`
+
+### Comando executado (via docker exec)
+```bash
+docker exec nolevel-app-dev node -e "
+fetch('http://evolution-api:8080/webhook/set/Hevelyn', {
+  method: 'POST',
+  headers: { 'apikey': '...', 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    webhook: {
+      url: 'http://nolevel-app-dev:3000/api/webhook25',
+      enabled: true,
+      events: ['MESSAGES_UPSERT'],
+      webhookByEvents: false,
+      webhookBase64: false
+    }
+  })
+}).then(r => r.json()).then(console.log)
+"
+```
+
+### Resultado
+- Status: `201 Created`
+- URL: `http://nolevel-app-dev:3000/api/webhook25` ✅
+- Webhook anterior (`webhook24`) não foi modificado — apenas a rota da instância Hevelyn foi alterada
+
+### Instâncias na Evolution API
+| Instância | Número | Status | Webhook |
+|-----------|--------|--------|---------|
+| `testes` | 5527992221643 | connecting | — |
+| `Hevelyn` | 5527998982410 | **open** | `http://nolevel-app-dev:3000/api/webhook25` ✅ |
+
+### Próximo passo
+- **Testar**: Enviar mensagem para o número Hevelyn (5527998982410) dizendo "preciso enviar um atestado" e verificar se webhook25 responde sem redirecionar ao portal
