@@ -24,3 +24,10 @@
 - Foco em estabilidade e funcionalidade
 - Tema escuro como padrão
 - Sistema de roles (GOD > ADMIN > GESTOR > ATENDENTE)
+
+## Bot WhatsApp
+- Nome do bot = nome da instância na Evolution API (via `body.instance`)
+- Empresa do bot = nome real da empresa no banco (via `getEmpresaName()`)
+- Fallback do nome do bot: "Hevelyn"
+- Fallback da empresa: "Nolevel"
+- Chat web: `BOT_NAME` env var com fallback "Hevelyn"

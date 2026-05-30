@@ -1643,3 +1643,80 @@ Endpoint usado: `POST /webhook/set/Hevelyn`
 
 ### Build
 - `npm run build` — compilado com sucesso ✅
+
+---
+
+## 42. BOT NAME DINÂMICO POR INSTÂNCIA + EMPRESA DO BANCO (30/05/2026)
+
+### Objetivo
+O nome do assistente virtual agora vem do nome da instância configurada na Evolution API (via `body.instance`), permitindo personalização por empresa/cliente. A empresa mencionada pelo bot também passa a ser dinâmica (buscada do banco via `getEmpresaName()`).
+
+### Arquivos alterados
+
+#### `src/lib/useIA.ts` — `botIA()` aceita `botName`
+- Adicionado parâmetro opcional `botName?: string` à assinatura
+- System prompt alterado:
+  ```typescript
+  // Antes:
+  `Você é a Hevelyn, atendente da ${empresa}...`
+  // Depois:
+  `Você é ${botName || "Hevelyn"}, atendente da ${empresa}...`
+  ```
+
+#### `src/lib/useIA2.ts` — `botIA2()` aceita `botName`
+- Mesma alteração da `useIA.ts`
+
+#### Webhooks 22, 23, 24, 25
+- Todos passam `instance` (extraído de `body.instance`) como `botName` em todas as chamadas a `botIA()`/`botIA2()`
+- **webhook24** (linha 72) e **webhook25** (linha 119): Saudações hardcoded substituídas por template string:
+  ```typescript
+  // Antes:
+  "Olá! Eu sou a Hevelyn, sua assistente virtual..."
+  // Depois:
+  `Olá! Eu sou a ${instance}, sua assistente virtual...`
+  ```
+
+#### `src/app/api/chat/route.ts`
+- Adicionada constante:
+  ```typescript
+  const BOT_NAME = process.env.BOT_NAME || "Hevelyn"
+  ```
+- Todas as chamadas a `botIA()` passam `BOT_NAME` como último argumento
+
+#### `src/app/api/webhook-leads/route.ts`
+- `gerarRespostaInteligente()` aceita `botName?: string`
+- System prompt: `"Você é a Hevelyn..."` → `` `Você é ${botName || "Hevelyn"}...` ``
+- Saudações: `"Sou a Hevelyn"` → `` `Sou a ${instance}` ``
+- Referências a "NoLevel" mantidas (contexto: estande da própria NoLevel na ESX)
+
+#### `src/app/chatbot-app/page.tsx`
+- Componente renomeado: `MobileHevelynChat` → `MobileChat`
+- `BOT_NAME` lido de `process.env.NEXT_PUBLIC_BOT_NAME` com fallback `"Hevelyn"`
+- Mensagens de erro e indicador "digitando..." agora usam `BOT_NAME`
+
+### Fluxo de como funciona
+```
+Evolution API envia webhook com { instance: "Hevelyn", ... }
+  → Webhook extrai body.instance
+  → Passa como botName para botIA()/botIA2()
+  → System prompt da OpenAI: "Você é {instance}, atendente da {empresa}..."
+  → getEmpresaName(cpf) busca nome real da empresa no banco
+  → Se CPF não encontrado, fallback: 'Nolevel'
+  → Se instance não fornecida (chat web), fallback: env BOT_NAME ou "Hevelyn"
+```
+
+### Variáveis de ambiente novas
+| Variável | Obrigatório | Padrão | Uso |
+|----------|-------------|--------|-----|
+| `BOT_NAME` | Não | `"Hevelyn"` | Nome do bot no chat web |
+| `NEXT_PUBLIC_BOT_NAME` | Não | `"Hevelyn"` | Nome do bot no chat mobile |
+
+### Benefícios
+- ✅ Cada instância Evolution pode ter seu próprio nome (ex: "Hevelyn", "Maria", "Suporte")
+- ✅ Cada empresa cliente pode ter o bot com o nome que escolheu
+- ✅ O bot sempre se apresenta como atendente da empresa correta (via banco)
+- ✅ Chat web tem nome configurável via env var
+- ✅ Compatibilidade retroativa: se BOT_NAME não for configurado, padrão é "Hevelyn"
+
+### Build
+- `npm run build` — compilado com sucesso ✅

@@ -488,4 +488,60 @@ Fotos enviadas via WhatsApp (webhook25) não chegavam ao Supabase Storage porque
 ### Commits realizados nesta sessão:
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
-| 1 | `pending` | `fix: webhook25 download de midia via webhookBase64 ao inves de endpoint REST inexistente` | 30/05/2026 |
+| 1 | `9431f06` | `fix: webhook25 download de midia via webhookBase64 ao inves de endpoint REST inexistente` | 30/05/2026 |
+
+---
+
+## Sessão: 30/05/2026 — Bot name dinâmico por instância + empresa do banco
+
+### Objetivo
+O nome do assistente virtual agora vem do nome da instância configurada na Evolution API (via `body.instance`), permitindo personalização por empresa. A empresa mencionada pelo bot também passa a ser dinâmica (buscada do banco via `getEmpresaName()`).
+
+### Mudanças realizadas
+
+#### `src/lib/useIA.ts` e `src/lib/useIA2.ts`
+- `botIA()` e `botIA2()` agora aceitam parâmetro opcional `botName?: string`
+- System prompt muda de `"Você é a Hevelyn..."` para `` `Você é ${botName || "Hevelyn"}...` ``
+- `getEmpresaName()` já existia e buscava nome real da empresa no banco — mantido
+
+#### Webhooks 22, 23, 24, 25
+- Todos passam `const instance = body.instance` como `botName` para `botIA()`/`botIA2()`
+- **webhook24** e **webhook25**: Saudações hardcoded `"Olá! Eu sou a Hevelyn..."` substituídas por `` `Olá! Eu sou a ${instance}...` ``
+
+#### `src/app/api/chat/route.ts`
+- Adicionada constante `BOT_NAME` de `process.env.BOT_NAME` com fallback `"Hevelyn"`
+- Todas as chamadas a `botIA()` passam `BOT_NAME`
+
+#### `src/app/api/webhook-leads/route.ts`
+- `gerarRespostaInteligente()` aceita `botName`
+- System prompt `` `Você é a Hevelyn...` `` → `` `Você é ${botName || "Hevelyn"}...` ``
+- Saudações: `"Sou a Hevelyn"` → `` `Sou a ${instance}` ``
+- Referências a "NoLevel" mantidas (é o contexto de estande da própria NoLevel)
+
+#### `src/app/chatbot-app/page.tsx`
+- Componente renomeado de `MobileHevelynChat` → `MobileChat`
+- `BOT_NAME` de `process.env.NEXT_PUBLIC_BOT_NAME` com fallback `"Hevelyn"`
+- Mensagens de erro e "digitando..." usam `BOT_NAME` dinâmico
+
+### Arquivos modificados (13)
+| Arquivo | Mudança |
+|---------|---------|
+| `src/lib/useIA.ts` | `botIA()` aceita `botName` |
+| `src/lib/useIA2.ts` | `botIA2()` aceita `botName` |
+| `src/app/api/webhook22/route.ts` | Passa `instance` como `botName` |
+| `src/app/api/webhook23/route.ts` | Passa `instance` como `botName` |
+| `src/app/api/webhook24/route.ts` | Saudação dinâmica + `instance` como `botName` |
+| `src/app/api/webhook25/route.ts` | Saudação dinâmica + `instance` como `botName` |
+| `src/app/api/chat/route.ts` | Usa `BOT_NAME` env var |
+| `src/app/api/webhook-leads/route.ts` | System prompt + saudações dinâmicas |
+| `src/app/chatbot-app/page.tsx` | `BOT_NAME` + textos dinâmicos |
+| `checkpoint.md` | Atualizado |
+| `memorias.md` | Atualizado |
+
+### Build
+- `npm run build` — compilado com sucesso ✅
+
+### Commits realizados nesta sessão:
+| # | Hash | Mensagem | Data |
+|---|------|----------|------|
+| 1 | `9431f06` | `feat: bot name dinamico por instancia + empresa do banco` | 30/05/2026 |
