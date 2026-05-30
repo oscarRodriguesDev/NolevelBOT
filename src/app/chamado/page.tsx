@@ -11,23 +11,23 @@ export default function TicketPageDirect() {
   //buscar setores por empresa
   const [SETORES, setSetores] = useState<string[]>([])
 
- 
+
 
   //buscar setores depois que informar o cpf
-    async function fetchSetores(cpf:string) {
-      try {
-        const response = await fetch(`/api/empresa?cpf=${cpf}`) // cnpj da empresa deve ser definida em variavel de ambiente
-        const data = await response.json()
+  async function fetchSetores(cpf: string) {
+    try {
+      const response = await fetch(`/api/empresa?cpf=${cpf}`) // cnpj da empresa deve ser definida em variavel de ambiente
+      const data = await response.json()
 
-        if (response.ok) {
-          setSetores(data.setores || [])
-        }
-      } catch (error) {
-        console.error('Erro ao buscar setores', error)
+      if (response.ok) {
+        setSetores(data.setores || [])
       }
+    } catch (error) {
+      console.error('Erro ao buscar setores', error)
     }
+  }
 
-   
+
 
 
 
@@ -203,7 +203,7 @@ export default function TicketPageDirect() {
                 name="cpf"
                 value={formData.cpf}
                 onChange={handleChange}
-                onBlur={()=>{fetchSetores(formData.cpf)}}
+                onBlur={() => { fetchSetores(formData.cpf) }}
                 required
                 pattern="\d{11}"
                 maxLength={11}
@@ -240,7 +240,7 @@ export default function TicketPageDirect() {
 
             <div>
               <label className="block text-sm font-semibold mb-2">
-               Setor
+                Setor
               </label>
               <select
                 name="setor"
@@ -255,14 +255,15 @@ export default function TicketPageDirect() {
                   "--tw-ring-color": "var(--primary)",
                 } as never}
               >
-                
-                
-                {SETORES.map(setor => (
+                <option value="" disabled>
+                  Selecione um setor
+                </option>
+
+                {SETORES.map((setor) => (
                   <option key={setor} value={setor}>
                     {setor}
                   </option>
                 ))}
-
               </select>
             </div>
 
@@ -288,7 +289,7 @@ export default function TicketPageDirect() {
             </div>
 
 
-             <FileUpload file={file} setFile={setFile} handleFileChange={handleFileChange} />
+            <FileUpload file={file} setFile={setFile} handleFileChange={handleFileChange} />
 
             <div className="pt-6">
               <button
