@@ -558,7 +558,7 @@ Chatbot-app e webhook24: quando usuário solicitar serviço que precise de docum
 ### Commits realizados nesta sessão:
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
-| 1 | `(pending)` | `fix: webhook25 nao redireciona ao portal - detectFileIntent + coleta midia direto` | 29/05/2026 |
+| 1 | `c864ca8` | `fix: webhook25 nao redireciona ao portal - detectFileIntent + coleta midia direto` | 29/05/2026 |
 
 ### Build
 - `npm run build` — compilado com sucesso ✅
