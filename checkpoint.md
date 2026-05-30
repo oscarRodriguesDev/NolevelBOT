@@ -484,6 +484,7 @@ Uploads para bucket `anexo` falhavam silenciosamente. Bucket `profile` funcionav
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
 | 1 | `6699e80` | `fix: upload para bucket anexo - cria bucket automaticamente no Supabase e adiciona contentType explicito` | 30/05/2026 |
+| 2 | `87675d4` | `fix: upload nao quebra chamado, erro 400 detalhado, uploadFile retorna fallback` | 30/05/2026 |
 
 ### Build
 - `npm run build` — compilado com sucesso ✅
