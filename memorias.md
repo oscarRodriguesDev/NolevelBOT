@@ -812,6 +812,58 @@ Criar uma página interativa onde o usuário pode executar todos os testes unit�
 - `npm run build` — compilado com sucesso ✅
 - `npx vitest run` — 135/135 testes passaram ✅
 - `npx vitest run --reporter=json` — JSON válido gerado ✅
+
+---
+
+## 44. TESTE DE ACESSOS POR PAPEL (30/05/2026)
+
+### Objetivo
+Adicionar à Central de Testes uma funcionalidade para testar permissões de cada usuário individualmente — inserindo email e senha, o sistema autentica e executa uma bateria de testes de acesso, mostrando exatamente o que aquele papel pode ou não fazer.
+
+### Arquivos criados
+
+| Arquivo | Descrição |
+|---------|-----------|
+| `src/app/api/testes/login/route.ts` | API que autentica (Prisma + bcrypt) e executa testes RBAC + multi-tenancy |
+
+### Como funciona
+1. Usuário digita email + senha na página `/testes`
+2. `POST /api/testes/login` valida contra o banco (mesma lógica do NextAuth)
+3. Retorna:
+   - **Dados do usuário**: nome, email, papel, setor, empresa
+   - **Estatísticas**: total de usuários no sistema vs na mesma empresa (para verificar isolamento)
+   - **Matriz de permissões**: o que pode criar/excluir/ver
+   - **12 testes individuais**:
+
+| # | Teste | Verifica |
+|---|-------|----------|
+| 1 | Pode ver lista de empresas | Apenas GOD |
+| 2 | Pode criar empresa | Apenas GOD |
+| 3 | Pode importar CPF em lote | GOD, ADMIN, GESTOR (não ATENDENTE) |
+| 4 | Pode criar ADMIN | Apenas GOD |
+| 5 | Pode criar GESTOR | GOD e ADMIN |
+| 6 | Pode criar ATENDENTE | Todos exceto ATENDENTE |
+| 7 | Pode deletar GOD | **NINGUÉM** (crítico) |
+| 8 | Pode deletar ADMIN | Apenas GOD |
+| 9 | Pode deletar GESTOR | GOD e ADMIN |
+| 10 | Pode deletar ATENDENTE | Todos exceto ATENDENTE |
+| 11 | Filtro de setor ativo | GESTOR e ATENDENTE têm filtro |
+| 12 | Isolamento multi-tenancy | Usuário vê dados apenas da própria empresa |
+
+### Relatório gerado na página
+- Card com dados do usuário autenticado
+- Matriz visual de criação/exclusão (✓/✗ para cada papel)
+- Lista de 12 testes com resultado (passou/falhou) e explicação
+- **Vulnerabilidades críticas** em destaque vermelho
+- **Alertas** em destaque laranja
+
+### Segurança
+- A senha **não é armazenada** em lugar nenhum — apenas usada para autenticar
+- A API retorna apenas dados não sensíveis do usuário (sem senha/hash)
+- Os testes são **read-only**: apenas consultas SELECT no banco
+
+### Build
+- `npm run build` — compilado com sucesso ✅
 - Commits: `54ecb1b`, `f044ee0`, `aeaf54d`
 
 ---

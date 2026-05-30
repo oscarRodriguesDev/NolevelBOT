@@ -571,4 +571,5 @@ Criação de uma suíte completa de 135 testes unitários e de segurança, com p
 ### Commits realizados nesta sessão:
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
-| 1 | `pending` | `feat: central de testes automatizados com 135 testes e pagina interativa /testes` | 30/05/2026 |
+| 1 | `0d7fc2e` | `feat: central de testes automatizados com 135 testes e pagina interativa /testes` | 30/05/2026 |
+| 2 | `pending` | `feat: teste de acessos por papel com autenticacao e matriz de permissoes` | 30/05/2026 |
