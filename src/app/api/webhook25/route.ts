@@ -13,6 +13,7 @@ import {
 import { uploadBuffer } from "@/lib/upload";
 import { registerPhone } from "@/lib/phoneMap";
 import { getSetores } from "@/lib/setores";
+import { detectFileIntent } from "@/lib/useIA2";
 
 const menuString = "1. Abrir Chamado, 2. Consultar Chamado";
 
@@ -33,13 +34,6 @@ type Webhook25Session = UserSession & {
 };
 
 const sessions = new Map<string, Webhook25Session>();
-
-const palavrasDocumento = ["foto", "comprovante", "documento", "anexo", "pdf", "imagem", "print", "scan", "scanner", "digitalizar", "arquivo", "upload", "atestado", "laudo", "receita"];
-
-function temPalavraDocumento(texto: string): boolean {
-  const t = texto.toLowerCase();
-  return palavrasDocumento.some(p => t.includes(p));
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -173,18 +167,14 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ ok: true });
         }
 
-        if (temPalavraDocumento(userInput)) {
-          const baseUrl = process.env.BASE_URL || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3001";
-          await sendEvolutionText(
-            instance,
-            number,
-            `Entendi! Como esse caso precisa de documentos ou anexos, vou precisar que você abra um chamado pelo nosso portal pra enviar os arquivos com segurança.\n\nAcesse: ${baseUrl}/chamado\n\nQualquer dúvida é só chamar de volta!`
-          );
-          session.state = FlowState.MENU_PRINCIPAL;
+        session.motivoAtual = userInput;
+
+        const fileIntent = detectFileIntent(userInput);
+        if (fileIntent === "send_file") {
+          await sendEvolutionText(instance, number, "Entendi! Pode enviar a foto ou documento por aqui mesmo que eu anexo ao chamado. 📎");
+          session.state = FlowState.COLETAR_MIDIA;
           break;
         }
-
-        session.motivoAtual = userInput;
 
         if (!avisos || avisos.includes("Sem avisos")) {
           await sendEvolutionText(
@@ -237,7 +227,8 @@ export async function POST(req: NextRequest) {
       }
 
       case FlowState.PERGUNTAR_ANEXO: {
-        if (["sim", "quero", "ok", "claro", "enviar"].some(v => lowerInput.includes(v))) {
+        const intent = detectFileIntent(userInput);
+        if (intent === "send_file") {
           await sendEvolutionText(instance, number, "Pode enviar! Manda a foto ou o arquivo aqui mesmo. 📎");
           session.state = FlowState.COLETAR_MIDIA;
         } else {
@@ -287,7 +278,7 @@ export async function POST(req: NextRequest) {
             `Pra qual setor devo encaminhar?\n\n📍 *Setores disponíveis:* ${setores.join(", ")}`
           );
           session.state = FlowState.COLETAR_SETOR;
-        } else if (["não", "nao", "sem arquivo", "nenhum", "sem"].some(v => lowerInput.includes(v))) {
+        } else if (detectFileIntent(userInput) === "no_file") {
           const setores = await getSetores(session.cpf || '');
           await sendEvolutionText(
             instance,
@@ -331,7 +322,7 @@ export async function POST(req: NextRequest) {
           if (ok) {
             let msg = `✅ Prontinho! Seu chamado pra *${setor}* foi registrado com sucesso.`;
             if (session.anexoUrl) {
-              msg += `\n📎 O arquivo enviado foi anexado automaticamente.`;
+              msg += `\n📎 O arquivo que você enviou foi anexado automaticamente.`;
             }
             await sendEvolutionText(instance, number, msg);
           } else {

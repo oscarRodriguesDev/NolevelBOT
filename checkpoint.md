@@ -541,7 +541,24 @@ Chatbot-app e webhook24: quando usuário solicitar serviço que precise de docum
 ### Commits realizados nesta sessão:
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
-| 1 | `COMMIT_HASH` | `feat: webhook25 - recebe fotos/documentos via WhatsApp e anexa aos chamados` | 29/05/2026 |
+| 1 | `2efcee2` | `feat: webhook25 - recebe fotos/documentos via WhatsApp e anexa aos chamados` | 29/05/2026 |
+
+### Build
+- `npm run build` — compilado com sucesso ✅
+
+---
+
+## Sessão: 29/05/2026 — Correção Webhook25: Remove Redirect ao Portal
+
+### Mudanças
+- `src/lib/useIA2.ts` (novo) — `detectFileIntent()` para detecção semântica de intenção de envio de arquivo (send_file/no_file/continue), sem custo de API
+- `src/app/api/webhook25/route.ts` — Remove `temPalavraDocumento()` e redirecionamento ao portal; quando usuário menciona arquivo, vai direto para COLETAR_MIDIA
+- `memorias.md` — Corrigida formatação (seção 34 duplicada foi removida) e adicionada seção 36
+
+### Commits realizados nesta sessão:
+| # | Hash | Mensagem | Data |
+|---|------|----------|------|
+| 1 | `(pending)` | `fix: webhook25 nao redireciona ao portal - detectFileIntent + coleta midia direto` | 29/05/2026 |
 
 ### Build
 - `npm run build` — compilado com sucesso ✅

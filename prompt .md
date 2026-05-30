@@ -1,4 +1,4 @@
-leia todo me projeto- crie um arquivo chamado memorias.md e atualize nele tudo que fizer no projeto, a intenção é que ele sirva de guia para continuar com o mesmo sentido, manter consistencia entre seções, sua branch deve é a vibecode, tudo que fizer todo pedido que eu fizer quero que vc faça commit no git hub e crie um arquivo chamado checkpoint.md e registre todos os comits, esse arquivo servirá para que vc consulte e saiba exatametne onde parou na sessao anterior, tente não fazer nada que quebre o projeto, ao pecisar fazer mudanças drasticas semper me consulte, caso acredite que seja necessarios crie um arquivo chamado preferencias_do_usuario.md e registre as minhas preferencias
+leia todo meu projeto e, se não existir, crie um arquivo chamado memorias.md e atualize nele tudo que fizer no projeto, a intenção é que ele sirva de guia para continuar com o mesmo sentido, manter consistencia entre seções, sua branch deve é a vibecode, tudo que fizer todo pedido que eu fizer quero que vc faça commit no git hub e crie um arquivo chamado checkpoint.md e registre todos os comits, esse arquivo servirá para que vc consulte e saiba exatametne onde parou na sessao anterior, tente não fazer nada que quebre o projeto, ao pecisar fazer mudanças drasticas semper me consulte, caso acredite que seja necessarios crie um arquivo chamado preferencias_do_usuario.md e registre as minhas preferencias
 
 # Instruções Gerais do Projeto
 
@@ -28,6 +28,8 @@ Sempre que iniciar uma nova tarefa, execute obrigatoriamente as etapas abaixo, n
 
 - Nunca altere o schema do Prisma.
 - Nunca edite arquivos relacionados ao schema do Prisma.
+- nunca mexa nos arquivos dentro da pasta github, os deploys foram configurados e devem ficar daquela forma
+- jamais altera nennhuma rota de api se me perguntar antes
 - Nunca execute migrações automaticamente.
 - Nunca rode comandos como `prisma migrate`, `prisma db push` ou similares.
 - Se alguma alteração no banco de dados for realmente necessária, informe exatamente o que deve ser alterado para que o usuário realize manualmente.
@@ -41,6 +43,7 @@ Sempre que iniciar uma nova tarefa, execute obrigatoriamente as etapas abaixo, n
 - Não remova funcionalidades existentes sem autorização explícita.
 - Em caso de dúvida, pergunte antes de prosseguir.
 
+
 ---
 
 # Fluxo de Execução de Tarefas
@@ -53,8 +56,11 @@ Ao receber uma solicitação de desenvolvimento, siga este processo:
 4. Execute as mudanças necessárias.
 5. Verifique se não houve regressões.
 6. Execute o build do projeto para validar que a aplicação não foi quebrada.
-7. Corrija automaticamente qualquer erro de build causado pelas alterações.
-8. Somente finalize quando o build estiver concluído com sucesso.
+7. ao ocorrer erro de build explique-o para o usuario
+8. pergunte ao usuario se ele quer resolver manualmente ou se você pode resolver pra ele
+
+no mais faça somente o que o usuario solicitar, não corrija nada por iniciativa propria
+
 
 ---
 
@@ -64,4 +70,7 @@ Antes de concluir qualquer trabalho, execute obrigatoriamente:
 
 ```bash
 npm run build
+
+tudo certo? derrube o container da e suba novamente usando o docker compose
+
 

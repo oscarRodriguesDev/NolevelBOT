@@ -1422,55 +1422,52 @@ INICIO → IDENTIFICACAO_CPF → [nome?] → MENU_PRINCIPAL
 | `src/lib/usedata.ts` | Adicionada `downloadEvolutionMedia()`, `enviarChamado()` aceita anexoUrl |
 
 ### Build
-- `npm run build` — compilado com sucesso ✅ DE TOKENS E NATURALIDADE — useIA + webhook24 (29/05/2026)
+- `npm run build` — compilado com sucesso ✅
 
-### Objetivo
-Tornar o atendente virtual Hevelyn mais natural/humano e reduzir o consumo de tokens do GPT-4o-mini, sem perder qualidade nas respostas.
+---
 
-### Mudanças no `src/lib/useIA.ts`
+## 36. CORREÇÃO WEBHOOK25 — REDIRECT REMOVIDO, useIA2 CRIADA (29/05/2026)
 
-#### Prompt do sistema comprimido (~60% menos tokens)
+### Problema
+O webhook25 estava **redirecionando** usuários para o portal web (`/chamado`) quando mencionavam palavras como "atestado", "foto", "comprovante" herdando a função `temPalavraDocumento()` do webhook24. O objetivo do webhook25 é justamente aceitar esses arquivos **diretamente pelo WhatsApp**, sem redirecionar.
+
+### Solução
+
+#### `src/lib/useIA2.ts` (novo)
+Módulo especializado para detecção de intenção de envio de arquivos:
+- **`detectFileIntent(input)`**: Classifica input em `"send_file"`, `"no_file"` ou `"continue"`
+- Usa matching inteligente com palavras-chave de envio + negação + confirmação
+- Sem chamada à OpenAI (zero custo de token)
+- Diferencia "quero enviar" de "não preciso enviar" com análise de contexto
+
+#### webhook25 corrigido
 | Antes | Depois |
 |-------|--------|
-| ~800 tokens por chamada | ~300 tokens por chamada |
-| Contexto do usuário em JSON bruto | Resumo em texto plano: "João, chamados: TKT-001 (NOVO)" |
-| Instruções redundantes (UPLOAD + links repetidos) | Uma linha única: "Se pedirem documento: LINK" |
-| `temperature: 0.3` (robótico) | `temperature: 0.7` (natural) |
-| Sem `max_tokens` (gastava até 300+ por resposta) | `max_tokens: 120` (respostas curtas e objetivas) |
-| `instrucaoEtapa` duplicada no prompt e na mensagem | Instrução única no system |
+| `temPalavraDocumento()` detectava e **redirecionava** pro portal | `detectFileIntent()` detecta e vai para **COLETAR_MIDIA** |
+| Fluxo quebrado: menção de arquivo → redirect para fora do WhatsApp | Fluxo: menção de arquivo → "Pode enviar aqui mesmo 📎" → recebe mídia → anexa ao chamado |
+| Dependência de `palavrasDocumento` fixas | Lógica mais inteligente que entende contexto |
 
-#### Exportações novas
-- `FlowState` e `UserSession` agora exportados de `useIA.ts` — eliminando duplicação com `webhook24/route.ts`
+### Fluxo corrigido
+```
+COLETAR_MOTIVO: usuário descreve problema
+  → detectFileIntent("preciso enviar um atestado") === "send_file"
+  → "Entendi! Pode enviar a foto ou documento por aqui mesmo que eu anexo ao chamado."
+  → COLETAR_MIDIA (aguarda o arquivo)
+  → Usuário envia imagem/documento
+  → downloadEvolutionMedia() + uploadBuffer()
+  → "Recebi! ✅" → COLETAR_SETOR
+  → Chamado criado com anexoUrl
+```
 
-### Mudanças no `src/app/api/webhook24/route.ts`
-
-#### Redução de chamadas à IA
-| Fluxo | Antes | Depois |
-|-------|-------|--------|
-| Saudação inicial | Chamava `botIA()` | Mensagem fixa natural |
-| Identificação de nome | Chamava `botIA()` para saudar | Mensagem fixa: "Prazer, {nome}!" |
-| Menu principal | Chamava `botIA()` para qualquer input não reconhecido | Lógica determinística + IA só quando realmente precisa interpretar |
-
-#### Mensagens mais naturais
-- "Por favor, informe um CPF válido" → "Hum, esse CPF não parece completo…"
-- "Não consegui validar esse CPF" → "Esse CPF não está cadastrado no sistema"
-- "Atendimento encerrado. Se precisar..." → "Tudo bem, atendimento encerrado. Quando precisar é só me chamar de volta!"
-- "Deseja tratar de mais algum assunto?" → "Quer resolver mais alguma coisa?"
-
-#### Eliminação de duplicação
-- `FlowState` e `UserSession` removidos de `webhook24/route.ts` — agora importados de `useIA.ts`
-
-### Impacto estimado
-- **Tokens por interação**: ~800 → ~300 (redução de ~60%)
-- **Chamadas de IA por sessão típica**: 5-7 → 3-4 (fluxo determinístico substitui IA em saudação + nome)
-- **Custo estimado por sessão**: ~60% menor
-- **Naturalidade**: Respostas mais curtas, humanas e com personalidade
+### Arquivos criados
+| Arquivo | Descrição |
+|---------|-----------|
+| `src/lib/useIA2.ts` | Detecção de intenção de envio de arquivos |
 
 ### Arquivos modificados
 | Arquivo | Mudança |
 |---------|---------|
-| `src/lib/useIA.ts` | Prompt comprimido, temperature 0.7, max_tokens 120, exporta FlowState/UserSession |
-| `src/app/api/webhook24/route.ts` | Remove chamadas IA desnecessárias, mensagens naturais, importa FlowState de useIA |
+| `src/app/api/webhook25/route.ts` | Remove `temPalavraDocumento` + redirect. Usa `detectFileIntent()` para ir direto para COLETAR_MIDIA |
 
 ### Build
 - `npm run build` — compilado com sucesso ✅
