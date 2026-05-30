@@ -597,7 +597,7 @@ Uploads para bucket `anexo` falhavam silenciosamente. Bucket `profile` funcionav
 ### Commits realizados nesta sessão:
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
-| 1 | | `fix: upload para bucket anexo - cria bucket automaticamente no Supabase e adiciona contentType explicito` | 30/05/2026 |
+| 1 | `6699e80` | `fix: upload para bucket anexo - cria bucket automaticamente no Supabase e adiciona contentType explicito` | 30/05/2026 |
 
 ### Build
 - `npm run build` — compilado com sucesso ✅
