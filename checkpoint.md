@@ -545,3 +545,30 @@ O nome do assistente virtual agora vem do nome da instância configurada na Evol
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
 | 1 | `9431f06` | `feat: bot name dinamico por instancia + empresa do banco` | 30/05/2026 |
+
+---
+
+## Sessão: 30/05/2026 — Central de Testes Automatizados
+
+### Resumo
+Criação de uma suíte completa de 135 testes unitários e de segurança, com página interativa para execução com um clique e relatório descritivo de vulnerabilidades.
+
+### Arquivos criados
+
+| Arquivo | Descrição |
+|---------|-----------|
+| `src/__tests__/rbac.test.ts` | 51 testes de RBAC (permissões, hierarquia, escopos) |
+| `src/__tests__/validation.test.ts` | 44 testes de validação Zod (CPF, email, senha, schemas) |
+| `src/__tests__/phoneMap.test.ts` | 14 testes de persistência PhoneMap |
+| `src/__tests__/security.test.ts` | 26 testes de segurança |
+| `src/app/api/testes/route.ts` | API que executa vitest e retorna relatório |
+| `src/app/testes/page.tsx` | Página com botão "Executar Todos os Testes" e relatório |
+
+### Resultados
+- 135/135 testes passaram
+- Build válido (`npm run build`)
+
+### Commits realizados nesta sessão:
+| # | Hash | Mensagem | Data |
+|---|------|----------|------|
+| 1 | `pending` | `feat: central de testes automatizados com 135 testes e pagina interativa /testes` | 30/05/2026 |

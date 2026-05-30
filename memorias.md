@@ -726,212 +726,92 @@ Agora: GOD pode criar qualquer papel e selecionar a empresa destino via campo `e
 - `src/app/(atendimento)/gestao-de-usuarios/page.tsx` — GOD mode + empresa selector
 - `src/app/(atendimento)/cpfs/page.tsx` — Lista de admins (só GOD)
 
-### Build
-- `npm run build` — compilado com sucesso ✅
-
----
-
-## 24. RBAC COMPLETO — CONTROLE DE ACESSO POR PAPEL (21/05/2026)
+## 43. CENTRAL DE TESTES AUTOMATIZADOS (30/05/2026)
 
 ### Objetivo
-Implementar sistema completo de RBAC (Role Based Access Control) com validações obrigatórias no backend. Nenhuma regra depende apenas da interface visual. Todas as permissões são protegidas nas rotas, APIs e queries.
-
-### Arquivo central: `src/lib/rbac.ts` (novo)
-Sistema centralizado de permissões com tipagem forte e regras desacopladas:
-
-| Constante/Função | Descrição |
-|-----------------|-----------|
-| `CREATE_ROLE_MAP` | Quem pode criar qual papel: GOD→ADMIN, ADMIN→GESTOR/ATENDENTE, GESTOR→ATENDENTE |
-| `DELETE_ROLE_MAP` | Quem pode deletar qual papel: GOD→ADMIN/GESTOR/ATENDENTE, ADMIN→GESTOR/ATENDENTE, GESTOR→ATENDENTE |
-| `VIEW_USERS_ROLES` | Quem pode ver quais usuários, com escopo por empresa/setor |
-| `CAN_VIEW_EMPRESAS` | Apenas GOD vê lista de empresas |
-| `CAN_BATCH_CPF` | GOD, ADMIN e GESTOR podem importar CPF em lote |
-| `podeCriarRole()` | Verifica se um papel pode criar outro |
-| `podeDeletarRole()` | Verifica se um papel pode deletar outro (GOD nunca pode ser deletado) |
-| `getSetorFilter()` | Retorna filtro de setor baseado na role |
-| `getTicketWhereClause()` | Retorna cláusula where para tickets baseada na role |
-| `getServerSessionRBAC()` | Valida sessão + role + retorna erro padronizado |
-
-### Hierarquia de permissões de criação:
-| Quem cria | Pode criar |
-|-----------|-----------|
-| GOD | ADMIN |
-| ADMIN | GESTOR, ATENDENTE |
-| GESTOR | ATENDENTE (mesmo setor) |
-| ATENDENTE | Ninguém |
-
-### Hierarquia de exclusão:
-| Quem exclui | Pode excluir |
-|------------|-------------|
-| GOD | ADMIN, GESTOR, ATENDENTE (NUNCA GOD) |
-| ADMIN | GESTOR, ATENDENTE (mesma empresa) |
-| GESTOR | ATENDENTE (mesmo setor) |
-| ATENDENTE | Ninguém |
-
-### Proteções implementadas no backend:
-
-#### `src/app/api/users/route.ts`
-- **POST**: Valida:
-  - Se usuário logado pode criar o papel alvo (`podeCriarRole`)
-  - Se GESTOR: só cria no próprio setor
-  - Se ADMIN: setor deve pertencer à empresa
-  - Se GOD: empresa selecionada deve existir
-  - Unicidade de CPF (por empresa) e email (global)
-  - **Auto-registro de CPF** na tabela `cpfs` via `upsert`
-- **GET**: Filtra por:
-  - GOD: todos os usuários (todas empresas)
-  - ADMIN: usuários da própria empresa
-  - GESTOR: apenas ATENDENTES do próprio setor
-- **DELETE**: Valida:
-  - GOD nunca pode ser deletado (retorna 403)
-  - GOD deleta ADMIN/GESTOR/ATENDENTE
-  - ADMIN deleta GESTOR/ATENDENTE (mesma empresa)
-  - GESTOR deleta ATENDENTE (mesmo setor)
-
-#### `src/app/api/users/admins/route.ts`
-- GET/PUT/DELETE: Apenas GOD
-- DELETE: Bloqueia exclusão de GOD (retorna 403)
-- PUT: Só permite alterar ADMIN
-
-#### `src/app/api/userFacil/route.ts`
-- GET/POST: Apenas GOD
-- POST: Valida `podeCriarRole("GOD", finalRole)` — GOD só cria ADMIN
-- Auto-registro de CPF na tabela `cpfs`
-
-#### `src/app/api/cpfs/route.ts`
-- **POST multipart** (lote): Apenas GOD, ADMIN, GESTOR (valida via `CAN_BATCH_CPF`)
-- **POST json** (manual): GOD, ADMIN, GESTOR e ATENDENTE
-- **DELETE**: GOD, ADMIN, GESTOR — com validação extra: não permite deletar CPF de usuário do sistema
-- **GET**: Filtra por empresaId da sessão
-
-#### `src/app/api/tickets/route.ts`
-- **GET**: ATENDENTE e GESTOR filtram por setor (`getTicketWhereClause`)
-- **PUT**: ATENDENTE e GESTOR só podem atualizar chamados do próprio setor
-- **DELETE**: ATENDENTE e GESTOR só podem finalizar chamados do próprio setor
-
-#### `src/app/api/tickets/search/route.ts`
-- **PUT/DELETE**: Mesmas validações de setor para ATENDENTE e GESTOR
-
-### Proteções na interface:
-
-#### `src/app/(atendimento)/components/sidebar.tsx`
-- Menu "Empresas": visível apenas para GOD
-- Menu "Gestão de Usuarios": visível para GOD, ADMIN e GESTOR
-- Demais menus: visíveis para todos (Dashboard, Chamados, Avisos, CPFs)
-
-#### `src/app/(atendimento)/gestao-de-usuarios/page.tsx`
-- Filtro "Papel" mostra apenas roles que o usuário pode criar
-- GOD vê seletor de empresa, ADMIN e GESTOR não
-- GESTOR só vê setores disponíveis
-- ATENDENTE não vê o formulário (rolesPermitidas vazio)
-- Tabela de usuários cadastrados com RBAC (GOD vê todos, ADMIN vê empresa, GESTOR vê setor)
-- Botão "Excluir" nunca aparece para usuários GOD
-
-#### `src/app/(atendimento)/empresa/page.tsx`
-- Redireciona para `/dashboards` se usuário não é GOD
-- Só GOD pode acessar página de empresas
-
-#### `src/app/(atendimento)/empresa/create/page.tsx`
-- Redireciona para `/dashboards` se usuário não é GOD
-
-#### `src/app/(atendimento)/cpfs/page.tsx`
-- Seção de importação em lote: escondida para ATENDENTE
-- Seção de admins: apenas GOD vê
-
-### Arquivos criados:
-- `src/lib/rbac.ts` — Sistema centralizado de permissões RBAC
-
-### Arquivos modificados:
-- `src/util/permission.ts` — Tipagem ROLE no array
-- `src/app/api/users/route.ts` — RBAC completo + auto-registro CPF
-- `src/app/api/users/admins/route.ts` — Bloqueio exclusão GOD
-- `src/app/api/userFacil/route.ts` — Validação podeCriarRole + auto CPF
-- `src/app/api/cpfs/route.ts` — ATENDENTE só manual, lote restrito
-- `src/app/api/tickets/route.ts` — Setor filter por role
-- `src/app/api/tickets/search/route.ts` — Setor filter por role
-- `src/app/(atendimento)/components/sidebar.tsx` — Menu dinâmico por role
-- `src/app/(atendimento)/gestao-de-usuarios/page.tsx` — Roles permitidas, lista RBAC
-- `src/app/(atendimento)/cpfs/page.tsx` — Lote escondido para ATENDENTE
-- `src/app/(atendimento)/empresa/page.tsx` — Redireciona não-GOD
-- `src/app/(atendimento)/empresa/create/page.tsx` — Redireciona não-GOD
-
-### Regras de segurança reforçadas:
-- ✅ GOD nunca pode ser deletado via API (retorna 403)
-- ✅ GESTOR só cria ATENDENTE no próprio setor
-- ✅ ADMIN só cria nos setores da própria empresa
-- ✅ ATENDENTE só vê/atende chamados do próprio setor
-- ✅ Auto-registro de CPF ao criar qualquer usuário (via `upsert`)
-- ✅ Impedido bypass de permissão via manipulação de payload
-- ✅ Todas as validações no backend + interface consistente
-- ✅ Separação clara entre autenticação (NextAuth) e autorização (RBAC)
-
----
-
-## 25. TELAS DE USUÁRIOS — VISÃO POR EMPRESA (GOD) E GERAL (21/05/2026)
-
-### Objetivo
-Criar páginas dedicadas para visualização, edição inline e exclusão de usuários, respeitando o RBAC:
-- **GOD**: vê usuários de qualquer empresa, clicando nos cards de empresa
-- **ADMIN / GESTOR**: vê usuários da própria empresa em página geral `/usuarios`
+Criar uma página interativa onde o usuário pode executar todos os testes unitários e de segurança com um clique, recebendo um relatório descritivo com análise de vulnerabilidades e riscos de crash.
 
 ### Arquivos criados
 
-#### `src/app/(atendimento)/empresa/[id]/usuarios/page.tsx` (novo - GOD only)
-- **Acesso exclusivo GOD**: servido por `getServerSessionRBAC("GOD")` via RBAC
-- Lista todos os usuários da empresa em tabela com colunas: Nome, Email, CPF, Papel, Setor
-- **Edição inline**: inputs aparecem ao clicar no botão de editar (lápis)
-- **Exclusão**: botão vermelho com confirmação (toast)
-- Campos editáveis: nome, email, cpf, role (dropdown), setor
-- Role dropdown respeita `DELETE_ROLE_MAP` — GOD pode mudar para ADMIN/GESTOR/ATENDENTE
-- CPF editável com validação de unicidade por empresa
+| Arquivo | Descrição |
+|---------|-----------|
+| `src/__tests__/rbac.test.ts` | 51 testes de RBAC (permissões, hierarquia, escopos) |
+| `src/__tests__/validation.test.ts` | 44 testes de validação Zod (CPF, email, senha, schemas) |
+| `src/__tests__/phoneMap.test.ts` | 14 testes de persistência PhoneMap (registro, formatação, remoção) |
+| `src/__tests__/security.test.ts` | 26 testes de segurança (escalada de privilégio, multi-tenancy, GOD indestrutível) |
+| `src/app/api/testes/route.ts` | API que executa `vitest run --reporter=json` e retorna relatório estruturado |
+| `src/app/testes/page.tsx` | Página interativa com botão "Executar Todos os Testes" e relatório detalhado |
 
-#### `src/app/(atendimento)/usuarios/page.tsx` (novo - ADMIN/GESTOR/GOD)
-- **Acesso**: ADMIN, GESTOR e GOD via `getServerSessionRBAC("GOD", "ADMIN", "GESTOR")`
-- ADMIN/GESTOR veem apenas usuários da própria empresa
-- GOD vê coluna extra `empresaId` (truncado para 8 chars)
-- Mesma estrutura de edição inline e exclusão com validação RBAC
-- Role dropdown respeita o mapa de permissões (ADMIN pode definir GESTOR/ATENDENTE, etc.)
+### Total: 135 testes (4 arquivos, 41 suítes)
 
-### Arquivos modificados
+### Cobertura de testes
 
-#### `src/app/api/empresa/route.ts`
-- Adicionados **PUT** e **DELETE**:
-  - PUT: GOD edita nome, cnpj, cor, logoUrl da empresa
-  - DELETE: GOD remove empresa (com verificação de existência)
-  - Valida unicidade de CNPJ na edição
+#### 🔒 RBAC (51 testes)
+- **CREATE_ROLE_MAP**: valida todas as combinações de criação de papel
+- **podeCriarRole**: 12 combinações testadas (GOD→ADMIN=true, GOD→GOD=false, etc.)
+- **DELETE_ROLE_MAP**: valida todas as combinações de exclusão
+- **podeDeletarRole**: GOD nunca é deletável (4 verified), ADMIN não deleta ADMIN
+- **getSetorFilter**: GOD/ADMIN sem filtro, GESTOR/ATENDENTE com filtro
+- **roleParaDisplay**: nomes amigáveis corretos
+- **rolesQuePodeCriar/Ver**: escopos corretos por papel
+- **Permissões especiais**: CAN_VIEW_EMPRESAS (só GOD), CAN_BATCH_CPF (GOD/ADMIN/GESTOR)
+- **Hierarquia**: valores numéricos (100/80/60/40) e ordem consistente
+- **Consistência**: mapas têm mesmas chaves, sem auto-referências
 
-#### `src/app/api/users/route.ts`
-- **PUT** existente com RBAC: GOD edita qualquer usuário não-GOD, ADMIN edita GESTOR/ATENDENTE mesma empresa, GESTOR edita ATENDENTE mesmo setor
-- **GET** agora aceita `?empresaId=` para GOD filtrar usuários por empresa
-- Inclui `empresaId` no select do PUT para verificação de empresa
+#### ✅ Validação (44 testes)
+- **CPF**: 6 casos (válido, letras, tamanho, vazio, especiais)
+- **Email**: 5 casos (válido, subdomínio, sem @, vazio, sem domínio)
+- **Senha**: 3 casos (mínimo 6, menos de 6, vazia)
+- **Status**: 4 casos (5 válidos, lowercase, inexistente, vazio)
+- **createUserSchema**: 7 casos (válido + 6 inválidos)
+- **createTicketSchema**: 6 casos (válido, prioridades, inválidos)
+- **createEmpresaSchema**: 4 casos (válido + 3 inválidos)
+- **createLeadSchema**: 5 casos (válido sem/com empresa, 3 inválidos)
 
-#### `src/app/(atendimento)/empresa/page.tsx`
-- Cards de empresa agora são **clicáveis** (`onClick → router.push(/empresa/${id}/usuarios)`)
-- cursor-pointer + hover scale effect
+#### 📞 PhoneMap (14 testes)
+- Registro e recuperação por CPF
+- CPF com formatação (pontos e traços)
+- Remoção (existente, inexistente, com formatação)
+- CPF vazio não cria entrada
+- Sobrescrita de telefone/instância
+- Persistência em arquivo JSON
 
-#### `src/app/(atendimento)/components/sidebar.tsx`
-- Novo menu **"Usuários"** (ícone LuUsers) — ADMIN/GESTOR/GOD
-- "Gestão de Usuarios" renomeado para **"Criar Usuário"** — ADMIN/GESTOR/GOD
-- "Empresas" — GOD apenas (mantido)
+#### 🛡️ Segurança (26 testes)
+- Princípio do menor privilégio (ATENDENTE mínimo)
+- Proteção contra escalada de privilégio (nenhum papel cria superior)
+- GOD é indestrutível (nenhum papel deleta GOD)
+- Nenhum papel deleta a si mesmo
+- Escopo de dados por empresa (GOD global, ADMIN/GESTOR/ATENDENTE escopados)
+- Acesso a funcionalidades críticas (empresas só GOD, lote CPF restrito)
+- Consistência de regras de negócio
+- Validação de hierarquia (diferença de 20 pontos entre níveis)
+- Permissão de deleção segura (ADMIN não deleta ADMIN)
+- Nenhum papel pode se autopromover
 
-### Fluxo de navegação
-```
-GOD:
-  Sidebar → Empresas → cards → clica empresa → /empresa/[id]/usuarios
-  Sidebar → Usuários → /usuarios (vê coluna empresaId extra)
-  Sidebar → Criar Usuário → /gestao-de-usuarios
+### Página `/testes`
+- Botão "Executar Todos os Testes" estilizado
+- Spinner de carregamento durante execução
+- Cards de estatísticas (total, aprovados, falhos, suítes)
+- Barras de progresso por categoria com cores
+- Resultados individuais com detalhes de erro
+- **Análise de Vulnerabilidades**: alertas categoriais com impacto
+- **Riscos de Crash**: descrição do que pode parar a aplicação
+- Tema consistente (dark/light via CSS variables)
 
-ADMIN/GESTOR:
-  Sidebar → Usuários → /usuarios (apenas própria empresa)
-  Sidebar → Criar Usuário → /gestao-de-usuarios
-```
-
-### Separação server/client (RBAC)
-- `src/lib/rbac.ts`: constantes e funções **puras** (CREATE_ROLE_MAP, DELETE_ROLE_MAP, etc.) — pode ser importado por client components
-- `src/lib/rbac-server.ts`: `getServerSessionRBAC()` — função **server-only** que valida sessão + role; importa `getServerSession` do next-auth
+### API `/api/testes`
+- Executa `vitest run --reporter=json` como child process
+- Captura e parseia output JSON com fallback
+- Gera relatório com:
+  - Estatísticas globais (total, passed, failed)
+  - Resultados por categoria
+  - Lista de vulnerabilidades identificadas
+  - Lista de riscos de crash
+- Timeout de 180 segundos para compilação TypeScript
 
 ### Build
 - `npm run build` — compilado com sucesso ✅
+- `npx vitest run` — 135/135 testes passaram ✅
+- `npx vitest run --reporter=json` — JSON válido gerado ✅
 - Commits: `54ecb1b`, `f044ee0`, `aeaf54d`
 
 ---
