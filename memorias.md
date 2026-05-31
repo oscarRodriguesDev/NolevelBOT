@@ -1778,3 +1778,75 @@ Requisição POST /api/tickets
 
 ### Build
 - `npm run build` — compilado com sucesso ✅
+
+---
+
+## 44. PROTEÇÃO DE LOGIN — CAPTCHA APÓS 3 TENTATIVAS FALHAS (30/05/2026)
+
+### Objetivo
+Mitigar ataques de força bruta no login sem bloquear permanentemente contas legítimas. Após 3 tentativas falhas de senha para o mesmo email, um CAPTCHA (Cloudflare Turnstile) é exigido antes de permitir nova tentativa.
+
+### Arquitetura
+
+```
+Usuário → /login → signIn("credentials")
+  → authorize() no nextauth.ts
+    → needsCaptcha(email)? → contagem >= 3?
+      → Sim: exige turnstileToken → verifyTurnstileToken()
+        → Inválido/faltando → retorna null (falha silenciosa)
+        → Válido → prossegue com validação de senha
+      → Não: prossegue direto
+    → Senha correta? → resetFailedLogin(email) → login OK
+    → Senha errada? → trackFailedLogin(email) → incrementa contador
+```
+
+### Mudanças
+
+#### `src/lib/rate-limit.ts`
+- `trackFailedLogin(email)` — incrementa contagem para o email, reseta após 1h de inatividade
+- `resetFailedLogin(email)` — zera contagem (login bem-sucedido)
+- `needsCaptcha(email)` — retorna true se >= 3 tentativas na janela
+- `verifyTurnstileToken(token)` — valida token Turnstile via API Cloudflare
+
+#### `src/lib/nextauth.ts`
+- Credential `turnstileToken` adicionada (opcional)
+- `authorize()` modificado: verifica `needsCaptcha()` antes de checar senha
+- Chamadas a `trackFailedLogin()` nas falhas, `resetFailedLogin()` no sucesso
+
+#### `src/app/api/auth/[...nextauth]/route.ts`
+- **Refatorado:** removida duplicação massiva — agora importa `authOptions` de `@/lib/nextauth`
+- Antes: ~95 linhas com `authOptions` duplicado (idêntico ao `lib/nextauth.ts`)
+- Depois: 4 linhas, apenas `NextAuth(authOptions)`
+
+#### `src/app/login/page.tsx`
+- Estado `failedAttempts` — incrementa a cada erro de login
+- Após 3 falhas, injeta script Cloudflare Turnstile e renderiza widget
+- Botão submit desabilitado até Turnstile ser resolvido
+- Turnstile token enviado como `turnstileToken` no `signIn()`
+
+#### `src/types/next-auth.d.ts`
+- Interface `TurnstileObject` + declaração global `window.turnstile`
+
+#### `.env.example`
+- Adicionadas: `TURNSTILE_SECRET_KEY` e `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (valores always-pass)
+
+### Benefícios
+- ✅ 3 tentativas livres sem captcha (UX zero atrito no dia a dia)
+- ✅ A partir da 4ª, CAPTCHA invisível (Cloudflare Turnstile) aparece
+- ✅ Não bloqueia conta permanentemente — o contador expira após 1h sem tentativas
+- ✅ Sem dependência externa de rastreamento (Turnstile é privacy-first)
+- ✅ Chave always-pass nas variáveis de ambiente permite testar sem configurar nada
+- ✅ Duplicação de `authOptions` eliminada (antes em 2 arquivos, agora centralizado)
+
+### Arquivos modificados
+| Arquivo | Mudança |
+|---------|---------|
+| `src/lib/rate-limit.ts` | Funções de rastreio de login + verificação Turnstile |
+| `src/lib/nextauth.ts` | Captcha validation no authorize |
+| `src/app/api/auth/[...nextauth]/route.ts` | Refatorado para importar authOptions (elimina duplicação) |
+| `src/app/login/page.tsx` | Widget Turnstile condicional + estado failedAttempts |
+| `src/types/next-auth.d.ts` | Declaração global window.turnstile |
+| `.env.example` | Variáveis Turnstile adicionadas |
+
+### Build
+- `npm run build` — compilado com sucesso ✅

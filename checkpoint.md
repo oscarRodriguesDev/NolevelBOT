@@ -567,3 +567,27 @@ Teste de penetração identificou `POST /api/tickets` sem autenticação. Como a
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
 | 1 | `2410222` | `fix: mitiga criacao de chamados anonimos - rate limit por IP, validacao CPF, honeypot anti-bot e sanitizacao` | 30/05/2026 |
+| 2 | `e1c1c3f` | `docs: atualiza memorias e checkpoint com mitigacao de seguranca no POST /api/tickets` | 30/05/2026 |
+
+---
+
+## Sessão: 30/05/2026 — Proteção de Login (CAPTCHA após 3 tentativas falhas)
+
+### Contexto
+Vulnerabilidade 4.5-4.6 do relatório: força bruta no login sem rate limiting. Solução: CAPTCHA (Cloudflare Turnstile) exigido após 3 tentativas falhas no mesmo email, sem bloquear a conta permanentemente.
+
+### Implementações realizadas:
+
+| # | Mudança | Arquivos |
+|---|---------|----------|
+| 1 | Rastreio de tentativas falhas por email | `src/lib/rate-limit.ts` |
+| 2 | Validação Turnstile no authorize do NextAuth | `src/lib/nextauth.ts` |
+| 3 | Refatoração: authOptions centralizado (remove duplicação) | `src/app/api/auth/[...nextauth]/route.ts` |
+| 4 | Widget Turnstile condicional no frontend | `src/app/login/page.tsx` |
+| 5 | Tipagem global window.turnstile | `src/types/next-auth.d.ts` |
+| 6 | Variáveis de ambiente Turnstile | `.env.example` |
+
+### Commits realizados nesta sessão:
+| # | Hash | Mensagem | Data |
+|---|------|----------|------|
+| 1 | `a6f709e` | `feat: captcha apos 3 tentativas de login falhas com Cloudflare Turnstile + refatora authOptions eliminando duplicacao` | 30/05/2026 |

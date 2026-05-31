@@ -31,6 +31,20 @@ declare module "next-auth" {
   }
 }
 
+interface TurnstileObject {
+  render: (container: HTMLElement, opts: {
+    sitekey: string
+    callback: (token: string) => void
+    "expired-callback": () => void
+  }) => string
+}
+
+declare global {
+  interface Window {
+    turnstile?: TurnstileObject
+  }
+}
+
 declare module "next-auth/jwt" {
   interface JWT {
     id?: string

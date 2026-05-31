@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import { prisma } from "@/lib/prisma"
 import { compare } from "bcryptjs"
 import { Chamado, ROLE } from "@prisma/client"
+import { needsCaptcha, verifyTurnstileToken, trackFailedLogin, resetFailedLogin } from "@/lib/rate-limit"
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -11,9 +12,16 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Senha", type: "password" },
+        turnstileToken: { label: "Turnstile", type: "text" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null
+
+        if (needsCaptcha(credentials.email)) {
+          if (!credentials.turnstileToken) return null
+          const valid = await verifyTurnstileToken(credentials.turnstileToken)
+          if (!valid) return null
+        }
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
@@ -22,10 +30,18 @@ export const authOptions: NextAuthOptions = {
           },
         })
 
-        if (!user || !user.password) return null
+        if (!user || !user.password) {
+          trackFailedLogin(credentials.email)
+          return null
+        }
 
         const isValid = await compare(credentials.password, user.password)
-        if (!isValid) return null
+        if (!isValid) {
+          trackFailedLogin(credentials.email)
+          return null
+        }
+
+        resetFailedLogin(credentials.email)
 
         const chamadosSetor = await prisma.chamado.findMany({
           where: {

@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/app/components/theme-toggle";
 import { LuMail, LuLock } from "react-icons/lu";
@@ -11,12 +11,45 @@ import { BtnVoltar } from "../components/back";
 
 export default function LoginPage() {
   const router = useRouter();
+  const turnstileRef = useRef<HTMLDivElement>(null);
+  const turnstileWidgetId = useRef<string | undefined>(undefined);
 
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileReady, setTurnstileReady] = useState(false);
+
+  const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "1x00000000000000000000AA"
+
+  useEffect(() => {
+    if (failedAttempts >= 3 && turnstileRef.current && !turnstileWidgetId.current) {
+      const script = document.createElement("script")
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js"
+      script.async = true
+      script.defer = true
+      script.onload = () => {
+        if (window.turnstile && turnstileRef.current) {
+          const id = window.turnstile.render(turnstileRef.current, {
+            sitekey: SITE_KEY,
+            callback: (token: string) => {
+              setTurnstileToken(token)
+              setTurnstileReady(true)
+            },
+            "expired-callback": () => {
+              setTurnstileToken("")
+              setTurnstileReady(false)
+            },
+          })
+          turnstileWidgetId.current = id
+        }
+      }
+      document.head.appendChild(script)
+    }
+  }, [failedAttempts, SITE_KEY])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -30,14 +63,26 @@ export default function LoginPage() {
       return;
     }
 
+    if (failedAttempts >= 3 && !turnstileToken) {
+      setError("Complete a verificação de segurança");
+      setLoading(false);
+      return;
+    }
+
     try {
+      const credentials: Record<string, string> = { email, password }
+      if (failedAttempts >= 3 && turnstileToken) {
+        credentials.turnstileToken = turnstileToken
+      }
+
       const result = await signIn("credentials", {
-        email,
-        password,
+        ...credentials,
         redirect: false,
       });
 
       if (result?.error) {
+        const newCount = failedAttempts + 1
+        setFailedAttempts(newCount)
         setError("Email ou senha incorretos");
         setPassword("");
         setLoading(false);
@@ -191,6 +236,12 @@ export default function LoginPage() {
               </div>
             </div>
 
+            {failedAttempts >= 3 && (
+              <div className="flex justify-center">
+                <div ref={turnstileRef} />
+              </div>
+            )}
+
             {error && (
               <div
                 className="p-4 rounded-xl text-sm border flex items-start gap-3 animate-in slide-in-from-top-2 duration-200"
@@ -206,7 +257,7 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={loading || !email || !password}
+              disabled={loading || !email || !password || (failedAttempts >= 3 && !turnstileReady)}
               className="w-full py-3.5 rounded-xl font-bold text-white transition-all duration-200 hover:brightness-110 hover:shadow-lg active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100"
               style={{ backgroundColor: "var(--primary)" }}
             >
