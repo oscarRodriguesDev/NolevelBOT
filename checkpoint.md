@@ -590,4 +590,4 @@ Vulnerabilidade 4.5-4.6 do relatório: força bruta no login sem rate limiting. 
 ### Commits realizados nesta sessão:
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
-| 1 | `a6f709e` | `feat: captcha apos 3 tentativas de login falhas com Cloudflare Turnstile + refatora authOptions eliminando duplicacao` | 30/05/2026 |
+| 1 | `d3755d2` | `feat: captcha apos 3 tentativas de login falhas com Cloudflare Turnstile + refatora authOptions eliminando duplicacao` | 30/05/2026 |
