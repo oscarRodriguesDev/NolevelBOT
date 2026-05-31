@@ -10,6 +10,8 @@ import type { HistoricoItem } from '@/types/chamado'
 import { normalizarStatus } from '@/types/chamado'
 import { getTicketWhereClause } from '@/lib/rbac'
 import { ROLE } from '@prisma/client'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+import { isValidCPF } from '@/lib/validation'
 
 type ContatoTelefone = { telefone: string; instance: string } | null
 
@@ -56,29 +58,55 @@ async function notificarCliente(cpf: string, ticket: string, etapa: 'criado' | '
   }
 }
 
+function sanitizar(valor: string, maxLength = 500): string {
+  return valor
+    .replace(/<[^>]*>/g, "")
+    .replace(/[<>]/g, "")
+    .trim()
+    .slice(0, maxLength)
+}
+
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req)
+    const rateCheck = checkRateLimit(`tickets:${ip}`, 3, 60 * 60 * 1000)
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        { error: "Muitas solicitações deste IP. Aguarde antes de tentar novamente." },
+        { status: 429 }
+      )
+    }
+
     const formData = await req.formData()
 
-    const nome = formData.get("nome") as string
-    const cpf = formData.get("cpf") as string
-    const setor = formData.get("setor") as string
-    const descricao = formData.get("descricao") as string
+    const honeypot = formData.get("website") as string | null
+    if (honeypot) {
+      return NextResponse.json({ success: true })
+    }
+
+    const nome = sanitizar(formData.get("nome") as string || "", 100)
+    const cpfRaw = (formData.get("cpf") as string || "").replace(/\D/g, "")
+    const setor = sanitizar(formData.get("setor") as string || "", 100)
+    const descricao = sanitizar(formData.get("descricao") as string || "", 1000)
     const prioridade = (formData.get("prioridade") as string) || "normal"
-    const telefone = formData.get("telefone") as string | null
+    const telefone = (formData.get("telefone") as string || "").replace(/\D/g, "").slice(0, 15) || null
     const file = formData.get("anexo") as File | null
 
     const camposFaltando: string[] = []
     if (!nome) camposFaltando.push("nome")
-    if (!cpf) camposFaltando.push("cpf")
+    if (!cpfRaw) camposFaltando.push("cpf")
     if (!setor) camposFaltando.push("setor")
     if (!descricao) camposFaltando.push("descricao")
     if (camposFaltando.length > 0) {
-      console.error("Campos obrigatórios faltando:", camposFaltando, { nome, cpf, setor, descricao: descricao?.substring(0, 50) })
+      console.error("Campos obrigatórios faltando:", camposFaltando, { nome, cpf: cpfRaw, setor, descricao: descricao?.substring(0, 50) })
       return NextResponse.json({ error: `Campos obrigatórios: ${camposFaltando.join(", ")}` }, { status: 400 })
     }
 
-    const cpfRecord = await prisma.cpfs.findFirst({ where: { cpf } })
+    if (!isValidCPF(cpfRaw)) {
+      return NextResponse.json({ error: "CPF inválido" }, { status: 400 })
+    }
+
+    const cpfRecord = await prisma.cpfs.findFirst({ where: { cpf: cpfRaw } })
     if (!cpfRecord) {
       return NextResponse.json({ error: "CPF não encontrado na empresa" }, { status: 404 })
     }
@@ -86,11 +114,11 @@ export async function POST(req: NextRequest) {
     const empresaId = cpfRecord.empresaId
 
     let anexoUrl: string | null = null
-    if (file) {
+    if (file && file.size > 0) {
       try {
         anexoUrl = await uploadFile({
           bucket: "anexo",
-          folder: cpf,
+          folder: cpfRaw,
           file,
           defaultUrl: "",
         })
@@ -109,7 +137,7 @@ export async function POST(req: NextRequest) {
       data: {
         ticket,
         nome,
-        cpf,
+        cpf: cpfRaw,
         setor,
         descricao,
         prioridade,
@@ -120,10 +148,10 @@ export async function POST(req: NextRequest) {
     })
 
     if (telefone) {
-      registerPhone(cpf, telefone, 'web')
+      registerPhone(cpfRaw, telefone, 'web')
     }
 
-    notificarCliente(cpf, ticket, 'criado', undefined, undefined, chamado.id)
+    notificarCliente(cpfRaw, ticket, 'criado', undefined, undefined, chamado.id)
 
     return NextResponse.json(chamado, { status: 201 })
   } catch (error) {

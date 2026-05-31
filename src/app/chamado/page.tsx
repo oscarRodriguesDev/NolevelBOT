@@ -173,6 +173,9 @@ export default function TicketPageDirect() {
           }}
         >
           <form onSubmit={handleSubmit} className="space-y-6">
+            <div aria-hidden="true" className="absolute opacity-0 pointer-events-none" style={{ height: 0, overflow: 'hidden' }}>
+              <input type="text" name="website" tabIndex={-1} autoComplete="off" defaultValue="" />
+            </div>
             <div>
               <label className="block text-sm font-semibold mb-2">
                 Nome Completo
