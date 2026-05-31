@@ -545,3 +545,25 @@ O nome do assistente virtual agora vem do nome da instância configurada na Evol
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
 | 1 | `9431f06` | `feat: bot name dinamico por instancia + empresa do banco` | 30/05/2026 |
+
+---
+
+## Sessão: 30/05/2026 — Mitigação POST /api/tickets (Rate Limit + CPF + Honeypot)
+
+### Contexto
+Teste de penetração identificou `POST /api/tickets` sem autenticação. Como a rota precisa ser pública (qualquer CPF cadastrado pode abrir chamado), foram aplicadas 3 camadas de mitigação que não bloqueiam usuários legítimos.
+
+### Implementações realizadas:
+
+| # | Camada | Arquivo | Descrição |
+|---|--------|---------|-----------|
+| 1 | Rate limiting | `src/lib/rate-limit.ts` | Máx 3 chamados/IP a cada 60 min |
+| 2 | Honeypot anti-bot | `src/app/chamado/page.tsx` | Campo oculto que bots preenchem |
+| 3 | Validação CPF | `src/lib/validation.ts` | Algoritmo oficial de dígitos verificadores |
+| 4 | Sanitização | `src/app/api/tickets/route.ts` | Strip HTML, limites de tamanho por campo |
+| 5 | Integração | `src/app/api/tickets/route.ts` | Rate limit, honeypot, CPF check no POST |
+
+### Commits realizados nesta sessão:
+| # | Hash | Mensagem | Data |
+|---|------|----------|------|
+| 1 | `2410222` | `fix: mitiga criacao de chamados anonimos - rate limit por IP, validacao CPF, honeypot anti-bot e sanitizacao` | 30/05/2026 |

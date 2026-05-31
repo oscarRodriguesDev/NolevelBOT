@@ -1720,3 +1720,61 @@ Evolution API envia webhook com { instance: "Hevelyn", ... }
 
 ### Build
 - `npm run build` — compilado com sucesso ✅
+
+---
+
+## 43. MITIGAÇÃO DE SEGURANÇA — CRIAÇÃO DE CHAMADOS ANÔNIMOS (30/05/2026)
+
+### Contexto
+Teste de penetração identificou que o endpoint `POST /api/tickets` não exigia autenticação, permitindo que qualquer requisição criasse chamados no sistema. Como a rota precisa permanecer pública (qualquer CPF cadastrado pode abrir chamado), foram aplicadas **3 camadas de mitigação** que não bloqueiam usuários legítimos.
+
+### Camadas implementadas
+
+#### 1. Rate Limiting por IP (`src/lib/rate-limit.ts` — novo)
+- Limite: **3 chamados por IP a cada 60 minutos**
+- Implementação: mapa em memória com chave `tickets:{ip}`
+- Reseta automaticamente após a janela expirar
+- Funções: `checkRateLimit(key, maxRequests, windowMs)` e `getClientIp(req)`
+- Retorna 429 com mensagem explicativa quando excedido
+
+#### 2. Honeypot Anti-Bot
+- **Frontend** (`chamado/page.tsx`): campo `<input name="website">` oculto com classe `absolute opacity-0 pointer-events-none`
+- **Backend** (`tickets/route.ts`): se o campo `website` estiver preenchido, a API retorna 200 `{ success: true }` sem processar nada
+- Bots preenchem campos ocultos automaticamente; humanos não veem o campo
+
+#### 3. Validação de Dígitos Verificadores do CPF (`src/lib/validation.ts`)
+- Função `isValidCPF(cpf)` implementa o algoritmo oficial de validação dos 2 dígitos verificadores
+- Rejeita CPFs com todos dígitos iguais (ex: `111.111.111-11`)
+- `cpfSchema` do Zod atualizado com `.refine(isValidCPF, "CPF inválido")`
+- API retorna 400 com "CPF inválido" se os dígitos não conferirem
+
+#### 4. Sanitização de Campos (`tickets/route.ts`)
+- Função `sanitizar(valor, maxLength)`: remove tags HTML, remove `<` e `>`, trunca ao tamanho máximo
+- Limites por campo: nome 100 chars, setor 100 chars, descrição 1000 chars, telefone 15 chars
+- CPF e telefone são limpos para apenas dígitos
+
+### Arquivos criados
+| Arquivo | Descrição |
+|---------|-----------|
+| `src/lib/rate-limit.ts` | Sistema de rate limiting por IP |
+
+### Arquivos modificados
+| Arquivo | Mudança |
+|---------|---------|
+| `src/app/api/tickets/route.ts` | Rate limit, honeypot, validação CPF, sanitização |
+| `src/app/chamado/page.tsx` | Campo honeypot oculto no formulário |
+| `src/lib/validation.ts` | Função `isValidCPF()` + validação no schema |
+
+### Fluxo de segurança
+```
+Requisição POST /api/tickets
+  → Rate limit check (3/hora/IP) → 429 se excedido
+  → Honeypot check → 200 falso se campo preenchido (bot)
+  → Sanitização dos campos (strip HTML, trim, slice)
+  → Validação CPF (algoritmo oficial) → 400 se inválido
+  → CPF existe no banco? → 404 se não
+  → Cria chamado (apenas CPFs reais e válidos passam)
+```
+
+### Build
+- `npm run build` — compilado com sucesso ✅
