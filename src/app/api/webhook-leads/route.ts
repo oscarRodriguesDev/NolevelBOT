@@ -3,7 +3,9 @@ import OpenAI from "openai"
 import { sendEvolutionText, saudacao, getMemoria, saveMemoria } from "@/lib/usedata"
 import { obterBaseDeConhecimento } from "@/lib/smartSearch"
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+function getOpenAI(): OpenAI {
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+}
 
 const FlowState = {
   AGUARDANDO_CPF: "aguardando_cpf",
@@ -24,7 +26,7 @@ const sessions = new Map<string, UserSession>()
 const ESTANDE_NOME = 'NoLevel na ESX 2026'
 
 async function gerarRespostaInteligente(pergunta: string, nome: string, baseDeConhecimento: string, historico?: string, botName?: string): Promise<string> {
-  const response = await openai.chat.completions.create({
+  const response = await getOpenAI().chat.completions.create({
     model: "gpt-4o-mini",
     messages: [
       {

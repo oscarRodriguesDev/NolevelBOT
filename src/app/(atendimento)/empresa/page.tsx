@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Building2, Search, Pencil, Trash2, X, Check } from 'lucide-react'
+import { Plus, Building2, Search, Pencil, Trash2, X, Check, Sparkles, Image, Loader2 } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { ROLE } from '@prisma/client'
 import { useHeader } from '../layout'
@@ -14,6 +14,12 @@ interface Empresa {
   nome: string
   cnpj: string
   setores: string[]
+  logoUrl?: string | null
+  botName?: string | null
+  botPresentation?: string | null
+  botServiceDesc?: string | null
+  botAvisosDesc?: string | null
+  botPrompt?: string | null
 }
 
 export default function EmpresaPage() {
@@ -25,6 +31,16 @@ export default function EmpresaPage() {
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({ nome: '', cnpj: '', setores: '' })
+
+  const [botConfigId, setBotConfigId] = useState<string | null>(null)
+  const [botForm, setBotForm] = useState({
+    botName: '',
+    botPresentation: '',
+    botServiceDesc: '',
+    botAvisosDesc: '',
+    botPrompt: '',
+  })
+  const [gerandoPrompt, setGerandoPrompt] = useState(false)
 
   const { setHeader } = useHeader()
 
@@ -120,6 +136,87 @@ export default function EmpresaPage() {
     }
   }
 
+  function openBotConfig(emp: Empresa) {
+    setBotConfigId(emp.id)
+    setBotForm({
+      botName: emp.botName || '',
+      botPresentation: emp.botPresentation || '',
+      botServiceDesc: emp.botServiceDesc || '',
+      botAvisosDesc: emp.botAvisosDesc || '',
+      botPrompt: emp.botPrompt || '',
+    })
+  }
+
+  function closeBotConfig() {
+    setBotConfigId(null)
+    setBotForm({ botName: '', botPresentation: '', botServiceDesc: '', botAvisosDesc: '', botPrompt: '' })
+  }
+
+  async function handleGerarPrompt() {
+    if (!botForm.botPresentation && !botForm.botServiceDesc && !botForm.botAvisosDesc) {
+      toast.error('Preencha pelo menos uma descrição')
+      return
+    }
+    setGerandoPrompt(true)
+    try {
+      const res = await fetch('/api/empresa/prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          empresaId: botConfigId,
+          botPresentation: botForm.botPresentation,
+          botServiceDesc: botForm.botServiceDesc,
+          botAvisosDesc: botForm.botAvisosDesc,
+          botName: botForm.botName,
+        }),
+      })
+      if (!res.ok) { toast.error('Erro ao gerar prompt'); return }
+      const data = await res.json()
+      setBotForm(p => ({ ...p, botPrompt: data.botPrompt }))
+      toast.success('Prompt gerado!')
+    } catch {
+      toast.error('Erro ao gerar prompt')
+    } finally {
+      setGerandoPrompt(false)
+    }
+  }
+
+  async function handleSaveBotConfig() {
+    try {
+      const res = await fetch('/api/empresa/prompt', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          empresaId: botConfigId,
+          botName: botForm.botName,
+          botPresentation: botForm.botPresentation,
+          botServiceDesc: botForm.botServiceDesc,
+          botAvisosDesc: botForm.botAvisosDesc,
+          botPrompt: botForm.botPrompt,
+        }),
+      })
+      if (!res.ok) { toast.error('Erro ao salvar'); return }
+      toast.success('Configuração salva!')
+      closeBotConfig()
+      fetchEmpresas()
+    } catch {
+      toast.error('Erro ao conectar')
+    }
+  }
+
+  async function handleClearBotConfig() {
+    if (!confirm('Remover toda a configuração do bot desta empresa?')) return
+    try {
+      const res = await fetch(`/api/empresa/prompt?empresaId=${botConfigId}`, { method: 'DELETE' })
+      if (!res.ok) { toast.error('Erro ao limpar'); return }
+      toast.success('Configuração removida')
+      setBotForm({ botName: '', botPresentation: '', botServiceDesc: '', botAvisosDesc: '', botPrompt: '' })
+      fetchEmpresas()
+    } catch {
+      toast.error('Erro ao conectar')
+    }
+  }
+
   const filteredEmpresas = empresas.filter(emp =>
     emp.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
     emp.cnpj.includes(searchTerm)
@@ -175,11 +272,11 @@ export default function EmpresaPage() {
             filteredEmpresas.map((empresa) => (
               <div
                 key={empresa.id}
-                onClick={() => router.push(`/empresa/${empresa.id}/usuarios`)}
                 className="rounded-2xl border shadow-lg p-5 sm:p-6 transition-all duration-300 relative cursor-pointer hover:scale-[1.02]"
                 style={{
                   backgroundColor: "var(--surface)",
                   borderColor: "var(--border-subtle)",
+                  cursor: 'default',
                 }}
               >
                 {editingId === empresa.id ? (
@@ -243,8 +340,21 @@ export default function EmpresaPage() {
                 ) : (
                   <>
                     <div className="flex justify-between items-start mb-4">
-                      <div className="p-3 rounded-lg" style={{ backgroundColor: "var(--primary)", color: "#fff" }}>
-                        <Building2 size={24} />
+                      <div className="flex items-center gap-3">
+                        <div className="p-3 rounded-lg" style={{ backgroundColor: "var(--primary)", color: "#fff" }}>
+                          {empresa.logoUrl ? (
+                            <img src={empresa.logoUrl} alt="" className="w-6 h-6 object-contain" />
+                          ) : (
+                            <Building2 size={24} />
+                          )}
+                        </div>
+                        {empresa.botPrompt && (
+                          <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full font-medium"
+                            style={{ backgroundColor: "var(--surface-elevated)", color: "var(--primary)" }}>
+                            <Sparkles size={12} />
+                            Bot configurado
+                          </span>
+                        )}
                       </div>
                       <span className="text-xs font-bold uppercase tracking-wider px-2 py-1 rounded"
                         style={{ backgroundColor: "var(--surface-elevated)", color: "var(--foreground)", opacity: 0.6 }}>
@@ -267,13 +377,27 @@ export default function EmpresaPage() {
                       ))}
                     </div>
 
-                    <div className="flex gap-2 pt-2 border-t" style={{ borderColor: "var(--border-subtle)" }}>
+                    <div className="flex gap-2 pt-2 border-t flex-wrap" style={{ borderColor: "var(--border-subtle)" }}>
+                      <button
+                        onClick={() => router.push(`/empresa/${empresa.id}/usuarios`)}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105"
+                        style={{ color: "var(--foreground)", backgroundColor: "var(--surface-elevated)" }}
+                      >
+                        <Building2 size={14} /> Usuários
+                      </button>
                       <button
                         onClick={() => startEdit(empresa)}
                         className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105"
                         style={{ color: "var(--primary)", backgroundColor: "var(--surface-elevated)" }}
                       >
                         <Pencil size={14} /> Editar
+                      </button>
+                      <button
+                        onClick={() => openBotConfig(empresa)}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105"
+                        style={{ color: "var(--foreground)", backgroundColor: "var(--surface-elevated)" }}
+                      >
+                        <Sparkles size={14} /> Bot
                       </button>
                       <button
                         onClick={() => handleDelete(empresa.id, empresa.nome)}
@@ -300,6 +424,124 @@ export default function EmpresaPage() {
           )}
         </div>
       </div>
+
+      {botConfigId && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
+          onClick={closeBotConfig}
+        >
+          <div
+            className="rounded-2xl border shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+            style={{
+              backgroundColor: "var(--surface)",
+              borderColor: "var(--border-subtle)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-6 border-b" style={{ borderColor: "var(--border-subtle)" }}>
+              <div className="flex items-center gap-2">
+                <Sparkles size={20} style={{ color: "var(--primary)" }} />
+                <h3 className="font-bold text-lg">Configuração do Assistente Virtual</h3>
+              </div>
+              <button
+                onClick={closeBotConfig}
+                className="p-2 rounded-lg transition-colors hover:brightness-90"
+                style={{ backgroundColor: "var(--surface-elevated)" }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider opacity-70">Nome do Assistente</label>
+                <input
+                  type="text"
+                  placeholder="Hevelyn"
+                  value={botForm.botName}
+                  onChange={e => setBotForm(p => ({ ...p, botName: e.target.value }))}
+                  className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+                  style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider opacity-70">Como se apresentar?</label>
+                <textarea
+                  value={botForm.botPresentation}
+                  onChange={e => setBotForm(p => ({ ...p, botPresentation: e.target.value }))}
+                  rows={2}
+                  className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent resize-none"
+                  style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider opacity-70">Como atender?</label>
+                <textarea
+                  value={botForm.botServiceDesc}
+                  onChange={e => setBotForm(p => ({ ...p, botServiceDesc: e.target.value }))}
+                  rows={2}
+                  className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent resize-none"
+                  style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider opacity-70">Como apresentar avisos?</label>
+                <textarea
+                  value={botForm.botAvisosDesc}
+                  onChange={e => setBotForm(p => ({ ...p, botAvisosDesc: e.target.value }))}
+                  rows={2}
+                  className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent resize-none"
+                  style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
+                />
+              </div>
+
+              <button
+                onClick={handleGerarPrompt}
+                disabled={gerandoPrompt}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-white transition-all duration-200 hover:brightness-110 hover:shadow-lg active:scale-[0.98] disabled:opacity-50"
+                style={{ backgroundColor: "var(--primary)" }}
+              >
+                {gerandoPrompt ? <><Loader2 className="animate-spin" size={16} /> Gerando...</> : <><Sparkles size={16} /> Gerar Prompt com IA</>}
+              </button>
+
+              {botForm.botPrompt && (
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-wider opacity-70">Prompt Gerado</label>
+                  <textarea
+                    value={botForm.botPrompt}
+                    onChange={e => setBotForm(p => ({ ...p, botPrompt: e.target.value }))}
+                    rows={4}
+                    className="w-full px-4 py-3 rounded-xl border text-sm leading-relaxed outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent resize-none"
+                    style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--status-completed)", color: "var(--foreground)" }}
+                  />
+                  <p className="text-xs opacity-50">Você pode editar o prompt manualmente se necessário.</p>
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-4 border-t" style={{ borderColor: "var(--border-subtle)" }}>
+                <button
+                  onClick={handleSaveBotConfig}
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-white transition-all hover:brightness-110"
+                  style={{ backgroundColor: "var(--primary)" }}
+                >
+                  <Check size={18} /> Salvar Configuração
+                </button>
+                <button
+                  onClick={handleClearBotConfig}
+                  className="px-4 py-3 rounded-xl font-bold transition-all hover:brightness-90"
+                  style={{ backgroundColor: "var(--surface-elevated)", color: "var(--status-cancelled)" }}
+                >
+                  Limpar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }

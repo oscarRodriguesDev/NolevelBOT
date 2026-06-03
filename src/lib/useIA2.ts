@@ -1,7 +1,9 @@
 import OpenAI from "openai";
 import { StatusChamado, saudacao } from "./usedata";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+function getOpenAI(): OpenAI {
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+}
 
 export const FlowState = {
   INICIO: "inicio",
@@ -89,6 +91,7 @@ export async function botIA2(
     : "nenhum"
 
   try {
+    const openai = getOpenAI();
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [

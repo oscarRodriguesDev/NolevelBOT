@@ -17,15 +17,21 @@ enum ROLE {
 
 // prisma/schema.prisma
 model empresa {
-  id          String    @id @default(uuid())
-  nome        String    @unique
-  cnpj        String    @unique
-  setores     String[]
-  users       User[]
-  chamados    Chamado[]
-  cpfs        cpfs[]
-  avisos      avisos[]
-  databaseUrl String? // URL de conexão específica para esta empresa
+  id              String    @id @default(uuid())
+  nome            String    @unique
+  cnpj            String    @unique
+  setores         String[]
+  logoUrl         String?                    // URL da logo da empresa
+  botName         String?                    // Nome do assistente virtual para esta empresa
+  botPresentation String?                    // Input: como o bot deve se apresentar
+  botServiceDesc  String?                    // Input: como o bot deve atender
+  botAvisosDesc   String?                    // Input: como apresentar os avisos
+  botPrompt       String?                    // Prompt consolidado gerado pela OpenAI
+  users           User[]
+  chamados        Chamado[]
+  cpfs            cpfs[]
+  avisos          avisos[]
+  databaseUrl     String? // URL de conexão específica para esta empresa
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
@@ -114,16 +120,19 @@ model tickets_fechados {
 
 //representa o quadro de avisos da empresa
 model avisos {
-  id        String    @id @default(uuid())
-  empresaId String
-  Empresa   empresa   @relation(fields: [empresaId], references: [id])
-  titulo    String
-  conteudo  String
-  setor     String?
-  duracao   String?
-  expiresAt DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id         String    @id @default(uuid())
+  empresaId  String
+  Empresa    empresa   @relation(fields: [empresaId], references: [id])
+  titulo     String
+  prompt_bot String?
+  nome_bot   String?
+  conteudo   String
+  setor      String?
+  duracao    String?
+  logoUrl    String?
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   @@index([empresaId])
   @@index([setor])

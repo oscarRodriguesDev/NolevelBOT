@@ -1850,3 +1850,122 @@ Usuário → /login → signIn("credentials")
 
 ### Build
 - `npm run build` — compilado com sucesso ✅
+
+---
+
+## 45. WEBHOOK26 + useIA3.ts + PROMPT PERSONALIZADO POR EMPRESA (02/06/2026)
+
+### Objetivo
+Criar uma nova instância do bot (webhook26) que utiliza um prompt de IA **personalizado por empresa**, configurado via formulário no cadastro da empresa. O nome do bot também vem da tabela `empresa`.
+
+### Arquitetura
+
+```
+Empresa (cadastro)
+  ├── logoUrl — logo da empresa
+  ├── botName — nome do assistente virtual
+  ├── botPresentation — "como se apresentar?" (input do usuário)
+  ├── botServiceDesc — "como atender?" (input do usuário)
+  ├── botAvisosDesc — "como apresentar avisos?" (input do usuário)
+  └── botPrompt — prompt consolidado gerado pela OpenAI
+
+Geração do prompt:
+  Usuário preenche 3 descrições → "Gerar Prompt com IA"
+    → POST /api/empresa/prompt → OpenAI gera prompt → salva em botPrompt
+    → Apenas GOD pode editar (front + backend)
+
+Webhook26:
+  Usuário envia CPF → lookup empresaId → botIA3() carrega empresa.botPrompt
+    → System prompt da IA usa o prompt personalizado (se existir)
+    → Fallback para descrições individuais ou prompt genérico
+```
+
+### Schema — Campos adicionados no model `empresa`
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `logoUrl` | `String?` | URL da logo da empresa no Supabase |
+| `botName` | `String?` | Nome do assistente virtual |
+| `botPresentation` | `String?` | Input: como o bot deve se apresentar |
+| `botServiceDesc` | `String?` | Input: como o bot deve atender |
+| `botAvisosDesc` | `String?` | Input: como apresentar os avisos |
+| `botPrompt` | `String?` | Prompt consolidado gerado pela OpenAI |
+
+### Arquivos criados
+
+#### `src/lib/useIA3.ts` (novo)
+- Módulo de IA especializado para webhook26
+- `botIA3()` aceita `empresaId` como parâmetro adicional
+- `getEmpresaConfig(empresaId)` — busca configuração do bot da empresa no banco
+- `montarSystemPrompt()` — monta o system prompt combinando:
+  - Se `botPrompt` existe: usa como instrução personalizada
+  - Se não: usa descrições individuais ou prompt genérico
+- `detectFileIntent()` — mesmo matching inteligente do useIA2.ts
+- Lazy initialization da OpenAI (`getOpenAI()`) para evitar erro de build sem API key
+
+#### `src/app/api/webhook26/route.ts` (novo)
+- Baseado no webhook25, usando `useIA3.ts` em vez de `useIA2.ts`
+- Ao identificar CPF, faz lookup do `empresaId` via tabela `cpfs`
+- Passa `session.empresaId` para `botIA3()`, que carrega a configuração personalizada
+- Fluxo idêntico ao webhook25: INICIO → IDENTIFICAÇÃO_CPF → MENU → COLETAR_MOTIVO → MÍDIA → SETOR
+
+#### `src/app/api/empresa/prompt/route.ts` (novo)
+API exclusiva para GOD gerenciar o prompt do bot por empresa:
+
+| Método | Função |
+|--------|--------|
+| `GET` | Retorna configuração do bot de uma empresa (GOD) |
+| `POST` | Gera prompt via OpenAI a partir das 3 descrições (GOD) |
+| `PUT` | Atualiza prompt/descrições manualmente (GOD) |
+| `DELETE` | Remove configuração do bot (GOD) |
+
+- `empresaId='preview'` no POST ativa modo preview (não salva no banco) — usado na tela de criação
+- Todas as rotas protegidas com `getServerSessionRBAC(["GOD"])`
+
+#### `src/app/api/upload/route.ts` (novo)
+- Endpoint genérico de upload (FormData → Supabase Storage)
+- Aceita `file`, `bucket`, `folder`
+- Usado para upload de logo da empresa
+
+### Arquivos modificados
+
+#### `src/app/api/empresa/route.ts`
+- **POST**: Aceita `logoUrl`, `botName`, `botPresentation`, `botServiceDesc`, `botAvisosDesc`, `botPrompt`
+- **GET (GOD)**: Retorna novos campos no select
+- **GET (CPF)**: Retorna novos campos no select aninhado
+- **PUT**: Aceita os 6 novos campos para atualização
+
+#### `src/app/(atendimento)/empresa/create/page.tsx`
+- Adicionado **upload de logo** (preview + Supabase)
+- Adicionada seção **"Configuração do Assistente Virtual"** com:
+  - Nome do assistente (input)
+  - "Como se apresentar?" (textarea)
+  - "Como atender?" (textarea)
+  - "Como apresentar avisos?" (textarea)
+  - Botão **"Gerar Prompt com IA"** → chama OpenAI → exibe prompt gerado
+  - Prompt gerado é enviado junto com a criação da empresa
+
+#### `src/app/(atendimento)/empresa/page.tsx`
+- Cards de empresa mostram **logo** e badge **"Bot configurado"**
+- Novo botão **"Bot"** que abre modal de configuração do assistente
+- Modal contém: nome, 3 descrições, gerar prompt, editar prompt, salvar/limpar
+- Botão "Usuários" para navegar para `/empresa/[id]/usuarios`
+
+#### `src/lib/useIA.ts` e `src/lib/useIA2.ts`
+- OpenAI Client alterado para **lazy initialization** (`getOpenAI()`) para evitar crash no build sem `OPENAI_API_KEY` no `.env`
+
+#### `src/app/api/webhook-leads/route.ts` e `src/app/api/empresa/prompt/route.ts`
+- Idem: lazy initialization da OpenAI
+
+### Regras de negócio
+
+- ✅ Apenas GOD pode gerenciar prompts do bot (frontend + backend)
+- ✅ O prompt gerado pela OpenAI é salvo como `botPrompt` no model `empresa`
+- ✅ Se `botPrompt` existe, webhook26 usa como system prompt completo
+- ✅ Se não existe, usa as descrições individuais ou prompt genérico
+- ✅ O nome do bot (`botName`) vem da tabela empresa
+- ✅ Compatibilidade retroativa: webhooks 22-25 continuam funcionando
+- ✅ Upload de logo via Supabase Storage (bucket `profile`)
+
+### Build
+- `npm run build` — compilado com sucesso ✅

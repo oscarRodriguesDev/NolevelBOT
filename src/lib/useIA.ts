@@ -1,7 +1,9 @@
 import { buscarAvisos, StatusChamado, saudacao } from "./usedata";
 import OpenAI from "openai";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+function getOpenAI(): OpenAI {
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+}
 
 const LINK_PORTAL = process.env.NEXT_PUBLIC_BASE_URL
 const LINK_CHAMADOS = `${LINK_PORTAL}/chamado`;
@@ -66,6 +68,7 @@ export async function botIA(
     : "nenhum"
 
   try {
+    const openai = getOpenAI();
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
