@@ -122,7 +122,7 @@ Máximo 400 caracteres. Seja objetivo.`
       if (logoFile) {
         const formData = new FormData()
         formData.append('file', logoFile)
-        formData.append('bucket', 'profile')
+        formData.append('bucket', 'logo')
         formData.append('folder', 'empresas')
 
         const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData })
