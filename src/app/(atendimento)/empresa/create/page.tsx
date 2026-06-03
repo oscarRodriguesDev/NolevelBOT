@@ -129,6 +129,9 @@ Máximo 400 caracteres. Seja objetivo.`
         if (uploadRes.ok) {
           const uploadData = await uploadRes.json()
           finalLogoUrl = uploadData.url || ''
+        } else {
+          const errData = await uploadRes.json().catch(() => ({}))
+          toast.error(errData.error || 'Erro ao fazer upload da logo')
         }
       }
 
