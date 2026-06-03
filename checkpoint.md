@@ -591,3 +591,37 @@ Vulnerabilidade 4.5-4.6 do relatório: força bruta no login sem rate limiting. 
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
 | 1 | `d3755d2` | `feat: captcha apos 3 tentativas de login falhas com Cloudflare Turnstile + refatora authOptions eliminando duplicacao` | 30/05/2026 |
+
+---
+
+## Sessão: 02/06/2026 — Webhook26 + useIA3.ts + Prompt Personalizado por Empresa
+
+### Resumo
+Criação do webhook26 que utiliza prompt de IA personalizado por empresa, configurado via formulário no cadastro da empresa. Inclui logo upload via Supabase, geração de prompt com OpenAI a partir de 3 descrições (apresentação, atendimento, avisos), e lazy initialization da OpenAI em todos os módulos para permitir build sem API key.
+
+### Arquivos criados
+| Arquivo | Descrição |
+|---------|-----------|
+| `src/lib/useIA3.ts` | Módulo IA com botIA3(), getEmpresaConfig(), montarSystemPrompt(), detectFileIntent() — lazy OpenAI |
+| `src/app/api/webhook26/route.ts` | Webhook que carrega empresa.botPrompt via CPF lookup |
+| `src/app/api/empresa/prompt/route.ts` | API GOD GET/POST/PUT/DELETE para gerenciar prompts do bot |
+| `src/app/api/upload/route.ts` | Endpoint genérico de upload para Supabase (logo) |
+
+### Arquivos modificados
+| Arquivo | Mudança |
+|---------|---------|
+| `prisma/schema.prisma` | 6 novos campos em `empresa`: logoUrl, botName, botPresentation, botServiceDesc, botAvisosDesc, botPrompt |
+| `src/app/api/empresa/route.ts` | POST/GET/PUT incluem novos campos |
+| `src/app/(atendimento)/empresa/create/page.tsx` | Logo upload + bot config + gerar prompt com IA |
+| `src/app/(atendimento)/empresa/page.tsx` | Logo, badge "Bot configurado", modal de bot config + botão Usuários |
+| `src/lib/useIA.ts` | Lazy initialization OpenAI |
+| `src/lib/useIA2.ts` | Lazy initialization OpenAI |
+| `src/app/api/webhook-leads/route.ts` | Lazy initialization OpenAI |
+
+### Commits realizados nesta sessão:
+| # | Hash | Mensagem | Data |
+|---|------|----------|------|
+| 1 | `5afb8c4` | `feat: webhook26 com useIA3.ts - prompt personalizado por empresa, logo upload, e geracao de prompt com IA` | 02/06/2026 |
+
+### Build
+- `npm run build` — compilado com sucesso ✅
