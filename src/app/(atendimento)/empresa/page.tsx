@@ -1,9 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Building2, Search, Pencil, Trash2, X, Check, Sparkles, Image, Loader2 } from 'lucide-react'
+import { Plus, Building2, Search, Pencil, Trash2, X, Check, Sparkles, Image, Loader2, Upload } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { ROLE } from '@prisma/client'
 import { useHeader } from '../layout'
@@ -31,6 +31,9 @@ export default function EmpresaPage() {
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({ nome: '', cnpj: '', setores: '' })
+  const [editLogoFile, setEditLogoFile] = useState<File | null>(null)
+  const [editLogoPreview, setEditLogoPreview] = useState<string | null>(null)
+  const editFileInputRef = useRef<HTMLInputElement>(null)
 
   const [botConfigId, setBotConfigId] = useState<string | null>(null)
   const [botForm, setBotForm] = useState({
@@ -84,15 +87,38 @@ export default function EmpresaPage() {
       cnpj: emp.cnpj,
       setores: emp.setores.join(', '),
     })
+    setEditLogoFile(null)
+    setEditLogoPreview(emp.logoUrl || null)
   }
 
   function cancelEdit() {
     setEditingId(null)
     setEditForm({ nome: '', cnpj: '', setores: '' })
+    setEditLogoFile(null)
+    setEditLogoPreview(null)
   }
 
   async function saveEdit(id: string) {
     try {
+      let finalLogoUrl = editLogoPreview
+
+      if (editLogoFile) {
+        const formData = new FormData()
+        formData.append('file', editLogoFile)
+        formData.append('bucket', 'logo')
+        formData.append('folder', 'empresas')
+
+        const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData })
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json()
+          finalLogoUrl = uploadData.url || editLogoPreview
+        } else {
+          const errData = await uploadRes.json().catch(() => ({}))
+          toast.error(errData.error || 'Erro ao fazer upload da logo')
+          return
+        }
+      }
+
       const res = await fetch(`/api/empresa?id=${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -100,6 +126,7 @@ export default function EmpresaPage() {
           nome: editForm.nome,
           cnpj: editForm.cnpj.replace(/\D/g, ''),
           setores: editForm.setores.split(',').map(s => s.trim()).filter(Boolean),
+          logoUrl: finalLogoUrl || null,
         }),
       })
 
@@ -319,6 +346,45 @@ export default function EmpresaPage() {
                           color: "var(--foreground)",
                         }}
                       />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold mb-1">Logo</label>
+                      <div className="flex items-center gap-3">
+                        <div
+                          onClick={() => editFileInputRef.current?.click()}
+                          className="w-16 h-16 rounded-lg border-2 border-dashed flex items-center justify-center cursor-pointer transition-all hover:brightness-110 overflow-hidden"
+                          style={{ backgroundColor: "var(--surface)", borderColor: "var(--border-subtle)" }}
+                        >
+                          {editLogoPreview ? (
+                            <img src={editLogoPreview} alt="Logo" className="w-full h-full object-contain p-1" />
+                          ) : (
+                            <Image size={20} style={{ opacity: 0.4 }} />
+                          )}
+                        </div>
+                        <input
+                          ref={editFileInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file) {
+                              setEditLogoFile(file)
+                              setEditLogoPreview(URL.createObjectURL(file))
+                            }
+                          }}
+                        />
+                        {editLogoPreview && (
+                          <button
+                            type="button"
+                            onClick={() => { setEditLogoFile(null); setEditLogoPreview(null) }}
+                            className="text-xs"
+                            style={{ color: "var(--status-cancelled)" }}
+                          >
+                            Remover
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div className="flex gap-2 pt-2">
                       <button
