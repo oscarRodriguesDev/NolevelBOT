@@ -131,7 +131,7 @@ function montarSystemPrompt(config: EmpresaConfig, session: UserSession, chamado
     personalidade ? `PERSONALIDADE:\n${personalidade}` : "",
     `Contexto: ${session.nome || "anonimo"}, chamados: ${chamadosResumo}`,
     isColetarMotivo && avisos ? `Avisos p/ consultar:\n${avisos}\nSe o assunto bater, responda conforme o aviso. Se não, responda só: PROSSEGUIR_FLUXO` : "",
-    `Instrução: ${instrucaoEtapa}`,
+    `Instrução: ${instrucaoEtapa} caso não consiga coletar o motivo retorne apenas 'dont_know'`,
   ].filter(Boolean).join("\n");
 }
 
@@ -156,7 +156,7 @@ export async function botIA3(
   try {
     const openai = getOpenAI();
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-3.5-turbo", //depois melhora esta gastando muito
       messages: [
         {
           role: "system",

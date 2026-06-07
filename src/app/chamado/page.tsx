@@ -60,42 +60,56 @@ export default function TicketPageDirect() {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  setLoading(true)
 
-    try {
-      const form = new FormData()
-      form.append('nome', formData.nome)
-      form.append('cpf', formData.cpf)
-      form.append('setor', formData.setor)
-      form.append('descricao', formData.descricao)
-      form.append('prioridade', 'normal')
+  try {
+    const form = new FormData()
 
-      if (formData.telefone) {
-        form.append('telefone', formData.telefone)
-      }
+    form.append('nome', formData.nome)
+    form.append('cpf', formData.cpf)
+    form.append('setor', formData.setor)
+    form.append('descricao', formData.descricao)
+    form.append('prioridade', 'normal')
 
-      if (file) {
-        form.append('anexo', file)
-      }
-
-      const response = await fetch('/api/tickets', {
-        method: 'POST',
-        body: form,
-      })
-
-      if (!response.ok) {
-        throw new Error('Erro na requisição')
-      }
-
-      setSubmitted(true)
-    } catch {
-      toast.error('Erro ao processar. Tente novamente.')
-    } finally {
-      setLoading(false)
+    if (formData.telefone) {
+      form.append('telefone', formData.telefone)
     }
+
+    if (file) {
+      form.append('anexo', file)
+    }
+
+    const response = await fetch('/api/tickets', {
+      method: 'POST',
+      body: form,
+    })
+
+    const data = await response.json().catch(() => null)
+
+    console.log('Status:', response.status)
+    console.log('Resposta:', data)
+
+    if (!response.ok) {
+      throw new Error(
+        data?.error ||
+        data?.message ||
+        `Erro HTTP ${response.status}`
+      )
+    }
+
+    setSubmitted(true)
+    toast.success('Chamado criado com sucesso')
+  } catch (error: any) {
+    console.error('Erro ao enviar chamado:', error)
+    toast.error(error?.message || 'Erro ao processar. Tente novamente.')
+  } finally {
+    setLoading(false)
   }
+}
+
+
 
   if (submitted) {
     return (

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { FlowState, detectFileIntent, botIA3 } from "@/lib/useIA3";
-import type { UserSession } from "@/lib/useIA3";
+import { FlowState, detectFileIntent, botIA4 as botIA, type UserSession } from "@/lib/useIA4";
 import {
   validarCpf,
   StatusChamado,
@@ -52,6 +51,7 @@ export async function POST(req: NextRequest) {
     const caption = data.message.imageMessage?.caption || data.message.documentMessage?.caption || "";
     const userInput = (data.message.conversation || data.message.extendedTextMessage?.text || caption || "").trim();
     const lowerInput = userInput.toLowerCase();
+    
     let session = sessions.get(number);
 
     if (!session || Date.now() - session.lastInteraction > 1000 * 60 * 60 * 2) {
@@ -125,9 +125,16 @@ export async function POST(req: NextRequest) {
 
     switch (session.state) {
       case FlowState.INICIO: {
-        await sendEvolutionText(instance, number, `Olá! Eu sou a ${instance}, sua assistente virtual.
-           😊\n\nPara começar, me informe seu CPF (só os números) que eu te ajudo.`);
+        // Apenas acolhe o usuário e pede o CPF. Sem revelar nomes.
+        const resp = await botIA(
+          session,
+          userInput,
+          "O usuário acabou de chegar. Dê as boas-vindas e peça OBRIGATORIAMENTE o CPF para começar o atendimento. IMPORTANTE: Você é a recepção, NÃO se apresente e NÃO diga nenhum nome de bot ou de empresa ainda.",
+          avisos
+        );
+        
         session.state = FlowState.IDENTIFICACAO_CPF;
+        await sendEvolutionText(instance, number, resp);
         break;
       }
 
@@ -142,6 +149,7 @@ export async function POST(req: NextRequest) {
         const resCpf = await validarCpf(cleanCPF);
 
         if (resCpf && resCpf.valido) {
+          // Salvando o CPF na sessão. A partir daqui a função botIA4 sabe qual empresa buscar no banco.
           session.cpf = cleanCPF;
           session.nome = resCpf.nome;
           session.empresaId = await getEmpresaIdFromCpf(cleanCPF);
@@ -149,14 +157,15 @@ export async function POST(req: NextRequest) {
           registerPhone(cleanCPF, number, instance);
           avisos = await buscarAvisos(cleanCPF, req);
 
-          if (session.nome) {
-            await sendEvolutionText(instance, number, `${session.nome}, que bom te ver por aqui! 
-              😄\n\n O que você precisa?\n\n${menuString} Responda com o numero da sua opção` );
-            session.state = FlowState.MENU_PRINCIPAL;
-          } else {
-            await sendEvolutionText(instance, number, "CPF encontrado! Como prefere ser chamado?");
-            session.state = FlowState.IDENTIFICACAO_NOME;
-          }
+          // Aqui damos o comando para a IA fazer a apresentação, pois agora ela tem o CPF para carregar as configs
+          const instrucao = session.nome
+            ? `CPF ${cleanCPF} validado. O nome do usuário é ${session.nome}. OBRIGATÓRIO: Agora você deve se apresentar com o SEU NOME e o NOME DA SUA EMPRESA. Depois, saude o usuário e apresente as opções: ${menuString} Responda com o numero da sua opção`
+            : `CPF ${cleanCPF} encontrado. OBRIGATÓRIO: Agora você deve se apresentar com o SEU NOME e o NOME DA SUA EMPRESA. Depois, pergunte como o usuário gostaria de ser chamado.`;
+
+          const resposta = await botIA(session, userInput, instrucao, avisos);
+          await sendEvolutionText(instance, number, resposta);
+
+          session.state = session.nome ? FlowState.MENU_PRINCIPAL : FlowState.IDENTIFICACAO_NOME;
         } else {
           await sendEvolutionText(instance, number, "Esse CPF não está cadastrado no sistema. Pode verificar e tentar de novo?");
         }
@@ -165,20 +174,19 @@ export async function POST(req: NextRequest) {
 
       case FlowState.IDENTIFICACAO_NOME: {
         session.nome = userInput;
-        await sendEvolutionText(instance, number, `Prazer, ${userInput}! 😊\n\n
-          O que você precisa?\n\n${menuString} Responda com o numero da sua opçao`);
+        const instrucao = `Agora que já sabe o nome (${userInput}), saude-o brevemente e apresente o menu: ${menuString} Responda com o numero da sua opção`;
+        const resposta = await botIA(session, userInput, instrucao, avisos);
+        
+        await sendEvolutionText(instance, number, resposta);
         session.state = FlowState.MENU_PRINCIPAL;
         break;
       }
 
       case FlowState.MENU_PRINCIPAL: {
-        /* abertura de chamados */
         if (["1", "abrir", "chamado"].some(v => lowerInput.includes(v))) {
-          await sendEvolutionText(instance, number, "Claro! Me conta o que está acontecendo? Pode descrever com detalhes, vou registrar tudo para vocé.");
+          await sendEvolutionText(instance, number, "Claro! Me conta o que está acontecendo? Pode descrever com detalhes, vou registrar tudo para você.");
           session.state = FlowState.COLETAR_MOTIVO;
         }
-
-        /* verificar status de chamados */
         else if (["2", "status", "consultar", "ver"].some(v => lowerInput.includes(v))) {
           const chamados = await StatusChamado(session.cpf || "");
           const lista = chamados.length > 0
@@ -207,26 +215,19 @@ export async function POST(req: NextRequest) {
 
           await sendEvolutionText(instance, number, `📋 *SEUS CHAMADOS*\n\n${lista}\n\nMais alguma coisa?\n\n${menuString}`);
         }
-
-        /* encerrar atendimento */
         else if (["3", "sair", "encerrar", "cancelar"].some(v => lowerInput.includes(v))) {
           await sendEvolutionText(instance, number, "Tudo bem, atendimento encerrado. Quando precisar é só me chamar de volta!");
           sessions.delete(number);
         }
-
-        /* caso não seja nenhuma delas */
         else {
-            
-          const resposta = await botIA3(
+          const resposta = await botIA(
             session,
             userInput,
-            `Vamos tentar nomente, vc precisa precisa escolher uma das opcoes abaixo: ${menuString}.`,
-            avisos,
-            session.empresaId
+            `Vamos tentar novamente, você precisa escolher uma das opções abaixo: ${menuString}. Caso não consiga identificar, retorne dont_know`,
+            avisos
           );
 
           if (resposta.includes("dont_know")) {
-            //encerrar o atendimento caso a IA não consiga identificar o motivo do chamado
             await sendEvolutionText(instance, number, "Desculpa, não consegui entender o motivo do seu chamado.");
             return NextResponse.json({ ok: true }); 
           }
@@ -255,27 +256,26 @@ export async function POST(req: NextRequest) {
           await sendEvolutionText(
             instance,
             number,
-           ` Certo! Você precisa enviar alguma foto ou documento ou comprovante?.`
+            `Certo! Você precisa enviar alguma foto ou documento ou comprovante?`
           );
           session.state = FlowState.PERGUNTAR_ANEXO;
           break;
         }
 
-        const analiseIA = await botIA3(
+        const analiseIA = await botIA(
           session,
           userInput,
           `Veja se o problema do usuário tem relação com algum Aviso abaixo.
            Se tiver, responda com base no aviso e pergunte se resolveu. Se não tiver,
-            responda apenas: PROSSEGUIR_FLUXO`,
-          avisos,
-          session.empresaId
+           responda apenas: PROSSEGUIR_FLUXO`,
+          avisos
         );
 
         if (analiseIA.includes("PROSSEGUIR_FLUXO")) {
           await sendEvolutionText(
             instance,
             number,
-            `Certo! Vocé precisa enviar alguma foto ou documento ou comprovante?`
+            `Certo! Você precisa enviar alguma foto ou documento ou comprovante?`
           );
           session.state = FlowState.PERGUNTAR_ANEXO;
         } else {
@@ -290,8 +290,7 @@ export async function POST(req: NextRequest) {
           await sendEvolutionText(
             instance,
             number,
-           ` Certo! Vocé precisa enviar alguma foto ou documento ou comprovante?`
-
+            `Certo! Você precisa enviar alguma foto ou documento ou comprovante?`
           );
           session.state = FlowState.PERGUNTAR_ANEXO;
         } else {
@@ -341,7 +340,7 @@ export async function POST(req: NextRequest) {
           await sendEvolutionText(
             instance,
             number,
-           ` Pode enviar a foto ou documento aqui mesmo! 📎`
+            `Pode enviar a foto ou documento aqui mesmo! 📎`
           );
         } else {
           await sendEvolutionText(
@@ -376,9 +375,9 @@ export async function POST(req: NextRequest) {
               msg += `\n📎 O arquivo que você enviou foi anexado automaticamente.`;
             } 
 
-            msg +='Obrigado por entrar em contato. Nossa equipe vai analisar e te retornar o mais rápido possível.\n\nSe precisar de mais alguma coisa, é só me chamar!';
+            msg +='\nObrigado por entrar em contato. Nossa equipe vai analisar e te retornar o mais rápido possível.\n\nSe precisar de mais alguma coisa, é só me chamar!';
             await sendEvolutionText(instance, number, msg);
-            // finaliza o atendimento após abrir o chamado, para evitar que o usuário envie mensagens que não serão registradas no chamado aberto
+            
             sessions.delete(number);
           }
           else {
@@ -391,13 +390,6 @@ export async function POST(req: NextRequest) {
           }
 
           session.anexoUrl = undefined;
-          session.state = FlowState.MENU_PRINCIPAL;
-
-          await sendEvolutionText(
-            instance,
-            number,
-            `Quer resolver mais alguma coisa?\n\n${menuString}`
-          );
         } else {
           await sendEvolutionText(
             instance,
@@ -409,7 +401,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    sessions.set(number, session);
+    if (session) {
+      sessions.set(number, session);
+    }
+    
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("Erro crítico no webhook26:", error);

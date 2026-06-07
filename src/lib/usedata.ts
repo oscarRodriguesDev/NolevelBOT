@@ -327,5 +327,28 @@ export async function validarCpf(cpf: string) {
     return { valido: false };
   }
 }
- 
+
+
+
+export async function getNomeBot(cpf: string) {
+  try {
+    const { prisma } = await import("@/lib/prisma");
+
+    const cpfData = await prisma.cpfs.findUnique({
+      where: { cpf },
+      select: {
+        Empresa: {
+          select: {
+            botName: true,
+          },
+        },
+      },
+    });
+
+    return cpfData?.Empresa?.botName?.trim() || "Hevelyn";
+  } catch (err) {
+    console.error("Erro ao obter nome do bot:", err);
+    return "Hevelyn";
+  }
+}
 

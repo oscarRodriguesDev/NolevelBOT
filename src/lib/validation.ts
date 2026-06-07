@@ -1,7 +1,8 @@
 import { z } from "zod"
 
+//ativar a validação do cpf pos produção
 export function isValidCPF(cpf: string): boolean {
-  const digits = cpf.replace(/\D/g, "")
+/*   const digits = cpf.replace(/\D/g, "")
   if (digits.length !== 11) return false
   if (/^(\d)\1{10}$/.test(digits)) return false
 
@@ -15,10 +16,11 @@ export function isValidCPF(cpf: string): boolean {
   for (let i = 0; i < 10; i++) sum += parseInt(digits[i]) * (11 - i)
   remainder = (sum * 10) % 11
   if (remainder === 10) remainder = 0
-  if (remainder !== parseInt(digits[10])) return false
+  if (remainder !== parseInt(digits[10])) return false */
 
   return true
 }
+
 
 export const cpfSchema = z.string().regex(/^\d{11}$/, "CPF deve conter 11 dígitos").refine(isValidCPF, "CPF inválido")
 

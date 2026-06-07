@@ -70,7 +70,7 @@ export async function botIA(
   try {
     const openai = getOpenAI();
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-3.5-turbo", //depois melhora esta gastando muito
       messages: [
         {
           role: "system",

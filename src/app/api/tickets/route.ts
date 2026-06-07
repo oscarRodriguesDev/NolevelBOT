@@ -32,7 +32,7 @@ async function buscarContato(cpf: string, chamadoId?: string): Promise<ContatoTe
           return { telefone: entradaTel.observacao, instance: 'web' }
         }
       }
-    } catch {}
+    } catch { }
   }
 
   return contato
@@ -78,6 +78,17 @@ export async function POST(req: NextRequest) {
     }
 
     const formData = await req.formData()
+
+
+
+    console.log('==== NOVA REQUISIÇÃO ====')
+    console.log('nome:', formData.get('nome'))
+    console.log('cpf:', formData.get('cpf'))
+    console.log('setor:', formData.get('setor'))
+    console.log('descricao:', formData.get('descricao'))
+    console.log('prioridade:', formData.get('prioridade'))
+    console.log('telefone:', formData.get('telefone'))
+    console.log('anexo:', formData.get('anexo'))
 
     const honeypot = formData.get("website") as string | null
     if (honeypot) {
@@ -311,7 +322,7 @@ export async function PUT(req: NextRequest) {
       const historicoParsed: HistoricoItem[] = JSON.parse(historico || '[]')
       const ultimo = historicoParsed[historicoParsed.length - 1]
       if (ultimo?.observacao) observacao = ultimo.observacao
-    } catch {}
+    } catch { }
 
     const etapa = estagio.toLowerCase() === 'concluido' ? 'finalizado' : 'atualizado'
     notificarCliente(chamadoExistente.cpf, chamadoExistente.ticket, etapa, chamadoAtualizado.atendente?.name, observacao, chamadoExistente.id)
