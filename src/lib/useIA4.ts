@@ -188,9 +188,9 @@ function montarSystemPrompt(
     `Contexto do usuário: ${session.nome || "anônimo"}`,
     `Chamados existentes: ${chamadosResumo}`,
     isColetarMotivo && avisos
-      ? `Avisos para consulta:\n${avisos}\nSe o assunto corresponder ao aviso, responda conforme o aviso. Caso contrário responda apenas: PROSSEGUIR_FLUXO`
+      ? `Avisos para consulta:\n${avisos}\nSe o assunto corresponder ao aviso, responda conforme o aviso e encerre o atendimento. Caso contrário responda apenas: PROSSEGUIR_FLUXO`
       : "",
-    `Instrução atual: ${instrucaoEtapa}. Caso não consiga identificar o motivo corretamente retorne apenas: dont_know`,
+    `Instrução atual: ${instrucaoEtapa}. Caso não consiga identificar o motivo corretamente retorne apenas: PROSSEGUIR_FLUXO`,
   ]
     .filter(Boolean)
     .join("\n");
