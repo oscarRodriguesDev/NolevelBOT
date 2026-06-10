@@ -7,6 +7,7 @@ import {
   sendEvolutionText,
   generateRandomTicket,
   buscarAvisos,
+  buscarAvisosPorCpf,
   downloadEvolutionMedia,
 } from "@/lib/usedata";
 import { uploadBuffer } from "@/lib/upload";
@@ -27,12 +28,13 @@ const statusLabels: Record<string, string> = {
   FECHADO: "🔒 Fechado",
 };
 
-type Webhook26Session = UserSession & {
+type Webhook27Session = UserSession & {
   anexoUrl?: string;
   empresaId?: string;
+  pendingState?: string;
 };
 
-const sessions = new Map<string, Webhook26Session>();
+const sessions = new Map<string, Webhook27Session>();
 const link = `${process.env.NEXT_PUBLIC_BASE_URL}/chamado`; 
 
 export async function POST(req: NextRequest) {
@@ -73,7 +75,7 @@ export async function POST(req: NextRequest) {
     }
 
     async function processMediaAndAdvance(
-      data: any, instance: string, number: string, session: Webhook26Session, hasImage: boolean
+      data: any, instance: string, number: string, session: Webhook27Session, hasImage: boolean
     ) {
       const mediaMsg = data.message.imageMessage || data.message.documentMessage;
       const mimeType = mediaMsg.mimetype || "application/octet-stream";
@@ -155,17 +157,27 @@ export async function POST(req: NextRequest) {
           session.empresaId = await getEmpresaIdFromCpf(cleanCPF);
 
           registerPhone(cleanCPF, number, instance);
-          avisos = await buscarAvisos(cleanCPF, req);
+          avisos = await buscarAvisosPorCpf(cleanCPF);
 
-          // Aqui damos o comando para a IA fazer a apresentação, pois agora ela tem o CPF para carregar as configs
-          const instrucao = session.nome
-            ? `CPF ${cleanCPF} validado. O nome do usuário é ${session.nome}. OBRIGATÓRIO: Agora você deve se apresentar com o SEU NOME e o NOME DA SUA EMPRESA. Depois, saude o usuário e apresente as opções: ${menuString} Responda com o numero da sua opção`
-            : `CPF ${cleanCPF} encontrado. OBRIGATÓRIO: Agora você deve se apresentar com o SEU NOME e o NOME DA SUA EMPRESA. Depois, pergunte como o usuário gostaria de ser chamado.`;
+          // Se houver aviso específico para este CPF (no título ou conteúdo), já apresenta tudo de uma vez
+          if (avisos && !avisos.includes("Sem avisos")) {
+            const instrucaoAviso = session.nome
+              ? `CPF ${cleanCPF} validado. Nome: ${session.nome}. Existe um aviso importante específico para você:\n${avisos}\n\nAção OBRIGATÓRIA: Apresente-se com SEU NOME e o NOME DA SUA EMPRESA. Em seguida, informe o aviso de forma HUMANIZADA e ACOLHEDORA. Depois, apresente as opções: ${menuString}. Tudo em uma única mensagem.`
+              : `CPF ${cleanCPF} encontrado. Existe um aviso importante:\n${avisos}\n\nAção OBRIGATÓRIA: Apresente-se com SEU NOME e o NOME DA SUA EMPRESA. Em seguida, informe o aviso de forma HUMANIZADA e ACOLHEDORA. Depois, pergunte educadamente como o usuário gostaria de ser chamado. Tudo em uma única mensagem.`;
 
-          const resposta = await botIA(session, userInput, instrucao, avisos);
-          await sendEvolutionText(instance, number, resposta);
+            const apresentacao = await botIA(session, userInput, instrucaoAviso, avisos);
+            await sendEvolutionText(instance, number, apresentacao);
+            session.state = session.nome ? FlowState.MENU_PRINCIPAL : FlowState.IDENTIFICACAO_NOME;
+          } else {
+            const instrucao = session.nome
+              ? `CPF ${cleanCPF} validado. O nome do usuário é ${session.nome}. OBRIGATÓRIO: Agora você deve se apresentar com o SEU NOME e o NOME DA SUA EMPRESA. Depois, saude o usuário e apresente as opções: ${menuString} Responda com o numero da sua opção`
+              : `CPF ${cleanCPF} encontrado. OBRIGATÓRIO: Agora você deve se apresentar com o SEU NOME e o NOME DA SUA EMPRESA. Depois, pergunte como o usuário gostaria de ser chamado.`;
 
-          session.state = session.nome ? FlowState.MENU_PRINCIPAL : FlowState.IDENTIFICACAO_NOME;
+            const resposta = await botIA(session, userInput, instrucao, avisos);
+            await sendEvolutionText(instance, number, resposta);
+
+            session.state = session.nome ? FlowState.MENU_PRINCIPAL : FlowState.IDENTIFICACAO_NOME;
+          }
         } else {
           await sendEvolutionText(instance, number, "Esse CPF não está cadastrado no sistema. Pode verificar e tentar de novo?");
         }
@@ -177,6 +189,22 @@ export async function POST(req: NextRequest) {
         const instrucao = `Agora que já sabe o nome (${userInput}), saude-o brevemente e apresente o menu: ${menuString} Responda com o numero da sua opção`;
         const resposta = await botIA(session, userInput, instrucao, avisos);
         
+        await sendEvolutionText(instance, number, resposta);
+        session.state = FlowState.MENU_PRINCIPAL;
+        break;
+      }
+
+      case FlowState.MOSTRAR_AVISO: {
+        if (session.pendingState === FlowState.IDENTIFICACAO_NOME && !session.nome) {
+          session.nome = userInput;
+        }
+
+        const resposta = await botIA(
+          session,
+          userInput,
+          `Apresente-se com o SEU NOME e o NOME DA SUA EMPRESA e apresente as opções: ${menuString}`,
+          avisos
+        );
         await sendEvolutionText(instance, number, resposta);
         session.state = FlowState.MENU_PRINCIPAL;
         break;
@@ -252,24 +280,24 @@ export async function POST(req: NextRequest) {
           break;
         }
 
-        if (!avisos || avisos.includes("Sem avisos")) {
-          await sendEvolutionText(
-            instance,
-            number,
-            `Certo! Você precisa enviar alguma foto ou documento ou comprovante?`
-          );
-          session.state = FlowState.PERGUNTAR_ANEXO;
-          break;
+        let todosAvisos = await buscarAvisos(session.cpf, req);
+        if (todosAvisos.includes("Sem avisos")) {
+          todosAvisos = await buscarAvisosPorCpf(session.cpf!);
         }
 
         const analiseIA = await botIA(
           session,
           userInput,
-          `Veja se o problema do usuário tem relação com algum Aviso abaixo.
-           Se tiver, responda com base no aviso e pergunte se resolveu. Se não tiver,
-           responda apenas: PROSSEGUIR_FLUXO`,
-          avisos
+          `Analise o motivo relatado e os avisos disponíveis seguindo as instruções do sistema.`,
+          todosAvisos
         );
+
+        if (analiseIA.startsWith("AVISO_RESOLVE:")) {
+          const msg = analiseIA.replace("AVISO_RESOLVE:", "").trim();
+          await sendEvolutionText(instance, number, msg);
+          sessions.delete(number);
+          break;
+        }
 
         if (analiseIA.includes("PROSSEGUIR_FLUXO")) {
           await sendEvolutionText(
@@ -280,13 +308,32 @@ export async function POST(req: NextRequest) {
           session.state = FlowState.PERGUNTAR_ANEXO;
         } else {
           await sendEvolutionText(instance, number, analiseIA);
-          session.state = FlowState.VERIFICAR_AVISOS;
+          session.state = FlowState.MENU_PRINCIPAL;
         }
         break;
       }
 
       case FlowState.VERIFICAR_AVISOS: {
-        if (["1", "sim", "quero", "continuar", "prosseguir"].some(v => lowerInput.includes(v))) {
+        let todosAvisos = await buscarAvisos(session.cpf, req);
+        if (todosAvisos.includes("Sem avisos")) {
+          todosAvisos = await buscarAvisosPorCpf(session.cpf!);
+        }
+
+        const analiseIA = await botIA(
+          session,
+          userInput,
+          `Analise a resposta do usuário e os avisos disponíveis seguindo as instruções do sistema.`,
+          todosAvisos
+        );
+
+        if (analiseIA.startsWith("AVISO_RESOLVE:")) {
+          const msg = analiseIA.replace("AVISO_RESOLVE:", "").trim();
+          await sendEvolutionText(instance, number, msg);
+          sessions.delete(number);
+          break;
+        }
+
+        if (analiseIA.includes("PROSSEGUIR_FLUXO")) {
           await sendEvolutionText(
             instance,
             number,
@@ -294,12 +341,7 @@ export async function POST(req: NextRequest) {
           );
           session.state = FlowState.PERGUNTAR_ANEXO;
         } else {
-          await sendEvolutionText(
-            instance,
-            number,
-            `Sem problema! Se precisar de mais algo é só me falar.\n\n${menuString}`
-          );
-          session.state = FlowState.MENU_PRINCIPAL;
+          await sendEvolutionText(instance, number, analiseIA);
         }
         break;
       }
@@ -407,7 +449,7 @@ export async function POST(req: NextRequest) {
     
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error("Erro crítico no webhook26:", error);
+    console.error("Erro crítico no webhook27:", error);
     return NextResponse.json({ ok: true });
   }
 }

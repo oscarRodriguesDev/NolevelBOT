@@ -14,6 +14,30 @@ const baseUrl = process.env.BASE_URL;
 }
  */
 
+async function filtrarAvisosValidos(avisos: { titulo: string; conteudo: string; createdAt: Date; duracao: string | null }[]) {
+  const agora = new Date();
+  const validos: { titulo: string; conteudo: string }[] = [];
+
+  for (const aviso of avisos) {
+    if (!aviso.duracao) {
+      validos.push(aviso);
+      continue;
+    }
+    const dias = Number(aviso.duracao);
+    if (isNaN(dias)) {
+      validos.push(aviso);
+      continue;
+    }
+    const dataExpiracao = new Date(aviso.createdAt);
+    dataExpiracao.setDate(dataExpiracao.getDate() + dias);
+    if (agora <= dataExpiracao) {
+      validos.push(aviso);
+    }
+  }
+
+  return validos;
+}
+
 export async function buscarAvisos(cpf?: string, _req?: Request) {
   try {
     const { prisma } = await import("@/lib/prisma");
@@ -30,29 +54,39 @@ export async function buscarAvisos(cpf?: string, _req?: Request) {
       orderBy: { createdAt: "desc" },
     });
 
-    const agora = new Date();
-    const validos: { titulo: string; conteudo: string }[] = [];
-
-    for (const aviso of avisos) {
-      if (!aviso.duracao) {
-        validos.push(aviso);
-        continue;
-      }
-      const dias = Number(aviso.duracao);
-      if (isNaN(dias)) {
-        validos.push(aviso);
-        continue;
-      }
-      const dataExpiracao = new Date(aviso.createdAt);
-      dataExpiracao.setDate(dataExpiracao.getDate() + dias);
-      if (agora <= dataExpiracao) {
-        validos.push(aviso);
-      }
-    }
+    const validos = await filtrarAvisosValidos(avisos);
 
     if (validos.length === 0) return "Sem avisos.";
 
     return validos.map(a => `📢 *${a.titulo}*: ${a.conteudo}`).join("\n");
+  } catch {
+    return "Sem avisos no momento.";
+  }
+}
+
+export async function buscarAvisosPorCpf(cpf: string) {
+  try {
+    const { prisma } = await import("@/lib/prisma");
+    const { getEmpresaIdByCpf } = await import("@/lib/searchEmpresa");
+
+    const empresaId = await getEmpresaIdByCpf(cpf);
+    if (!empresaId) return "Sem avisos.";
+
+    const avisos = await prisma.avisos.findMany({
+      where: { empresaId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const validos = await filtrarAvisosValidos(avisos);
+
+    const cpfNumbers = cpf.replace(/\D/g, "");
+    const especificos = validos.filter(a =>
+      a.titulo.includes(cpfNumbers) || a.conteudo.includes(cpfNumbers)
+    );
+
+    if (especificos.length === 0) return "Sem avisos.";
+
+    return especificos.map(a => `📢 *${a.titulo}*: ${a.conteudo}`).join("\n");
   } catch {
     return "Sem avisos no momento.";
   }

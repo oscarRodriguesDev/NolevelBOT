@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getSetores } from "@/lib/setores"
 import { botIA4 as botIA, FlowState, UserSession, detectFileIntent } from "@/lib/useIA4" 
-import { validarCpf, StatusChamado, enviarChamado, buscarAvisos, generateRandomTicket } from "@/lib/usedata"
+import { validarCpf, StatusChamado, enviarChamado, buscarAvisos, buscarAvisosPorCpf, generateRandomTicket } from "@/lib/usedata"
 
 const menuString = "1. Abrir Chamado, 2. Consultar Chamado, 3. Sair"
 
@@ -17,7 +17,7 @@ const statusLabels: Record<string, string> = {
   FECHADO: "🔒 Fechado",
 }
 
-const sessions = new Map<string, UserSession>()
+const sessions = new Map<string, UserSession & { pendingState?: string }>()
 
 export async function POST(req: NextRequest) {
   try {
@@ -66,9 +66,18 @@ case FlowState.IDENTIFICACAO_CPF: {
           session.cpf = cleanCPF
           session.nome = resCpf.nome
 
-          avisos = await buscarAvisos(cleanCPF, req)
+          avisos = await buscarAvisosPorCpf(cleanCPF)
 
-          // AJUSTE: Instrução explícita para o bot se apresentar usando seu nome e empresa
+          if (avisos && !avisos.includes("Sem avisos")) {
+            const instrucaoAviso = session.nome
+              ? `CPF ${cleanCPF} validado. Nome: ${session.nome}. Existe um aviso importante específico para você:\n${avisos}\n\nAção OBRIGATÓRIA: Apresente-se com seu nome e o nome da sua empresa. Em seguida, informe o aviso de forma HUMANIZADA e ACOLHEDORA. Depois, apresente as opções: ${menuString}. Tudo em uma única mensagem.`
+              : `CPF ${cleanCPF} encontrado. Existe um aviso importante:\n${avisos}\n\nAção OBRIGATÓRIA: Apresente-se com seu nome e o nome da sua empresa. Em seguida, informe o aviso de forma HUMANIZADA e ACOLHEDORA. Depois, pergunte educadamente como o usuário gostaria de ser chamado. Tudo em uma única mensagem.`;
+
+            const apresentacao = await botIA(session, userInput, instrucaoAviso, avisos)
+            session.state = session.nome ? FlowState.MENU_PRINCIPAL : FlowState.IDENTIFICACAO_NOME
+            return NextResponse.json({ reply: apresentacao })
+          }
+
           const instrucao = session.nome
             ? `CPF ${cleanCPF} validado. O nome dele é ${session.nome}. OBRIGATÓRIO: Apresente-se com seu nome e o nome da sua empresa. Depois, saude o usuário e apresente as opções: ${menuString}`
             : `CPF ${cleanCPF} encontrado. OBRIGATÓRIO: Apresente-se com seu nome e o nome da sua empresa. Depois, pergunte como o usuário gostaria de ser chamado.`;
@@ -139,7 +148,6 @@ case FlowState.IDENTIFICACAO_CPF: {
       case FlowState.COLETAR_MOTIVO: {
         session.motivoAtual = userInput
 
-        // Utilizando a função detectFileIntent importada da nova lib
         const fileIntent = detectFileIntent(userInput);
         
         if (fileIntent === "send_file") {
@@ -150,22 +158,23 @@ case FlowState.IDENTIFICACAO_CPF: {
           })
         }
 
-        if (!avisos || avisos.includes("Sem avisos")) {
-          const setores = await getSetores(session.cpf || '')
-          session.state = FlowState.COLETAR_SETOR
-          return NextResponse.json({
-            reply: `Entendido. Para qual setor devo enviar?\n\n📍 *Setores:* ${setores.join(", ")}`
-          })
+        let todosAvisos = await buscarAvisos(session.cpf, req)
+        if (todosAvisos.includes("Sem avisos")) {
+          todosAvisos = await buscarAvisosPorCpf(session.cpf!)
         }
 
         const analiseIA = await botIA(
           session,
           userInput,
-          `INSTRUÇÃO: Verifique se o problema relatado bate com os 'Avisos' do sistema.
-           Se bater, explique o aviso e pergunte se quer abrir o chamado mesmo assim. Se NÃO bater, 
-           responda apenas: PROSSEGUIR_FLUXO.`,
-          avisos
+          `Analise o motivo relatado e os avisos disponíveis seguindo as instruções do sistema.`,
+          todosAvisos
         )
+
+        if (analiseIA.startsWith("AVISO_RESOLVE:")) {
+          const msg = analiseIA.replace("AVISO_RESOLVE:", "").trim()
+          sessions.delete(sessionId)
+          return NextResponse.json({ reply: msg })
+        }
 
         if (analiseIA.includes("PROSSEGUIR_FLUXO")) {
           const setores = await getSetores(session.cpf || '')
@@ -174,24 +183,53 @@ case FlowState.IDENTIFICACAO_CPF: {
             reply: `Entendido. Para qual setor devo enviar?\n\n📍 *Setores:* ${setores.join(", ")}`
           })
         } else {
-          session.state = FlowState.VERIFICAR_AVISOS
+          session.state = FlowState.MENU_PRINCIPAL
           return NextResponse.json({ reply: analiseIA })
         }
       }
 
       case FlowState.VERIFICAR_AVISOS: {
-        if (["1", "sim", "quero", "continuar", "prosseguir"].some(v => lowerInput.includes(v))) {
+        const todosAvisos = await buscarAvisos(session.cpf, req)
+        const analiseIA = await botIA(
+          session,
+          userInput,
+          `O usuário respondeu após ter sido informado sobre um aviso. Verifique a resposta.
+           Se ele quiser continuar/prosseguir com a abertura do chamado: retorne apenas PROSSEGUIR_FLUXO.
+           Se ele desistir ou concordar com o aviso: encerre o atendimento de forma amigável e retorne APENAS "AVISO_RESOLVE:" seguido da mensagem de encerramento.
+           Se a resposta do usuário indicar que o aviso já resolveu o problema: encerre com AVISO_RESOLVE.`,
+          todosAvisos
+        )
+
+        if (analiseIA.startsWith("AVISO_RESOLVE:")) {
+          const msg = analiseIA.replace("AVISO_RESOLVE:", "").trim()
+          sessions.delete(sessionId)
+          return NextResponse.json({ reply: msg })
+        }
+
+        if (analiseIA.includes("PROSSEGUIR_FLUXO")) {
           const setores = await getSetores(session.cpf || '')
           session.state = FlowState.COLETAR_SETOR
           return NextResponse.json({
             reply: `Perfeito, vou dar seguimento. Para qual setor deseja enviar?\n\n📍 *Setores:* ${setores.join(", ")}`
           })
         } else {
-          session.state = FlowState.MENU_PRINCIPAL
-          return NextResponse.json({
-            reply: `Sem problemas! Se precisar de outra coisa, é só escolher uma opção do menu.\n\n${menuString}`
-          })
+          return NextResponse.json({ reply: analiseIA })
         }
+      }
+
+      case FlowState.MOSTRAR_AVISO: {
+        if (session.pendingState === FlowState.IDENTIFICACAO_NOME && !session.nome) {
+          session.nome = userInput
+        }
+
+        const resposta = await botIA(
+          session,
+          userInput,
+          `Apresente-se com o SEU NOME e o NOME DA SUA EMPRESA e apresente as opções: ${menuString}`,
+          avisos
+        )
+        session.state = FlowState.MENU_PRINCIPAL
+        return NextResponse.json({ reply: resposta })
       }
 
       case FlowState.COLETAR_SETOR: {

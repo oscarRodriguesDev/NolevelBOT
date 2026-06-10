@@ -15,7 +15,8 @@ export const FlowState = {
   ESCOLHER_ABERTURA: "escolher_abertura",
   COLETAR_SETOR: "coletar_setor",
   PERGUNTAR_ANEXO: "perguntar_anexo",
-  COLETAR_MIDIA: "coletar_midia"
+  COLETAR_MIDIA: "coletar_midia",
+  MOSTRAR_AVISO: "mostrar_aviso"
 } as const;
 
 type FlowStateValues = typeof FlowState[keyof typeof FlowState];
@@ -137,7 +138,6 @@ function montarSystemPrompt(
   config: EmpresaConfig,
   session: UserSession,
   chamadosResumo: string,
-  isColetarMotivo: boolean,
   avisos: string,
   instrucaoEtapa: string
 ): string {
@@ -145,12 +145,10 @@ function montarSystemPrompt(
   const empresa = config.nome;
   const isIdentificado = !!session.cpf;
 
-  // Lógica de Apresentação Dinâmica
   const intro = isIdentificado
     ? `Você deve se apresentar com o nome de seu bot ${botName}, assistente virtual da empresa ${empresa}. ${saudacao()}`
     : `Você é um assistente virtual de triagem. ${saudacao()} Seu papel é apenas acolher o usuário. NÃO DIGA SEU NOME NEM O NOME DE NENHUMA EMPRESA.`;
 
-  // Se o usuário ainda não passou o CPF, travamos a personalidade padrão para não vazar dados
   if (!isIdentificado) {
     return [
       intro,
@@ -158,42 +156,51 @@ function montarSystemPrompt(
     ].join("\n");
   }
 
-  // Se já tem CPF, libera a personalidade e prompts personalizados da empresa
+  const reconducao = `IMPORTANTE: Seu propósito é exclusivamente ajudar o usuário com abertura e consulta de chamados técnicos de acordo com os setores da empresa ${empresa}. Se o usuário tentar fazer perguntas fora deste contexto (como assuntos pessoais, fofocas, conhecimentos gerais, etc.), reconduza-o educadamente para as opções do menu: ${"1. Abrir Chamado, 2. Consultar Chamado, 3. Sair"}. Não responda perguntas fora do escopo de atendimento.`;
+
+  let instrucaoAvisos = "";
+  if (avisos && avisos !== "Sem avisos." && avisos !== "Sem avisos no momento.") {
+    if (session.state === FlowState.VERIFICAR_AVISOS || session.state === FlowState.MENU_PRINCIPAL || session.state === FlowState.MOSTRAR_AVISO) {
+      instrucaoAvisos = `Aviso para este CPF:\n${avisos}\n
+      Ação OBRIGATÓRIA: Apresente APENAS este aviso de forma natural, acolhedora e humana.
+      Se o aviso não for relevante, retorne apenas PROSSEGUIR_FLUXO.`;
+    } 
+    else if (session.state === FlowState.COLETAR_MOTIVO) {
+      instrucaoAvisos = `Avisos disponíveis:\n${avisos}\n
+      Ação OBRIGATÓRIA: Analise se o MOTIVO relatado pelo usuário corresponde a algum destes avisos. Considere correspondência mesmo que o aviso não use as mesmas palavras, desde que o assunto seja relacionado.
+      - Se corresponder E o aviso RESOLVER completamente o problema do usuário: retorne APENAS a mensagem iniciando com "AVISO_RESOLVE:" seguido da explicação empática. Não ofereça opções.
+      - Se corresponder MAS o aviso NÃO resolver completamente: explique o aviso de forma natural e acolhedora relacionando com o motivo do usuário, e pergunte se ele precisa de ajuda com outra coisa, apresentando as opções: 1. Abrir Chamado, 2. Consultar Chamado, 3. Sair. NÃO sugira abrir chamado sobre este assunto.
+      - Se NÃO corresponder a NENHUM aviso: retorne APENAS a palavra PROSSEGUIR_FLUXO.`;
+    }
+  }
+
+  const base = [
+    intro,
+    `Contexto do usuário: ${session.nome || "anônimo"}`,
+    `Chamados existentes: ${chamadosResumo}`,
+    reconducao,
+    instrucaoAvisos,
+  ].filter(Boolean);
+
   if (config.botPrompt) {
     return [
-      intro,
-      `Contexto do usuário: ${session.nome || "anônimo"}`,
-      `Chamados existentes: ${chamadosResumo}`,
+      ...base,
       `INSTRUÇÃO PERSONALIZADA DA EMPRESA:\n${config.botPrompt}`,
-      isColetarMotivo && avisos
-        ? `Avisos para consulta:\n${avisos}\nSe o assunto corresponder ao aviso, responda conforme o aviso. Caso contrário responda apenas: PROSSEGUIR_FLUXO`
-        : "",
-      `Instrução atual: ${instrucaoEtapa}`,
-    ]
-      .filter(Boolean)
-      .join("\n");
+      `Instrução atual: ${instrucaoEtapa}`
+    ].filter(Boolean).join("\n");
   }
 
   const personalidade = [
     config.presentation && `Apresentação: ${config.presentation}`,
     config.serviceDesc && `Atendimento: ${config.serviceDesc}`,
     config.avisosDesc && `Avisos: ${config.avisosDesc}`,
-  ]
-    .filter(Boolean)
-    .join("\n");
+  ].filter(Boolean).join("\n");
 
   return [
-    intro,
+    ...base,
     personalidade ? `PERSONALIDADE:\n${personalidade}` : "",
-    `Contexto do usuário: ${session.nome || "anônimo"}`,
-    `Chamados existentes: ${chamadosResumo}`,
-    isColetarMotivo && avisos
-      ? `Avisos para consulta:\n${avisos}\nSe o assunto corresponder ao aviso, responda conforme o aviso e encerre o atendimento. Caso contrário responda apenas: PROSSEGUIR_FLUXO`
-      : "",
-    `Instrução atual: ${instrucaoEtapa}. Caso não consiga identificar o motivo corretamente retorne apenas: PROSSEGUIR_FLUXO`,
-  ]
-    .filter(Boolean)
-    .join("\n");
+    `Instrução atual: ${instrucaoEtapa}. Caso não consiga identificar a ação da etapa corretamente, retorne apenas: PROSSEGUIR_FLUXO`,
+  ].filter(Boolean).join("\n");
 }
 
 export async function botIA4(
@@ -203,7 +210,6 @@ export async function botIA4(
   avisos: string
 ) {
   const statusAtual = session.cpf ? await StatusChamado(session.cpf) : [];
-  const isColetarMotivo = session.state === "coletar_motivo";
   const config = await getEmpresaConfig(session.cpf);
 
   const chamadosResumo = statusAtual.length > 0
@@ -214,7 +220,7 @@ export async function botIA4(
     const openai = getOpenAI();
 
     const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
@@ -222,7 +228,6 @@ export async function botIA4(
             config,
             session,
             chamadosResumo,
-            isColetarMotivo,
             avisos,
             instrucaoEtapa
           ),
@@ -233,7 +238,7 @@ export async function botIA4(
         },
       ],
       temperature: 0.7,
-      max_tokens: 120,
+      max_tokens: 180, // Aumentado para garantir que mensagens empáticas não sejam cortadas
     });
 
     return response.choices[0]?.message?.content || "Pode repetir, por favor?";
