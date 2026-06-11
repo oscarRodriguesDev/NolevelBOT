@@ -2053,5 +2053,113 @@ Cards do Kanban exibem tipo (Defeito/Socorro/OK) em badge colorido em vez de pri
 - Módulo corporativo
 - github/ (deploys configurados mantidos)
 
+---
+
+## 47. WEBHOOK-OFICINA + FORMULÁRIO WEB PARA MOTORISTAS (10/06/2026)
+
+### Objetivo
+Criar um canal de comunicação para motoristas de empresa de transporte público registrarem defeitos de veículos. O motorista interage com o bot WhatsApp (webhook-oficina) informando matrícula, função, número do ônibus, data e defeito. Também há um formulário web público em `/oficina` para quem preferir o navegador.
+
+### Restrições
+- ❌ **Nenhuma alteração no schema do Prisma**
+- ❌ **Nenhuma migration**
+- ❌ **Nenhuma rota de API existente foi modificada**
+- ✅ Apenas arquivos novos criados
+
+### Mapeamento de dados (Chamado reutilizado)
+
+| Campo Chamado | Armazena |
+|---|---|
+| `nome` | Nome do motorista (auto-preenchido via `cpfs`) |
+| `cpf` | **Matrícula** do motorista (identificador único) |
+| `setor` | Setor selecionado da empresa (ex: Mecânica, Elétrica) |
+| `descricao` | JSON string: `{ funcao, numeroOnibus, data, defeito }` |
+| `telefone` | WhatsApp do motorista (preenchido automaticamente no bot) |
+
+### Validação do motorista
+- Matrícula armazenada na tabela `cpfs` (campo `cpf`, que é String — aceita qualquer identificador)
+- Admin cadastra motoristas na tela de CPFs existente com: **matrícula** (no campo CPF) + **nome**
+- Vinculado à empresa de transporte público via `empresaId`
+
+### Arquivos criados
+
+#### `src/app/api/oficina/tickets/route.ts`
+API dedicada (sem modificar `/api/tickets`):
+
+| Método | Função |
+|--------|--------|
+| **GET** `?matricula=X` | Valida matrícula, retorna nome do motorista + setores da empresa |
+| **POST** | Cria chamado com dados estruturados (valida campos obrigatórios) |
+
+- POST aceita: `{ matricula, nome, funcao, numeroOnibus, data, defeito, setor }`
+- `descricao` é gerada como `JSON.stringify({ funcao, numeroOnibus, data, defeito })`
+- CPF não é validado como CPF (é tratado como string livre = matrícula)
+
+#### `src/app/api/webhook-oficina/route.ts`
+Bot WhatsApp para motoristas, fluxo linear sem IA:
+
+```
+INICIO
+  → "🚌 Oficina - Registro de Defeito\n\nDigite sua matrícula:"
+  → IDENTIFICACAO_MATRICULA
+    → valida na cpfs (matrícula → nome + empresaId)
+    → "Olá, {nome}! 😊 Qual sua função?"
+  → COLETAR_FUNCAO
+    → "Qual o número do ônibus?"
+  → COLETAR_ONIBUS
+    → "Qual a data do ocorrido?"
+  → COLETAR_DATA
+    → "Descreva o defeito:"
+  → COLETAR_DEFEITO
+    → Exibe resumo completo: "Confirma? (sim/não)"
+  → CONFIRMAR
+    → "sim" → COLETAR_SETOR
+    → "não" → volta para IDENTIFICACAO_MATRICULA
+  → COLETAR_SETOR
+    → Lista setores da empresa (getSetores via matrícula)
+    → Matching bidirecional (mesmo padrão dos webhooks 22-24)
+    → Cria Chamado via Prisma direto
+    → "✅ Registro concluído! Seu chamado {ticket}..."
+    → Sessão encerrada
+```
+
+- **Sessão**: expira após 2h de inatividade
+- **Comandos de saída**: "sair", "encerrar", "cancelar"
+- **Sem IA**: fluxo puramente estrutural (zero custo de tokens)
+- **Sem mídia**: apenas texto (sem fotos, sem assinatura)
+
+#### `src/app/oficina/page.tsx`
+Formulário web público (sem login) em 3 etapas:
+
+1. **Etapa 1 — Validação**: Campo de matrícula → valida via GET `/api/oficina/tickets?matricula=X`
+2. **Etapa 2 — Formulário**: Campos:
+   - Matrícula (readonly)
+   - Nome (readonly, auto-preenchido)
+   - Função (input)
+   - Nº do Ônibus (input)
+   - Data (input)
+   - Defeito (textarea)
+   - Setor (select com setores da empresa)
+3. **Etapa 3 — Sucesso**: Check verde + mensagem de confirmação
+
+### Fluxo de uso
+
+```
+Admin cadastra motoristas:
+  Tela de CPFs → matrícula no campo CPF + nome do motorista
+
+Motorista via WhatsApp:
+  Envia "oi" para o número da instância Evolution
+    → Webhook-oficina guia passo a passo
+    → Ao final, chamado criado em /all-tickets
+
+Motorista via Web:
+  Acessa /oficina → digita matrícula → preenche formulário → envia
+    → Chamado criado em /all-tickets
+
+Atendente:
+  Acessa /all-tickets → filtra por setor da oficina → atende o chamado
+```
+
 ### Build
 - `npm run build` — compilado com sucesso ✅

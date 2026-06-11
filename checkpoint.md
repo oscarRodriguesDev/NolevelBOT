@@ -662,11 +662,62 @@ Criação do módulo `oficina` para empresa de transporte público. Motoristas r
 | `setCpf`/`fetchCpfs` não encontrados | State renomeado para `matricula`/`fetchMotoristas` | Ajustado para nomes corretos |
 | API não retorna `tipo`/`veiculo`/`matricula` | Dados vêm do modelo `Chamado` (cpf, setor, descricao, prioridade) | Mapping no fetch de `all-tickets` |
 
+---
+
+## Sessão: 10/06/2026 — Webhook-Oficina + Formulário Web para Motoristas
+
+### Objetivo
+Criar um canal de comunicação para motoristas de empresa de transporte público registrarem defeitos de veículos via WhatsApp (webhook-oficina) e formulário web (/oficina), sem alterar o schema do Prisma.
+
+### Decisões de arquitetura
+- **Sem alteração no Prisma**: dados reutilizam campos existentes do model `Chamado`
+- **Matrícula como identificador**: armazenada no campo `cpf` da tabela `cpfs` (já existente)
+- **Chamado reutilizado**: `nome` (motorista), `cpf` (matrícula), `descricao` (JSON com função, ônibus, data, defeito), `setor` (setor da empresa), `telefone` (whatsapp)
+- **Nova API dedicada**: `/api/oficina/tickets` — POST (criar) + GET (validar matrícula)
+- **Nenhuma rota existente foi alterada**
+
+### Arquivos criados
+
+#### `src/app/api/oficina/tickets/route.ts`
+- **GET `?matricula=X`**: valida matrícula e retorna nome do motorista + setores da empresa
+- **POST**: cria chamado com dados estruturados (funcao, numeroOnibus, data, defeito em JSON na descricao)
+
+#### `src/app/api/webhook-oficina/route.ts`
+Fluxo completo do bot WhatsApp para motoristas:
+1. **INICIO** → "Digite sua matrícula"
+2. **IDENTIFICACAO_MATRICULA** → valida na tabela `cpfs`, busca nome
+3. **COLETAR_FUNCAO** → "Qual sua função?"
+4. **COLETAR_ONIBUS** → "Número do ônibus?"
+5. **COLETAR_DATA** → "Data do ocorrido?"
+6. **COLETAR_DEFEITO** → "Descreva o defeito"
+7. **CONFIRMAR** → exibe resumo, pergunta confirmação
+8. **COLETAR_SETOR** → lista setores da empresa, cria chamado
+
+#### `src/app/oficina/page.tsx`
+Formulário web público com 2 etapas:
+1. **Etapa 1 (matrícula)**: motorista digita matrícula → valida via GET `/api/oficina/tickets`
+2. **Etapa 2 (formulário)**: campos: função, nº ônibus, data, defeito, setor (nome auto-preenchido)
+3. **Sucesso**: tela de confirmação
+
+### Regras de negócio
+- ✅ Motorista é identificado pela matrícula (armazenada na tabela `cpfs`)
+- ✅ Matrícula deve ser cadastrada previamente pelo admin (mesmo fluxo de CPFs)
+- ✅ Chamados da oficina aparecem no `/all-tickets` (setor filtrável)
+- ✅ Sessão do WhatsApp expira após 2h de inatividade
+- ✅ Comandos "sair", "encerrar", "cancelar" funcionam no bot
+- ✅ Formulário web é público (sem login), mas apenas matrículas cadastradas funcionam
+- ✅ Nenhuma migração ou alteração no Prisma necessária
+
+### Build
+- `npm run build` — compilado com sucesso ✅
+
 ### Commits realizados nesta sessão:
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
 | 1 | `36d54de` | `feat: modulo oficina - frontend manutencao de veiculos com matricula, tipo de registro e discriminacao` | 10/06/2026 |
-| 2 | `[pendente]` | `fix: rename modulo-oficina to oficina, fix build errors, update links` | 10/06/2026 |
+| 2 | a ser commitado | `fix: rename modulo-oficina to oficina, fix build errors, update links` | 10/06/2026 |
+| 3 | `6633b5a` | `feat: webhook-oficina + formulario web para motoristas de transporte publico registrarem defeitos de veiculos` | 10/06/2026 |
+| 4 | `669b1e9` | `docs: atualiza checkpoint e memorias com webhook-oficina e formulario para motoristas` | 10/06/2026 |
 
 ### Build
 - `npm run build` — compilado com sucesso ✅
