@@ -2163,3 +2163,40 @@ Atendente:
 
 ### Build
 - `npm run build` — compilado com sucesso ✅
+
+---
+
+## 48. DOCUMENTO DE APRESENTAÇÃO COMERCIAL (11/06/2026)
+
+### Objetivo
+Criar `apresentação.md` — documento de apresentação do sistema NolevelBOT para prospecção de clientes.
+
+### Conteúdo
+O documento cobre 9 seções principais:
+
+| Seção | Conteúdo |
+|-------|----------|
+| 1. O que é o NolevelBOT | Visão geral da plataforma |
+| 2. Principais Funcionalidades | Chamados, chatbot WhatsApp, leads, dashboards, avisos, módulo oficina |
+| 3. Como se ajusta a diferentes empresas | Multi-tenant, personalização, RBAC, múltiplos canais, infraestrutura flexível |
+| 4. Casos de Uso Reais | Suporte multi-cliente, transporte público, captura de leads em eventos, multi-departamentos |
+| 5. Tecnologia | Stack completo (Next.js, React, PostgreSQL, OpenAI, Evolution API, Docker) |
+| 6. Segurança | RBAC, rate limiting, CAPTCHA, honeypot, validação CPF, sanitização, bcrypt, JWT |
+| 7. Como Implantar | Passo a passo da implantação |
+| 8. Exemplos de Tela | Lista, Kanban, Dashboard, Configuração |
+| 9. Suporte e Evolução | Frentes de desenvolvimento futuro |
+
+### Público-alvo
+- Clientes potenciais (prospecção ativa)
+- Escrito em português claro, sem jargões técnicos excessivos
+- Foco em mostrar o valor do sistema e como se adapta a diferentes realidades
+
+### Arquivo criado
+- `apresentação.md` — 220 linhas
+
+### Regras seguidas
+- ✅ Nenhuma alteração em código existente
+- ✅ Nenhuma alteração em API routes
+- ✅ Nenhuma alteração no Prisma schema
+- ✅ Nenhuma alteração em arquivos .github/
+- ✅ Build não necessário (apenas documento markdown)

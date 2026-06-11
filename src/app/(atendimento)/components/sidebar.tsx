@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { LuMenu, LuX, LuTickets, LuBell, LuUsers, LuHouse, LuSettings, LuBuilding2, LuWrench } from 'react-icons/lu'
 import { useSession } from 'next-auth/react'
 import { ROLE } from '@prisma/client'
@@ -16,37 +16,48 @@ export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false)
   const { data: session } = useSession()
   const userRole = session?.user?.role as ROLE | undefined
+  const [empresaModulos, setEmpresaModulos] = useState<string[]>([])
+
+  useEffect(() => {
+    if (!session?.user?.empresaId || userRole === "GOD") return
+    fetch(`/api/empresa?id=${session.user.empresaId}`)
+      .then(r => r.json())
+      .then(data => setEmpresaModulos(data.modulos || []))
+      .catch(() => {})
+  }, [session, userRole])
+
+  const temModulo = (mod: string) => userRole === "GOD" || empresaModulos.includes(mod)
 
   const menuItems = [
     {
       label: 'Dashboard',
       href: '/dashboards',
       icon: LuHouse,
-      show: true,
+      show: temModulo('CORPORATIVO'),
     },
     {
       label: 'Chamados',
       href: '/all-tickets',
       icon: LuTickets,
-      show: true,
+      show: temModulo('CORPORATIVO'),
     },
     {
       label: 'Avisos',
       href: '/avisos',
       icon: LuBell,
-      show: true,
+      show: temModulo('CORPORATIVO'),
     },
     {
       label: 'Oficina',
       href: '/oficina/dashboards',
       icon: LuWrench,
-      show: userRole === "GOD" || userRole === "ADMIN" || userRole === "GESTOR",
+      show: temModulo('OFICINA') && (userRole === "GOD" || userRole === "ADMIN" || userRole === "GESTOR"),
     },
     {
       label: 'CPFs Autorizados',
       href: '/cpfs',
       icon: LuUsers,
-      show: true,
+      show: temModulo('CORPORATIVO'),
     },
     {
       label: 'Usuários',

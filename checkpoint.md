@@ -721,3 +721,24 @@ Formulário web público com 2 etapas:
 
 ### Build
 - `npm run build` — compilado com sucesso ✅
+
+---
+
+## Sessão: 11/06/2026 — Documento de Apresentação Comercial
+
+### Objetivo
+Criar `apresentação.md` — documento completo de apresentação do sistema NolevelBOT para prospecção de clientes, explicando o que o sistema é, o que faz e como se adapta a diferentes empresas.
+
+### Conteúdo do documento
+- Visão geral do sistema
+- Funcionalidades (chamados, chatbot WhatsApp, leads, dashboards, avisos, módulo oficina)
+- Modelo multi-tenant e personalização por empresa
+- Controle de acesso RBAC
+- Canais de atendimento (WhatsApp, portal web, chat)
+- Casos de uso reais (suporte multi-cliente, transporte público, captura de leads, multi-departamentos)
+- Tecnologia, segurança, implantação e evolução
+
+### Commits realizados nesta sessão:
+| # | Hash | Mensagem | Data |
+|---|------|----------|------|
+| 1 | `11b0a6e` | `docs: cria apresentacao.md com descricao completa do sistema para prospeccao de clientes` | 11/06/2026 |

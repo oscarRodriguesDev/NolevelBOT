@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { ROLE } from '@prisma/client'
 import Link from 'next/link'
-import { ArrowLeft, Building2, CheckCircle2, Loader2, Upload, Sparkles, Image } from 'lucide-react'
+import { ArrowLeft, Building2, CheckCircle2, Loader2, Upload, Sparkles, Image, Wrench, Headphones, CalendarCheck } from 'lucide-react'
 import { useHeader } from '../../layout'
 import toast from 'react-hot-toast'
 
@@ -30,6 +30,20 @@ export default function CreateEmpresa() {
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [logoUrl, setLogoUrl] = useState('')
+
+  const [modulosSelecionados, setModulosSelecionados] = useState<string[]>([])
+
+  const MODULOS_DISPONIVEIS = [
+    { valor: 'CORPORATIVO', label: 'Corporativo', icon: Headphones, desc: 'Gestão de chamados, dashboard, avisos e CPFs' },
+    { valor: 'OFICINA', label: 'Oficina', icon: Wrench, desc: 'Manutenção veicular para transportadoras' },
+    { valor: 'EVENTOS', label: 'Eventos', icon: CalendarCheck, desc: 'Captura de leads em feiras e eventos' },
+  ]
+
+  function toggleModulo(valor: string) {
+    setModulosSelecionados(prev =>
+      prev.includes(valor) ? prev.filter(m => m !== valor) : [...prev, valor]
+    )
+  }
 
   const [botName, setBotName] = useState('')
   const [botPresentation, setBotPresentation] = useState('')
@@ -142,6 +156,7 @@ Máximo 400 caracteres. Seja objetivo.`
           nome,
           cnpj: cnpj.replace(/\D/g, ''),
           setores: setores.split(',').map((s) => s.trim()).filter(Boolean),
+          modulos: modulosSelecionados,
           logoUrl: finalLogoUrl || undefined,
           botName: botName || undefined,
           botPresentation: botPresentation || undefined,
@@ -315,6 +330,53 @@ Máximo 400 caracteres. Seja objetivo.`
                     </button>
                   )}
                 </div>
+              </div>
+            </div>
+
+            <div
+              className="border rounded-2xl p-6 space-y-4"
+              style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--surface-elevated)" }}
+            >
+              <div className="flex items-center gap-2">
+                <Building2 size={18} style={{ color: "var(--primary)" }} />
+                <h3 className="text-sm font-bold uppercase tracking-wider">Módulos da Empresa</h3>
+              </div>
+              <p className="text-xs opacity-50 -mt-2">
+                Selecione os módulos que esta empresa terá acesso no sistema.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {MODULOS_DISPONIVEIS.map(mod => {
+                  const Icon = mod.icon
+                  const selected = modulosSelecionados.includes(mod.valor)
+                  return (
+                    <button
+                      key={mod.valor}
+                      type="button"
+                      onClick={() => toggleModulo(mod.valor)}
+                      className={`flex items-start gap-3 p-3 rounded-xl border-2 text-left transition-all duration-200 ${
+                        selected ? 'border-[var(--primary)]' : 'border-transparent opacity-60 hover:opacity-100'
+                      }`}
+                      style={{
+                        backgroundColor: selected ? 'var(--surface)' : 'var(--surface)',
+                        borderColor: selected ? 'var(--primary)' : 'var(--border-subtle)',
+                      }}
+                    >
+                      <div
+                        className="p-2 rounded-lg flex-shrink-0"
+                        style={{
+                          backgroundColor: selected ? 'var(--primary)' : 'var(--surface-elevated)',
+                          color: selected ? '#fff' : 'var(--foreground)',
+                        }}
+                      >
+                        <Icon size={18} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold">{mod.label}</p>
+                        <p className="text-xs opacity-60 mt-0.5">{mod.desc}</p>
+                      </div>
+                    </button>
+                  )
+                })}
               </div>
             </div>
 

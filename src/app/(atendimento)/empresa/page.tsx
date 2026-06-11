@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Building2, Search, Pencil, Trash2, X, Check, Sparkles, Image, Loader2, Upload } from 'lucide-react'
+import { Plus, Building2, Search, Pencil, Trash2, X, Check, Sparkles, Image, Loader2, Upload, Wrench, Headphones, CalendarCheck } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { ROLE } from '@prisma/client'
 import { useHeader } from '../layout'
@@ -14,6 +14,7 @@ interface Empresa {
   nome: string
   cnpj: string
   setores: string[]
+  modulos: string[]
   logoUrl?: string | null
   botName?: string | null
   botPresentation?: string | null
@@ -21,6 +22,12 @@ interface Empresa {
   botAvisosDesc?: string | null
   botPrompt?: string | null
 }
+
+const MODULOS_OPCOES = [
+  { valor: 'CORPORATIVO', label: 'Corporativo', icon: Headphones, cor: 'var(--status-new)' },
+  { valor: 'OFICINA', label: 'Oficina', icon: Wrench, cor: 'var(--status-in-progress)' },
+  { valor: 'EVENTOS', label: 'Eventos', icon: CalendarCheck, cor: 'var(--status-waiting)' },
+]
 
 export default function EmpresaPage() {
   const { data: session, status } = useSession()
@@ -30,7 +37,7 @@ export default function EmpresaPage() {
   const [searchTerm, setSearchTerm] = useState('')
 
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editForm, setEditForm] = useState({ nome: '', cnpj: '', setores: '' })
+  const [editForm, setEditForm] = useState({ nome: '', cnpj: '', setores: '', modulos: [] as string[] })
   const [editLogoFile, setEditLogoFile] = useState<File | null>(null)
   const [editLogoPreview, setEditLogoPreview] = useState<string | null>(null)
   const editFileInputRef = useRef<HTMLInputElement>(null)
@@ -86,6 +93,7 @@ export default function EmpresaPage() {
       nome: emp.nome,
       cnpj: emp.cnpj,
       setores: emp.setores.join(', '),
+      modulos: emp.modulos || [],
     })
     setEditLogoFile(null)
     setEditLogoPreview(emp.logoUrl || null)
@@ -93,7 +101,7 @@ export default function EmpresaPage() {
 
   function cancelEdit() {
     setEditingId(null)
-    setEditForm({ nome: '', cnpj: '', setores: '' })
+    setEditForm({ nome: '', cnpj: '', setores: '', modulos: [] })
     setEditLogoFile(null)
     setEditLogoPreview(null)
   }
@@ -126,6 +134,7 @@ export default function EmpresaPage() {
           nome: editForm.nome,
           cnpj: editForm.cnpj.replace(/\D/g, ''),
           setores: editForm.setores.split(',').map(s => s.trim()).filter(Boolean),
+          modulos: editForm.modulos,
           logoUrl: finalLogoUrl || null,
         }),
       })
@@ -348,6 +357,38 @@ export default function EmpresaPage() {
                       />
                     </div>
                     <div>
+                      <label className="block text-xs font-semibold mb-1">Módulos</label>
+                      <div className="flex flex-wrap gap-2">
+                        {MODULOS_OPCOES.map(mod => {
+                          const selected = editForm.modulos.includes(mod.valor)
+                          const Icon = mod.icon
+                          return (
+                            <button
+                              key={mod.valor}
+                              type="button"
+                              onClick={() => {
+                                setEditForm(p => ({
+                                  ...p,
+                                  modulos: selected
+                                    ? p.modulos.filter(m => m !== mod.valor)
+                                    : [...p.modulos, mod.valor],
+                                }))
+                              }}
+                              className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-full transition-all`}
+                              style={{
+                                backgroundColor: selected ? mod.cor + '30' : "var(--surface-elevated)",
+                                color: selected ? mod.cor : "var(--foreground)",
+                                border: selected ? `1px solid ${mod.cor}` : '1px solid transparent',
+                              }}
+                            >
+                              <Icon size={12} />
+                              {mod.label}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                    <div>
                       <label className="block text-xs font-semibold mb-1">Logo</label>
                       <div className="flex items-center gap-3">
                         <div
@@ -441,6 +482,22 @@ export default function EmpresaPage() {
                           {setor}
                         </span>
                       ))}
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {empresa.modulos?.map(mod => {
+                        const config = MODULOS_OPCOES.find(m => m.valor === mod)
+                        if (!config) return null
+                        const Icon = config.icon
+                        return (
+                          <span key={mod}
+                            className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full"
+                            style={{ backgroundColor: config.cor + '20', color: config.cor }}>
+                            <Icon size={12} />
+                            {config.label}
+                          </span>
+                        )
+                      })}
                     </div>
 
                     <div className="flex gap-2 pt-2 border-t flex-wrap" style={{ borderColor: "var(--border-subtle)" }}>
