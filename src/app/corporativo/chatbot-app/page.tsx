@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { ThemeToggle } from '../components/theme-toggle'
+import { ThemeToggle } from '../../components/theme-toggle'
 
 type Message = {
   id: number

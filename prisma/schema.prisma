@@ -15,6 +15,12 @@ enum ROLE {
   ATENDENTE
 }
 
+enum modulo{
+  OFICINA
+  CORPORATIVO
+  EVENTOS
+}
+
 // prisma/schema.prisma
 model empresa {
   id              String    @id @default(uuid())
@@ -31,6 +37,7 @@ model empresa {
   chamados        Chamado[]
   cpfs            cpfs[]
   avisos          avisos[]
+  modulos         modulo[]
   databaseUrl     String? // URL de conexão específica para esta empresa
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt

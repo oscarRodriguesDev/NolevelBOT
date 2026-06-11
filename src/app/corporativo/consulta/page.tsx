@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { ThemeToggle } from "../components/theme-toggle"
+import { ThemeToggle } from "../../components/theme-toggle"
 
 type Chamado = {
   createdAt: string | number | Date

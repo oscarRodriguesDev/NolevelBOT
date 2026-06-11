@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { ROLE } from '@prisma/client'
-import { Sidebar } from './components/sidebar'
+import { Sidebar } from '@/app/components/sidebar'
 import { Header } from './components/header'
 
 type HeaderContextType = {

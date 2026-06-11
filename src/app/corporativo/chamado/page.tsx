@@ -1,8 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { LuCheck, LuLoader, LuArrowRight } from 'react-icons/lu'
-import { ThemeToggle } from '../components/theme-toggle'
-import { FileUpload } from '../components/fileInput'
+import { ThemeToggle } from '../../components/theme-toggle'
+import { FileUpload } from '../../components/fileInput'
 import toast from 'react-hot-toast'
 
 

@@ -2267,3 +2267,166 @@ Foi necessário rodar `prisma generate` para sincronizar o client com o schema.
 | `src/app/(atendimento)/components/sidebar.tsx` | Filtro por módulos |
 | `src/app/oficina/(atendimento)/components/sidebar.tsx` | Filtro por módulos |
 | `src/app/oficina/(atendimento)/layout.tsx` | Bloqueio de acesso OFICINA |
+
+---
+
+## 50. SIDEBAR ÚNICO COM ACCORDION DE MÓDULOS (11/06/2026)
+
+### Problema
+Após a separação das pastas `corporativo/` e `oficina/`, cada módulo tinha seu próprio sidebar (`corporativo/(atendimento)/components/sidebar.tsx` e `oficina/(atendimento)/components/sidebar.tsx`). Isso impedia a navegação entre módulos sem sair da página.
+
+### Solução
+Substituir as duas sidebars por **uma sidebar única** em `src/app/components/sidebar.tsx` que exibe botões accordion para cada módulo disponível na empresa do usuário.
+
+### Arquitetura
+
+```
+Sidebar única (src/app/components/sidebar.tsx)
+├── [fetch] GET /api/empresa?id=X → empresaModulos
+├── Módulo Corporativo ▼ (se temModulo('CORPORATIVO'))
+│   ├── Dashboard → /corporativo/dashboards
+│   ├── Chamados → /corporativo/all-tickets
+│   ├── Avisos → /corporativo/avisos
+│   ├── CPFs Autorizados → /corporativo/cpfs
+│   ├── Usuários → /corporativo/usuarios (role-based)
+│   ├── Criar Usuário → /corporativo/gestao-de-usuarios (role-based)
+│   └── Empresas → /corporativo/empresa (GOD only)
+├── Módulo Oficina ▼ (se temModulo('OFICINA'))
+│   ├── Dashboard → /oficina/dashboards
+│   ├── Solicitações → /oficina/all-tickets
+│   ├── Avisos → /oficina/avisos
+│   ├── Motoristas → /oficina/cpfs
+│   ├── Usuários → /oficina/usuarios (role-based)
+│   ├── Criar Usuário → /oficina/gestao-de-usuarios (role-based)
+│   └── Empresas → /oficina/empresa (GOD only)
+└── UserCard (foto, nome, email, role, config/logout)
+    └── Versão: package.json
+```
+
+### Mudanças
+
+#### Componentes compartilhados movidos para `src/app/components/`
+| Arquivo | Origem | Destino |
+|---------|--------|---------|
+| `cardUser.tsx` | `corporativo/(atendimento)/components/` e `oficina/(atendimento)/components/` | `src/app/components/cardUser.tsx` |
+| `modal-edit-user.tsx` | `corporativo/(atendimento)/components/` e `oficina/(atendimento)/components/` | `src/app/components/modal-edit-user.tsx` |
+
+#### Sidebar único (`src/app/components/sidebar.tsx`)
+- **Accordion**: cada módulo tem um botão que expande/recolhe os sub-menus
+- **Módulos disponíveis**: filtrados por `temModulo()` (GOD sempre vê todos)
+- **Abertura automática**: o módulo da rota atual abre sozinho; se nenhum, primeiro disponível abre
+- **Multi-open**: usuário pode ter vários módulos abertos ao mesmo tempo
+- **Ícones**: LuHeadphones (Corporativo), LuWrench (Oficina)
+- **Estado visual**: ChevronDown (aberto) / ChevronRight (fechado)
+- **Sub-menus**: indentados com borda lateral (`border-l-2 ml-2 pl-3`)
+- **System menus**: Usuários, Criar Usuário, Empresas aparecem DENTRO de cada módulo com rotas específicas (`/corporativo/...` e `/oficina/...`)
+- **Responsivo**: hamburger menu em mobile com overlay escuro
+
+#### Layouts atualizados
+| Layout | Antes | Depois |
+|--------|-------|--------|
+| `corporativo/(atendimento)/layout.tsx` | `import { Sidebar } from './components/sidebar'` | `import { Sidebar } from '@/app/components/sidebar'` |
+| `oficina/(atendimento)/layout.tsx` | `import { Sidebar } from './components/sidebar'` | `import { Sidebar } from '@/app/components/sidebar'` |
+
+#### Arquivos deletados (6)
+- `src/app/corporativo/(atendimento)/components/sidebar.tsx`
+- `src/app/corporativo/(atendimento)/components/cardUser.tsx`
+- `src/app/corporativo/(atendimento)/components/modal-edit-user.tsx`
+- `src/app/oficina/(atendimento)/components/sidebar.tsx`
+- `src/app/oficina/(atendimento)/components/cardUser.tsx`
+- `src/app/oficina/(atendimento)/components/modal-edit-user.tsx`
+
+### Detalhes de implementação
+
+#### Accordion state
+```typescript
+const [modulosAbertos, setModulosAbertos] = useState<string[]>(() => {
+  const inicial: string[] = []
+  modulosDisponiveis.forEach(m => {
+    if (pathname.startsWith('/' + m.key + '/')) inicial.push(m.key)
+  })
+  if (inicial.length === 0 && modulosDisponiveis.length > 0)
+    inicial.push(modulosDisponiveis[0].key)
+  return inicial
+})
+```
+
+#### Abertura automática ao navegar
+Um `useEffect` observa `pathname` e abre o módulo correspondente se ainda não estiver aberto.
+
+#### Tipagem dos ícones
+Os ícones Lucide foram tipados como `React.ComponentType<{ size?: number; className?: string }>` para aceitar `className` nos elementos JSX.
+
+### Regras de negócio
+- ✅ Accordion: empresa com apenas 1 módulo → só 1 botão visível (expande direto)
+- ✅ Empresa com 2 módulos → 2 botões, ambos expansíveis
+- ✅ Usuário com ambos módulos → pode navegar entre Corporativo e Oficina sem recarregar
+- ✅ GOD vê todos os módulos mesmo sem empresa vinculada
+- ✅ System menus dentro de cada módulo têm rotas específicas (`/corporativo/usuarios`, `/oficina/usuarios`)
+- ✅ Role-based filtering: Usuários/Criar Usuário (GOD/ADMIN/GESTOR), Empresas (GOD)
+- ✅ Versão e UserCard no footer do sidebar mantidos
+
+### Build
+- `npm run build` — compilado com sucesso ✅
+
+---
+
+## 51. LOGIN UNIFICADO + SELETOR DE MÓDULOS (11/06/2026)
+
+### Objetivo
+Unificar o login fora dos módulos — o usuário faz login em `/login` (independente do módulo) e é redirecionado para `/dashboard` que exibe cards dos módulos disponíveis para sua empresa. Clique no card → entra no módulo.
+
+### Mudanças
+
+#### 1. Página `/login` unificada (`src/app/login/page.tsx`)
+- Criada em `src/app/login/page.tsx` (antes existia só `corporativo/login` e `oficina/login`)
+- Baseada na versão corporativo: estrutura, imports (`@/app/components/back.tsx`), CAPTCHA Turnstile
+- Redirect após sucesso: `signIn` callback URL → `/dashboard` (em vez de `/corporativo/dashboards`)
+
+#### 2. Página `/dashboard` — Seletor de módulos (`src/app/dashboard/page.tsx`)
+- `"use client"` (usa `useSession` + `useRouter`)
+- **Autenticação**: se `status !== "loading"` e sem sessão, redirect para `/login`
+- **Carregamento de módulos**: useEffect faz fetch `/api/empresa?id=X` quando `userRole !== "GOD"`
+- **GOD bypass**: se GOD, `empresaModulos` = todos (CORPORATIVO, OFICINA, EVENTOS) sem fetch
+- **Filtragem**: `MODULOS_DISPONIVEIS.filter(m => empresaModulos.includes(m.key))`
+- **Loading**: spinner centralizado enquanto verifica sessão ou carrega módulos
+- **Empty state**: "Nenhum módulo disponível para sua empresa. Entre em contato com o administrador."
+- **Cards**: cada módulo vira um botão clicável com:
+  - Ícone em fundo primary (LuHeadphones, LuWrench, LuCalendarCheck)
+  - Nome do módulo em bold + descrição abaixo
+  - Hover: scale 1.03 + sombra; Active: scale 0.98
+  - Clique → `router.push(modulo.href)` (ex: `/corporativo/dashboards`)
+- **Header**: logo + ThemeToggle
+- **Footer**: "Nolevel v{version}" do package.json
+
+#### 3. Páginas de login antigas deletadas
+- `src/app/corporativo/login/page.tsx` — removido
+- `src/app/oficina/login/page.tsx` — removido
+
+#### 4. Config NextAuth (`src/lib/nextauth.ts`)
+- `pages.signIn: '/login'` — já estava configurado (apontando para `/login`)
+
+### Fluxo de autenticação
+```
+Usuário acessa /corporativo/dashboards (rota protegida)
+  → não logado → redirect para /login
+  → login com email + senha
+  → signIn callback URL → /dashboard
+  → dashboard carrega módulos da empresa
+  → clique em "Corporativo" → /corporativo/dashboards (sidebar aparece)
+```
+
+### Arquivos criados
+| Arquivo | Descrição |
+|---------|-----------|
+| `src/app/login/page.tsx` | Página de login unificada |
+| `src/app/dashboard/page.tsx` | Seletor de módulos pós-login |
+
+### Arquivos deletados
+| Arquivo |
+|---------|
+| `src/app/corporativo/login/page.tsx` |
+| `src/app/oficina/login/page.tsx` |
+
+### Build
+- `npm run build` — compilado com sucesso ✅ (55 páginas, zero erros)

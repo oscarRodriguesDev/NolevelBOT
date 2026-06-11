@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import { ROLE } from "@prisma/client"
-import usuarios from "../../../../public/users/usuarios.png"
+import usuarios from "../../../../../public/users/usuarios.png"
 import { useHeader } from "../layout"
 import toast from "react-hot-toast"
 import { rolesQuePodeCriar, roleParaDisplay } from "@/lib/rbac"

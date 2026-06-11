@@ -8,8 +8,7 @@ const FlowState = {
   IDENTIFICACAO_MATRICULA: "identificacao_matricula",
   COLETAR_FUNCAO: "coletar_funcao",
   COLETAR_ONIBUS: "coletar_onibus",
-  COLETAR_DATA: "coletar_data",
-  COLETAR_DEFEITO: "coletar_defeito",
+  COLETAR_DEFEITO: "coletar_defeito", // Removido o COLETAR_DATA daqui
   CONFIRMAR: "confirmar",
   COLETAR_SETOR: "coletar_setor",
 } as const;
@@ -107,17 +106,14 @@ export async function POST(req: NextRequest) {
 
       case FlowState.COLETAR_ONIBUS: {
         session.numeroOnibus = userInput;
-        await sendEvolutionText(
-          instance,
-          number,
-          "Qual a *data do ocorrido*? (Ex: 10/06/2026)"
-        );
-        session.state = FlowState.COLETAR_DATA;
-        break;
-      }
+        
+        // 🌟 GERAÇÃO AUTOMÁTICA DA DATA 🌟
+        // Formata a data atual no padrão brasileiro (DD/MM/AAAA)
+        session.data = new Date().toLocaleDateString("pt-BR", {
+          timeZone: "America/Sao_Paulo" // Garante o fuso horário correto do Brasil
+        });
 
-      case FlowState.COLETAR_DATA: {
-        session.data = userInput;
+        // Pula a pergunta da data e vai direto para o defeito
         await sendEvolutionText(
           instance,
           number,
@@ -135,7 +131,7 @@ export async function POST(req: NextRequest) {
           `🔢 Matrícula: ${session.matricula}\n` +
           `📋 Função: ${session.funcao}\n` +
           `🚌 Ônibus: ${session.numeroOnibus}\n` +
-          `📅 Data: ${session.data}\n` +
+          `📅 Data: ${session.data}\n` + // A data gerada automaticamente vai aparecer aqui no resumo
           `🔧 Defeito: ${session.defeito}\n\n` +
           `Os dados estão corretos? (sim/não)`;
         await sendEvolutionText(instance, number, resumo);

@@ -5,7 +5,7 @@ import { useSession, signOut } from "next-auth/react"
 import Image from "next/image"
 import { LogOut, Settings } from "lucide-react"
 import { useState } from "react"
-import { UserProfileModal } from "./modal-edit-user"
+import { UserProfileModal } from "@/app/components/modal-edit-user"
 
 type User = {
   id: string
@@ -66,7 +66,7 @@ export default function UserCard(props: Props) {
                 width={40}
                 height={40}
                 className="object-cover w-full h-full"
-                unoptimized={true} //quando tiver no ar talvez precise desabilitar otimização
+                unoptimized={true}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-sm font-bold bg-black text-white">

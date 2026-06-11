@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import { ROLE } from "@prisma/client"
 import { useHeader } from "../layout"
-import { FaTrash, FaEdit } from "react-icons/fa"
+import { FaTrash } from "react-icons/fa"
 import toast from "react-hot-toast"
 import { CAN_BATCH_CPF } from "@/lib/rbac"
 
@@ -30,8 +30,7 @@ export default function CadastroMotoristas() {
   const [motoristas, setMotoristas] = useState<{ id?: string; nome: string; cpf: string }[]>([])
   const [searchTerm, setSearchTerm] = useState("")
 
-  const [admins, setAdmins] = useState<Admin[]>([])
-  const currentUserId = session?.user?.id
+  const [, setAdmins] = useState<Admin[]>([])
   const [editingAdmin, setEditingAdmin] = useState<Admin | null>(null)
   const [editForm, setEditForm] = useState({ name: "", email: "", cpf: "", setor: "" })
 
@@ -241,8 +240,8 @@ useEffect(() => {
             }}
           >
             <div>
-              <h3 className="text-lg font-semibold mb-1">Cadastrar CPF</h3>
-              <p className="text-xs opacity-60 mb-6">Adicione CPFs autorizados manualmente</p>
+              <h3 className="text-lg font-semibold mb-1">Cadastrar CPF ou Matricula</h3>
+              <p className="text-xs opacity-60 mb-6">Adicione os colaboradores autorizados manualmente</p>
             </div>
             <form onSubmit={cadastrarManual} className="space-y-4">
               <div>
@@ -260,7 +259,7 @@ useEffect(() => {
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider mb-2 opacity-70">Matrícula</label>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-2 opacity-70">Matrícula ou CPF</label>
                 <input
                   placeholder="000000"
                   value={matricula}
@@ -329,7 +328,7 @@ useEffect(() => {
               borderColor: "var(--border-subtle)",
             }}
           >
-            <h3 className="text-lg font-semibold mb-1">CPFs Cadastrados</h3>
+            <h3 className="text-lg font-semibold mb-1">Colaboradores Cadastrados</h3>
             <p className="text-xs opacity-60 mb-4">{cpfsFiltrados.length} registro(s)</p>
 
             <input
@@ -372,7 +371,7 @@ useEffect(() => {
                 ))
               ) : (
                 <div className="text-center py-10">
-                  <p className="text-sm opacity-40 font-medium">Nenhum CPF encontrado</p>
+                  <p className="text-sm opacity-40 font-medium">Nenhum resultado encontrado</p>
                 </div>
               )}
             </div>

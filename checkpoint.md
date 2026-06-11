@@ -811,3 +811,95 @@ Implementar controle de acesso por módulos da empresa. Cada empresa criada pelo
 - ✅ Nenhuma alteração no Prisma schema (migration já executada pelo usuário)
 - ✅ Nenhuma alteração em rotas de API existentes (além da empresa)
 - ✅ `prisma generate` executado para sincronizar tipos
+
+---
+
+## Sessão: 11/06/2026 — Sidebar Único com Accordion de Módulos
+
+### Objetivo
+Substituir sidebars separadas (`corporativo/(atendimento)/components/sidebar.tsx` e `oficina/(atendimento)/components/sidebar.tsx`) por uma sidebar única em `src/app/components/sidebar.tsx` que mostra botões accordion para cada módulo que a empresa do usuário possui.
+
+### O que foi feito
+
+#### 1. Componentes compartilhados movidos
+- `cardUser.tsx` movido de ambos os módulos para `src/app/components/cardUser.tsx` (import atualizado para `@/app/components/modal-edit-user`)
+- `modal-edit-user.tsx` movido para `src/app/components/modal-edit-user.tsx`
+- Sidebars antigas, cardUser e modal-edit-user deletados de ambos os módulos
+
+#### 2. Sidebar único (`src/app/components/sidebar.tsx`)
+- **Accordion por módulo**: cada módulo (CORPORATIVO, OFICINA) tem um botão expansível
+- **Busca de módulos**: fetch `/api/empresa?id=X` no mount para saber quais módulos a empresa possui
+- **Abertura automática**: o módulo cuja rota está ativa abre automaticamente; se nenhum, o primeiro disponível abre
+- **Múltiplos abertos**: usuário pode expandir vários módulos simultaneamente
+- **Ícones**: LuHeadphones (Corporativo), LuWrench (Oficina) nos accordions; LuChevronDown/Right para indicar estado
+- **Sub-menus indentados**: links dentro de cada módulo com borda lateral e padding
+- **Sistema de menus**: Usuários, Criar Usuário, Empresas aparecem DENTRO de cada módulo (rotas específicas: `/corporativo/...` e `/oficina/...`)
+- **Usuários/Criar Usuário**: role-based (GOD/ADMIN/GESTOR)
+- **Empresas**: apenas GOD
+- **Card de usuário**: exibido no footer com foto, nome, email, role, botões de config/logout
+- **Versão**: exibida no rodapé via `packageJson.version`
+- **Responsivo**: botão hamburger em mobile, overlay escuro, sidebar desliza
+
+#### 3. Layouts atualizados
+- `corporativo/(atendimento)/layout.tsx`: importa `Sidebar` de `@/app/components/sidebar`
+- `oficina/(atendimento)/layout.tsx`: importa `Sidebar` de `@/app/components/sidebar`
+
+### Arquivos criados
+| Arquivo | Descrição |
+|---------|-----------|
+| `src/app/components/sidebar.tsx` | Sidebar único com accordion de módulos |
+| `src/app/components/cardUser.tsx` | Card de usuário compartilhado |
+| `src/app/components/modal-edit-user.tsx` | Modal de edição de perfil compartilhado |
+
+### Arquivos deletados
+| Arquivo |
+|---------|
+| `src/app/corporativo/(atendimento)/components/sidebar.tsx` |
+| `src/app/corporativo/(atendimento)/components/cardUser.tsx` |
+| `src/app/corporativo/(atendimento)/components/modal-edit-user.tsx` |
+| `src/app/oficina/(atendimento)/components/sidebar.tsx` |
+| `src/app/oficina/(atendimento)/components/cardUser.tsx` |
+| `src/app/oficina/(atendimento)/components/modal-edit-user.tsx` |
+
+### Arquivos modificados
+| Arquivo | Mudança |
+|---------|---------|
+| `src/app/corporativo/(atendimento)/layout.tsx` | Importa Sidebar de `@/app/components/sidebar` |
+| `src/app/oficina/(atendimento)/layout.tsx` | Importa Sidebar de `@/app/components/sidebar` |
+
+### Build
+- `npm run build` — compilado com sucesso ✅
+
+---
+
+## Sessão: 11/06/2026 — Login Unificado + Seletor de Módulos (/login + /dashboard)
+
+### Objetivo
+Unificar o login fora dos módulos corporativo/oficina: usuário faz login em `/login`, é redirecionado para `/dashboard` onde vê cards dos módulos que sua empresa possui, clica e acessa o módulo desejado.
+
+### Mudanças realizadas
+
+#### 1. Página `/login` unificada (`src/app/login/page.tsx`)
+- Baseada na versão corporativo, imports com `@/app/components/back.tsx`
+- Redirect para `/dashboard` em vez de `/corporativo/dashboards`
+- CAPTCHA Turnstile mantido (após 3 tentativas falhas)
+
+#### 2. Página `/dashboard` — Seletor de módulos (`src/app/dashboard/page.tsx`)
+- Se não logado, redirect para `/login`
+- Fetch `/api/empresa?id=X` para saber módulos disponíveis
+- GOD vê todos os módulos (CORPORATIVO, OFICINA, EVENTOS)
+- Cards clicáveis com ícone, nome e descrição por módulo
+- Loading state (spinner) e empty state ("Nenhum módulo disponível")
+- Header com logo + ThemeToggle, footer com versão
+
+#### 3. Login antigos deletados
+- `src/app/corporativo/login/page.tsx` — removido
+- `src/app/oficina/login/page.tsx` — removido
+
+### Build
+- `npm run build` — compilado com sucesso ✅ (55 páginas, zero erros)
+
+### Commits
+| # | Hash | Mensagem | Data |
+|---|------|----------|------|
+| 1 | (pendente) | `feat: login unificado em /login + seletor de modulos em /dashboard` | 11/06/2026 |

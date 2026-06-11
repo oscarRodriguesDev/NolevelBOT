@@ -7,7 +7,7 @@ import { ThemeToggle } from "@/app/components/theme-toggle";
 import { LuMail, LuLock } from "react-icons/lu";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
-import { BtnVoltar } from "../components/back";
+import { BtnVoltar } from "@/app/components/back";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -89,7 +89,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/all-tickets");
+      router.push("/dashboard");
     } catch {
       setError("Erro ao fazer login");
     } finally {
