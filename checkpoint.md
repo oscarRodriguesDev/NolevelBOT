@@ -625,3 +625,34 @@ Criação do webhook26 que utiliza prompt de IA personalizado por empresa, confi
 
 ### Build
 - `npm run build` — compilado com sucesso ✅
+
+---
+
+## Sessão: 10/06/2026 — Módulo Oficina: Frontend de Manutenção de Veículos
+
+### Contexto
+Criação do módulo `(modulo-oficina)` para empresa de transporte público. Motoristas registram pedidos de manutenção de veículos ao final do turno. Frontend apenas (sem API). Reaproveita modelo `Chamado` existente.
+
+### Arquivos modificados (11):
+
+| Arquivo | Mudança |
+|---------|---------|
+| `(atendimento)/layout.tsx` | Título "Oficina / Manutenção de Veículos" |
+| `(atendimento)/components/sidebar.tsx` | Menus: Solicitações, Motoristas; removido Empresas |
+| `(atendimento)/components/modal_tandimento.tsx` | Adaptado labels para manutenção |
+| `(atendimento)/all-tickets/page.tsx` | Colunas p/ manutenção, filtro por tipo |
+| `(atendimento)/all-tickets/kanban-board.tsx` | Colunas renomeadas, badge tipo |
+| `(atendimento)/cpfs/page.tsx` | Header "Motoristas" |
+| `(atendimento)/dashboards/page.tsx` | Descrição "manutenção de veículos" |
+| `(atendimento)/error.tsx` | "Erro na área da oficina" |
+| `chamado/page.tsx` | **Reescrito** — formulário manutenção veicular |
+| `consulta/page.tsx` | Busca por matrícula (6 dígitos) |
+| `consulta/[ticket]/page.tsx` | Exibe dados de manutenção |
+
+### Commits realizados nesta sessão:
+| # | Hash | Mensagem | Data |
+|---|------|----------|------|
+| 1 | `[pendente]` | `feat: modulo oficina - frontend manutencao de veiculos com matricula, tipo de registro e discriminacao` | 10/06/2026 |
+
+### Build
+- Pendente

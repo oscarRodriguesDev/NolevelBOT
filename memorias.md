@@ -1969,3 +1969,89 @@ API exclusiva para GOD gerenciar o prompt do bot por empresa:
 
 ### Build
 - `npm run build` — compilado com sucesso ✅
+
+---
+
+## 46. MÓDULO OFICINA — FRONTEND PARA MANUTENÇÃO DE VEÍCULOS (10/06/2026)
+
+### Objetivo
+Criação do módulo `(modulo-oficina)` para uma empresa de transporte público, onde motoristas registram pedidos de manutenção de veículos ao final do turno. O módulo foi replicado a partir do `(atendimento)` original e adaptado para o novo contexto.
+
+### Mudanças de Identidade
+| Item | Antes (Atendimento) | Depois (Oficina) |
+|------|---------------------|------------------|
+| Título do layout | "Atendimento / Suporte Técnico" | "Oficina / Manutenção de Veículos" |
+| Menu lateral "Chamados" | Chamados | **Solicitações** |
+| Menu lateral "CPFs Autorizados" | CPFs Autorizados | **Motoristas** |
+| Menu lateral "Empresas" | Removido | Removido (empresa única) |
+
+### Formulário Principal (`chamado/page.tsx`)
+Substituído o formulário de abertura de chamado por um **Formulário de Registro de Manutenção**:
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| Nome do Motorista | text | Obrigatório |
+| Matrícula | text, max 6 dígitos | **Substitui CPF** — apenas números |
+| Data | date | Auto-preenchido com a data atual |
+| Veículo / Placa | text | Opcional — identificação do veículo |
+| Tipo de Registro | radio buttons | **Defeito** / **Socorro de Rua** / **Sem Defeito** |
+| Discriminação dos Serviços | textarea | Aparece apenas se "Defeito" ou "Socorro" selecionado |
+
+### Lógica condicional do formulário
+- Se **"Sem Defeito"**: exibe caixa de informação "Final de Turno" e oculta o campo de discriminação
+- Se **"Defeito"** ou **"Socorro de Rua"**: exibe textarea "Discriminação dos Serviços" como obrigatório
+- Selecão visual com cards estilizados (ícone + título + descrição)
+- Submit: simulado (sem API por enquanto) — mostra tela de sucesso com toast
+
+### Listagem (`all-tickets/page.tsx`)
+Colunas da tabela adaptadas para manutenção:
+
+| Antes | Depois |
+|-------|--------|
+| Ticket | Solicitação |
+| Nome | Motorista |
+| Setor | Veículo (via setor) |
+| Prioridade | **Tipo** (Defeito/Socorro/Sem Defeito) |
+| Status | Status (Aguardando/Em Andamento/Aguardando Peças/Concluído/Cancelado) |
+| Data | Data |
+
+### Kanban (`kanban-board.tsx`)
+Colunas renomeadas para o fluxo de manutenção:
+- **NOVO → Aguardando**
+- **EM_ATENDIMENTO → Em Andamento**
+- **AGUARDANDO → Aguardando Peças**
+- **CONCLUIDO → Concluído**
+- **CANCELADO → Cancelado**
+
+Cards do Kanban exibem tipo (Defeito/Socorro/OK) em badge colorido em vez de prioridade.
+
+### Consulta Pública (`consulta/page.tsx`)
+- Substituída busca por **CPF** por busca por **Matrícula** (até 6 dígitos)
+- Máscara de entrada: apenas números, limitado a 6 caracteres
+- Tabela de resultados: Solicitação | Tipo | Status
+
+### Detalhe da Solicitação (`consulta/[ticket]/page.tsx`)
+- Exibe campos específicos: nome, matrícula, veículo, tipo, discriminação dos serviços
+- Ícones adaptados (FaWrench para tipo, FaTruck para veículo)
+- Removeu campos irrelevantes
+
+### Modal de Gerenciamento (`modal_tandimento.tsx`)
+- "Chamado" → "Solicitação" em todos os labels
+- Campos: Motorista, Matrícula, Veículo, Tipo, Status
+- "Descrição" → "Discriminação dos Serviços"
+- Status: Aguardando, Em Andamento, Aguardando Peças, Concluído, Cancelado
+
+### Demais páginas adaptadas
+- **Dashboard**: descrição alterada para "manutenção de veículos"
+- **CPFs → Motoristas**: header renomeado
+- **Error boundary**: "Erro na área da oficina"
+
+### O que NÃO foi alterado
+- Prisma schema (mantido — usa modelo `Chamado` existente)
+- Rotas de API (frontend apenas)
+- Sistema de login/autenticação
+- Módulo corporativo
+- github/ (deploys configurados mantidos)
+
+### Build
+- Pendente (10/06/2026 — precisa validar com `npm run build`)
