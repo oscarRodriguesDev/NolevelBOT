@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { LuMenu, LuX, LuTickets, LuBell, LuUsers, LuHouse, LuSettings } from 'react-icons/lu'
+import { LuMenu, LuX, LuTickets, LuBell, LuUsers, LuHouse, LuSettings, LuArrowLeftFromLine } from 'react-icons/lu'
 import { useSession } from 'next-auth/react'
 import { ROLE } from '@prisma/client'
 import packageJson from '../../../../../package.json'
@@ -142,6 +142,19 @@ export function Sidebar() {
             </Link>
           )
         })}
+
+        <hr className="my-4" style={{ borderColor: 'var(--border-subtle)' }} />
+
+        <Link
+          key="/dashboards"
+          href="/dashboards"
+          onClick={() => setIsOpen(false)}
+          className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group opacity-75 hover:opacity-100`}
+          style={{ color: 'var(--foreground)' }}
+        >
+          <LuArrowLeftFromLine size={20} className="flex-shrink-0" />
+          <span className="text-sm font-medium">Voltar ao Atendimento</span>
+        </Link>
       </nav>
 
       <div

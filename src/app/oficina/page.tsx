@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { LuCheck, LuLoader, LuArrowRight, LuBus } from 'react-icons/lu'
 import { ThemeToggle } from '../components/theme-toggle'
 import toast from 'react-hot-toast'
@@ -46,6 +46,16 @@ export default function OficinaPage() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (step === 'form' && !form.data) {
+      const hoje = new Date()
+      const dia = String(hoje.getDate()).padStart(2, '0')
+      const mes = String(hoje.getMonth() + 1).padStart(2, '0')
+      const ano = hoje.getFullYear()
+      setForm(prev => ({ ...prev, data: `${dia}/${mes}/${ano}` }))
+    }
+  }, [step, form.data])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -225,16 +235,13 @@ export default function OficinaPage() {
                 <input
                   type="text"
                   value={form.data}
-                  onChange={e => setForm(prev => ({ ...prev, data: e.target.value }))}
-                  required
-                  className="w-full px-4 py-3 border rounded-xl outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
+                  disabled
+                  className="w-full px-4 py-3 border rounded-xl outline-none opacity-60 cursor-not-allowed"
                   style={{
                     backgroundColor: 'var(--surface-elevated)',
                     borderColor: 'var(--border-subtle)',
                     color: 'var(--foreground)',
-                    '--tw-ring-color': 'var(--primary)',
-                  } as never}
-                  placeholder="dd/mm/aaaa"
+                  }}
                 />
               </div>
 
