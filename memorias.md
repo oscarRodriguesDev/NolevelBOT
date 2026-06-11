@@ -2200,3 +2200,70 @@ O documento cobre 9 seções principais:
 - ✅ Nenhuma alteração no Prisma schema
 - ✅ Nenhuma alteração em arquivos .github/
 - ✅ Build não necessário (apenas documento markdown)
+
+---
+
+## 49. SISTEMA DE MÓDULOS POR EMPRESA (11/06/2026)
+
+### Contexto
+O Prisma schema já havia sido alterado pelo usuário (migration executada manualmente) com:
+- `enum modulo { OFICINA, CORPORATIVO, EVENTOS }`
+- Campo `modulos modulo[]` no model `empresa`
+
+Foi necessário rodar `prisma generate` para sincronizar o client com o schema.
+
+### Mudanças implementadas
+
+#### API `empresa/route.ts`
+- POST: aceita `modulos` (array de strings do enum)
+- GET: retorna `modulos` em todos os selects (GOD list, empresa única, lookup por CPF)
+- GET: novo suporte a `?id=X` para buscar empresa específica por ID
+- PUT: aceita `modulos` para atualização
+
+#### Frontend `empresa/create/page.tsx`
+- Nova seção "Módulos da Empresa" com 3 cards clicáveis:
+  - **Corporativo** (Headphones): Gestão de chamados, dashboard, avisos e CPFs
+  - **Oficina** (Wrench): Manutenção veicular para transportadoras
+  - **Eventos** (CalendarCheck): Captura de leads em feiras e eventos
+- Toggle visual: selecionado = primary + borda destacada, não-selecionado = transparência
+
+#### Frontend `empresa/page.tsx`
+- Badges coloridos por módulo nos cards de empresa
+- Edição inline: toggle buttons para módulos no formulário de edição
+
+#### Sidebar `(atendimento)/components/sidebar.tsx`
+- Fetch dos módulos da empresa via `GET /api/empresa?id=X`
+- Helper `temModulo()`: GOD sempre true, demais filtram pelo array
+- Menus CORPOARTIVO (Dashboard, Chamados, Avisos, CPFs): condicionais a `CORPORATIVO`
+- Menu Oficina: condicional a `OFICINA` + role mínima GESTOR
+- Menus de sistema (Usuários, Criar Usuário, Empresas): independentes de módulo
+
+#### Sidebar `oficina/(atendimento)/components/sidebar.tsx`
+- Mesma lógica: fetch módulos + `temModulo('OFICINA')`
+- Menus da oficina filtrados por OFICINA
+- Menus de sistema independentes
+
+#### Layout `oficina/(atendimento)/layout.tsx`
+- Verificação de autorização no mount:
+  - GOD: passa direto
+  - Não-GOD: fetch módulos → se não tem `OFICINA` → redirect `/dashboards`
+- Spinner de loading enquanto verifica
+- Renderização condicional (null se não autorizado)
+
+### Regras de negócio
+- GOD sempre acessa todos os módulos (bypass total)
+- Empresa sem módulo não vê menus nem acessa rotas do módulo
+- Controle em 2 camadas: sidebar (frontend) + layout (quase-backend via redirect)
+- Menus de administração do sistema (Usuários, Criar Usuário, Empresas) são independentes de módulo
+- Nenhuma migration executada pelo código (usuário já havia rodado manualmente)
+- Build validado com `npm run build` ✅
+
+### Arquivos modificados (6)
+| Arquivo | Mudança |
+|---------|---------|
+| `src/app/api/empresa/route.ts` | POST/GET/PUT com modulos; GET por ID |
+| `src/app/(atendimento)/empresa/create/page.tsx` | Seletor de módulos |
+| `src/app/(atendimento)/empresa/page.tsx` | Badges e edição de módulos |
+| `src/app/(atendimento)/components/sidebar.tsx` | Filtro por módulos |
+| `src/app/oficina/(atendimento)/components/sidebar.tsx` | Filtro por módulos |
+| `src/app/oficina/(atendimento)/layout.tsx` | Bloqueio de acesso OFICINA |

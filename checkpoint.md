@@ -742,3 +742,72 @@ Criar `apresentação.md` — documento completo de apresentação do sistema No
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
 | 1 | `11b0a6e` | `docs: cria apresentacao.md com descricao completa do sistema para prospeccao de clientes` | 11/06/2026 |
+
+---
+
+## Sessão: 11/06/2026 — Sistema de Módulos por Empresa
+
+### Objetivo
+Implementar controle de acesso por módulos da empresa. Cada empresa criada pelo GOD pode ter um ou mais módulos habilitados (CORPORATIVO, OFICINA, EVENTOS), e todos os usuários vinculados àquela empresa só acessam os módulos permitidos.
+
+### O que foi feito
+
+#### 1. API `empresa/route.ts` — `modulos` no POST/GET/PUT
+- POST aceita `modulos` (array de strings)
+- GET retorna `modulos` nos selects (GOD list, empresa por ID, lookup por CPF)
+- GET aceita `?id=X` para buscar empresa específica por ID
+- PUT aceita `modulos` para atualização
+
+#### 2. Frontend `empresa/create/page.tsx` — Seleção de módulos na criação
+- Novos icones: Wrench (OFICINA), Headphones (CORPORATIVO), CalendarCheck (EVENTOS)
+- Seção "Módulos da Empresa" com 3 cards clicáveis (toggle on/off)
+- Cada card mostra: ícone, nome e descrição do módulo
+- Estado visual: selecionado = fundo primary + borda destacada
+- `modulos` enviado no body do POST
+
+#### 3. Frontend `empresa/page.tsx` — Exibição e edição de módulos
+- Interface `Empresa` estendida com `modulos: string[]`
+- Badges coloridos por módulo (azul CORPORATIVO, laranja OFICINA, roxo EVENTOS)
+- Edição inline: checkboxes (toggle buttons) para selecionar/desselecionar módulos
+- Atualização via PUT com `modulos` no body
+
+#### 4. Sidebar `(atendimento)` — Filtragem por módulos
+- `useEffect` busca `/api/empresa?id=X` para carregar módulos da empresa
+- `temModulo()` helper: GOD sempre vê tudo; demais users filtram
+- Menus CORPORATIVO (Dashboard, Chamados, Avisos, CPFs): só aparecem se empresa tem `CORPORATIVO`
+- Menu Oficina: só aparece se empresa tem `OFICINA` + role mínima GESTOR
+- Menus de sistema (Usuários, Criar Usuário, Empresas): SEMPRE visíveis baseado na role (não dependem de módulo)
+
+#### 5. Sidebar `oficina` — Filtragem por módulos
+- Mesma estrutura: busca módulos via API, `temModulo('OFICINA')` para filtrar
+- Menus da oficina (Dashboard, Solicitações, Avisos, Motoristas): só se `OFICINA`
+- Menus de sistema (Usuários, Criar Usuário): SEMPRE visíveis
+
+#### 6. Layout `oficina` — Bloqueio de acesso
+- Verifica se empresa tem módulo OFICINA (fetch via API)
+- GOD passa direto; não-GOD sem OFICINA é redirecionado para `/dashboards`
+- Spinner de loading enquanto verifica
+- Se não autorizado, retorna null (não renderiza nada)
+
+### Arquivos modificados (6)
+| Arquivo | Mudança |
+|---------|---------|
+| `src/app/api/empresa/route.ts` | POST/GET/PUT com modulos; GET por ID |
+| `src/app/(atendimento)/empresa/create/page.tsx` | Seletor de módulos na criação |
+| `src/app/(atendimento)/empresa/page.tsx` | Badges e edição de módulos |
+| `src/app/(atendimento)/components/sidebar.tsx` | Filtra menus por módulos |
+| `src/app/oficina/(atendimento)/components/sidebar.tsx` | Filtra menus por módulos |
+| `src/app/oficina/(atendimento)/layout.tsx` | Bloqueia acesso sem módulo OFICINA |
+
+### Build
+- `npm run build` — compilado com sucesso ✅
+
+### Regras de negócio
+- ✅ GOD sempre vê todos os módulos (bypass total)
+- ✅ Empresa sem módulo CORPORATIVO: não vê Dashboard, Chamados, Avisos, CPFs
+- ✅ Empresa sem módulo OFICINA: não vê link para Oficina; não acessa /oficina/*
+- ✅ Menus de sistema (Usuários, Criar Usuário, Empresas) são sempre visíveis por role
+- ✅ Controle tanto no frontend (sidebar) quanto no backend (layout redirect)
+- ✅ Nenhuma alteração no Prisma schema (migration já executada pelo usuário)
+- ✅ Nenhuma alteração em rotas de API existentes (além da empresa)
+- ✅ `prisma generate` executado para sincronizar tipos
