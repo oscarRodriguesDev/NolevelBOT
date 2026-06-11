@@ -58,7 +58,7 @@ export default function EmpresaPage() {
     if (status === 'loading') return
     const role = session?.user?.role as ROLE | undefined
     if (role !== 'GOD') {
-      router.replace('/dashboards')
+      router.replace('/dashboard')
       return
     }
   }, [status, session, router])
@@ -268,14 +268,14 @@ export default function EmpresaPage() {
     >
       <div className="max-w-5xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 mb-8">
-          <Link
-            href="/empresa/create"
+          <button
+            onClick={() => router.push("/corporativo/empresa/create")}
             className="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-3 rounded-lg font-semibold text-white transition-all duration-300 hover:scale-105 active:scale-95"
             style={{ backgroundColor: "var(--primary)" }}
           >
             <Plus size={18} />
             Nova Empresa
-          </Link>
+          </button>
         </div>
 
         <div className="mb-8">
@@ -502,7 +502,7 @@ export default function EmpresaPage() {
 
                     <div className="flex gap-2 pt-2 border-t flex-wrap" style={{ borderColor: "var(--border-subtle)" }}>
                       <button
-                        onClick={() => router.push(`/empresa/${empresa.id}/usuarios`)}
+                        onClick={() => router.push(`/corporativo/empresa/${empresa.id}/usuarios`)}
                         className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105"
                         style={{ color: "var(--foreground)", backgroundColor: "var(--surface-elevated)" }}
                       >

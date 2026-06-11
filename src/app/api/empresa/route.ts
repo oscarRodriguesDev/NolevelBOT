@@ -39,8 +39,12 @@ export async function GET(request: Request) {
     const id = searchParams.get('id')
 
     if (id) {
-      const session = await getSessionOrFail(["GOD", "ADMIN", "GESTOR"])
+      const session = await getSessionOrFail(["GOD", "ADMIN", "GESTOR", "ATENDENTE"])
       if (!session) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      }
+
+      if (session.user.role !== "GOD" && session.user.empresaId !== id) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
       }
 

@@ -2490,6 +2490,31 @@ O ADMIN deve:
 ### Build
 - `npm run build` — compilado com sucesso ✅
 
+---
+
+## 54. FIX — REDIRECTS DE `/dashboards` PARA `/dashboard` (11/06/2026)
+
+### Problema
+ATENDENTE com `empresaId` vazio era redirecionado para `/dashboards` (rota inexistente — página 404).
+
+### Causa raiz
+Rotas foram renomeadas de `/dashboards` para `/dashboard` (seletor de módulos), mas vários `router.replace('/dashboards')` no código não foram atualizados.
+
+### Solução aplicada
+Substituir todos os `router.replace('/dashboards')` por `router.replace('/dashboard')`.
+
+### Arquivos modificados
+| Arquivo | Mudança |
+|---------|---------|
+| `src/app/oficina/(atendimento)/layout.tsx` | Redirect: `/dashboards` → `/dashboard` |
+| `src/app/corporativo/(atendimento)/empresa/page.tsx` | Redirect: `/dashboards` → `/dashboard` |
+| `src/app/corporativo/(atendimento)/empresa/create/page.tsx` | Redirect: `/dashboards` → `/dashboard` |
+| `src/app/corporativo/(atendimento)/empresa/[id]/usuarios/page.tsx` | Redirect: `/dashboards` → `/dashboard` |
+| `src/app/corporativo/(atendimento)/usuarios/page.tsx` | Redirect: `/dashboards` → `/dashboard` |
+
+### Build
+- `npm run build` — compilado com sucesso ✅
+
 ### Problema
 Usuários do tipo ATENDENTE criados por ADMIN não herdavam a empresa do admin. O campo `empresaId` ficava vazio, fazendo o atendente parecer "sem empresa".
 

@@ -45,10 +45,10 @@ export default function AtendimentoLayout({
           setAutorizado(true)
         } else {
           setAutorizado(false)
-          router.replace('/dashboards')
+          router.replace('/dashboard')
         }
       })
-      .catch(() => { setAutorizado(false); router.replace('/dashboards') })
+      .catch(() => { setAutorizado(false); router.replace('/dashboard') })
   }, [session, status, userRole, router])
 
   const [titulo, setTitulo] = useState('Oficina')

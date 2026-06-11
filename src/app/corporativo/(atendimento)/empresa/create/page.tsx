@@ -18,7 +18,7 @@ export default function CreateEmpresa() {
     if (status === 'loading') return
     const role = session?.user?.role as ROLE | undefined
     if (role !== 'GOD') {
-      router.replace('/dashboards')
+      router.replace('/dashboard')
     }
   }, [status, session, router])
 
@@ -168,7 +168,7 @@ Máximo 400 caracteres. Seja objetivo.`
 
       if (!res.ok) throw new Error()
       toast.success('Empresa criada com sucesso!')
-      router.push('/empresa')
+      router.push('/corporativo/empresa')
       router.refresh()
     } catch (error) {
       toast.error('Erro ao criar empresa. Verifique os dados.')
@@ -186,9 +186,9 @@ Máximo 400 caracteres. Seja objetivo.`
       }}
     >
       <div className="max-w-3xl mx-auto">
-        <Link
-          href="/empresa"
-          className="inline-flex items-center gap-2 text-sm mb-8 transition-colors duration-300 group"
+        <button
+          onClick={() => router.push("/corporativo/empresa")}
+          className="inline-flex items-center gap-2 text-sm mb-8 transition-colors duration-300 group bg-transparent border-none p-0 cursor-pointer"
           style={{ color: "var(--foreground)", opacity: 0.7 }}
           onMouseEnter={(e) => {
             if (e.currentTarget instanceof HTMLElement) {
@@ -204,8 +204,8 @@ Máximo 400 caracteres. Seja objetivo.`
           }}
         >
           <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-          Voltar para a listagem
-        </Link>
+          Empresas
+        </button>
 
         <div
           className="rounded-2xl border shadow-lg overflow-hidden"
@@ -353,9 +353,8 @@ Máximo 400 caracteres. Seja objetivo.`
                       key={mod.valor}
                       type="button"
                       onClick={() => toggleModulo(mod.valor)}
-                      className={`flex items-start gap-3 p-3 rounded-xl border-2 text-left transition-all duration-200 ${
-                        selected ? 'border-[var(--primary)]' : 'border-transparent opacity-60 hover:opacity-100'
-                      }`}
+                      className={`flex items-start gap-3 p-3 rounded-xl border-2 text-left transition-all duration-200 ${selected ? 'border-[var(--primary)]' : 'border-transparent opacity-60 hover:opacity-100'
+                        }`}
                       style={{
                         backgroundColor: selected ? 'var(--surface)' : 'var(--surface)',
                         borderColor: selected ? 'var(--primary)' : 'var(--border-subtle)',

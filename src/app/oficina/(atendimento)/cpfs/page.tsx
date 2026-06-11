@@ -332,7 +332,7 @@ useEffect(() => {
             <p className="text-xs opacity-60 mb-4">{cpfsFiltrados.length} registro(s)</p>
 
             <input
-              placeholder="Buscar por Nome ou CPF..."
+              placeholder="Buscar por Nome, cpf ou matrícula..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full px-4 py-2.5 mb-4 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"

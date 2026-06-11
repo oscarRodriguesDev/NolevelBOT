@@ -72,7 +72,7 @@ export function Sidebar() {
         { label: 'Avisos', href: '/oficina/avisos', icon: LuBell, show: true },
         { label: 'Motoristas', href: '/oficina/cpfs', icon: LuTruck, show: true },
         { label: 'Usuários', href: '/oficina/usuarios', icon: LuUsers, show: isAdmin },
-        { label: 'Criar Usuário', href: '/oficina/gestao-de-usuarios', icon: LuSettings, show: isAdmin },
+        { label: 'Criar Usuário', href: '/oficina/gestao-de-usuarios', icon: LuSettings, show: userRole !== "GOD" && isAdmin },
        
       ],
     },

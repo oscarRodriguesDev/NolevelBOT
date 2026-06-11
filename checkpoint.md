@@ -905,6 +905,7 @@ Unificar o login fora dos módulos corporativo/oficina: usuário faz login em `/
 | 1 | `a2191b5` | `feat: login unificado em /login + seletor de modulos em /dashboard` | 11/06/2026 |
 | 2 | `7c5ad70` | `docs: atualiza checkpoint com hash a2191b5` | 11/06/2026 |
 | 3 | `bd01923` | `fix: atendente nao herdava empresa do admin - fallback ao banco se session.empresaId estiver vazio` | 11/06/2026 |
+| 4 | `6d09f6d` | `fix: admin nao conseguia corrigir atendente sem empresaid - put permite edicao e auto-preenche` | 11/06/2026 |
 
 ### Pendentes antes do commit:
 - ~~`src/app/api/users/route.ts` — Adicionar fallback ao banco se `session!.empresaId` estiver vazio~~ ✅
@@ -919,5 +920,19 @@ Unificar o login fora dos módulos corporativo/oficina: usuário faz login em `/
 ### Pendentes:
 - ~~`src/app/api/users/route.ts` — PUT: validação tolera null, auto-fill empresaId~~ ✅
 - ~~`memorias.md` — Seção 53 documentando o fix~~ ✅
+- ~~`checkpoint.md` — Atualizado~~ ✅
+- ~~`npm run build` — compilado com sucesso ✅~~ ✅
+
+---
+
+## Sessão: 11/06/2026 — Fix redirects /dashboards → /dashboard
+
+### Pendentes:
+- ~~`src/app/oficina/(atendimento)/layout.tsx` — redirect: /dashboards → /dashboard~~ ✅
+- ~~`src/app/corporativo/(atendimento)/empresa/page.tsx` — redirect: /dashboards → /dashboard~~ ✅
+- ~~`src/app/corporativo/(atendimento)/empresa/create/page.tsx` — redirect: /dashboards → /dashboard~~ ✅
+- ~~`src/app/corporativo/(atendimento)/empresa/[id]/usuarios/page.tsx` — redirect: /dashboards → /dashboard~~ ✅
+- ~~`src/app/corporativo/(atendimento)/usuarios/page.tsx` — redirect: /dashboards → /dashboard~~ ✅
+- ~~`memorias.md` — Seção 54 documentando o fix~~ ✅
 - ~~`checkpoint.md` — Atualizado~~ ✅
 - ~~`npm run build` — compilado com sucesso ✅~~ ✅

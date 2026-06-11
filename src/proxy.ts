@@ -8,7 +8,8 @@ export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
 
   const protectedRoutes = [
-    "/dashboards",
+    "oficina/dashboards",
+     "corporativo/dashboards",
     "/all-tickets",
     "/admin",
     "/gestao-de-usuarios",
