@@ -936,3 +936,20 @@ Unificar o login fora dos módulos corporativo/oficina: usuário faz login em `/
 - ~~`memorias.md` — Seção 54 documentando o fix~~ ✅
 - ~~`checkpoint.md` — Atualizado~~ ✅
 - ~~`npm run build` — compilado com sucesso ✅~~ ✅
+
+---
+
+## Sessão: 11/06/2026 — Coleta opcional foto + avisos específicos + ATENDENTE redirect + nome empresa
+
+### Pendentes antes do commit:
+- ~~`src/app/api/webhook-oficina/route.ts` — Coleta opcional de foto (PERGUNTAR_ANEXO + COLETAR_MIDIA)~~ ✅
+- ~~`src/app/api/webhook-oficina/route.ts` — Separar avisos específicos (matrícula) dos gerais (veículo)~~ ✅
+- ~~`src/app/components/sidebar.tsx` — Dashboard invisível para ATENDENTE~~ ✅
+- ~~`src/app/oficina/(atendimento)/usuarios/page.tsx` — Redirect ATENDENTE → /oficina/all-tickets~~ ✅
+- ~~`src/app/corporativo/(atendimento)/usuarios/page.tsx` — Redirect ATENDENTE → /corporativo/all-tickets~~ ✅
+- ~~`src/app/api/users/route.ts` — GET inclui Empresa.nome no select~~ ✅
+- ~~`src/app/corporativo/(atendimento)/usuarios/page.tsx` — Exibir nome da empresa~~ ✅
+- ~~`src/app/oficina/(atendimento)/usuarios/page.tsx` — Exibir nome da empresa~~ ✅
+- ~~`memorias.md` — Seção 55 documentando as mudanças~~ ✅
+- ~~`checkpoint.md` — Atualizado~~ ✅
+- ~~`npm run build` — compilado com sucesso ✅~~ ✅

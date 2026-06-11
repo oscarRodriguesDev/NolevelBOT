@@ -52,7 +52,7 @@ export function Sidebar() {
       icon: LuHeadphones,
       modulos: ['CORPORATIVO'],
       items: [
-        { label: 'Dashboard', href: '/corporativo/dashboards', icon: LuHouse, show: true },
+        { label: 'Dashboard', href: '/corporativo/dashboards', icon: LuHouse, show: userRole !== "ATENDENTE" },
         { label: 'Chamados', href: '/corporativo/all-tickets', icon: LuTickets, show: true },
         { label: 'Avisos', href: '/corporativo/avisos', icon: LuBell, show: true },
         { label: 'CPFs Autorizados', href: '/corporativo/cpfs', icon: LuUsers, show: true },
@@ -67,7 +67,7 @@ export function Sidebar() {
       icon: LuWrench,
       modulos: ['OFICINA'],
       items: [
-        { label: 'Dashboard', href: '/oficina/dashboards', icon: LuHouse, show: true },
+        { label: 'Dashboard', href: '/oficina/dashboards', icon: LuHouse, show: userRole !== "ATENDENTE" },
         { label: 'Solicitações', href: '/oficina/all-tickets', icon: LuTickets, show: true },
         { label: 'Avisos', href: '/oficina/avisos', icon: LuBell, show: true },
         { label: 'Motoristas', href: '/oficina/cpfs', icon: LuTruck, show: true },

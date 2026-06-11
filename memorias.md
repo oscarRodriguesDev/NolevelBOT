@@ -2535,3 +2535,101 @@ Adicionada validaÃ§Ã£o + fallback ao banco de dados em `api/users/route.ts`:
 
 ### Build
 - `npm run build` â€” compilado com sucesso âœ…
+
+---
+
+## Seção 55: Coleta opcional de foto no webhook-oficina + avisos específicos + ATENDENTE redirecionado + nome da empresa na lista de usuários
+
+### Contexto
+Quatro mudanças solicitadas após a implementação do webhook-oficina:
+1. Coleta de mídia (foto do problema) deve ser **opcional**, não obrigatória
+2. Avisos específicos (relacionados à matrícula do motorista) devem ser entregues **imediatamente** após a identificação, separados dos avisos gerais do veículo
+3. ATENDENTE logado na oficina deve ser redirecionado para /all-tickets e não deve ver a opção Dashboard no menu lateral
+4. Na lista de usuários (corporativo e oficina), exibir o **nome da empresa** em vez do ID truncado (8 primeiros caracteres)
+
+---
+
+### Implementação 1: Coleta opcional de foto no webhook-oficina
+
+**Arquivo:** src/app/api/webhook-oficina/route.ts
+
+- Adicionados estados PERGUNTAR_ANEXO e COLETAR_MIDIA ao enum FlowState
+- Quando o motorista descreve o defeito:
+  - Se já enviou mídia na descrição ? vai direto para CONFIRMAR
+  - Se **não** enviou mídia ? vai para PERGUNTAR_ANEXO (pergunta "Deseja enviar uma foto do problema?")
+    - Se responder "sim" ? vai para COLETAR_MIDIA (aguarda o upload da foto)
+    - Se responder "não" ? vai para CONFIRMAR (segue sem foto)
+    - Se responder algo inválido ? IA tenta interpretar; se não entender, retorna à pergunta
+
+**Fluxo completo:**
+`
+COLETAR_DEFEITO (texto do motorista)
+  +-- mídia presente ? vai para CONFIRMAR
+  +-- sem mídia ? PERGUNTAR_ANEXO
+                    +-- "sim" ? COLETAR_MIDIA ? CONFIRMAR
+                    +-- "não" ? CONFIRMAR
+`
+
+---
+
+### Implementação 2: Avisos específicos por matrícula
+
+**Arquivo:** src/app/api/webhook-oficina/route.ts
+
+A função uscarAvisosParaMotorista foi dividida em duas:
+
+- **uscarAvisosEspecificos(matricula)** ? busca avisos onde paraMatricula === matricula
+  - Chamada **imediatamente** após a identificação (IDENTIFICACAO_MATRICULA)
+  - Os avisos são enviados em sua **própria mensagem** no WhatsApp (separada da mensagem de saudação com as perguntas de função/veículo)
+  - Se não houver avisos específicos, o fluxo continua normalmente
+
+- **uscarAvisosDoVeiculo(prefixo)** ? busca avisos onde paraOnibus === prefixo
+  - Chamada após a coleta do número do ônibus (COLETAR_ONIBUS), mantendo o comportamento original
+  - Os avisos gerais continuam sendo entregues após o veículo ser identificado
+
+---
+
+### Implementação 3: ATENDENTE redirecionado e sem Dashboard
+
+**Arquivos modificados:**
+- src/app/components/sidebar.tsx
+- src/app/oficina/(atendimento)/usuarios/page.tsx
+- src/app/corporativo/(atendimento)/usuarios/page.tsx
+
+**Sidebar:**
+- Dashboard agora é show: userRole !== "ATENDENTE" tanto em corporativo quanto em oficina
+
+**Layout de usuários (oficina):**
+- ATENDENTE redirecionado de /oficina/dashboards ? /oficina/all-tickets
+
+**Layout de usuários (corporativo):**
+- ATENDENTE redirecionado de /dashboard ? /corporativo/all-tickets
+
+---
+
+### Implementação 4: Nome da empresa na lista de usuários
+
+**Arquivos modificados:**
+- src/app/api/users/route.ts — GET inclui Empresa: { select: { nome: true } }
+- src/app/corporativo/(atendimento)/usuarios/page.tsx — exibe u.Empresa?.nome em vez de u.empresaId?.slice(0, 8)
+- src/app/oficina/(atendimento)/usuarios/page.tsx — exibe u.Empresa?.nome em vez de u.empresaId?.slice(0, 8)
+
+**Detalhes:**
+- Campo Empresa?: { nome: string } adicionado à interface UserItem
+- Fallback para u.empresaId?.slice(0, 8) ou "—" caso Empresa venha vazio
+
+---
+
+### Arquivos modificados
+
+| Arquivo | Mudança |
+|---------|---------|
+| src/app/api/webhook-oficina/route.ts | Coleta opcional de foto + separação avisos específicos/gerais |
+| src/app/components/sidebar.tsx | Dashboard invisível para ATENDENTE |
+| src/app/oficina/(atendimento)/usuarios/page.tsx | Redirect para /all-tickets + nome empresa |
+| src/app/corporativo/(atendimento)/usuarios/page.tsx | Redirect para /corporativo/all-tickets + nome empresa |
+| src/app/api/users/route.ts | GET inclui Empresa.nome no select |
+
+### Build
+- 
+pm run build — compilado com sucesso ?

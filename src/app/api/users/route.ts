@@ -203,6 +203,9 @@ export async function GET(req: NextRequest) {
         avatarUrl: true,
         empresaId: true,
         createdAt: true,
+        Empresa: {
+          select: { nome: true },
+        },
       },
       orderBy: { createdAt: "desc" },
     })

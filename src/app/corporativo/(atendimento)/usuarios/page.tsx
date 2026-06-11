@@ -18,6 +18,7 @@ interface UserItem {
   setor: string
   empresaId: string
   avatarUrl: string | null
+  Empresa?: { nome: string }
 }
 
 export default function UsuariosPage() {
@@ -37,7 +38,7 @@ export default function UsuariosPage() {
   useEffect(() => {
     if (status === 'loading') return
     if (!userRole || userRole === 'ATENDENTE') {
-      router.replace('/dashboard')
+      router.replace('/corporativo/all-tickets')
       return
     }
   }, [status, userRole, router])
@@ -175,7 +176,7 @@ export default function UsuariosPage() {
                             className="w-full px-3 py-1.5 rounded-lg border text-xs outline-none focus:ring-2 focus:ring-[var(--primary)]"
                             style={{ backgroundColor: 'var(--surface-elevated)', borderColor: 'var(--border-subtle)', color: 'var(--foreground)' }} />
                         </td>
-                        {userRole === 'GOD' && <td className="px-4 py-2 text-xs font-mono opacity-50">{u.empresaId?.slice(0, 8)}</td>}
+                        {userRole === 'GOD' && <td className="px-4 py-2 text-xs opacity-70">{u.Empresa?.nome || u.empresaId?.slice(0, 8) || "—"}</td>}
                         <td className="px-4 py-2 text-center">
                           <div className="flex items-center justify-center gap-1">
                             <button onClick={() => saveEdit(u.id)} className="p-1.5 rounded-lg hover:bg-[var(--success-light)] transition-all" style={{ color: 'var(--status-completed)' }} title="Salvar"><Check size={14} /></button>
@@ -194,7 +195,7 @@ export default function UsuariosPage() {
                           </span>
                         </td>
                         <td className="px-4 py-3.5">{u.setor}</td>
-                        {userRole === 'GOD' && <td className="px-4 py-3.5 text-xs font-mono opacity-50">{u.empresaId?.slice(0, 8)}</td>}
+                        {userRole === 'GOD' && <td className="px-4 py-3.5 text-xs opacity-70">{u.Empresa?.nome || u.empresaId?.slice(0, 8) || "—"}</td>}
                         <td className="px-4 py-3.5 text-center">
                           <div className="flex items-center justify-center gap-2">
                             {u.role !== 'GOD' && u.id !== currentUserId && (

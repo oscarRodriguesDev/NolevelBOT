@@ -10,6 +10,8 @@ const FlowState = {
   COLETAR_FUNCAO: "coletar_funcao",
   COLETAR_ONIBUS: "coletar_onibus",
   COLETAR_DEFEITO: "coletar_defeito",
+  PERGUNTAR_ANEXO: "perguntar_anexo",
+  COLETAR_MIDIA: "coletar_midia",
   CONFIRMAR: "confirmar",
   COLETAR_SETOR: "coletar_setor",
 } as const;
@@ -29,11 +31,9 @@ type Session = {
 
 const sessions = new Map<string, Session>();
 
-async function buscarAvisosParaMotorista(
+async function buscarAvisosEspecificos(
   empresaId: string,
-  matricula: string,
-  nome: string,
-  numeroOnibus?: string
+  matricula: string
 ): Promise<string> {
   try {
     const avisos = await prisma.avisos.findMany({
@@ -45,6 +45,7 @@ async function buscarAvisosParaMotorista(
 
     const agora = new Date();
     const relevantes: string[] = [];
+    const matLower = matricula.toLowerCase();
 
     for (const aviso of avisos) {
       if (aviso.duracao) {
@@ -58,11 +59,48 @@ async function buscarAvisosParaMotorista(
 
       const titulo = aviso.titulo.toLowerCase();
       const conteudo = aviso.conteudo.toLowerCase();
-      const matchMatricula = matricula && (titulo.includes(matricula) || conteudo.includes(matricula));
-      const matchNome = nome && (titulo.includes(nome.toLowerCase()) || conteudo.includes(nome.toLowerCase()));
-      const matchOnibus = numeroOnibus && (titulo.includes(numeroOnibus.toLowerCase()) || conteudo.includes(numeroOnibus.toLowerCase()));
 
-      if (matchMatricula || matchNome || matchOnibus) {
+      if (titulo.includes(matLower) || conteudo.includes(matLower)) {
+        relevantes.push(`📢 *${aviso.titulo}*: ${aviso.conteudo}`);
+      }
+    }
+
+    return relevantes.length > 0 ? relevantes.join("\n\n") : "";
+  } catch {
+    return "";
+  }
+}
+
+async function buscarAvisosDoVeiculo(
+  empresaId: string,
+  numeroOnibus: string
+): Promise<string> {
+  try {
+    const avisos = await prisma.avisos.findMany({
+      where: { empresaId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (avisos.length === 0) return "";
+
+    const agora = new Date();
+    const relevantes: string[] = [];
+    const onibusLower = numeroOnibus.toLowerCase();
+
+    for (const aviso of avisos) {
+      if (aviso.duracao) {
+        const dias = Number(aviso.duracao);
+        if (!isNaN(dias)) {
+          const expiracao = new Date(aviso.createdAt);
+          expiracao.setDate(expiracao.getDate() + dias);
+          if (agora > expiracao) continue;
+        }
+      }
+
+      const titulo = aviso.titulo.toLowerCase();
+      const conteudo = aviso.conteudo.toLowerCase();
+
+      if (titulo.includes(onibusLower) || conteudo.includes(onibusLower)) {
         relevantes.push(`📢 *${aviso.titulo}*: ${aviso.conteudo}`);
       }
     }
@@ -170,19 +208,29 @@ export async function POST(req: NextRequest) {
         session.nome = registro.nome;
         session.empresaId = registro.empresaId;
 
-        const avisosTexto = session.empresaId
-          ? await buscarAvisosParaMotorista(session.empresaId, matricula, registro.nome)
+        const avisosEspecificos = session.empresaId
+          ? await buscarAvisosEspecificos(session.empresaId, matricula)
           : "";
 
-        let msg = `Olá, *${registro.nome}!* 😊`;
+        await sendEvolutionText(
+          instance,
+          number,
+          `Olá, *${registro.nome}!* 😊`
+        );
 
-        if (avisosTexto) {
-          msg += `\n\n*📢 Avisos importantes para você:*\n\n${avisosTexto}`;
+        if (avisosEspecificos) {
+          await sendEvolutionText(
+            instance,
+            number,
+            `*📢 Aviso importante para você:*\n\n${avisosEspecificos}`
+          );
         }
 
-        msg += `\n\nQual a sua *função*? (Ex: Motorista, Fiscal...)`;
-
-        await sendEvolutionText(instance, number, msg);
+        await sendEvolutionText(
+          instance,
+          number,
+          `Qual a sua *função*? (Ex: Motorista, Fiscal...)`
+        );
         session.state = FlowState.COLETAR_FUNCAO;
         break;
       }
@@ -201,8 +249,8 @@ export async function POST(req: NextRequest) {
           timeZone: "America/Sao_Paulo"
         });
 
-        const avisosVeiculo = session.empresaId && session.matricula && session.nome
-          ? await buscarAvisosParaMotorista(session.empresaId, session.matricula, session.nome, userInput)
+        const avisosVeiculo = session.empresaId && userInput
+          ? await buscarAvisosDoVeiculo(session.empresaId, userInput)
           : "";
 
         let msg = "Descreva o *defeito* encontrado no veículo com detalhes:";
@@ -210,8 +258,6 @@ export async function POST(req: NextRequest) {
         if (avisosVeiculo) {
           msg = `*📢 Aviso referente a este veículo:*\n\n${avisosVeiculo}\n\n---\n\n` + msg;
         }
-
-        msg += `\n\nSe quiser, pode enviar também uma *foto* do problema.`;
 
         await sendEvolutionText(instance, number, msg);
         session.state = FlowState.COLETAR_DEFEITO;
@@ -227,27 +273,108 @@ export async function POST(req: NextRequest) {
             await sendEvolutionText(instance, number, "Recebi! Agora me conte qual é o *defeito* para eu registrar.");
             return NextResponse.json({ ok: true });
           }
+          if (session.defeito) {
+            const resumo =
+              `*Resumo do Registro:*\n\n` +
+              `👤 Nome: ${session.nome}\n` +
+              `🔢 Matrícula: ${session.matricula}\n` +
+              `📋 Função: ${session.funcao}\n` +
+              `🚌 Ônibus: ${session.numeroOnibus}\n` +
+              `📅 Data: ${session.data}\n` +
+              `🔧 Defeito: ${session.defeito}\n` +
+              (session.anexoUrl ? `📎 Foto anexada: ✅\n` : "") +
+              `\nOs dados estão corretos? (sim/não)`;
+            await sendEvolutionText(instance, number, resumo);
+            session.state = FlowState.CONFIRMAR;
+          }
         } else {
           session.defeito = userInput;
+          if (!session.defeito) {
+            await sendEvolutionText(instance, number, "Descreva o *defeito* encontrado no veículo com detalhes:");
+            return NextResponse.json({ ok: true });
+          }
+          await sendEvolutionText(
+            instance,
+            number,
+            "Deseja enviar uma *foto* do problema? (sim/não)"
+          );
+          session.state = FlowState.PERGUNTAR_ANEXO;
         }
+        break;
+      }
 
-        if (!session.defeito) {
-          await sendEvolutionText(instance, number, "Descreva o *defeito* encontrado no veículo com detalhes:");
-          return NextResponse.json({ ok: true });
+      case FlowState.PERGUNTAR_ANEXO: {
+        if (hasMedia) {
+          await processMedia();
+          const resumo =
+            `*Resumo do Registro:*\n\n` +
+            `👤 Nome: ${session.nome}\n` +
+            `🔢 Matrícula: ${session.matricula}\n` +
+            `📋 Função: ${session.funcao}\n` +
+            `🚌 Ônibus: ${session.numeroOnibus}\n` +
+            `📅 Data: ${session.data}\n` +
+            `🔧 Defeito: ${session.defeito}\n` +
+            (session.anexoUrl ? `📎 Foto anexada: ✅\n` : "") +
+            `\nOs dados estão corretos? (sim/não)`;
+          await sendEvolutionText(instance, number, resumo);
+          session.state = FlowState.CONFIRMAR;
+        } else if (["sim", "s", "quero", "ok"].some(v => lowerInput.includes(v))) {
+          await sendEvolutionText(
+            instance,
+            number,
+            "Pode enviar a *foto* aqui mesmo! 📎"
+          );
+          session.state = FlowState.COLETAR_MIDIA;
+        } else {
+          const resumo =
+            `*Resumo do Registro:*\n\n` +
+            `👤 Nome: ${session.nome}\n` +
+            `🔢 Matrícula: ${session.matricula}\n` +
+            `📋 Função: ${session.funcao}\n` +
+            `🚌 Ônibus: ${session.numeroOnibus}\n` +
+            `📅 Data: ${session.data}\n` +
+            `🔧 Defeito: ${session.defeito}\n` +
+            `\nOs dados estão corretos? (sim/não)`;
+          await sendEvolutionText(instance, number, resumo);
+          session.state = FlowState.CONFIRMAR;
         }
+        break;
+      }
 
-        const resumo =
-          `*Resumo do Registro:*\n\n` +
-          `👤 Nome: ${session.nome}\n` +
-          `🔢 Matrícula: ${session.matricula}\n` +
-          `📋 Função: ${session.funcao}\n` +
-          `🚌 Ônibus: ${session.numeroOnibus}\n` +
-          `📅 Data: ${session.data}\n` +
-          `🔧 Defeito: ${session.defeito}\n` +
-          (session.anexoUrl ? `📎 Foto anexada: ✅\n` : "") +
-          `\nOs dados estão corretos? (sim/não)`;
-        await sendEvolutionText(instance, number, resumo);
-        session.state = FlowState.CONFIRMAR;
+      case FlowState.COLETAR_MIDIA: {
+        if (hasMedia) {
+          await processMedia();
+          const resumo =
+            `*Resumo do Registro:*\n\n` +
+            `👤 Nome: ${session.nome}\n` +
+            `🔢 Matrícula: ${session.matricula}\n` +
+            `📋 Função: ${session.funcao}\n` +
+            `🚌 Ônibus: ${session.numeroOnibus}\n` +
+            `📅 Data: ${session.data}\n` +
+            `🔧 Defeito: ${session.defeito}\n` +
+            (session.anexoUrl ? `📎 Foto anexada: ✅\n` : "") +
+            `\nOs dados estão corretos? (sim/não)`;
+          await sendEvolutionText(instance, number, resumo);
+          session.state = FlowState.CONFIRMAR;
+        } else if (["não", "nao", "n", "sem foto", "sem arquivo"].some(v => lowerInput.includes(v))) {
+          const resumo =
+            `*Resumo do Registro:*\n\n` +
+            `👤 Nome: ${session.nome}\n` +
+            `🔢 Matrícula: ${session.matricula}\n` +
+            `📋 Função: ${session.funcao}\n` +
+            `🚌 Ônibus: ${session.numeroOnibus}\n` +
+            `📅 Data: ${session.data}\n` +
+            `🔧 Defeito: ${session.defeito}\n` +
+            `\nOs dados estão corretos? (sim/não)`;
+          await sendEvolutionText(instance, number, resumo);
+          session.state = FlowState.CONFIRMAR;
+        } else {
+          await sendEvolutionText(
+            instance,
+            number,
+            "Pode enviar a *foto* por aqui mesmo! 📎\n\nSe não quiser, digite *não*."
+          );
+        }
         break;
       }
 
