@@ -40,6 +40,23 @@ export async function POST(req: NextRequest) {
 
     let empresaID = session!.empresaId
 
+    if (!empresaID) {
+      const userDb = await prisma.user.findUnique({
+        where: { id: session!.id },
+        select: { empresaId: true },
+      })
+      if (userDb?.empresaId) {
+        empresaID = userDb.empresaId
+      }
+    }
+
+    if (!empresaID) {
+      return NextResponse.json(
+        { error: "Sua sessão não possui empresa vinculada. Faça login novamente." },
+        { status: 400 }
+      )
+    }
+
     if (userRole === "GOD") {
       const selectedEmpresa = formData.get("empresaId") as string
       if (selectedEmpresa) {

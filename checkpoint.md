@@ -903,3 +903,11 @@ Unificar o login fora dos módulos corporativo/oficina: usuário faz login em `/
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
 | 1 | `a2191b5` | `feat: login unificado em /login + seletor de modulos em /dashboard` | 11/06/2026 |
+| 2 | `7c5ad70` | `docs: atualiza checkpoint com hash a2191b5` | 11/06/2026 |
+| 3 | `a ser gerado` | `fix: atendente nao herdava empresa do admin - fallback ao banco se session.empresaId estiver vazio` | 11/06/2026 |
+
+### Pendentes antes do commit:
+- ~~`src/app/api/users/route.ts` — Adicionar fallback ao banco se `session!.empresaId` estiver vazio~~ ✅
+- ~~`memorias.md` — Seção 52 documentando o fix~~ ✅
+- ~~`checkpoint.md` — Atualizado~~ ✅
+- ~~`npm run build` — compilado com sucesso ✅~~ ✅

@@ -2430,3 +2430,28 @@ Usuário acessa /corporativo/dashboards (rota protegida)
 
 ### Build
 - `npm run build` — compilado com sucesso ✅ (55 páginas, zero erros)
+
+---
+
+## 52. FIX — ATENDENTE NÃO HERDAVA EMPRESA DO ADMIN (11/06/2026)
+
+### Problema
+Usuários do tipo ATENDENTE criados por ADMIN não herdavam a empresa do admin. O campo `empresaId` ficava vazio, fazendo o atendente parecer "sem empresa".
+
+### Causa raiz
+Em `src/app/api/users/route.ts:41`, o `empresaID` era obtido exclusivamente de `session!.empresaId`. Se o token JWT do admin estivesse desatualizado (criado antes da implementação do campo `empresaId` nos callbacks do NextAuth), o valor vinha como `undefined`. O Prisma ignora campos `undefined` no `create`, então o usuário era criado sem `empresaId`.
+
+### Solução aplicada
+Adicionada validação + fallback ao banco de dados em `api/users/route.ts`:
+
+1. Se `session!.empresaId` estiver vazio, busca o `empresaId` diretamente do registro do usuário no banco (`prisma.user.findUnique`)
+2. Se mesmo assim não encontrar, retorna erro 400 com mensagem clara ("Sua sessão não possui empresa vinculada. Faça login novamente.")
+3. A validação ocorre ANTES do bloco que verifica a existência da empresa, evitando falsos positivos
+
+### Arquivo modificado
+| Arquivo | Mudança |
+|---------|---------|
+| `src/app/api/users/route.ts` | Fallback ao banco se `session!.empresaId` estiver vazio |
+
+### Build
+- `npm run build` — compilado com sucesso ✅
