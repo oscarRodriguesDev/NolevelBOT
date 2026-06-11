@@ -20,37 +20,37 @@ export function Sidebar() {
   const menuItems = [
     {
       label: 'Dashboard',
-      href: '/dashboards',
+      href: '/oficina/dashboards',
       icon: LuHouse,
       show: true,
     },
     {
       label: 'Solicitações',
-      href: '/all-tickets',
+      href: '/oficina/all-tickets',
       icon: LuTickets,
       show: true,
     },
     {
       label: 'Avisos',
-      href: '/avisos',
+      href: '/oficina/avisos',
       icon: LuBell,
       show: true,
     },
     {
       label: 'Motoristas',
-      href: '/cpfs',
+      href: '/oficina/cpfs',
       icon: LuUsers,
       show: true,
     },
     {
       label: 'Usuários',
-      href: '/usuarios',
+      href: '/oficina/usuarios',
       icon: LuUsers,
       show: userRole === "GOD" || userRole === "ADMIN" || userRole === "GESTOR",
     },
     {
       label: 'Criar Usuário',
-      href: '/gestao-de-usuarios',
+      href: '/oficina/gestao-de-usuarios',
       icon: LuSettings,
       show: userRole === "GOD" || userRole === "ADMIN" || userRole === "GESTOR",
     },

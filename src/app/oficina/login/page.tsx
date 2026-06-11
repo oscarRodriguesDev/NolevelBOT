@@ -89,7 +89,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/all-tickets");
+      router.push("/oficina/all-tickets");
     } catch {
       setError("Erro ao fazer login");
     } finally {
@@ -289,7 +289,7 @@ export default function LoginPage() {
 
           <div className="pt-2">
             <Link
-              href="/contact"
+              href="/oficina/contact"
               className="text-sm font-medium opacity-50 hover:opacity-100 hover:text-[var(--primary)] transition-all"
             >
               Não possui uma conta?

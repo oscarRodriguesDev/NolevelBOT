@@ -66,7 +66,19 @@ export default function SolicitacoesPage() {
       if (!response.ok) throw new Error("Erro ao buscar solicitações")
 
       const data = await response.json()
-      setSolicitacoes(data)
+      const mapped: Solicitacao[] = (Array.isArray(data) ? data : []).map((item: Record<string, unknown>) => ({
+        id: item.id as string,
+        ticket: item.ticket as string,
+        nome: item.nome as string,
+        matricula: item.matricula as string || item.cpf as string || '',
+        veiculo: item.veiculo as string || item.setor as string || '',
+        tipo: item.tipo as string || item.categoria as string || '',
+        discriminacao: item.discriminacao as string || item.descricao as string || '',
+        createdAt: item.createdAt as string,
+        status: item.status as string,
+        atendente: item.atendente ? { name: (item.atendente as { name: string }).name } : undefined,
+      }))
+      setSolicitacoes(mapped)
     } catch (error) {
       console.error("Erro na busca:", error)
       setSolicitacoes([])
@@ -248,8 +260,8 @@ export default function SolicitacoesPage() {
                       <td className="py-3.5 px-4">{item.matricula || "—"}</td>
                       <td className="py-3.5 px-4">{item.veiculo || "—"}</td>
                       <td className="py-3.5 px-4">
-                        <span className="inline-block px-3 py-1 rounded-full text-[10px] font-bold text-white uppercase" style={{ backgroundColor: tipoColor(item.tipo || item.categoria) }}>
-                          {tipoLabel(item.tipo || item.categoria)}
+                        <span className="inline-block px-3 py-1 rounded-full text-[10px] font-bold text-white uppercase" style={{ backgroundColor: tipoColor(item.tipo) }}>
+                          {tipoLabel(item.tipo)}
                         </span>
                       </td>
                       <td className="py-3.5 px-4">

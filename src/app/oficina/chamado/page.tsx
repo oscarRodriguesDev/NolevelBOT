@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { LuCheck, LuWrench, LuTruck, LuCheckCircle, LuClipboardList } from 'react-icons/lu'
+import { LuCheck, LuWrench, LuTruck, LuClipboardList } from 'react-icons/lu'
 import { ThemeToggle } from '../../components/theme-toggle'
 import toast from 'react-hot-toast'
 
@@ -72,7 +72,7 @@ export default function ManutencaoPage() {
             borderColor: 'var(--border-subtle)',
           }}
         >
-          <LuCheckCircle className="h-16 w-16 mx-auto mb-4" style={{ color: 'var(--primary)' }} />
+          <LuCheck className="h-16 w-16 mx-auto mb-4" style={{ color: 'var(--primary)' }} />
           <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--primary)' }}>
             Registro Enviado
           </h2>
@@ -278,7 +278,7 @@ export default function ManutencaoPage() {
                     backgroundColor: tipoRegistro === 'sem_defeito' ? 'color-mix(in srgb, var(--primary) 10%, transparent)' : 'var(--surface-elevated)',
                   }}
                 >
-                  <LuCheckCircle className={`h-6 w-6 ${tipoRegistro === 'sem_defeito' ? 'text-[var(--primary)]' : 'opacity-60'}`} />
+                  <LuCheck className={`h-6 w-6 ${tipoRegistro === 'sem_defeito' ? 'text-[var(--primary)]' : 'opacity-60'}`} />
                   <div className="text-left">
                     <span className={`block text-sm font-semibold ${tipoRegistro === 'sem_defeito' ? 'text-[var(--primary)]' : ''}`}>
                       Sem Defeito

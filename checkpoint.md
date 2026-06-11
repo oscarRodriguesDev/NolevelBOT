@@ -631,28 +631,42 @@ Criação do webhook26 que utiliza prompt de IA personalizado por empresa, confi
 ## Sessão: 10/06/2026 — Módulo Oficina: Frontend de Manutenção de Veículos
 
 ### Contexto
-Criação do módulo `(modulo-oficina)` para empresa de transporte público. Motoristas registram pedidos de manutenção de veículos ao final do turno. Frontend apenas (sem API). Reaproveita modelo `Chamado` existente.
+Criação do módulo `oficina` para empresa de transporte público. Motoristas registram pedidos de manutenção de veículos ao final do turno. Frontend apenas (sem API). Reaproveita modelo `Chamado` existente.
 
-### Arquivos modificados (11):
+### Arquivos modificados (13):
 
 | Arquivo | Mudança |
 |---------|---------|
-| `(atendimento)/layout.tsx` | Título "Oficina / Manutenção de Veículos" |
-| `(atendimento)/components/sidebar.tsx` | Menus: Solicitações, Motoristas; removido Empresas |
-| `(atendimento)/components/modal_tandimento.tsx` | Adaptado labels para manutenção |
-| `(atendimento)/all-tickets/page.tsx` | Colunas p/ manutenção, filtro por tipo |
-| `(atendimento)/all-tickets/kanban-board.tsx` | Colunas renomeadas, badge tipo |
-| `(atendimento)/cpfs/page.tsx` | Header "Motoristas" |
-| `(atendimento)/dashboards/page.tsx` | Descrição "manutenção de veículos" |
-| `(atendimento)/error.tsx` | "Erro na área da oficina" |
-| `chamado/page.tsx` | **Reescrito** — formulário manutenção veicular |
-| `consulta/page.tsx` | Busca por matrícula (6 dígitos) |
-| `consulta/[ticket]/page.tsx` | Exibe dados de manutenção |
+| `src/app/(modulo-oficina)` → `src/app/oficina` | Renomeado para resolver conflito de rotas com `(modulo-corporativo)` |
+| `oficina/(atendimento)/layout.tsx` | Título "Oficina / Manutenção de Veículos" |
+| `oficina/(atendimento)/components/sidebar.tsx` | Menus com prefixo `/oficina/...`; Solicitações, Motoristas |
+| `oficina/(atendimento)/components/modal_tandimento.tsx` | Adaptado labels, tipo via `categoria` |
+| `oficina/(atendimento)/all-tickets/page.tsx` | Colunas p/ manutenção; mapping API → tipo/veiculo/matricula |
+| `oficina/(atendimento)/all-tickets/kanban-board.tsx` | Colunas renomeadas, badge tipo |
+| `oficina/(atendimento)/cpfs/page.tsx` | State `matricula`, label "Matrícula", botão "Cadastrar CPF" mantido |
+| `oficina/(atendimento)/dashboards/page.tsx` | Descrição "manutenção de veículos" |
+| `oficina/(atendimento)/error.tsx` | "Erro na área da oficina" |
+| `oficina/chamado/page.tsx` | **Reescrito** — formulário manutenção veicular; fix LuCheckCircle → LuCheck |
+| `oficina/consulta/page.tsx` | Busca por matrícula (6 dígitos) |
+| `oficina/consulta/[ticket]/page.tsx` | Exibe dados de manutenção |
+| `src/types/chamado.ts` | Adicionados campos opcionais: categoria, veiculo, matricula, discriminacao, tipo |
+| `memorias.md` | Adicionada seção 46 detalhando o módulo oficina |
+| `checkpoint.md` | Registro desta sessão |
+
+### Correções durante build
+| Erro | Causa | Solução |
+|------|-------|---------|
+| Rotas conflitantes | `(modulo-oficina)` e `(modulo-corporativo)` resolvem mesmas URLs | Renomeado para `oficina` (sem parênteses) → URLs `/oficina/...` |
+| `LuCheckCircle` não existe | Ícone inexistente em `react-icons/lu` | Substituído por `LuCheck` |
+| `categoria` não existe no tipo `Chamado` | Type `@/types/chamado` não tinha campo | Adicionado como opcional |
+| `setCpf`/`fetchCpfs` não encontrados | State renomeado para `matricula`/`fetchMotoristas` | Ajustado para nomes corretos |
+| API não retorna `tipo`/`veiculo`/`matricula` | Dados vêm do modelo `Chamado` (cpf, setor, descricao, prioridade) | Mapping no fetch de `all-tickets` |
 
 ### Commits realizados nesta sessão:
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
-| 1 | `[pendente]` | `feat: modulo oficina - frontend manutencao de veiculos com matricula, tipo de registro e discriminacao` | 10/06/2026 |
+| 1 | `36d54de` | `feat: modulo oficina - frontend manutencao de veiculos com matricula, tipo de registro e discriminacao` | 10/06/2026 |
+| 2 | `[pendente]` | `fix: rename modulo-oficina to oficina, fix build errors, update links` | 10/06/2026 |
 
 ### Build
-- Pendente
+- `npm run build` — compilado com sucesso ✅

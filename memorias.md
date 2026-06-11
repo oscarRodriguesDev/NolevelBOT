@@ -2054,4 +2054,4 @@ Cards do Kanban exibem tipo (Defeito/Socorro/OK) em badge colorido em vez de pri
 - github/ (deploys configurados mantidos)
 
 ### Build
-- Pendente (10/06/2026 — precisa validar com `npm run build`)
+- `npm run build` — compilado com sucesso ✅

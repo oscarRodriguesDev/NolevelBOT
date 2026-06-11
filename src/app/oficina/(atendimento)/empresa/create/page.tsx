@@ -18,7 +18,7 @@ export default function CreateEmpresa() {
     if (status === 'loading') return
     const role = session?.user?.role as ROLE | undefined
     if (role !== 'GOD') {
-      router.replace('/dashboards')
+      router.replace('/oficina/dashboards')
     }
   }, [status, session, router])
 
@@ -153,7 +153,7 @@ Máximo 400 caracteres. Seja objetivo.`
 
       if (!res.ok) throw new Error()
       toast.success('Empresa criada com sucesso!')
-      router.push('/empresa')
+      router.push('/oficina/empresa')
       router.refresh()
     } catch (error) {
       toast.error('Erro ao criar empresa. Verifique os dados.')
@@ -172,7 +172,7 @@ Máximo 400 caracteres. Seja objetivo.`
     >
       <div className="max-w-3xl mx-auto">
         <Link
-          href="/empresa"
+          href="/oficina/empresa"
           className="inline-flex items-center gap-2 text-sm mb-8 transition-colors duration-300 group"
           style={{ color: "var(--foreground)", opacity: 0.7 }}
           onMouseEnter={(e) => {
@@ -462,7 +462,7 @@ Máximo 400 caracteres. Seja objetivo.`
               </button>
 
               <Link
-                href="/empresa"
+                href="/oficina/empresa"
                 className="px-6 py-3.5 font-bold rounded-xl text-center transition-all duration-200 hover:brightness-95"
                 style={{
                   backgroundColor: "var(--surface-elevated)",

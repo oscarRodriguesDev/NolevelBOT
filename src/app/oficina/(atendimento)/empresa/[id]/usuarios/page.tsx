@@ -40,7 +40,7 @@ export default function EmpresaUsuariosPage() {
     if (status === 'loading') return
     const role = session?.user?.role as ROLE | undefined
     if (role !== 'GOD') {
-      router.replace('/dashboards')
+      router.replace('/oficina/dashboards')
       return
     }
   }, [status, session, router])
@@ -134,7 +134,7 @@ export default function EmpresaUsuariosPage() {
     <main className="min-h-screen px-4 sm:px-6 lg:px-8 py-6 sm:py-10 transition-colors duration-300"
       style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)' }}>
       <div className="max-w-5xl mx-auto">
-        <Link href="/empresa"
+        <Link href="/oficina/empresa"
           className="inline-flex items-center gap-2 text-sm mb-6 transition-all duration-200 hover:gap-3"
           style={{ color: 'var(--primary)' }}>
           <ArrowLeft size={16} /> Voltar para empresas

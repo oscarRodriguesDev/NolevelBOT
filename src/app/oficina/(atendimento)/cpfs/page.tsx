@@ -106,7 +106,7 @@ useEffect(() => {
       const res = await fetch("/api/cpfs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nome, cpf })
+        body: JSON.stringify({ nome, cpf: matricula })
       })
 
       if (!res.ok) {
@@ -117,8 +117,8 @@ useEffect(() => {
 
       toast.success("CPF cadastrado com sucesso")
       setNome("")
-      setCpf("")
-      fetchCpfs()
+      setMatricula("")
+      fetchMotoristas()
     } catch {
       toast.error("Erro ao conectar com o servidor")
     }
@@ -149,7 +149,7 @@ useEffect(() => {
 
       toast.success(`Arquivo importado com sucesso (${data.inseridos ?? 0} registros)`)
       setFile(null)
-      fetchCpfs()
+      fetchMotoristas()
     } catch {
       toast.error("Erro ao conectar com o servidor")
     }
@@ -212,7 +212,7 @@ useEffect(() => {
     }
   }
 
-  const cpfsFiltrados = cpfs.filter((item) => {
+  const cpfsFiltrados = motoristas.filter((item) => {
     if (!searchTerm) return true
     const termo = searchTerm.toLowerCase()
     const matchNome = item.nome.toLowerCase().includes(termo)
@@ -260,11 +260,11 @@ useEffect(() => {
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider mb-2 opacity-70">CPF</label>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-2 opacity-70">Matrícula</label>
                 <input
-                  placeholder="000.000.000-00"
-                  value={cpf}
-                  onChange={e => setCpf(e.target.value)}
+                  placeholder="000000"
+                  value={matricula}
+                  onChange={e => setMatricula(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent font-mono"
                   style={{
                     backgroundColor: "var(--surface-elevated)",

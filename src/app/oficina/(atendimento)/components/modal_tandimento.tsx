@@ -146,7 +146,7 @@ export function ModalChamado({
             <p><strong>Veículo:</strong> {solicitacao.setor || "—"}</p>
           </div>
           <div className="space-y-2 text-xs sm:text-sm">
-            <p><strong>Tipo:</strong> {tipoLabel(solicitacao.categoria)}</p>
+            <p><strong>Tipo:</strong> {tipoLabel(solicitacao.categoria || '')}</p>
             <p><strong>Status:</strong> {solicitacao.status?.replace(/_/g, ' ')}</p>
             <p><strong>Data:</strong> {new Date(solicitacao.createdAt).toLocaleString("pt-BR")}</p>
           </div>

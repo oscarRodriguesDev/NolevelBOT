@@ -37,7 +37,7 @@ export default function UsuariosPage() {
   useEffect(() => {
     if (status === 'loading') return
     if (!userRole || userRole === 'ATENDENTE') {
-      router.replace('/dashboards')
+      router.replace('/oficina/dashboards')
       return
     }
   }, [status, userRole, router])
