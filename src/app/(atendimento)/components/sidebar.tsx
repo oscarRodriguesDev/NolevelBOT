@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { LuMenu, LuX, LuTickets, LuBell, LuUsers, LuHouse, LuSettings, LuBuilding2 } from 'react-icons/lu'
+import { LuMenu, LuX, LuTickets, LuBell, LuUsers, LuHouse, LuSettings, LuBuilding2, LuWrench } from 'react-icons/lu'
 import { useSession } from 'next-auth/react'
 import { ROLE } from '@prisma/client'
 import packageJson from '../../../../package.json'
@@ -35,6 +35,12 @@ export function Sidebar() {
       href: '/avisos',
       icon: LuBell,
       show: true,
+    },
+    {
+      label: 'Oficina',
+      href: '/oficina/dashboards',
+      icon: LuWrench,
+      show: userRole === "GOD" || userRole === "ADMIN" || userRole === "GESTOR",
     },
     {
       label: 'CPFs Autorizados',
