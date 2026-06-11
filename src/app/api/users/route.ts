@@ -350,14 +350,14 @@ export async function PUT(req: NextRequest) {
       if (!["GESTOR", "ATENDENTE"].includes(targetUser.role)) {
         return NextResponse.json({ error: "Você só pode editar GESTOR ou ATENDENTE" }, { status: 403 })
       }
-      if (targetUser.empresaId !== userEmpresaId) {
+      if (targetUser.empresaId && targetUser.empresaId !== userEmpresaId) {
         return NextResponse.json({ error: "Usuário não pertence à sua empresa" }, { status: 403 })
       }
     } else if (userRole === "GESTOR") {
       if (targetUser.role !== "ATENDENTE") {
         return NextResponse.json({ error: "Você só pode editar ATENDENTE" }, { status: 403 })
       }
-      if (targetUser.empresaId !== userEmpresaId) {
+      if (targetUser.empresaId && targetUser.empresaId !== userEmpresaId) {
         return NextResponse.json({ error: "Usuário não pertence à sua empresa" }, { status: 403 })
       }
       if (targetUser.setor !== userSetor) {
@@ -371,6 +371,10 @@ export async function PUT(req: NextRequest) {
     if (cpf) data.cpf = limparCPF(cpf)
     if (setor) data.setor = setor
     if (empresaId && userRole === "GOD") data.empresaId = empresaId
+
+    if (!targetUser.empresaId && userEmpresaId && userRole !== "GOD") {
+      data.empresaId = userEmpresaId
+    }
 
     if (email && email !== targetUser.email) {
       const emailExiste = await prisma.user.findUnique({ where: { email } })

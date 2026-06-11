@@ -2455,3 +2455,58 @@ Adicionada validação + fallback ao banco de dados em `api/users/route.ts`:
 
 ### Build
 - `npm run build` — compilado com sucesso ✅
+
+---
+
+## 53. FIX — ADMIN NÃO CONSEGUIA CORRIGIR ATENDENTE SEM EMPRESAID (11/06/2026)
+
+### Problema
+Usuários ATENDENTE criados antes do fix da seção 52 (sem `empresaId`) não podiam ser corrigidos. O PUT de `api/users` bloqueava a edição com `403 - Usuário não pertence à sua empresa` quando `targetUser.empresaId` era `null`.
+
+### Causa raiz
+`src/app/api/users/route.ts:353`:
+```typescript
+// Antes: null !== "empresa-id" → 403
+if (targetUser.empresaId !== userEmpresaId) { return 403 }
+```
+A comparação `null !== "algum-id"` sempre é `true`, bloqueando ADMIN de editar ATENDENTE sem empresa.
+
+### Solução em `api/users/route.ts` (PUT)
+1. Validação de empresa: `targetUser.empresaId && targetUser.empresaId !== userEmpresaId` — permite editar usuários com `empresaId` nulo
+2. Auto-fill: quando `targetUser.empresaId` estiver vazio e o editor não for GOD, `data.empresaId = userEmpresaId` é adicionado automaticamente
+
+### Como corrigir o ATENDENTE existente
+O ADMIN deve:
+1. Ir em **Usuários** → clicar **Editar** no ATENDENTE
+2. Clicar em **Salvar** (sem alterar nada) — o PUT auto-preenche o `empresaId`
+3. O ATENDENTE faz **logout e login** novamente para renovar o JWT
+4. Agora a sidebar carregará os módulos da empresa
+
+### Arquivo modificado
+| Arquivo | Mudança |
+|---------|---------|
+| `src/app/api/users/route.ts` | PUT: validação tolera `null`, auto-fill empresaId |
+
+### Build
+- `npm run build` — compilado com sucesso ✅
+
+### Problema
+Usuários do tipo ATENDENTE criados por ADMIN não herdavam a empresa do admin. O campo `empresaId` ficava vazio, fazendo o atendente parecer "sem empresa".
+
+### Causa raiz
+Em `src/app/api/users/route.ts:41`, o `empresaID` era obtido exclusivamente de `session!.empresaId`. Se o token JWT do admin estivesse desatualizado (criado antes da implementação do campo `empresaId` nos callbacks do NextAuth), o valor vinha como `undefined`. O Prisma ignora campos `undefined` no `create`, então o usuário era criado sem `empresaId`.
+
+### Solução aplicada
+Adicionada validação + fallback ao banco de dados em `api/users/route.ts`:
+
+1. Se `session!.empresaId` estiver vazio, busca o `empresaId` diretamente do registro do usuário no banco (`prisma.user.findUnique`)
+2. Se mesmo assim não encontrar, retorna erro 400 com mensagem clara ("Sua sessão não possui empresa vinculada. Faça login novamente.")
+3. A validação ocorre ANTES do bloco que verifica a existência da empresa, evitando falsos positivos
+
+### Arquivo modificado
+| Arquivo | Mudança |
+|---------|---------|
+| `src/app/api/users/route.ts` | Fallback ao banco se `session!.empresaId` estiver vazio |
+
+### Build
+- `npm run build` — compilado com sucesso ✅
