@@ -902,4 +902,4 @@ Unificar o login fora dos módulos corporativo/oficina: usuário faz login em `/
 ### Commits
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
-| 1 | (pendente) | `feat: login unificado em /login + seletor de modulos em /dashboard` | 11/06/2026 |
+| 1 | `a2191b5` | `feat: login unificado em /login + seletor de modulos em /dashboard` | 11/06/2026 |
