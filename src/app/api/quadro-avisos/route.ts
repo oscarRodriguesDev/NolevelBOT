@@ -1,71 +1,14 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getSessionOrFail } from "@/util/permission"
-
-
-
-/* 
-export async function GET() {
-
-  const session = await getSessionOrFail()
-  const empresaId = session?.user.empresaId
-   
-  try {
-    const avisos = await prisma.avisos.findMany({
-      orderBy: { createdAt: "desc" }
-    })
-
-    const agora = new Date()
-
-    const validos = []
-    const vencidosIds: string[] = []
-
-    for (const aviso of avisos) {
-      if (!aviso.duracao) {
-        validos.push(aviso)
-        continue
-      }
-
-      const dias = Number(aviso.duracao)
-      if (isNaN(dias)) {
-        validos.push(aviso)
-        continue
-      }
-
-      const dataExpiracao = new Date(aviso.createdAt)
-      dataExpiracao.setDate(dataExpiracao.getDate() + dias)
-
-      if (agora > dataExpiracao) {
-        vencidosIds.push(aviso.id)
-      } else {
-        validos.push(aviso)
-      }
-    }
-
-    if (vencidosIds.length > 0) {
-      await prisma.avisos.deleteMany({
-        where: {
-          id: { in: vencidosIds }
-        }
-      })
-    }
-
-    return NextResponse.json(validos)
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Erro ao buscar avisos" },
-      { status: 500 }
-    )
-  }
-}
-
- */
-
+import { ROLE } from "@prisma/client"
 
 export async function GET() {
   try {
     const session = await getSessionOrFail()
     const empresaId = session?.user?.empresaId
+    const userRole = session?.user?.role as ROLE | undefined
+    const userSetor = session?.user?.setor || ""
 
     if (!empresaId) {
       return NextResponse.json(
@@ -74,10 +17,14 @@ export async function GET() {
       )
     }
 
+    const where: Record<string, unknown> = { empresaId }
+
+    if (userRole === "GESTOR" || userRole === "ATENDENTE") {
+      where.setor = userSetor
+    }
+
     const avisos = await prisma.avisos.findMany({
-      where: {
-        empresaId,
-      },
+      where,
       orderBy: { createdAt: "desc" },
     })
 
@@ -128,20 +75,26 @@ export async function GET() {
 
 // POST - Criar novo aviso
 export async function POST(request: Request) {
-    const session = await getSessionOrFail(["ADMIN", "GESTOR", "GOD"])// Apenas usuários autenticados podem criar avisos
+    const session = await getSessionOrFail(["ADMIN", "GESTOR", "GOD"])
     const empresaId = session?.user.empresaId
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
   try {
     const body = await request.json()
-    const { titulo, conteudo, setor, duracao } = body
+    let { titulo, conteudo, setor, duracao } = body
+    const userRole = session.user.role as ROLE
+    const userSetor = session.user.setor || ""
 
     if (!titulo || !conteudo) {
       return NextResponse.json(
         { error: "Título e conteúdo são obrigatórios" },
         { status: 400 }
       )
+    }
+
+    if (userRole !== "ADMIN" && userRole !== "GOD") {
+      setor = userSetor
     }
 
     let expiresAt: Date | null = null
@@ -181,20 +134,26 @@ export async function POST(request: Request) {
 
 // PUT - Editar aviso
 export async function PUT(request: Request) {
-   const session = await getSessionOrFail(["ADMIN", "GESTOR", "GOD"])// Apenas usuários autenticados podem editar avisos
- 
+   const session = await getSessionOrFail(["ADMIN", "GESTOR", "GOD"])
+  
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
   try {
     const body = await request.json()
-    const { id, titulo, conteudo, setor,duracao, expiresAt } = body
+    let { id, titulo, conteudo, setor, duracao, expiresAt } = body
+    const userRole = session.user.role as ROLE
+    const userSetor = session.user.setor || ""
 
     if (!id) {
       return NextResponse.json(
         { error: "ID é obrigatório" },
         { status: 400 }
       )
+    }
+
+    if (userRole !== "ADMIN" && userRole !== "GOD") {
+      setor = userSetor
     }
 
     let parsedExpiresAt: Date | null = null

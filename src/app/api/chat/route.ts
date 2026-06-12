@@ -1,12 +1,9 @@
-import { Chamado } from "@prisma/client"
 import { NextRequest, NextResponse } from "next/server"
 import { getSetores } from "@/lib/setores"
-import { botIA } from "@/lib/useIA"
-import { validarCpf, StatusChamado, enviarChamado, buscarAvisos, generateRandomTicket } from "@/lib/usedata"
+import { botIA4 as botIA, FlowState, UserSession, detectFileIntent } from "@/lib/useIA4" 
+import { validarCpf, StatusChamado, enviarChamado, buscarAvisos, buscarAvisosPorCpf, generateRandomTicket } from "@/lib/usedata"
 
-const BOT_NAME = process.env.BOT_NAME || "Hevelyn"
-
-const menuString = "1. Abrir Chamado, 2. Consultar Chamado"
+const menuString = "1. Abrir Chamado, 2. Consultar Chamado, 3. Sair"
 
 const statusLabels: Record<string, string> = {
   novo: "📌 Novo",
@@ -20,30 +17,23 @@ const statusLabels: Record<string, string> = {
   FECHADO: "🔒 Fechado",
 }
 
-type FlowState = "inicio" | "identificacao_cpf" | "identificacao_nome" | "menu_principal" | "coletar_motivo" | "verificar_aviso" | "coletar_setor"
-
-type UserSession = {
-  state: FlowState
-  nome?: string
-  cpf?: string
-  resumoHistorico?: string
-  motivoAtual?: string
-  lastInteraction: number
-}
-
-const sessions = new Map<string, UserSession>()
+const sessions = new Map<string, UserSession & { pendingState?: string; setorAtual?: string; modulo?: string }>()
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const userInput = body.message?.trim() || ""
     const sessionId = body.sessionId || "web-user"
+    const moduloRequisitado = body.module || ""
     const lowerInput = userInput.toLowerCase()
 
     let session = sessions.get(sessionId)
     if (!session || (Date.now() - session.lastInteraction > 1000 * 60 * 60 * 2)) {
-      session = { state: "inicio", lastInteraction: Date.now() }
+      session = { state: FlowState.IDENTIFICACAO_CPF, lastInteraction: Date.now(), modulo: moduloRequisitado || undefined }
       sessions.set(sessionId, session)
+    }
+    if (moduloRequisitado && !session.modulo) {
+      session.modulo = moduloRequisitado
     }
     session.lastInteraction = Date.now()
 
@@ -58,22 +48,21 @@ export async function POST(req: NextRequest) {
     }
 
     switch (session.state) {
-      case "inicio": {
+ case FlowState.INICIO: {
         const resp = await botIA(
           session,
           userInput,
-          "O usuário acabou de chegar. Dê as boas-vindas e peça OBRIGATORIAMENTE o CPF para começar o atendimento.",
-          avisos,
-          BOT_NAME
+          `O usuário acabou de chegar. Dê as boas-vindas e peça OBRIGATORIAMENTE o CPF para começar o 
+          atendimento. IMPORTANTE: Não se apresente e não diga nenhum nome ainda.`,
+          avisos
         )
-        session.state = "identificacao_cpf"
+        session.state = FlowState.IDENTIFICACAO_CPF
         return NextResponse.json({ reply: resp })
       }
-
-      case "identificacao_cpf": {
+case FlowState.IDENTIFICACAO_CPF: {
         const cleanCPF = userInput.replace(/\D/g, "")
-        if (cleanCPF.length !== 11) {
-          return NextResponse.json({ reply: "Por favor, informe um CPF válido (apenas os 11 números)." })
+        if (cleanCPF.length < 3 || cleanCPF.length > 11) {
+          return NextResponse.json({ reply: "Por favor, informe um CPF ou matrícula válida (3 a 11 números)." })
         }
 
         const resCpf = await validarCpf(cleanCPF)
@@ -81,36 +70,59 @@ export async function POST(req: NextRequest) {
           session.cpf = cleanCPF
           session.nome = resCpf.nome
 
-          avisos = await buscarAvisos(cleanCPF, req)
+          if (session.modulo) {
+            const { prisma } = await import("@/lib/prisma")
+            const cpfComEmpresa = await prisma.cpfs.findUnique({
+              where: { cpf: cleanCPF },
+              select: { Empresa: { select: { modulos: true } } }
+            })
+            const modulosEmpresa: string[] = (cpfComEmpresa?.Empresa?.modulos || []).map(m => m.toString())
+            if (!modulosEmpresa.includes(session.modulo)) {
+              sessions.delete(sessionId)
+              return NextResponse.json({
+                reply: `Seu CPF não possui acesso ao módulo ${session.modulo === 'CORPORATIVO' ? 'Corporativo' : 'Operacional'}. Não é possível abrir chamado por este canal.`
+              })
+            }
+          }
+
+          avisos = await buscarAvisosPorCpf(cleanCPF)
+
+          if (avisos && !avisos.includes("Sem avisos")) {
+            const instrucaoAviso = session.nome
+              ? `CPF ${cleanCPF} validado. Nome: ${session.nome}. Existe um aviso importante específico para você:\n${avisos}\n\nAção OBRIGATÓRIA: Apresente-se com seu nome e o nome da sua empresa. Em seguida, informe o aviso de forma HUMANIZADA e ACOLHEDORA. Depois, apresente as opções: ${menuString}. Tudo em uma única mensagem.`
+              : `CPF ${cleanCPF} encontrado. Existe um aviso importante:\n${avisos}\n\nAção OBRIGATÓRIA: Apresente-se com seu nome e o nome da sua empresa. Em seguida, informe o aviso de forma HUMANIZADA e ACOLHEDORA. Depois, pergunte educadamente como o usuário gostaria de ser chamado. Tudo em uma única mensagem.`;
+
+            const apresentacao = await botIA(session, userInput, instrucaoAviso, avisos)
+            session.state = session.nome ? FlowState.MENU_PRINCIPAL : FlowState.IDENTIFICACAO_NOME
+            return NextResponse.json({ reply: apresentacao })
+          }
 
           const instrucao = session.nome
-            ? `CPF ${cleanCPF} validado. O nome dele é ${session.nome}. Saude-o e apresente as opções: ${menuString}`
-            : `CPF ${cleanCPF} encontrado. Pergunte como o usuário gostaria de ser chamado.`
+            ? `CPF ${cleanCPF} validado. O nome dele é ${session.nome}. OBRIGATÓRIO: Apresente-se com seu nome e o nome da sua empresa. Depois, saude o usuário e apresente as opções: ${menuString}`
+            : `CPF ${cleanCPF} encontrado. OBRIGATÓRIO: Apresente-se com seu nome e o nome da sua empresa. Depois, pergunte como o usuário gostaria de ser chamado.`;
 
-          const resposta = await botIA(session, userInput, instrucao, avisos, BOT_NAME)
-          session.state = session.nome ? "menu_principal" : "identificacao_nome"
+          const resposta = await botIA(session, userInput, instrucao, avisos)
+          session.state = session.nome ? FlowState.MENU_PRINCIPAL : FlowState.IDENTIFICACAO_NOME
           return NextResponse.json({ reply: resposta })
         } else {
           return NextResponse.json({ reply: "Hum, não consegui validar esse CPF! Por favor, tente novamente." })
         }
       }
-
-      case "identificacao_nome": {
+      case FlowState.IDENTIFICACAO_NOME: {
         session.nome = userInput
         const resposta = await botIA(
           session,
           userInput,
           `Agora que já sabe o nome (${userInput}), apresente o menu: ${menuString}`,
-          avisos,
-          BOT_NAME
+          avisos
         )
-        session.state = "menu_principal"
+        session.state = FlowState.MENU_PRINCIPAL
         return NextResponse.json({ reply: resposta })
       }
 
-      case "menu_principal": {
+      case FlowState.MENU_PRINCIPAL: {
         if (["1", "abrir", "chamado"].some(v => lowerInput.includes(v))) {
-          session.state = "coletar_motivo"
+          session.state = FlowState.COLETAR_MOTIVO
           return NextResponse.json({ reply: "Com certeza! Me conta o que está acontecendo? (Pode descrever o problema detalhadamente)" })
         }
 
@@ -147,73 +159,99 @@ export async function POST(req: NextRequest) {
           session,
           userInput,
           `Tente identificar o que ele quer, caso não consiga encerre amigavelmente. Não faça suposições, apenas encerre o atendimento.`,
-          avisos,
-          BOT_NAME
+          avisos
         )
         return NextResponse.json({ reply: resposta })
       }
 
-      case "coletar_motivo": {
+      case FlowState.COLETAR_MOTIVO: {
         session.motivoAtual = userInput
 
-        // Se o motivo envolve envio de documentos, redireciona para o portal
-        const palavrasDocumento = ["foto", "fotos", "comprovante", "comprovantes", "documento", "documentos", "anexo", "anexos", "pdf", "imagem", "imagens", "print",
-           "printar", "scan", "scanner", "digitalizar", "doc", "docs","arquivo", "arquivos", "enviar", "subir", "upload","atestatado", 
-           "atestados", "laudo", "laudos", "receita", "receitas","printscreen", "print screens", "printscreens", "foto do problema", 
-           "fotos do problema", "comprovante do problema", "comprovantes do problema", "documento do problema", "documentos do problema", 
-           "anexo do problema", "anexos do problema"];
-        if (palavrasDocumento.some(p => userInput.toLowerCase().includes(p))) {
+        const fileIntent = detectFileIntent(userInput);
+        
+        if (fileIntent === "send_file") {
           const baseUrl = process.env.BASE_URL || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3001";
-          session.state = "menu_principal"
+          session.state = FlowState.MENU_PRINCIPAL
           return NextResponse.json({
             reply: `Para este tipo de serviço, você precisa abrir um chamado pelo nosso portal para anexar os documentos necessários. Acesse: ${baseUrl}/chamado e preencha o formulário com a descrição do problema e os arquivos.`
           })
         }
 
-        if (!avisos || avisos.includes("Sem avisos")) {
-          const setores = await getSetores(session.cpf || '')
-          session.state = "coletar_setor"
-          return NextResponse.json({
-            reply: `Entendido. Para qual setor devo enviar?\n\n📍 *Setores:* ${setores.join(", ")}`
-          })
+        let todosAvisos = await buscarAvisos(session.cpf, req)
+        if (todosAvisos.includes("Sem avisos")) {
+          todosAvisos = await buscarAvisosPorCpf(session.cpf!)
         }
 
         const analiseIA = await botIA(
           session,
           userInput,
-          "INSTRUÇÃO: Verifique se o problema relatado bate com os 'Avisos' do sistema. Se bater, explique o aviso e pergunte se quer abrir o chamado mesmo assim. Se NÃO bater, responda apenas: PROSSEGUIR_FLUXO.",
-          avisos,
-          BOT_NAME
+          `Analise o motivo relatado e os avisos disponíveis seguindo as instruções do sistema.`,
+          todosAvisos
         )
+
+        if (analiseIA.startsWith("AVISO_RESOLVE:")) {
+          const msg = analiseIA.replace("AVISO_RESOLVE:", "").trim()
+          sessions.delete(sessionId)
+          return NextResponse.json({ reply: msg })
+        }
 
         if (analiseIA.includes("PROSSEGUIR_FLUXO")) {
           const setores = await getSetores(session.cpf || '')
-          session.state = "coletar_setor"
+          session.state = FlowState.COLETAR_SETOR
           return NextResponse.json({
             reply: `Entendido. Para qual setor devo enviar?\n\n📍 *Setores:* ${setores.join(", ")}`
           })
         } else {
-          session.state = "verificar_aviso"
+          session.state = FlowState.MENU_PRINCIPAL
           return NextResponse.json({ reply: analiseIA })
         }
       }
 
-      case "verificar_aviso": {
-        if (["1", "sim", "quero", "continuar", "prosseguir"].some(v => lowerInput.includes(v))) {
+      case FlowState.VERIFICAR_AVISOS: {
+        const todosAvisos = await buscarAvisos(session.cpf, req)
+        const analiseIA = await botIA(
+          session,
+          userInput,
+          `O usuário respondeu após ter sido informado sobre um aviso. Verifique a resposta.
+           Se ele quiser continuar/prosseguir com a abertura do chamado: retorne apenas PROSSEGUIR_FLUXO.
+           Se ele desistir ou concordar com o aviso: encerre o atendimento de forma amigável e retorne APENAS "AVISO_RESOLVE:" seguido da mensagem de encerramento.
+           Se a resposta do usuário indicar que o aviso já resolveu o problema: encerre com AVISO_RESOLVE.`,
+          todosAvisos
+        )
+
+        if (analiseIA.startsWith("AVISO_RESOLVE:")) {
+          const msg = analiseIA.replace("AVISO_RESOLVE:", "").trim()
+          sessions.delete(sessionId)
+          return NextResponse.json({ reply: msg })
+        }
+
+        if (analiseIA.includes("PROSSEGUIR_FLUXO")) {
           const setores = await getSetores(session.cpf || '')
-          session.state = "coletar_setor"
+          session.state = FlowState.COLETAR_SETOR
           return NextResponse.json({
             reply: `Perfeito, vou dar seguimento. Para qual setor deseja enviar?\n\n📍 *Setores:* ${setores.join(", ")}`
           })
         } else {
-          session.state = "menu_principal"
-          return NextResponse.json({
-            reply: `Sem problemas! Se precisar de outra coisa, é só escolher uma opção do menu.\n\n${menuString}`
-          })
+          return NextResponse.json({ reply: analiseIA })
         }
       }
 
-      case "coletar_setor": {
+      case FlowState.MOSTRAR_AVISO: {
+        if (session.pendingState === FlowState.IDENTIFICACAO_NOME && !session.nome) {
+          session.nome = userInput
+        }
+
+        const resposta = await botIA(
+          session,
+          userInput,
+          `Apresente-se com o SEU NOME e o NOME DA SUA EMPRESA e apresente as opções: ${menuString}`,
+          avisos
+        )
+        session.state = FlowState.MENU_PRINCIPAL
+        return NextResponse.json({ reply: resposta })
+      }
+
+      case FlowState.COLETAR_SETOR: {
         const setores = await getSetores(session.cpf || "")
         const input = lowerInput.trim()
         const setor = setores.find(s => {
@@ -227,12 +265,131 @@ export async function POST(req: NextRequest) {
           })
         }
 
-        const ok = await enviarChamado(session.nome || "Usuário", session.cpf || "", setor, session.motivoAtual || "")
+        session.setorAtual = setor
+        session.state = FlowState.PERGUNTAR_ANEXO
+        return NextResponse.json({
+          reply: `Certo, vou encaminhar para o setor *${setor}*. Você precisa enviar uma foto do problema? (Sim/Não)`
+        })
+      }
+
+      case FlowState.PERGUNTAR_ANEXO: {
+        const intent = detectFileIntent(userInput)
+
+        if (intent === "send_file") {
+          session.state = FlowState.COLETAR_MIDIA
+          return NextResponse.json({
+            reply: "Ok! Pode enviar a foto pelo botão de anexar abaixo."
+          })
+        }
+
+        if (intent === "no_file") {
+          const ok = await enviarChamado(
+            session.nome || "Usuário",
+            session.cpf || "",
+            session.setorAtual || "",
+            session.motivoAtual || ""
+          )
+
+          if (ok) {
+            session.state = FlowState.MENU_PRINCIPAL
+            return NextResponse.json({
+              reply: `✅ Tudo pronto! Seu chamado para *${session.setorAtual}* foi registrado.\n\nDeseja tratar de mais algum assunto?\n\n${menuString}`
+            })
+          } else {
+            const ticketErr = generateRandomTicket()
+            return NextResponse.json({
+              reply: `O sistema de registro automático oscilou, mas seu protocolo é *${ticketErr}*. Nossa equipe já está ciente.`
+            })
+          }
+        }
+
+        const resp = await botIA(
+          session, userInput,
+          `O usuário respondeu sobre enviar foto. Se ele disse sim ou algo positivo, retorne apenas "SIM". Se disse não ou algo negativo, retorne apenas "NAO".`,
+          avisos
+        )
+
+        if (resp.toUpperCase().includes("SIM")) {
+          session.state = FlowState.COLETAR_MIDIA
+          return NextResponse.json({ reply: "Ok! Pode enviar a foto pelo botão de anexar abaixo." })
+        }
+
+        if (resp.toUpperCase().includes("NAO")) {
+          const ok = await enviarChamado(
+            session.nome || "Usuário",
+            session.cpf || "",
+            session.setorAtual || "",
+            session.motivoAtual || ""
+          )
+
+          if (ok) {
+            session.state = FlowState.MENU_PRINCIPAL
+            return NextResponse.json({
+              reply: `✅ Tudo pronto! Seu chamado para *${session.setorAtual}* foi registrado.\n\nDeseja tratar de mais algum assunto?\n\n${menuString}`
+            })
+          } else {
+            const ticketErr = generateRandomTicket()
+            return NextResponse.json({
+              reply: `O sistema de registro automático oscilou, mas seu protocolo é *${ticketErr}*. Nossa equipe já está ciente.`
+            })
+          }
+        }
+
+        return NextResponse.json({
+          reply: "Não entendi. Precisa enviar uma foto do problema? (Sim/Não)"
+        })
+      }
+
+      case FlowState.COLETAR_MIDIA: {
+        const urlMatch = userInput.match(/https?:\/\/[^\s]+/)
+        const url = urlMatch ? urlMatch[0] : null
+
+        if (!url) {
+          const photoIntent = detectFileIntent(userInput)
+          if (photoIntent === "send_file") {
+            return NextResponse.json({
+              reply: "Ok! Use o botão de anexar (📎) para enviar a foto."
+            })
+          }
+          if (photoIntent === "no_file") {
+            const ok = await enviarChamado(
+              session.nome || "Usuário",
+              session.cpf || "",
+              session.setorAtual || "",
+              session.motivoAtual || ""
+            )
+
+            if (ok) {
+              session.state = FlowState.MENU_PRINCIPAL
+              return NextResponse.json({
+                reply: `✅ Tudo pronto! Seu chamado para *${session.setorAtual}* foi registrado sem foto.\n\nDeseja tratar de mais algum assunto?\n\n${menuString}`
+              })
+            } else {
+              const ticketErr = generateRandomTicket()
+              return NextResponse.json({
+                reply: `O sistema de registro automático oscilou, mas seu protocolo é *${ticketErr}*. Nossa equipe já está ciente.`
+              })
+            }
+          }
+
+          return NextResponse.json({
+            reply: "Não identifiquei a foto. Envie a imagem pelo botão de anexar ou digite 'não' se não quiser enviar."
+          })
+        }
+
+        session.anexoUrl = url
+        const ok = await enviarChamado(
+          session.nome || "Usuário",
+          session.cpf || "",
+          session.setorAtual || "",
+          session.motivoAtual || "",
+          session.anexoUrl
+        )
 
         if (ok) {
-          session.state = "menu_principal"
+          session.state = FlowState.MENU_PRINCIPAL
           return NextResponse.json({
-            reply: `✅ Tudo pronto! Seu chamado para *${setor}* foi registrado.\n\nDeseja tratar de mais algum assunto?\n\n${menuString}`
+            reply: `✅ Tudo pronto! Seu chamado para *${session.setorAtual}* foi registrado com a foto.\n\nDeseja tratar de mais algum assunto?\n\n${menuString}`
           })
         } else {
           const ticketErr = generateRandomTicket()

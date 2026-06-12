@@ -2,65 +2,41 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { getToken } from "next-auth/jwt"
 
+const publicRoutes = [
+  '/corporativo/chamado',
+  '/corporativo/chatbot-app',
+  '/corporativo/consulta',
+  '/oficina/chamado',
+  '/oficina/chatbot-app',
+  '/oficina/consulta',
+  '/contact',
+  '/api-docs',
+]
+
 export async function proxy(req: NextRequest) {
+  const token = await getToken({ req })
   const { pathname } = req.nextUrl
 
-  // Bloqueio de rotas de teste fora da branch testes
-  if (process.env.ENABLE_TESTES !== 'true') {
-    if (
-      pathname === '/testes' ||
-      pathname.startsWith('/testes/') ||
-      pathname === '/api/testes' ||
-      pathname.startsWith('/api/testes/')
-    ) {
-      return new NextResponse(null, { status: 404 })
-    }
+  const isPublic = publicRoutes.some(route => pathname.startsWith(route) || pathname === route.replace(/\/$/, ''))
+  if (isPublic || pathname === '/oficina') {
+    return NextResponse.next()
   }
 
-  const token = await getToken({ req })
-
-  const protectedRoutes = [
-    "/dashboards",
-    "/all-tickets",
-    "/admin",
-    "/gestao-de-usuarios",
-    "/avisos",
-    "/cpfs",
-  ]
-
-  const isProtected = protectedRoutes.some((route) =>
-    pathname.startsWith(route)
-  )
-
-  // não logado tentando acessar rota protegida
-  if (isProtected && !token) {
-    return NextResponse.redirect(new URL("/login", req.url))
+  if (token && pathname === "/") {
+    return NextResponse.redirect(new URL("/dashboard", req.url))
   }
 
-  // logado tentando acessar login (mas NÃO a "/")
-  if (token && pathname === "/login") {
-    return NextResponse.redirect(new URL("/all-tickets", req.url))
+  if (!token) {
+    return NextResponse.redirect(new URL("/", req.url))
   }
 
-  // controle de role
-  if (pathname.startsWith("/admin") && token?.role !== "ADMIN") {
-    return NextResponse.redirect(new URL("/unauthorized", req.url))
+  if (pathname.startsWith('/god') && token.role !== 'GOD') {
+    return NextResponse.redirect(new URL("/dashboard", req.url))
   }
 
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: [
-    "/",
-    "/login",
-    "/dashboards/:path*",
-    "/all-tickets/:path*",
-    "/gestao-de-usuarios/:path*",
-    "/avisos/:path*",
-    "/cpfs/:path*",
-    "/admin/:path*",
-    "/testes/:path*",
-    "/api/testes/:path*",
-  ],
+  matcher: ["/", "/corporativo/:path*", "/oficina/:path*", "/eventos/:path*", "/god/:path*", "/dashboard/:path*"],
 }

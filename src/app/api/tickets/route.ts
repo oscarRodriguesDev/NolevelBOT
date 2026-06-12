@@ -10,6 +10,8 @@ import type { HistoricoItem } from '@/types/chamado'
 import { normalizarStatus } from '@/types/chamado'
 import { getTicketWhereClause } from '@/lib/rbac'
 import { ROLE } from '@prisma/client'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+import { isValidCPF } from '@/lib/validation'
 
 type ContatoTelefone = { telefone: string; instance: string } | null
 
@@ -30,7 +32,7 @@ async function buscarContato(cpf: string, chamadoId?: string): Promise<ContatoTe
           return { telefone: entradaTel.observacao, instance: 'web' }
         }
       }
-    } catch {}
+    } catch { }
   }
 
   return contato
@@ -56,41 +58,87 @@ async function notificarCliente(cpf: string, ticket: string, etapa: 'criado' | '
   }
 }
 
+function sanitizar(valor: string, maxLength = 500): string {
+  return valor
+    .replace(/<[^>]*>/g, "")
+    .replace(/[<>]/g, "")
+    .trim()
+    .slice(0, maxLength)
+}
+
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req)
+    const rateCheck = checkRateLimit(`tickets:${ip}`, 3, 60 * 60 * 1000)
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        { error: "Muitas solicitações deste IP. Aguarde antes de tentar novamente." },
+        { status: 429 }
+      )
+    }
+
     const formData = await req.formData()
 
-    const nome = formData.get("nome") as string
-    const cpf = formData.get("cpf") as string
-    const setor = formData.get("setor") as string
-    const descricao = formData.get("descricao") as string
+
+
+    console.log('==== NOVA REQUISIÇÃO ====')
+    console.log('nome:', formData.get('nome'))
+    console.log('cpf:', formData.get('cpf'))
+    console.log('setor:', formData.get('setor'))
+    console.log('descricao:', formData.get('descricao'))
+    console.log('prioridade:', formData.get('prioridade'))
+    console.log('telefone:', formData.get('telefone'))
+    console.log('anexo:', formData.get('anexo'))
+
+    const honeypot = formData.get("website") as string | null
+    if (honeypot) {
+      return NextResponse.json({ success: true })
+    }
+
+    const nome = sanitizar(formData.get("nome") as string || "", 100)
+    const cpfRaw = (formData.get("cpf") as string || "").replace(/\D/g, "")
+    const setor = sanitizar(formData.get("setor") as string || "", 100)
+    const descricao = sanitizar(formData.get("descricao") as string || "", 1000)
     const prioridade = (formData.get("prioridade") as string) || "normal"
-    const telefone = formData.get("telefone") as string | null
+    const telefone = (formData.get("telefone") as string || "").replace(/\D/g, "").slice(0, 15) || null
     const file = formData.get("anexo") as File | null
 
     const camposFaltando: string[] = []
     if (!nome) camposFaltando.push("nome")
-    if (!cpf) camposFaltando.push("cpf")
+    if (!cpfRaw) camposFaltando.push("cpf")
     if (!setor) camposFaltando.push("setor")
     if (!descricao) camposFaltando.push("descricao")
     if (camposFaltando.length > 0) {
-      console.error("Campos obrigatórios faltando:", camposFaltando, { nome, cpf, setor, descricao: descricao?.substring(0, 50) })
+      console.error("Campos obrigatórios faltando:", camposFaltando, { nome, cpf: cpfRaw, setor, descricao: descricao?.substring(0, 50) })
       return NextResponse.json({ error: `Campos obrigatórios: ${camposFaltando.join(", ")}` }, { status: 400 })
     }
 
-    const cpfRecord = await prisma.cpfs.findFirst({ where: { cpf } })
+    if (!isValidCPF(cpfRaw)) {
+      return NextResponse.json({ error: "CPF inválido" }, { status: 400 })
+    }
+
+    const cpfRecord = await prisma.cpfs.findFirst({ where: { cpf: cpfRaw } })
     if (!cpfRecord) {
       return NextResponse.json({ error: "CPF não encontrado na empresa" }, { status: 404 })
+    }
+
+    const empresaModulos = await prisma.empresa.findUnique({
+      where: { id: cpfRecord.empresaId },
+      select: { modulos: true }
+    })
+
+    if (!empresaModulos || !empresaModulos.modulos.includes("CORPORATIVO")) {
+      return NextResponse.json({ error: "Sua empresa não possui o módulo Corporativo ativo." }, { status: 403 })
     }
 
     const empresaId = cpfRecord.empresaId
 
     let anexoUrl: string | null = null
-    if (file) {
+    if (file && file.size > 0) {
       try {
         anexoUrl = await uploadFile({
           bucket: "anexo",
-          folder: cpf,
+          folder: cpfRaw,
           file,
           defaultUrl: "",
         })
@@ -109,7 +157,7 @@ export async function POST(req: NextRequest) {
       data: {
         ticket,
         nome,
-        cpf,
+        cpf: cpfRaw,
         setor,
         descricao,
         prioridade,
@@ -120,10 +168,10 @@ export async function POST(req: NextRequest) {
     })
 
     if (telefone) {
-      registerPhone(cpf, telefone, 'web')
+      registerPhone(cpfRaw, telefone, 'web')
     }
 
-    notificarCliente(cpf, ticket, 'criado', undefined, undefined, chamado.id)
+    notificarCliente(cpfRaw, ticket, 'criado', undefined, undefined, chamado.id)
 
     return NextResponse.json(chamado, { status: 201 })
   } catch (error) {
@@ -188,17 +236,32 @@ export async function GET(req: NextRequest) {
       if (endDate) where.createdAt.lte = new Date(endDate)
     }
 
-    const chamados = await prisma.chamado.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      include: {
-        atendente: {
-          select: { id: true, name: true, email: true, avatarUrl: true },
-        },
-      },
-    })
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10))
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)))
+    const skip = (page - 1) * limit
 
-    return NextResponse.json(chamados)
+    const [chamados, total] = await Promise.all([
+      prisma.chamado.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+        include: {
+          atendente: {
+            select: { id: true, name: true, email: true, avatarUrl: true },
+          },
+        },
+      }),
+      prisma.chamado.count({ where }),
+    ])
+
+    return NextResponse.json({
+      data: chamados,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    })
   } catch (error) {
     return NextResponse.json({ error: "Erro ao buscar chamados" }, { status: 500 })
   }
@@ -283,7 +346,7 @@ export async function PUT(req: NextRequest) {
       const historicoParsed: HistoricoItem[] = JSON.parse(historico || '[]')
       const ultimo = historicoParsed[historicoParsed.length - 1]
       if (ultimo?.observacao) observacao = ultimo.observacao
-    } catch {}
+    } catch { }
 
     const etapa = estagio.toLowerCase() === 'concluido' ? 'finalizado' : 'atualizado'
     notificarCliente(chamadoExistente.cpf, chamadoExistente.ticket, etapa, chamadoAtualizado.atendente?.name, observacao, chamadoExistente.id)

@@ -1,0 +1,348 @@
+'use client'
+import { useEffect, useState } from 'react'
+import { LuCheck, LuLoader, LuArrowRight } from 'react-icons/lu'
+import { ThemeToggle } from '../../components/theme-toggle'
+import { FileUpload } from '../../components/fileInput'
+import toast from 'react-hot-toast'
+
+
+export default function TicketPageDirect() {
+
+  //buscar setores por empresa
+  const [SETORES, setSetores] = useState<string[]>([])
+
+
+
+  //buscar setores depois que informar o cpf
+  async function fetchSetores(cpf: string) {
+    try {
+      const response = await fetch(`/api/empresa?cpf=${cpf}`) // cnpj da empresa deve ser definida em variavel de ambiente
+      const data = await response.json()
+
+      if (response.ok) {
+        setSetores(data.setores || [])
+      }
+    } catch (error) {
+      console.error('Erro ao buscar setores', error)
+    }
+  }
+
+
+
+
+
+
+  const [formData, setFormData] = useState({
+    nome: '',
+    cpf: '',
+    setor: '',
+    descricao: '',
+    telefone: '',
+  })
+
+  const [file, setFile] = useState<File | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+
+
+
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0])
+    }
+  }
+
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  setLoading(true)
+
+  try {
+    const form = new FormData()
+
+    form.append('nome', formData.nome)
+    form.append('cpf', formData.cpf)
+    form.append('setor', formData.setor)
+    form.append('descricao', formData.descricao)
+    form.append('prioridade', 'normal')
+
+    if (formData.telefone) {
+      form.append('telefone', formData.telefone)
+    }
+
+    if (file) {
+      form.append('anexo', file)
+    }
+
+    const response = await fetch('/api/tickets', {
+      method: 'POST',
+      body: form,
+    })
+
+    const data = await response.json().catch(() => null)
+
+    console.log('Status:', response.status)
+    console.log('Resposta:', data)
+
+    if (!response.ok) {
+      throw new Error(
+        data?.error ||
+        data?.message ||
+        `Erro HTTP ${response.status}`
+      )
+    }
+
+    setSubmitted(true)
+    toast.success('Chamado criado com sucesso')
+  } catch (error: any) {
+    console.error('Erro ao enviar chamado:', error)
+    toast.error(error?.message || 'Erro ao processar. Tente novamente.')
+  } finally {
+    setLoading(false)
+  }
+}
+
+
+
+  if (submitted) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 transition-colors duration-300"
+        style={{ backgroundColor: "var(--background)" }}
+      >
+        <div className="absolute right-4 top-4 z-50">
+          <ThemeToggle />
+        </div>
+        <div
+          className="rounded-3xl shadow-2xl p-6 sm:p-8 max-w-sm w-full text-center border transition-colors duration-300"
+          style={{
+            backgroundColor: "var(--surface)",
+            borderColor: "var(--border-subtle)",
+          }}
+        >
+          <LuCheck className="h-16 w-16 mx-auto mb-4" style={{ color: "var(--primary)" }} />
+          <h2 className="text-2xl font-bold mb-2" style={{ color: "var(--primary)" }}>
+            Solicitação Enviada
+          </h2>
+          <p className="mb-6 text-sm opacity-70">
+            O chamado foi enviado com sucesso.
+          </p>
+          <button
+            onClick={() => window.close()}
+            className="w-full py-4 rounded-xl font-bold transition-all duration-300 text-white hover:scale-105 active:scale-95"
+            style={{
+              backgroundColor: "var(--primary)",
+            }}
+            onMouseEnter={e => {
+              if (e.target instanceof HTMLElement) {
+                e.target.style.backgroundColor = "var(--primary-hover)";
+              }
+            }}
+            onMouseLeave={e => {
+              if (e.target instanceof HTMLElement) {
+                e.target.style.backgroundColor = "var(--primary)";
+              }
+            }}
+          >
+            Concluído
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className="min-h-screen px-4 sm:px-6 lg:px-8 py-6 sm:py-8 transition-colors duration-300"
+      style={{
+        backgroundColor: "var(--background)",
+        color: "var(--foreground)",
+      }}
+    >
+      <div className="absolute right-4 top-4 z-50">
+        <ThemeToggle />
+      </div>
+
+
+      <div className="max-w-2xl mx-auto">
+        <div className="space-y-2 mb-8">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold" style={{ color: "var(--primary)" }}>
+            Criar Novo Chamado
+          </h2>
+          <p className="text-sm opacity-70">Preencha os campos abaixo para registrar uma solicitação</p>
+        </div>
+
+        <div
+          className="rounded-2xl p-6 sm:p-8 border shadow-lg transition-colors duration-300"
+          style={{
+            backgroundColor: "var(--surface)",
+            borderColor: "var(--border-subtle)",
+          }}
+        >
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div aria-hidden="true" className="absolute opacity-0 pointer-events-none" style={{ height: 0, overflow: 'hidden' }}>
+              <input type="text" name="website" tabIndex={-1} autoComplete="off" defaultValue="" />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-2">
+                Nome Completo
+              </label>
+              <input
+                type="text"
+                name="nome"
+                value={formData.nome}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 border rounded-lg outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
+                style={{
+                  backgroundColor: "var(--surface-elevated)",
+                  borderColor: "var(--border-subtle)",
+                  color: "var(--foreground)",
+                  "--tw-ring-color": "var(--primary)",
+                } as never}
+                placeholder="Digite seu nome completo"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold mb-2">
+                CPF
+              </label>
+              <input
+                type="text"
+                name="cpf"
+                value={formData.cpf}
+                onChange={handleChange}
+                onBlur={() => { fetchSetores(formData.cpf) }}
+                required
+                pattern="\d{11}"
+                maxLength={11}
+                className="w-full px-4 py-3 border rounded-lg outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
+                style={{
+                  backgroundColor: "var(--surface-elevated)",
+                  borderColor: "var(--border-subtle)",
+                  color: "var(--foreground)",
+                  "--tw-ring-color": "var(--primary)",
+                } as never}
+                placeholder="00000000000"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold mb-2">
+                Telefone <span className="opacity-50 font-normal">(opcional — para notificação via WhatsApp)</span>
+              </label>
+              <input
+                type="text"
+                name="telefone"
+                value={formData.telefone}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border rounded-lg outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
+                style={{
+                  backgroundColor: "var(--surface-elevated)",
+                  borderColor: "var(--border-subtle)",
+                  color: "var(--foreground)",
+                  "--tw-ring-color": "var(--primary)",
+                } as never}
+                placeholder="5511999999999"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold mb-2">
+                Setor
+              </label>
+              <select
+                name="setor"
+                value={formData.setor}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 rounded-lg outline-none transition-all duration-300 border focus:ring-2 focus:ring-opacity-50"
+                style={{
+                  backgroundColor: "var(--surface-elevated)",
+                  color: "var(--foreground)",
+                  borderColor: "var(--border-subtle)",
+                  "--tw-ring-color": "var(--primary)",
+                } as never}
+              >
+                <option value="" disabled>
+                  Selecione um setor
+                </option>
+
+                {SETORES.map((setor) => (
+                  <option key={setor} value={setor}>
+                    {setor}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold mb-2">
+                Descrição do Problema
+              </label>
+              <textarea
+                name="descricao"
+                value={formData.descricao}
+                onChange={handleChange}
+                required
+                rows={4}
+                className="w-full px-4 py-3 border rounded-lg outline-none transition-all duration-300 resize-none focus:ring-2 focus:ring-opacity-50"
+                style={{
+                  backgroundColor: "var(--surface-elevated)",
+                  borderColor: "var(--border-subtle)",
+                  color: "var(--foreground)",
+                  "--tw-ring-color": "var(--primary)",
+                } as never}
+                placeholder="Descreva o problema ou solicitação em detalhes..."
+              />
+            </div>
+
+
+            <FileUpload file={file} setFile={setFile} handleFileChange={handleFileChange} />
+
+            <div className="pt-6">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full font-semibold py-3 rounded-lg disabled:opacity-50 flex items-center justify-center gap-2 text-sm sm:text-base text-white transition-all duration-300 hover:scale-105 active:scale-95 disabled:hover:scale-100"
+                style={{
+                  backgroundColor: "var(--primary)",
+                }}
+                onMouseEnter={e => {
+                  if (e.currentTarget instanceof HTMLElement && !loading) {
+                    e.currentTarget.style.backgroundColor = "var(--primary-hover)";
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (e.currentTarget instanceof HTMLElement) {
+                    e.currentTarget.style.backgroundColor = "var(--primary)";
+                  }
+                }}
+              >
+                {loading ? (
+                  <>
+                    <LuLoader className="animate-spin h-5 w-5" />
+                    Processando
+                  </>
+                ) : (
+                  <>
+                    Enviar Chamado
+                    <LuArrowRight className="h-5 w-5" />
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  )
+}

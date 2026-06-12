@@ -40,6 +40,23 @@ export async function POST(req: NextRequest) {
 
     let empresaID = session!.empresaId
 
+    if (!empresaID) {
+      const userDb = await prisma.user.findUnique({
+        where: { id: session!.id },
+        select: { empresaId: true },
+      })
+      if (userDb?.empresaId) {
+        empresaID = userDb.empresaId
+      }
+    }
+
+    if (!empresaID) {
+      return NextResponse.json(
+        { error: "Sua sessão não possui empresa vinculada. Faça login novamente." },
+        { status: 400 }
+      )
+    }
+
     if (userRole === "GOD") {
       const selectedEmpresa = formData.get("empresaId") as string
       if (selectedEmpresa) {
@@ -186,6 +203,9 @@ export async function GET(req: NextRequest) {
         avatarUrl: true,
         empresaId: true,
         createdAt: true,
+        Empresa: {
+          select: { nome: true },
+        },
       },
       orderBy: { createdAt: "desc" },
     })
@@ -333,14 +353,14 @@ export async function PUT(req: NextRequest) {
       if (!["GESTOR", "ATENDENTE"].includes(targetUser.role)) {
         return NextResponse.json({ error: "Você só pode editar GESTOR ou ATENDENTE" }, { status: 403 })
       }
-      if (targetUser.empresaId !== userEmpresaId) {
+      if (targetUser.empresaId && targetUser.empresaId !== userEmpresaId) {
         return NextResponse.json({ error: "Usuário não pertence à sua empresa" }, { status: 403 })
       }
     } else if (userRole === "GESTOR") {
       if (targetUser.role !== "ATENDENTE") {
         return NextResponse.json({ error: "Você só pode editar ATENDENTE" }, { status: 403 })
       }
-      if (targetUser.empresaId !== userEmpresaId) {
+      if (targetUser.empresaId && targetUser.empresaId !== userEmpresaId) {
         return NextResponse.json({ error: "Usuário não pertence à sua empresa" }, { status: 403 })
       }
       if (targetUser.setor !== userSetor) {
@@ -354,6 +374,10 @@ export async function PUT(req: NextRequest) {
     if (cpf) data.cpf = limparCPF(cpf)
     if (setor) data.setor = setor
     if (empresaId && userRole === "GOD") data.empresaId = empresaId
+
+    if (!targetUser.empresaId && userEmpresaId && userRole !== "GOD") {
+      data.empresaId = userEmpresaId
+    }
 
     if (email && email !== targetUser.email) {
       const emailExiste = await prisma.user.findUnique({ where: { email } })

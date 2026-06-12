@@ -1,264 +1,302 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
+import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { ThemeToggle } from "@/app/components/theme-toggle";
+import { LuMail, LuLock } from "react-icons/lu";
+import { signIn } from "next-auth/react";
 import Link from "next/link";
-import { ThemeToggle } from "./components/theme-toggle";
-import Image from "next/image";
-import dash from "../../public/landing/dash.png";
-import {
-  FiInbox,
-  FiCpu,
-  FiClock,
-  FiArchive,
-  FiBarChart2,
-  FiLink,
-} from "react-icons/fi";
 
-export default function LandingPage() {
-  const items = [
-    {
-      icon: FiInbox,
-      label: "Centralização de chamados",
-      description:
-        "Todos os chamados reunidos em um único lugar, com organização por status, setor e prioridade.",
-    },
-    {
-      icon: FiCpu,
-      label: "Automação inteligente",
-      description:
-        "Abertura e direcionamento automático via WhatsApp, reduzindo atendimento manual e erros de triagem.",
-    },
-    {
-      icon: FiClock,
-      label: "Controle de SLA",
-      description:
-        "Definição de prazos por tipo de chamado com acompanhamento em tempo real de atrasos e cumprimento.",
-    },
-    {
-      icon: FiArchive,
-      label: "Histórico completo",
-      description:
-        "Registro detalhado de cada chamado com interações, mudanças de status e responsáveis.",
-    },
-    {
-      icon: FiBarChart2,
-      label: "Relatórios em tempo real",
-      description:
-        "Indicadores atualizados da operação para análise de desempenho e tomada de decisão.",
-    },
-    {
-      icon: FiLink,
-      label: "Integração via API",
-      description:
-        "Conexão com outros sistemas da empresa para automatizar fluxos e sincronizar dados.",
-    },
-  ];
+
+export default function LoginPage() {
+  const router = useRouter();
+  const turnstileRef = useRef<HTMLDivElement>(null);
+  const turnstileWidgetId = useRef<string | undefined>(undefined);
+
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileReady, setTurnstileReady] = useState(false);
+
+  const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "1x00000000000000000000AA"
+
+  useEffect(() => {
+    if (failedAttempts >= 3 && turnstileRef.current && !turnstileWidgetId.current) {
+      const script = document.createElement("script")
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js"
+      script.async = true
+      script.defer = true
+      script.onload = () => {
+        if (window.turnstile && turnstileRef.current) {
+          const id = window.turnstile.render(turnstileRef.current, {
+            sitekey: SITE_KEY,
+            callback: (token: string) => {
+              setTurnstileToken(token)
+              setTurnstileReady(true)
+            },
+            "expired-callback": () => {
+              setTurnstileToken("")
+              setTurnstileReady(false)
+            },
+          })
+          turnstileWidgetId.current = id
+        }
+      }
+      document.head.appendChild(script)
+    }
+  }, [failedAttempts, SITE_KEY])
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    setError("");
+    setLoading(true);
+
+    if (!email || !password) {
+      setError("Preencha email e senha");
+      setLoading(false);
+      return;
+    }
+
+    if (failedAttempts >= 3 && !turnstileToken) {
+      setError("Complete a verificação de segurança");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const credentials: Record<string, string> = { email, password }
+      if (failedAttempts >= 3 && turnstileToken) {
+        credentials.turnstileToken = turnstileToken
+      }
+
+      const result = await signIn("credentials", {
+        ...credentials,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        const newCount = failedAttempts + 1
+        setFailedAttempts(newCount)
+        setError("Email ou senha incorretos");
+        setPassword("");
+        setLoading(false);
+        return;
+      }
+
+      router.push("/dashboard");
+    } catch {
+      setError("Erro ao fazer login");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <main
-      className="min-h-screen overflow-hidden transition-colors duration-500 font-sans"
-      style={{
-        backgroundColor: "var(--background)",
-        color: "var(--foreground)",
-      }}
+    <div
+      className="min-h-screen w-full flex items-center justify-center px-4 sm:px-6 lg:px-8 transition-colors duration-300"
+      style={{ backgroundImage: "url('/landing/footer.png')" }}
     >
+    
+
       <div className="absolute right-4 top-4 z-50">
         <ThemeToggle />
       </div>
 
-      {/* --- HERO SECTION --- */}
-      <section
-        className="relative w-full px-6 pt-24 pb-16 sm:pt-32 lg:pt-48 bg-cover bg-center bg-no-repeat overflow-hidden"
-        style={{ backgroundImage: "url('/landing/fundo.png')" }}
+      <div
+        className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-0 items-stretch rounded-3xl overflow-hidden shadow-2xl border animate-in fade-in duration-500"
+        style={{
+          borderColor: "var(--border-subtle)",
+          backgroundColor: "var(--surface)",
+        }}
       >
-        <div className="absolute inset-0 bg-black/60" />
-
-        <div
-          className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[500px] opacity-20 blur-[120px] pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(circle, var(--primary) 0%, transparent 70%)",
-          }}
-        />
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center relative z-10">
-          <div className="space-y-8 text-center lg:text-left text-white">
-            <span
-              className="inline-flex items-center px-4 py-1.5 text-xs sm:text-sm font-medium rounded-full border shadow-sm backdrop-blur-md"
+        <div className="hidden md:flex relative flex-col justify-end overflow-hidden">
+          <div
+            className="absolute inset-0 flex items-center justify-center"
+            style={{
+              background:
+                "linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%)",
+            }}
+          >
+            <div
+              className="absolute inset-0 opacity-10"
               style={{
-                backgroundColor: "rgba(255,255,255,0.1)",
-                borderColor: "rgba(255,255,255,0.2)",
-                color: "white",
+                backgroundImage:
+                  "radial-gradient(circle at 25% 25%, white 0%, transparent 50%), radial-gradient(circle at 75% 75%, white 0%, transparent 50%)",
               }}
-            >
-              <span
-                className="w-2 h-2 rounded-full mr-2 animate-pulse"
-                style={{ backgroundColor: "var(--primary)" }}
-              />
-              Plataforma inteligente de atendimento
-            </span>
+            />
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.1] tracking-tight">
-              Transforme seu atendimento em um sistema
-              <span className="block mt-2" style={{ color: "var(--primary)" }}>
-                rápido e automatizado
-              </span>
-            </h1>
+            <div className="relative z-10 p-12 text-center">
+              <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center">
+                <span className="text-4xl font-black text-white">N</span>
+              </div>
 
-            <p className="text-lg sm:text-xl max-w-xl mx-auto lg:mx-0 text-white/80 leading-relaxed">
-              Centralize chamados, automatize processos e tenha total controle
-              da operação com uma interface moderna e intuitiva.
-            </p>
+              <h2 className="text-3xl font-bold text-white mb-3">
+                Gestão inteligente
+              </h2>
 
-            {/* BOTÕES ATUALIZADOS */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Link
-                href="/login"
-                className="px-8 py-4 rounded-2xl font-bold shadow-lg transition-all duration-300 hover:-translate-y-1 active:scale-95 text-center"
-                style={{ backgroundColor: "var(--primary)", color: "white" }}
-              >
-                Ja possui uma conta?
-              </Link>
-
-              <Link
-                href="/contact"
-                className="px-8 py-4 rounded-2xl font-semibold border transition-all duration-300 hover:bg-white/10 text-center"
-                style={{
-                  borderColor: "rgba(255,255,255,0.2)",
-                  color: "white",
-                  backgroundColor: "rgba(255,255,255,0.05)",
-                }}
-              >
-                Saiba mais
-              </Link>
+              <p className="text-lg text-white/80 font-medium max-w-xs mx-auto">
+                Elimine gargalos, automatize processos e aumente a eficiência do
+                seu suporte.
+              </p>
             </div>
           </div>
+        </div>
 
-          <div className="relative group perspective-1000">
-            <div
-              className="absolute -inset-4 blur-2xl opacity-10 rounded-full transition-opacity group-hover:opacity-20"
-              style={{ backgroundColor: "var(--primary)" }}
-            />
-            <div
-              className="relative rounded-[2.5rem] border p-3 sm:p-4 shadow-2xl transition-transform duration-700 group-hover:rotate-1 group-hover:scale-[1.02]"
-              style={{
-                backgroundColor: "var(--surface)",
-                borderColor: "var(--border-subtle)",
-              }}
+        <div className="w-full p-8 sm:p-12 space-y-8">
+          <div className="space-y-2">
+            <h1
+              className="text-4xl sm:text-5xl font-black tracking-tight"
+              style={{ color: "var(--primary)" }}
             >
-              <div
-                className="aspect-video lg:aspect-square xl:aspect-video rounded-[1.8rem] overflow-hidden relative"
-                style={{ backgroundColor: "var(--surface-elevated)" }}
+              Nolevel
+            </h1>
+
+            <p className="text-sm opacity-50 font-medium">
+              Acesse sua conta para continuar
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-1.5">
+              <label
+                htmlFor="email"
+                className="text-xs font-bold uppercase tracking-wider opacity-70"
               >
-                <Image
-                  src={dash}
-                  alt="Dashboard Preview"
-                  fill
-                  className="object-cover"
+                Email
+              </label>
+
+              <div className="relative">
+                <LuMail
+                  className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40"
+                  size={18}
+                />
+
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="seu@email.com"
+                  className="w-full pl-11 pr-4 py-3.5 border rounded-xl outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+                  style={{
+                    backgroundColor: "var(--surface-elevated)",
+                    borderColor: "var(--border-subtle)",
+                    color: "var(--foreground)",
+                  }}
+                  disabled={loading}
+                  required
                 />
               </div>
             </div>
-          </div>
-        </div>
-      </section>
 
-      {/* --- BENEFÍCIOS --- */}
-      <section
-        className="py-24 px-6 mt-16"
-        style={{ backgroundColor: "var(--surface)" }}
-      >
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center space-y-4 mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
-              Gestão completa dos chamados
-            </h2>
-            <div
-              className="w-16 h-1 mx-auto rounded-full"
-              style={{ backgroundColor: "var(--primary)" }}
-            />
-            <p className="max-w-2xl mx-auto opacity-70">
-              Abertura via WhatsApp, triagem automática e acompanhamento em
-              tempo real em um único fluxo.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {items.map((item, i) => (
-              <div
-                key={i}
-                className="p-8 rounded-[2rem] border transition-all duration-300 hover:shadow-xl hover:-translate-y-2 group"
-                style={{
-                  backgroundColor: "var(--background)",
-                  borderColor: "var(--border-subtle)",
-                }}
+            <div className="space-y-1.5">
+              <label
+                htmlFor="password"
+                className="text-xs font-bold uppercase tracking-wider opacity-70"
               >
-                <div
-                  className="w-12 h-12 mb-6 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 group-hover:rotate-3 shadow-md"
-                  style={{ backgroundColor: "var(--primary)" }}
+                Senha
+              </label>
+
+              <div className="relative">
+                <LuLock
+                  className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40"
+                  size={18}
+                />
+
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full pl-11 pr-14 py-3.5 border rounded-xl outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+                  style={{
+                    backgroundColor: "var(--surface-elevated)",
+                    borderColor: "var(--border-subtle)",
+                    color: "var(--foreground)",
+                  }}
+                  disabled={loading}
+                  required
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold uppercase tracking-wider opacity-50 hover:opacity-100 transition-opacity"
+                  disabled={loading}
                 >
-                  <item.icon className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-xl font-bold mb-3">{item.label}</h3>
-                <p className="text-sm opacity-70 leading-relaxed">
-                  {item.description}
-                </p>
+                  {showPassword ? "Ocultar" : "Mostrar"}
+                </button>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* --- CTA FINAL --- */}
-      <section className="py-24 px-6 text-center relative overflow-hidden">
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: "url('/landing/footer.png')" }}
-        />
-
-        <div className="absolute inset-0 bg-black/60" />
-
-        <div
-          className="max-w-5xl mx-auto rounded-[3rem] px-8 py-16 relative overflow-hidden shadow-2xl z-10"
-          style={{
-            backgroundColor: "rgba(var(--primary-rgb), 0.85)",
-            backdropFilter: "blur(10px)",
-          }}
-        >
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl -mr-32 -mt-32" />
-
-          <div className="relative z-10 space-y-8 text-white">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">
-              Pronto para elevar o nível?
-            </h2>
-
-            <p className="text-white/90 text-lg max-w-2xl mx-auto">
-              Acesse o sistema ou entre em contato com nosso suporte especializado.
-            </p>
-
-            {/* BOTÕES ATUALIZADOS NO FOOTER */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href="/login"
-                className="inline-block px-10 py-4 rounded-2xl font-bold transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95"
-                style={{
-                  backgroundColor: "var(--background)",
-                  color: "var(--primary)",
-                }}
-              >
-                Fazer Login
-              </Link>
-              <Link
-                href="/contact"
-                className="inline-block px-10 py-4 rounded-2xl font-bold border border-white/30 transition-all duration-300 hover:bg-white/10 active:scale-95"
-                style={{
-                  color: "white",
-                }}
-              >
-                Falar com Vendas
-              </Link>
             </div>
+
+            {failedAttempts >= 3 && (
+              <div className="flex justify-center">
+                <div ref={turnstileRef} />
+              </div>
+            )}
+
+            {error && (
+              <div
+                className="p-4 rounded-xl text-sm border flex items-start gap-3 animate-in slide-in-from-top-2 duration-200"
+                style={{
+                  backgroundColor: "var(--error-light)",
+                  borderColor: "var(--status-cancelled)",
+                  color: "var(--status-cancelled)",
+                }}
+              >
+                <span className="font-medium">{error}</span>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading || !email || !password || (failedAttempts >= 3 && !turnstileReady)}
+              className="w-full py-3.5 rounded-xl font-bold text-white transition-all duration-200 hover:brightness-110 hover:shadow-lg active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100"
+              style={{ backgroundColor: "var(--primary)" }}
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    />
+                  </svg>
+                  Entrando...
+                </span>
+              ) : (
+                "Entrar"
+              )}
+            </button>
+          </form>
+
+          <div className="pt-2">
+            <Link
+              href="/contact"
+              className="text-sm font-medium opacity-50 hover:opacity-100 hover:text-[var(--primary)] transition-all"
+            >
+              Não possui uma conta?
+            </Link>
           </div>
         </div>
-      </section>
-    </main>
+      </div>
+    </div>
   );
 }

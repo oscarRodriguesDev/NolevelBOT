@@ -10,13 +10,21 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
 
-    const empresa = await prisma.empresa.create({
-      data: {
-        nome: body.nome,
-        cnpj: body.cnpj,
-        setores: body.setores || [],
-      },
-    })
+    const data: any = {
+      nome: body.nome,
+      cnpj: body.cnpj,
+      setores: body.setores || [],
+    }
+
+    if (body.modulos !== undefined) data.modulos = body.modulos
+    if (body.logoUrl !== undefined) data.logoUrl = body.logoUrl
+    if (body.botName !== undefined) data.botName = body.botName
+    if (body.botPresentation !== undefined) data.botPresentation = body.botPresentation
+    if (body.botServiceDesc !== undefined) data.botServiceDesc = body.botServiceDesc
+    if (body.botAvisosDesc !== undefined) data.botAvisosDesc = body.botAvisosDesc
+    if (body.botPrompt !== undefined) data.botPrompt = body.botPrompt
+
+    const empresa = await prisma.empresa.create({ data })
 
     return NextResponse.json(empresa)
   } catch (error) {
@@ -28,6 +36,41 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const cpf = searchParams.get('cpf')
+    const id = searchParams.get('id')
+
+    if (id) {
+      const session = await getSessionOrFail(["GOD", "ADMIN", "GESTOR", "ATENDENTE"])
+      if (!session) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      }
+
+      if (session.user.role !== "GOD" && session.user.empresaId !== id) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      }
+
+      const empresa = await prisma.empresa.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          nome: true,
+          cnpj: true,
+          setores: true,
+          modulos: true,
+          logoUrl: true,
+          botName: true,
+          botPresentation: true,
+          botServiceDesc: true,
+          botAvisosDesc: true,
+          botPrompt: true,
+        },
+      })
+
+      if (!empresa) {
+        return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 })
+      }
+
+      return NextResponse.json(empresa)
+    }
 
     if (!cpf) {
       const session = await getSessionOrFail(["GOD", "ADMIN", "GESTOR"])
@@ -45,6 +88,13 @@ export async function GET(request: Request) {
             nome: true,
             cnpj: true,
             setores: true,
+            modulos: true,
+            logoUrl: true,
+            botName: true,
+            botPresentation: true,
+            botServiceDesc: true,
+            botAvisosDesc: true,
+            botPrompt: true,
           },
         })
         return NextResponse.json(empresas)
@@ -57,6 +107,13 @@ export async function GET(request: Request) {
           nome: true,
           cnpj: true,
           setores: true,
+          modulos: true,
+          logoUrl: true,
+          botName: true,
+          botPresentation: true,
+          botServiceDesc: true,
+          botAvisosDesc: true,
+          botPrompt: true,
         },
       })
 
@@ -71,7 +128,19 @@ export async function GET(request: Request) {
       where: { cpf },
       select: {
         Empresa: {
-          select: { id: true, nome: true, cnpj: true, setores: true }
+          select: {
+            id: true,
+            nome: true,
+            cnpj: true,
+            setores: true,
+            modulos: true,
+            logoUrl: true,
+            botName: true,
+            botPresentation: true,
+            botServiceDesc: true,
+            botAvisosDesc: true,
+            botPrompt: true,
+          }
         }
       }
     })
@@ -110,11 +179,18 @@ export async function PUT(req: NextRequest) {
     if (body.nome) data.nome = body.nome
     if (body.cnpj) data.cnpj = body.cnpj
     if (body.setores !== undefined) data.setores = body.setores
+    if (body.modulos !== undefined) data.modulos = body.modulos
+    if (body.logoUrl !== undefined) data.logoUrl = body.logoUrl
+    if (body.botName !== undefined) data.botName = body.botName
+    if (body.botPresentation !== undefined) data.botPresentation = body.botPresentation
+    if (body.botServiceDesc !== undefined) data.botServiceDesc = body.botServiceDesc
+    if (body.botAvisosDesc !== undefined) data.botAvisosDesc = body.botAvisosDesc
+    if (body.botPrompt !== undefined) data.botPrompt = body.botPrompt
 
     const empresa = await prisma.empresa.update({
       where: { id },
       data,
-      select: { id: true, nome: true, cnpj: true, setores: true },
+      select: { id: true, nome: true, cnpj: true, setores: true, modulos: true, logoUrl: true, botName: true, botPrompt: true },
     })
 
     return NextResponse.json(empresa)

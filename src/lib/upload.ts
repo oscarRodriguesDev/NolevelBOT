@@ -9,17 +9,26 @@ const createdBuckets = new Set<string>()
 
 async function ensureBucket(bucket: string) {
   if (createdBuckets.has(bucket)) return
+
+  try {
+    const { data: existing } = await supabase.storage.getBucket(bucket)
+    if (existing) {
+      createdBuckets.add(bucket)
+      return
+    }
+  } catch { }
+
   try {
     const { error } = await supabase.storage.createBucket(bucket, { public: true })
-    if (error && !error.message?.toLowerCase().includes("already exists") && !error.message?.toLowerCase().includes("duplicate")) {
-      console.warn(`Erro ao criar bucket "${bucket}":`, error.message)
+    if (error) {
+      if (!error.message?.toLowerCase().includes("already exists") &&
+          !error.message?.toLowerCase().includes("duplicate") &&
+          !error.message?.toLowerCase().includes("row-level security")) {
+        console.warn(`Erro ao criar bucket "${bucket}":`, error.message)
+      }
     }
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message.toLowerCase() : ""
-    if (!msg.includes("already exists") && !msg.includes("duplicate")) {
-      console.warn(`Erro ao criar bucket "${bucket}":`, err)
-    }
-  }
+  } catch { }
+
   createdBuckets.add(bucket)
 }
 

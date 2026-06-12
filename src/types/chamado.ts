@@ -6,7 +6,7 @@ export type HistoricoItem = {
 }
 
 export type Chamado = {
-  id: number
+  id: string
   ticket: string
   nome: string
   cpf: string
@@ -18,6 +18,11 @@ export type Chamado = {
   anexoUrl?: string | null
   historico?: string | null
   atendente?: string | null
+  categoria?: string
+  veiculo?: string
+  matricula?: string
+  discriminacao?: string
+  tipo?: string
 }
 
 export type StatusChamado = 'NOVO' | 'EM_ATENDIMENTO' | 'AGUARDANDO' | 'CONCLUIDO' | 'CANCELADO'

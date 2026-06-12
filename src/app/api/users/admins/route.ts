@@ -114,7 +114,7 @@ export async function DELETE(req: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { id },
-      select: { role: true },
+      select: { id: true, role: true, empresaId: true },
     })
 
     if (!user) {
@@ -139,6 +139,17 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json(
         { error: "Usuário não é ADMIN" },
         { status: 404 }
+      )
+    }
+
+    const outroAdmin = await prisma.user.findFirst({
+      where: { empresaId: user.empresaId, role: "ADMIN", id: { not: id } },
+      select: { id: true },
+    })
+    if (!outroAdmin) {
+      return NextResponse.json(
+        { error: "Crie outro ADMIN nesta empresa antes de remover este. A empresa precisa de pelo menos um administrador." },
+        { status: 400 }
       )
     }
 
