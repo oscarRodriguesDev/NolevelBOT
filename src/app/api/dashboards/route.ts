@@ -1,8 +1,6 @@
-// app/api/dashboard/route.ts
-
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getSessionOrFail } from "@/util/permission"
+import { getServerSessionRBAC } from "@/lib/rbac-server"
 
 function getWeek(date: Date) {
   const first = new Date(date.getFullYear(), 0, 1)
@@ -10,105 +8,204 @@ function getWeek(date: Date) {
   return Math.ceil((diff + first.getDay() + 1) / 7)
 }
 
+function getPeriodKey(date: Date, periodo: string): string {
+  if (periodo === "dia") return date.toISOString().slice(0, 10)
+  if (periodo === "semana") return `S${getWeek(date)}`
+  if (periodo === "mes") return `${String(date.getMonth() + 1).padStart(2, "0")}/${date.getFullYear()}`
+  if (periodo === "ano") return String(date.getFullYear())
+  return date.toISOString().slice(0, 10)
+}
 
-//esse dashboad deve ser visto apenas por usuarios admin e gestor
-export async function GET(req: Request) {
-  const session = await getSessionOrFail(["ADMIN", "GESTOR","GOD"])
+function getWeekdayName(day: number): string {
+  const dias = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
+  return dias[day]
+}
 
-  if (!session) {
-    return NextResponse.json({ error: "Acesso negado" }, { status: 403 })
+function parseDescricao(descricao: string) {
+  try {
+    return JSON.parse(descricao)
+  } catch {
+    return null
   }
+}
+
+export async function GET(req: Request) {
+  const { session, error } = await getServerSessionRBAC(["ADMIN", "GESTOR", "GOD"])
+  if (error) return error
+
+  const empresaId = session!.empresaId
+  const { searchParams } = new URL(req.url)
+  const periodo = searchParams.get("periodo") || "mes"
 
   try {
-    const { searchParams } = new URL(req.url)
-    const periodo = searchParams.get("periodo") || "mes"
-
     const chamados = await prisma.chamado.findMany({
+      where: { empresaId },
       select: {
         id: true,
+        ticket: true,
+        nome: true,
+        cpf: true,
         setor: true,
         descricao: true,
+        prioridade: true,
         status: true,
+        atendenteId: true,
         createdAt: true,
         updatedAt: true,
       },
+      orderBy: { createdAt: "desc" },
     })
 
-    // Chamados abertos por setor
-    const chamadosPorSetorMap: Record<string, number> = {}
-
-    chamados.forEach((c) => {
-      if (c.status !== "FECHADO") {
-        chamadosPorSetorMap[c.setor] =
-          (chamadosPorSetorMap[c.setor] || 0) + 1
-      }
-    })
-
-    const chamadosPorSetor = Object.entries(chamadosPorSetorMap).map(
-      ([setor, total]) => ({ setor, total })
+    const chamadosFechados = chamados.filter(
+      (c) => c.status === "CONCLUIDO" || c.status === "FECHADO" || c.status === "CANCELADO"
     )
 
-    // Chamados por período
-    const chamadosPeriodoMap: Record<string, number> = {}
+    const totalGeral = chamados.length
 
+    const chamadosPorStatus: { status: string; total: number; color: string }[] = []
+    const statusMap: Record<string, { label: string; color: string }> = {
+      NOVO: { label: "Novo", color: "#8B5CF6" },
+      EM_ATENDIMENTO: { label: "Em Atendimento", color: "#F59E0B" },
+      AGUARDANDO: { label: "Aguardando", color: "#EC4899" },
+      CONCLUIDO: { label: "Concluído", color: "#10B981" },
+      CANCELADO: { label: "Cancelado", color: "#EF4444" },
+      FECHADO: { label: "Fechado", color: "#10B981" },
+    }
+    const statusCount: Record<string, number> = {}
     chamados.forEach((c) => {
-      const d = new Date(c.createdAt)
-
-      let key = ""
-
-      if (periodo === "dia") key = d.toISOString().slice(0, 10)
-      if (periodo === "semana") key = `S${getWeek(d)}`
-      if (periodo === "mes") key = `${d.getMonth() + 1}/${d.getFullYear()}`
-      if (periodo === "ano") key = `${d.getFullYear()}`
-
-      chamadosPeriodoMap[key] =
-        (chamadosPeriodoMap[key] || 0) + 1
+      const s = c.status || "OUTROS"
+      statusCount[s] = (statusCount[s] || 0) + 1
+    })
+    Object.entries(statusCount).forEach(([status, total]) => {
+      const info = statusMap[status] || { label: status, color: "#6B7280" }
+      chamadosPorStatus.push({ status: info.label, total, color: info.color })
     })
 
-    const chamadosPeriodo = Object.entries(chamadosPeriodoMap).map(
-      ([periodo, total]) => ({ periodo, total })
-    )
-
-    // Motivos (usando descricao como base)
-    const motivosMap: Record<string, number> = {}
-
-    chamados.forEach((c) => {
-      const motivo = c.descricao || "Outros"
-      motivosMap[motivo] = (motivosMap[motivo] || 0) + 1
-    })
-
-    const motivosStats = Object.entries(motivosMap)
-      .map(([motivo, total]) => ({ motivo, total }))
-      .sort((a, b) => b.total - a.total)
-
-    // Tempo médio (usando chamados fechados)
     let totalTempo = 0
-    let count = 0
-
-    chamados.forEach((c) => {
-      if (c.status === "FECHADO") {
-        const inicio = new Date(c.createdAt).getTime()
-        const fim = new Date(c.updatedAt).getTime()
-
-        totalTempo += fim - inicio
-        count++
+    let countTempo = 0
+    chamadosFechados.forEach((c) => {
+      if (c.createdAt && c.updatedAt) {
+        totalTempo += new Date(c.updatedAt).getTime() - new Date(c.createdAt).getTime()
+        countTempo++
       }
     })
+    const tempoMedio = countTempo ? Math.round(totalTempo / countTempo / 3600000) : 0
 
-    const tempoMedio = count
-      ? Math.round(totalTempo / count / 3600000)
-      : 0
+    const chamadosPorPrioridade: { prioridade: string; total: number; color: string }[] = []
+    const prioridadeMap: Record<string, { label: string; color: string }> = {
+      baixa: { label: "Baixa", color: "#10B981" },
+      normal: { label: "Normal", color: "#3B82F6" },
+      alta: { label: "Alta", color: "#F59E0B" },
+      critica: { label: "Crítica", color: "#EF4444" },
+    }
+    const prioridadeCount: Record<string, number> = {}
+    chamados.forEach((c) => {
+      const p = (c.prioridade || "normal").toLowerCase()
+      prioridadeCount[p] = (prioridadeCount[p] || 0) + 1
+    })
+    Object.entries(prioridadeCount).forEach(([prioridade, total]) => {
+      const info = prioridadeMap[prioridade] || { label: prioridade, color: "#6B7280" }
+      chamadosPorPrioridade.push({ prioridade: info.label, total, color: info.color })
+    })
+
+    const chamadosPorSetor: { setor: string; total: number }[] = []
+    const setorCount: Record<string, number> = {}
+    chamados.forEach((c) => {
+      if (c.setor) setorCount[c.setor] = (setorCount[c.setor] || 0) + 1
+    })
+    Object.entries(setorCount).forEach(([setor, total]) => {
+      chamadosPorSetor.push({ setor, total })
+    })
+
+    const chamadosPorAtendente: { atendente: string; total: number }[] = []
+    const atendenteCount: Record<string, number> = {}
+    chamados.forEach((c) => {
+      if (c.atendenteId) atendenteCount[c.atendenteId] = (atendenteCount[c.atendenteId] || 0) + 1
+    })
+    Object.entries(atendenteCount).forEach(([atendente, total]) => {
+      chamadosPorAtendente.push({ atendente, total })
+    })
+
+    const chamadosPeriodo: { periodo: string; total: number }[] = []
+    const periodoCount: Record<string, number> = {}
+    chamados.forEach((c) => {
+      const key = getPeriodKey(new Date(c.createdAt), periodo)
+      periodoCount[key] = (periodoCount[key] || 0) + 1
+    })
+    Object.entries(periodoCount).forEach(([periodoKey, total]) => {
+      chamadosPeriodo.push({ periodo: periodoKey, total })
+    })
+
+    const topMotivos: { motivo: string; total: number }[] = []
+    const motivoCount: Record<string, number> = {}
+    chamados.forEach((c) => {
+      const parsed = parseDescricao(c.descricao)
+      const motivo = parsed?.defeito || c.descricao || "Outros"
+      motivoCount[motivo] = (motivoCount[motivo] || 0) + 1
+    })
+    Object.entries(motivoCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .forEach(([motivo, total]) => topMotivos.push({ motivo: motivo.length > 60 ? motivo.slice(0, 60) + "..." : motivo, total }))
+
+    const picoHorarios: { dia: string; total: number }[] = []
+    const diaCount: Record<string, number> = {}
+    chamados.forEach((c) => {
+      const dia = getWeekdayName(new Date(c.createdAt).getDay())
+      diaCount[dia] = (diaCount[dia] || 0) + 1
+    })
+    const ordemDias = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
+    ordemDias.forEach((dia) => {
+      if (diaCount[dia]) picoHorarios.push({ dia, total: diaCount[dia] })
+    })
+
+    const motoristasMaisRegistros: { motorista: string; total: number }[] = []
+    const motoristaCount: Record<string, number> = {}
+    chamados.forEach((c) => {
+      if (c.nome) motoristaCount[c.nome] = (motoristaCount[c.nome] || 0) + 1
+    })
+    Object.entries(motoristaCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .forEach(([motorista, total]) => motoristasMaisRegistros.push({ motorista, total }))
+
+    const solicitacoesPorFuncao: { funcao: string; total: number }[] = []
+    const funcaoCount: Record<string, number> = {}
+    chamados.forEach((c) => {
+      const parsed = parseDescricao(c.descricao)
+      const funcao = parsed?.funcao || ""
+      if (funcao) funcaoCount[funcao] = (funcaoCount[funcao] || 0) + 1
+    })
+    Object.entries(funcaoCount).forEach(([funcao, total]) => solicitacoesPorFuncao.push({ funcao, total }))
+
+    const veiculosMaisOcorrencias: { veiculo: string; total: number }[] = []
+    const veiculoCount: Record<string, number> = {}
+    chamados.forEach((c) => {
+      const parsed = parseDescricao(c.descricao)
+      const veiculo = parsed?.numeroOnibus || ""
+      if (veiculo) veiculoCount[veiculo] = (veiculoCount[veiculo] || 0) + 1
+    })
+    Object.entries(veiculoCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .forEach(([veiculo, total]) => veiculosMaisOcorrencias.push({ veiculo, total }))
 
     return NextResponse.json({
-      chamadosPorSetor,
-      chamadosPeriodo,
-      motivosStats,
+      totalGeral,
+      chamadosPorStatus,
       tempoMedio,
+      chamadosPorPrioridade,
+      chamadosPorSetor,
+      chamadosPorAtendente,
+      chamadosPeriodo,
+      topMotivos,
+      picoHorarios,
+      motoristasMaisRegistros,
+      solicitacoesPorFuncao,
+      veiculosMaisOcorrencias,
     })
   } catch (error) {
-    return NextResponse.json(
-      { error: "Erro ao gerar dashboard" },
-      { status: 500 }
-    )
+    console.error("Erro ao gerar dashboard:", error)
+    return NextResponse.json({ error: "Erro ao gerar dashboard" }, { status: 500 })
   }
 }
