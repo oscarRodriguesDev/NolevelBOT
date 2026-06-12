@@ -21,6 +21,10 @@ export default function AvisosPage() {
   const [conteudo, setConteudo] = useState("")
   const [setor, setSetor] = useState("")
   const [duracao, setDuracao] = useState("")
+  
+  // Novos estados para controle de erro e loading
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const { setHeader } = useHeader()
 
@@ -31,6 +35,7 @@ export default function AvisosPage() {
     })
   }, [setHeader])
 
+  // Função única de busca (corrigida a duplicidade)
   async function fetchAvisos() {
     try {
       const res = await fetch("/api/quadro-avisos")
@@ -41,17 +46,9 @@ export default function AvisosPage() {
     }
   }
 
+  // Chamada inicial
   useEffect(() => {
-    async function fetchAvisos() {
-    try {
-      const res = await fetch("/api/quadro-avisos")
-      const data = await res.json()
-      setAvisos(data)
-    } catch (error) {
-      console.error("Erro ao carregar avisos:", error)
-    }
-  }
-  fetchAvisos()
+    fetchAvisos()
   }, [])
 
   function resetForm() {
@@ -60,12 +57,17 @@ export default function AvisosPage() {
     setSetor("")
     setDuracao("")
     setEditingId(null)
+    setErrorMessage(null)
+    setIsSubmitting(false)
     setOpen(false)
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!titulo || !conteudo) return
+
+    setErrorMessage(null)
+    setIsSubmitting(true)
 
     const payload = {
       titulo,
@@ -77,14 +79,29 @@ export default function AvisosPage() {
     const url = "/api/quadro-avisos"
     const method = editingId ? "PUT" : "POST"
 
-    await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(editingId ? { id: editingId, ...payload } : payload),
-    })
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editingId ? { id: editingId, ...payload } : payload),
+      })
 
-    await fetchAvisos()
-    resetForm()
+      if (!response.ok) {
+        if (response.status === 403 || response.status === 401) {
+          throw new Error("Você não tem permissão para criar ou editar avisos.")
+        }
+        const errorData = await response.json().catch(() => null)
+        throw new Error(errorData?.message || "Ocorreu um erro ao salvar o aviso.")
+      }
+
+      await fetchAvisos()
+      resetForm()
+    } catch (error: any) {
+      console.error("Erro ao salvar aviso:", error)
+      setErrorMessage(error.message)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   function handleEdit(aviso: Aviso) {
@@ -93,13 +110,30 @@ export default function AvisosPage() {
     setSetor(aviso.setor || "")
     setDuracao(aviso.duracao || "")
     setEditingId(aviso.id)
+    setErrorMessage(null)
     setOpen(true)
   }
 
+  // Tratamento de erros adicionado aqui também
   async function handleDelete(id: string) {
     if (!confirm("Deseja realmente excluir este aviso?")) return
-    await fetch(`/api/quadro-avisos?id=${id}`, { method: "DELETE" })
-    await fetchAvisos()
+    
+    try {
+      const response = await fetch(`/api/quadro-avisos?id=${id}`, { method: "DELETE" })
+      
+      if (!response.ok) {
+        if (response.status === 403 || response.status === 401) {
+          alert("Você não tem permissão para excluir avisos.")
+          return
+        }
+        throw new Error("Erro ao excluir o aviso.")
+      }
+      
+      await fetchAvisos()
+    } catch (error) {
+      console.error(error)
+      alert("Ocorreu um erro ao tentar excluir.")
+    }
   }
 
   return (
@@ -126,6 +160,16 @@ export default function AvisosPage() {
             className="mb-10 border rounded-2xl p-6 shadow-xl animate-in fade-in slide-in-from-top-4 duration-300"
             style={{ backgroundColor: "var(--surface)", borderColor: "var(--border-subtle)" }}
           >
+            {/* Mensagem de Erro de Permissão */}
+            {errorMessage && (
+              <div className="p-4 mb-6 text-sm font-semibold text-red-500 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3">
+                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                {errorMessage}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <input
                 value={titulo}
@@ -164,15 +208,17 @@ export default function AvisosPage() {
               <div className="md:col-span-2 flex gap-3 pt-2">
                 <button
                   type="submit"
-                  className="px-6 py-2.5 text-white rounded-xl font-bold shadow-lg hover:brightness-110 transition-all"
+                  disabled={isSubmitting}
+                  className={`px-6 py-2.5 text-white rounded-xl font-bold shadow-lg transition-all ${isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:brightness-110'}`}
                   style={{ backgroundColor: "var(--status-completed)" }}
                 >
-                  {editingId ? "Atualizar Aviso" : "Publicar Aviso"}
+                  {isSubmitting ? "Salvando..." : (editingId ? "Atualizar Aviso" : "Publicar Aviso")}
                 </button>
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="px-6 py-2.5 rounded-xl font-bold border transition-all"
+                  disabled={isSubmitting}
+                  className="px-6 py-2.5 rounded-xl font-bold border transition-all hover:bg-black/5 dark:hover:bg-white/5"
                   style={{ borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
                 >
                   Cancelar

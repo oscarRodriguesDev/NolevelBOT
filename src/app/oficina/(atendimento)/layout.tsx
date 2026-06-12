@@ -29,26 +29,40 @@ export default function AtendimentoLayout({
   const { data: session, status } = useSession()
   const userRole = session?.user?.role as ROLE | undefined
   const router = useRouter()
-  const pathname = usePathname()
   const [autorizado, setAutorizado] = useState<boolean | null>(null)
 
   useEffect(() => {
     if (status === 'loading') return
-    if (userRole === "GOD") { setAutorizado(true); return }
-    if (!session?.user?.empresaId) { setAutorizado(false); return }
 
-    fetch(`/api/empresa?id=${session.user.empresaId}`)
-      .then(r => r.json())
-      .then(data => {
+    async function checkAuthorization() {
+      if (userRole === 'GOD') {
+        setAutorizado(true)
+        return
+      }
+
+      if (!session?.user?.empresaId) {
+        setAutorizado(false)
+        return
+      }
+
+      try {
+        const response = await fetch(`/api/empresa?id=${session.user.empresaId}`)
+        const data = await response.json()
         const modulos = data.modulos || []
+
         if (modulos.includes('OFICINA')) {
           setAutorizado(true)
         } else {
           setAutorizado(false)
           router.replace('/dashboard')
         }
-      })
-      .catch(() => { setAutorizado(false); router.replace('/dashboard') })
+      } catch {
+        setAutorizado(false)
+        router.replace('/dashboard')
+      }
+    }
+
+    checkAuthorization()
   }, [session, status, userRole, router])
 
   const [titulo, setTitulo] = useState('Oficina')
@@ -62,7 +76,7 @@ export default function AtendimentoLayout({
   if (status === 'loading' || autorizado === null) {
     return (
       <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: 'var(--background)' }}>
-        <div className="animate-spin w-8 h-8 border-2 border-[var(--primary)] border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-2 border(--primary)] border-t-transparent rounded-full" />
       </div>
     )
   }

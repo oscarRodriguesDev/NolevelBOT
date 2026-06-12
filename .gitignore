@@ -51,3 +51,4 @@ api/webhook1[0-5]/
 tasks.txt
 
 /src/generated/prisma
+ /data/simulador custos nolevel.xlsx

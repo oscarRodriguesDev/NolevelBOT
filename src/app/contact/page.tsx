@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { ThemeToggle } from "../../components/theme-toggle"
-import { BtnVoltar } from "../../components/back"
+import { ThemeToggle } from "../components/theme-toggle"
+import { BtnVoltar } from "../components/back"
 
 
 export default function ContatoForm() {

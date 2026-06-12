@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState, useMemo } from "react"
-import { useRouter } from "next/navigation"
 import {
   ResponsiveContainer,
   BarChart,
@@ -24,14 +23,13 @@ interface StatItem {
 }
 
 export default function Dashboard() {
-  const router = useRouter()
   const [periodo, setPeriodo] = useState<"dia" | "semana" | "mes" | "ano">("mes")
   const [chamadosPorSetor, setChamadosPorSetor] = useState<StatItem[]>([])
   const [chamadosPeriodo, setChamadosPeriodo] = useState<StatItem[]>([])
   const [motivosStats, setMotivosStats] = useState<StatItem[]>([])
   const [tempoMedio, setTempoMedio] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
-  const [hasPermission, setHasPermission] = useState(true)
+  const [hasPermission, setHasPermission] = useState(true) // Novo estado de permissão
 
   const { setHeader } = useHeader()
 
@@ -42,7 +40,7 @@ export default function Dashboard() {
   useEffect(() => {
     setHeader({
       titulo: "Dashboards",
-      descricao: "Visualize métricas e análises de manutenção de veículos"
+      descricao: "Visualize métricas e análises de desempenho do seu sistema"
     })
   }, [setHeader])
 
@@ -92,15 +90,6 @@ export default function Dashboard() {
     };
   }, [periodo]);
 
-  // EFEITO DO REDIRECIONAMENTO (TIMER)
-  useEffect(() => {
-    if (!hasPermission) {
-     
-        router.push('/oficina/all-tickets');
-      
-    }
-  }, [hasPermission, router]);
-
   function downloadCSV() {
     const header = "setor,total\n"
     const rows = chamadosPorSetor.map((t) => `${t.setor},${t.total}`).join("\n")
@@ -141,9 +130,6 @@ export default function Dashboard() {
         <p className="text-sm opacity-50 max-w-md text-center font-medium">
           Você não possui as permissões necessárias para visualizar as métricas deste dashboard. 
           Contate o administrador do sistema.
-        </p>
-        <p className="text-sm font-semibold mt-4 text-red-500/80 animate-pulse">
-          Redirecionando em 5 segundos...
         </p>
       </div>
     )

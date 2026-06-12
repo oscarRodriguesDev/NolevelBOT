@@ -76,6 +76,21 @@ export function Sidebar() {
        
       ],
     },
+    {
+      key: 'Eventos',
+      label: 'Eventos',
+      icon: LuWrench,
+      modulos: ['EVENTOS'],
+      items: [
+        { label: 'Dashboard', href: '/eventos/dashboards', icon: LuHouse, show: userRole !== "ATENDENTE" },
+        { label: 'Solicitações', href: '/eventos/all-tickets', icon: LuTickets, show: true },
+        { label: 'Avisos', href: '/eventos/avisos', icon: LuBell, show: true },
+        { label: 'Motoristas', href: '/eventos/cpfs', icon: LuTruck, show: true },
+        { label: 'Usuários', href: '/eventos/usuarios', icon: LuUsers, show: isAdmin },
+        { label: 'Criar Usuário', href: '/eventos/gestao-de-usuarios', icon: LuSettings, show: userRole !== "GOD" && isAdmin },
+       
+      ],
+    },
   ]
 
   const modulosDisponiveis = modulos.filter(m => m.modulos.some(mod => temModulo(mod)))
