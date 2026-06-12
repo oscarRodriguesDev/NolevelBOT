@@ -122,6 +122,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "CPF não encontrado na empresa" }, { status: 404 })
     }
 
+    const empresaModulos = await prisma.empresa.findUnique({
+      where: { id: cpfRecord.empresaId },
+      select: { modulos: true }
+    })
+
+    if (!empresaModulos || !empresaModulos.modulos.includes("CORPORATIVO")) {
+      return NextResponse.json({ error: "Sua empresa não possui o módulo Corporativo ativo." }, { status: 403 })
+    }
+
     const empresaId = cpfRecord.empresaId
 
     let anexoUrl: string | null = null

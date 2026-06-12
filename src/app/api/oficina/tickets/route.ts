@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
           select: {
             id: true,
             setores: true,
+            modulos: true,
           },
         },
       },
@@ -33,6 +34,7 @@ export async function GET(req: NextRequest) {
       nome: registro.nome,
       empresaId: registro.empresaId,
       setores: registro.Empresa?.setores || [],
+      modulos: registro.Empresa?.modulos || [],
     })
   } catch (error) {
     console.error('Erro ao validar matrícula:', error)
@@ -90,6 +92,15 @@ export async function POST(req: NextRequest) {
     const registro = await prisma.cpfs.findFirst({ where: { cpf: matricula } })
     if (!registro) {
       return NextResponse.json({ error: 'Matrícula não encontrada' }, { status: 404 })
+    }
+
+    const empresaModulos = await prisma.empresa.findUnique({
+      where: { id: registro.empresaId },
+      select: { modulos: true }
+    })
+
+    if (!empresaModulos || !empresaModulos.modulos.includes("OFICINA")) {
+      return NextResponse.json({ error: "Sua empresa não possui o módulo Operacional (Oficina) ativo." }, { status: 403 })
     }
 
     let anexoUrl: string | null = null

@@ -17,19 +17,23 @@ const statusLabels: Record<string, string> = {
   FECHADO: "🔒 Fechado",
 }
 
-const sessions = new Map<string, UserSession & { pendingState?: string; setorAtual?: string }>()
+const sessions = new Map<string, UserSession & { pendingState?: string; setorAtual?: string; modulo?: string }>()
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const userInput = body.message?.trim() || ""
     const sessionId = body.sessionId || "web-user"
+    const moduloRequisitado = body.module || ""
     const lowerInput = userInput.toLowerCase()
 
     let session = sessions.get(sessionId)
     if (!session || (Date.now() - session.lastInteraction > 1000 * 60 * 60 * 2)) {
-      session = { state: FlowState.INICIO, lastInteraction: Date.now() }
+      session = { state: FlowState.INICIO, lastInteraction: Date.now(), modulo: moduloRequisitado || undefined }
       sessions.set(sessionId, session)
+    }
+    if (moduloRequisitado && !session.modulo) {
+      session.modulo = moduloRequisitado
     }
     session.lastInteraction = Date.now()
 
@@ -65,6 +69,21 @@ case FlowState.IDENTIFICACAO_CPF: {
         if (resCpf && resCpf.valido) {
           session.cpf = cleanCPF
           session.nome = resCpf.nome
+
+          if (session.modulo) {
+            const { prisma } = await import("@/lib/prisma")
+            const cpfComEmpresa = await prisma.cpfs.findUnique({
+              where: { cpf: cleanCPF },
+              select: { Empresa: { select: { modulos: true } } }
+            })
+            const modulosEmpresa: string[] = (cpfComEmpresa?.Empresa?.modulos || []).map(m => m.toString())
+            if (!modulosEmpresa.includes(session.modulo)) {
+              sessions.delete(sessionId)
+              return NextResponse.json({
+                reply: `Seu CPF não possui acesso ao módulo ${session.modulo === 'CORPORATIVO' ? 'Corporativo' : 'Operacional'}. Não é possível abrir chamado por este canal.`
+              })
+            }
+          }
 
           avisos = await buscarAvisosPorCpf(cleanCPF)
 
