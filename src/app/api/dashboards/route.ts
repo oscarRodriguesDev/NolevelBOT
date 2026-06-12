@@ -277,34 +277,34 @@ export async function GET(req: Request) {
   }
 
   try {
-    const now = new Date()
-    const range = getPeriodDateRange(periodo, now)
-
-    const metrics = await computeMetrics(empresaId, periodo, { start: range.start, end: now })
+    const metrics = await computeMetrics(empresaId, periodo)
 
     let comparativo = undefined
     if (comparar) {
+      const now = new Date()
+      const range = getPeriodDateRange(periodo, now)
+      const metricsAtualFiltrado = await computeMetrics(empresaId, periodo, { start: range.start, end: now })
       const metricsAnterior = await computeMetrics(empresaId, periodo, {
         start: range.prevStart,
         end: range.prevEnd,
       })
 
       const variacaoTotal = metricsAnterior.totalGeral > 0
-        ? Math.round(((metrics.totalGeral - metricsAnterior.totalGeral) / metricsAnterior.totalGeral) * 100)
+        ? Math.round(((metricsAtualFiltrado.totalGeral - metricsAnterior.totalGeral) / metricsAnterior.totalGeral) * 100)
         : 0
 
       const variacaoTempo = metricsAnterior.tempoMedio > 0
-        ? Math.round(((metrics.tempoMedio - metricsAnterior.tempoMedio) / metricsAnterior.tempoMedio) * 100)
+        ? Math.round(((metricsAtualFiltrado.tempoMedio - metricsAnterior.tempoMedio) / metricsAnterior.tempoMedio) * 100)
         : 0
 
       comparativo = {
         atual: {
-          totalGeral: metrics.totalGeral,
-          tempoMedio: metrics.tempoMedio,
-          chamadosPeriodo: metrics.chamadosPeriodo,
-          chamadosPorStatus: metrics.chamadosPorStatus,
-          chamadosPorSetor: metrics.chamadosPorSetor,
-          chamadosPorAtendente: metrics.chamadosPorAtendente,
+          totalGeral: metricsAtualFiltrado.totalGeral,
+          tempoMedio: metricsAtualFiltrado.tempoMedio,
+          chamadosPeriodo: metricsAtualFiltrado.chamadosPeriodo,
+          chamadosPorStatus: metricsAtualFiltrado.chamadosPorStatus,
+          chamadosPorSetor: metricsAtualFiltrado.chamadosPorSetor,
+          chamadosPorAtendente: metricsAtualFiltrado.chamadosPorAtendente,
         },
         anterior: {
           totalGeral: metricsAnterior.totalGeral,
