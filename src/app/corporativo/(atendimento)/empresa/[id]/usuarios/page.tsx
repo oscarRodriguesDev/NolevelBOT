@@ -222,7 +222,7 @@ export default function EmpresaUsuariosPage() {
                             {roleParaDisplay(u.role)}
                           </span>
                         </td>
-                        <td className="px-4 py-3.5">{u.setor}</td>
+                        <td className="px-4 py-3.5">{u.role === 'ADMIN' && !u.setor ? 'all' : u.setor}</td>
                         <td className="px-4 py-3.5 text-center">
                           <div className="flex items-center justify-center gap-2">
                             {u.role !== 'GOD' && u.id !== currentUserId && (

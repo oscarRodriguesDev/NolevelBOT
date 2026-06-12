@@ -174,7 +174,7 @@ export default function GodUsuariosPage() {
                       {ROLE_LABEL[u.role] || u.role}
                     </span>
                   </td>
-                  <td className="p-4 opacity-70">{u.setor || "—"}</td>
+                  <td className="p-4 opacity-70">{u.role === 'ADMIN' && !u.setor ? 'all' : u.setor || "—"}</td>
                   <td className="p-4 opacity-70">{u.Empresa?.nome || "—"}</td>
                   <td className="p-4 opacity-70">{new Date(u.createdAt).toLocaleDateString("pt-BR")}</td>
                   <td className="p-4">

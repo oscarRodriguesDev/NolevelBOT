@@ -209,6 +209,12 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 
 ---
 
+### Mudança: Setor exibe "all" para ADMIN sem setor definido
+**Autor:** Vibecode
+**Arquivos:** `src/app/corporativo/(atendimento)/usuarios/page.tsx`, `src/app/eventos/(atendimento)/usuarios/page.tsx`, `src/app/oficina/(atendimento)/usuarios/page.tsx`, `src/app/god/usuarios/page.tsx`, `src/app/god/admins/page.tsx`, `src/app/corporativo/(atendimento)/empresa/[id]/usuarios/page.tsx`
+**Data:** 12/06/2026
+**Descrição:** Quando um usuário ADMIN tem setor vazio (pois herda todos os setores), a coluna "Setor" agora exibe "all" em vez de ficar em branco ou mostrar "—".
+
 ## Registro de Autoria
 
 ### Mudança: Login movido para a raiz (/)

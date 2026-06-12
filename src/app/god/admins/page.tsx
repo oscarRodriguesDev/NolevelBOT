@@ -263,7 +263,7 @@ export default function GodAdminsPage() {
                       <td className="p-4 font-medium">{admin.name}</td>
                       <td className="p-4 opacity-70">{admin.email}</td>
                       <td className="p-4 opacity-70">{admin.cpf}</td>
-                      <td className="p-4 opacity-70">{admin.setor || "—"}</td>
+                      <td className="p-4 opacity-70">{admin.role === 'ADMIN' && !admin.setor ? 'all' : admin.setor || "—"}</td>
                       <td className="p-4 opacity-70">{admin.Empresa?.nome || "—"}</td>
                       <td className="p-4">
                         <div className="flex gap-2">
