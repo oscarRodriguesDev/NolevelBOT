@@ -227,17 +227,32 @@ export async function GET(req: NextRequest) {
       if (endDate) where.createdAt.lte = new Date(endDate)
     }
 
-    const chamados = await prisma.chamado.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      include: {
-        atendente: {
-          select: { id: true, name: true, email: true, avatarUrl: true },
-        },
-      },
-    })
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10))
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)))
+    const skip = (page - 1) * limit
 
-    return NextResponse.json(chamados)
+    const [chamados, total] = await Promise.all([
+      prisma.chamado.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+        include: {
+          atendente: {
+            select: { id: true, name: true, email: true, avatarUrl: true },
+          },
+        },
+      }),
+      prisma.chamado.count({ where }),
+    ])
+
+    return NextResponse.json({
+      data: chamados,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    })
   } catch (error) {
     return NextResponse.json({ error: "Erro ao buscar chamados" }, { status: 500 })
   }

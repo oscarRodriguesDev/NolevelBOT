@@ -20,10 +20,15 @@ type Solicitacao = {
   atendente?: { name: string }
 }
 
+const LIMIT = 20
+
 export default function SolicitacoesPage() {
   const [solicitacoes, setSolicitacoes] = useState<Solicitacao[]>([])
   const [loading, setLoading] = useState(false)
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list')
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
 
   const [filters, setFilters] = useState({
     nome: "",
@@ -42,16 +47,16 @@ export default function SolicitacoesPage() {
 
   useEffect(() => {
     setHeader({
-      titulo: 'Gerenciar Solicitações',
-      descricao: 'Visualize e gerencie as solicitações de manutenção'
+      titulo: 'Gerenciar Solicitacoes',
+      descricao: 'Visualize e gerencie as solicitacoes de manutencao'
     })
   }, [setHeader])
 
   function refreshSolicitacoes() {
-    fetchSolicitacoes(filters)
+    fetchSolicitacoes(filters, page)
   }
 
-  const fetchSolicitacoes = useCallback(async (currentFilters: typeof filters) => {
+  const fetchSolicitacoes = useCallback(async (currentFilters: typeof filters, currentPage: number) => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
@@ -62,11 +67,15 @@ export default function SolicitacoesPage() {
         }
       })
 
-      const response = await fetch(`/api/tickets?${params.toString()}`)
-      if (!response.ok) throw new Error("Erro ao buscar solicitações")
+      params.set("page", String(currentPage))
+      params.set("limit", String(LIMIT))
 
-      const data = await response.json()
-      const mapped: Solicitacao[] = (Array.isArray(data) ? data : []).map((item: Record<string, unknown>) => ({
+      const response = await fetch(`/api/tickets?${params.toString()}`)
+      if (!response.ok) throw new Error("Erro ao buscar solicitacoes")
+
+      const result = await response.json()
+      const raw = result.data || []
+      const mapped: Solicitacao[] = raw.map((item: Record<string, unknown>) => ({
         id: item.id as string,
         ticket: item.ticket as string,
         nome: item.nome as string,
@@ -79,9 +88,13 @@ export default function SolicitacoesPage() {
         atendente: item.atendente ? { name: (item.atendente as { name: string }).name } : undefined,
       }))
       setSolicitacoes(mapped)
+      setTotal(result.total || 0)
+      setTotalPages(result.totalPages || 0)
     } catch (error) {
       console.error("Erro na busca:", error)
       setSolicitacoes([])
+      setTotal(0)
+      setTotalPages(0)
     } finally {
       setLoading(false)
     }
@@ -89,11 +102,23 @@ export default function SolicitacoesPage() {
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      fetchSolicitacoes(filters)
+      if (page === 1) {
+        fetchSolicitacoes(filters, page)
+      } else {
+        setPage(1)
+      }
     }, 500)
-
     return () => clearTimeout(delayDebounceFn)
   }, [filters, fetchSolicitacoes])
+
+  useEffect(() => {
+    fetchSolicitacoes(filters, page)
+  }, [page])
+
+  const updateFilter = (key: string, value: string) => {
+    setFilters(prev => ({ ...prev, [key]: value }))
+    setPage(1)
+  }
 
   const clearFilters = () => {
     setFilters({
@@ -105,6 +130,11 @@ export default function SolicitacoesPage() {
       startDate: "",
       endDate: ""
     })
+    setPage(1)
+  }
+
+  function goToPage(p: number) {
+    if (p >= 1 && p <= totalPages) setPage(p)
   }
 
   const abrirModal = (ticket: string) => {
@@ -187,21 +217,21 @@ export default function SolicitacoesPage() {
             <input
               placeholder="Filtrar por motorista..."
               value={filters.nome}
-              onChange={e => setFilters({ ...filters, nome: e.target.value })}
+              onChange={e => updateFilter("nome", e.target.value)}
               className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
               style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
             />
             <input
-              placeholder="Matrícula"
+              placeholder="Matricula"
               value={filters.matricula}
-              onChange={e => setFilters({ ...filters, matricula: e.target.value })}
+              onChange={e => updateFilter("matricula", e.target.value)}
               className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
               style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
             />
 
             <select
               value={filters.tipo}
-              onChange={e => setFilters({ ...filters, tipo: e.target.value })}
+              onChange={e => updateFilter("tipo", e.target.value)}
               className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)]"
               style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
             >
@@ -213,15 +243,15 @@ export default function SolicitacoesPage() {
 
             <select
               value={filters.status}
-              onChange={e => setFilters({ ...filters, status: e.target.value })}
+              onChange={e => updateFilter("status", e.target.value)}
               className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)]"
               style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
             >
               <option value="">Status (Todos)</option>
               <option value="NOVO">Aguardando</option>
               <option value="EM_ATENDIMENTO">Em Andamento</option>
-              <option value="AGUARDANDO">Aguardando Peças</option>
-              <option value="CONCLUIDO">Concluído</option>
+              <option value="AGUARDANDO">Aguardando Pecas</option>
+              <option value="CONCLUIDO">Concluido</option>
               <option value="CANCELADO">Cancelado</option>
             </select>
           </div>
@@ -275,6 +305,49 @@ export default function SolicitacoesPage() {
                 )}
               </tbody>
             </table>
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-4 py-3 border-t" style={{ borderColor: "var(--border-subtle)" }}>
+                <span className="text-xs font-bold opacity-40">
+                  {total} solicitacao{(total !== 1 ? "s" : "")}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => goToPage(page - 1)}
+                    disabled={page <= 1}
+                    className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-20 hover:bg-[var(--background)]"
+                    style={{ color: "var(--foreground)" }}
+                  >
+                    Anterior
+                  </button>
+                  {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                    const start = Math.max(1, Math.min(page - 3, totalPages - 6))
+                    const p = start + i
+                    if (p > totalPages) return null
+                    return (
+                      <button
+                        key={p}
+                        onClick={() => goToPage(p)}
+                        className="w-8 h-8 rounded-lg text-xs font-bold transition-all"
+                        style={{
+                          backgroundColor: p === page ? "var(--primary)" : "transparent",
+                          color: p === page ? "white" : "var(--foreground)",
+                        }}
+                      >
+                        {p}
+                      </button>
+                    )
+                  })}
+                  <button
+                    onClick={() => goToPage(page + 1)}
+                    disabled={page >= totalPages}
+                    className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-20 hover:bg-[var(--background)]"
+                    style={{ color: "var(--foreground)" }}
+                  >
+                    Proximo
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <KanbanBoard

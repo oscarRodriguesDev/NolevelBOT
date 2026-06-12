@@ -11,7 +11,6 @@ export async function proxy(req: NextRequest) {
     "/oficina/dashboards",
      "/corporativo/dashboards",
     "/all-tickets",
-    "/admin",
     "/gestao-de-usuarios",
     "/avisos",
     "/cpfs",
@@ -27,7 +26,7 @@ export async function proxy(req: NextRequest) {
   }
 
   // logado tentando acessar login (mas NÃO a "/")
-  if (token && pathname === "/login") {
+  if (token && pathname === "/") {
     return NextResponse.redirect(new URL("/all-tickets", req.url))
   }
 
@@ -42,7 +41,6 @@ export async function proxy(req: NextRequest) {
 export const config = {
   matcher: [
     "/",
-    "/login",
     "/dashboards/:path*",
     "/all-tickets/:path*",
     "/gestao-de-usuarios/:path*",

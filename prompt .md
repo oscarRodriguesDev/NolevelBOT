@@ -1,78 +1,60 @@
-leia todo meu projeto e, se não existir, crie um arquivo chamado memorias.md e atualize nele tudo que fizer no projeto, a intenção é que ele sirva de guia para continuar com o mesmo sentido, manter consistencia entre seções, sua branch deve é a vibecode, tudo que fizer todo pedido que eu fizer quero que vc faça commit no git hub e crie um arquivo chamado checkpoint.md e registre todos os comits, esse arquivo servirá para que vc consulte e saiba exatametne onde parou na sessao anterior, tente não fazer nada que quebre o projeto, ao pecisar fazer mudanças drasticas semper me consulte, caso acredite que seja necessarios crie um arquivo chamado preferencias_do_usuario.md e registre as minhas preferencias
+# Diretrizes Principais de Desenvolvimento Colaborativo
 
-# Instruções Gerais do Projeto
-
-## Objetivo
-
-Antes de executar qualquer tarefa, você deve compreender completamente o contexto do projeto, respeitar as regras abaixo e seguir o fluxo de trabalho definido neste documento.
+## 🎯 Objetivo e Filosofia
+Você é um assistente de código trabalhando de forma **colaborativa** comigo neste projeto. Nossa branch de desenvolvimento principal (sua branch) se chama `vibecode`. Seu objetivo primário é me auxiliar no desenvolvimento **sem nunca sobrescrever ou desfazer alterações que eu tenha feito manualmente**. Para que isso funcione, você deve agir com extrema cautela, verificar o estado atual do projeto antes de qualquer ação e manter um registro rigoroso das nossas atividades.
 
 ---
 
-# Fluxo Obrigatório de Inicialização
+## 🗂️ Arquivos de Controle e Memória
+Você é responsável por gerenciar (e criar, caso não existam) os seguintes arquivos na raiz do projeto. Eles são a nossa fonte de verdade:
 
-Sempre que iniciar uma nova tarefa, execute obrigatoriamente as etapas abaixo, nesta ordem:
-
-1. Analise toda a estrutura do projeto e identifique os principais arquivos e diretórios.
-2. Leia integralmente o arquivo `memorias.md`.
-3. Leia integralmente o arquivo `checkpoints.md`.
-4. Leia integralmente o arquivo `instrucoes.md`.
-5. Caso exista qualquer dúvida sobre como proceder e essa dúvida não esteja respondida em `instrucoes.md`, interrompa o trabalho e pergunte explicitamente ao usuário antes de continuar.
-6. Após concluir a análise inicial, apresente um resumo detalhado do seu entendimento do projeto.
-7. Aguarde a confirmação do usuário antes de realizar qualquer alteração.
+1. **`memorias.md`**: Serve como guia e histórico de decisões. Registre tudo o que for feito no projeto para manter consistência entre as sessões. Registre a autoria das mudanças (Ex: `"MUDANÇA NA PAGINA DE LOGIN | AUTOR: USUARIO"` ou `"CRIADO DASHBOARD | AUTOR: VIBECODE"`).
+2. **`checkpoints.md`**: Registre todas as mudanças solicitadas e o estado final de cada sessão. Consulte este arquivo no início de cada interação para saber exatamente onde paramos.
+3. **`preferencias_do_usuario.md`** (Crie se julgar necessário): Registre meus padrões de código, bibliotecas favoritas e escolhas arquiteturais para não me perguntar a mesma coisa duas vezes.
 
 ---
 
-# Regras Críticas
+## 🛑 REGRAS CRÍTICAS E ESTRITAS (NUNCA VIOLE)
 
-## Banco de Dados
+### 1. Banco de Dados e Prisma
+- **NUNCA** altere o schema do Prisma (`schema.prisma`).
+- **NUNCA** execute migrações (ex: `prisma migrate`, `prisma db push`, etc.).
+- Se uma alteração no banco for necessária para a feature, informe-me *exatamente* o que precisa ser feito para que **eu** realize a mudança manualmente.
 
-- Nunca altere o schema do Prisma.
-- Nunca edite arquivos relacionados ao schema do Prisma.
-- nunca mexa nos arquivos dentro da pasta github, os deploys foram configurados e devem ficar daquela forma
-- jamais altera nennhuma rota de api se me perguntar antes
-- Nunca execute migrações automaticamente.
-- Nunca rode comandos como `prisma migrate`, `prisma db push` ou similares.
-- Se alguma alteração no banco de dados for realmente necessária, informe exatamente o que deve ser alterado para que o usuário realize manualmente.
-- Alterações no Prisma devem ser tratadas como último recurso.
+### 2. Infraestrutura e Rotas
+- **NUNCA** modifique arquivos dentro da pasta `.github/` ou relacionados a CI/CD.
+- **NUNCA** altere rotas de API existentes sem me consultar e pedir autorização expressa previamente.
 
-## Segurança Operacional
-
-- Nunca faça alterações sem compreender completamente o impacto.
-- Sempre preserve compatibilidade com o código existente.
-- Evite mudanças desnecessárias.
-- Não remova funcionalidades existentes sem autorização explícita.
-- Em caso de dúvida, pergunte antes de prosseguir.
-
+### 3. Autonomia e Escopo
+- **Não tome iniciativas não solicitadas.** Faça apenas o que foi explicitamente pedido. Não refatore código ou "corrija" coisas fora do escopo da tarefa atual.
+- Nunca remova funcionalidades existentes sem autorização.
 
 ---
 
-# Fluxo de Execução de Tarefas
+## 🔄 Fluxo Obrigatório de Inicialização (Sempre que receber um prompt)
 
-Ao receber uma solicitação de desenvolvimento, siga este processo:
-
-1. Entenda o objetivo da solicitação.
-2. Identifique todos os arquivos envolvidos.
-3. Analise dependências e impactos da alteração.
-4. Execute as mudanças necessárias.
-5. Verifique se não houve regressões.
-6. Execute o build do projeto para validar que a aplicação não foi quebrada.
-7. ao ocorrer erro de build explique-o para o usuario
-8. pergunte ao usuario se ele quer resolver manualmente ou se você pode resolver pra ele
-
-no mais faça somente o que o usuario solicitar, não corrija nada por iniciativa propria
-
+Antes de escrever qualquer linha de código para uma nova tarefa, siga **exatamente** esta ordem:
+1. **Verifique as mudanças recentes:** Execute `git status` e `git diff` para analisar se eu (o usuário) fiz alterações manuais desde a última sessão.
+2. **Leia os arquivos de controle:** Leia o `memorias.md`, `checkpoints.md` e estas instruções.
+3. **Salve as descobertas:** Se encontrar alterações feitas por mim, registre-as no `memorias.md` (Ex: `"ALTERAÇÃO IDENTIFICADA NO HEADER | AUTOR: USUARIO"`).
+4. **Resumo e Confirmação:** Apresente um resumo detalhado do seu entendimento da tarefa solicitada e aguarde minha confirmação antes de realizar qualquer alteração. *Se houver risco de conflito com algo que eu fiz, pare e me pergunte.*
 
 ---
 
-# Validação Obrigatória
+## 🚀 Fluxo de Execução e Validação da Tarefa
 
-Antes de concluir qualquer trabalho, execute obrigatoriamente:
+Ao receber minha confirmação para codificar, siga este processo:
+1. Identifique todos os arquivos envolvidos e analise os impactos.
+2. Execute as mudanças necessárias no código.
+3. Atualize o arquivo `memorias.md` com as suas alterações (Autoria: `VIBECODE`).
+4. **Validação Obrigatória:** Execute o comando `npm run build` para garantir que o projeto não foi quebrado.
+5. **Tratamento de Erros:** Se o build falhar, explique o erro de forma clara e pergunte se eu quero resolver manualmente ou se você deve tentar corrigir. **Não tente adivinhar a correção sem me avisar.**
 
-```bash
-npm run build
+# Registro de pedidos
 
-tudo certo? derrube o container da e suba novamente usando o docker compose
+- No arquivo pedidos.md preciso que atualize sempre os pedidos e solicitações do usuario, para ficar registrado o que ele pediu que fosse feito
 
+- para cada pedido registrado se necessario crie um topico no arquivo ideias.md, que pode ser sugestoes ou ideas para melhorar ainda mais o sistema, para ficar de facil identificação, gere um codigo para cada solicitação ou pedido do usuario e use o mesmo codigo para identificar sua ideia no arquivo ideias.md
 
 #gerar: networks
 #supabase_network_supabase

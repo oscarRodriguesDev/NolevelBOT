@@ -21,10 +21,15 @@ type Chamado = {
   atendente?: { name: string }
 }
 
+const LIMIT = 20
+
 export default function TicketsPage() {
   const [tickets, setTickets] = useState<Chamado[]>([])
   const [loading, setLoading] = useState(false)
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list')
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
 
   const [filters, setFilters] = useState({
     nome: "",
@@ -45,16 +50,15 @@ export default function TicketsPage() {
   useEffect(() => {
     setHeader({
       titulo: 'Gerenciar Chamados',
-      descricao: 'Visualize e gerencie todos os seus chamados em um único lugar'
+      descricao: 'Visualize e gerencie todos os seus chamados em um unico lugar'
     })
   }, [setHeader])
 
   function refreshTickets() {
-    fetchTickets(filters)
+    fetchTickets(filters, page)
   }
 
-  // Função de busca principal
-  const fetchTickets = useCallback(async (currentFilters: typeof filters) => {
+  const fetchTickets = useCallback(async (currentFilters: typeof filters, currentPage: number) => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
@@ -65,29 +69,45 @@ export default function TicketsPage() {
         }
       })
 
+      params.set("page", String(currentPage))
+      params.set("limit", String(LIMIT))
+
       const response = await fetch(`/api/tickets?${params.toString()}`)
       if (!response.ok) throw new Error("Erro ao buscar chamados")
 
-      const data = await response.json()
-      setTickets(data)
+      const result = await response.json()
+      setTickets(result.data || [])
+      setTotal(result.total || 0)
+      setTotalPages(result.totalPages || 0)
     } catch (error) {
       console.error("Erro na busca:", error)
       setTickets([])
+      setTotal(0)
+      setTotalPages(0)
     } finally {
       setLoading(false)
     }
   }, [])
 
-  // EFEITO DE ATUALIZAÇÃO AUTOMÁTICA COM DEBOUNCE
   useEffect(() => {
-    // Define um atraso de 500ms antes de disparar a busca
     const delayDebounceFn = setTimeout(() => {
-      fetchTickets(filters)
+      if (page === 1) {
+        fetchTickets(filters, page)
+      } else {
+        setPage(1)
+      }
     }, 500)
-
-    // Limpa o timeout se o usuário digitar algo antes dos 500ms acabarem
     return () => clearTimeout(delayDebounceFn)
   }, [filters, fetchTickets])
+
+  useEffect(() => {
+    fetchTickets(filters, page)
+  }, [page])
+
+  const updateFilter = (key: string, value: string) => {
+    setFilters(prev => ({ ...prev, [key]: value }))
+    setPage(1)
+  }
 
   const clearFilters = () => {
     setFilters({
@@ -100,6 +120,7 @@ export default function TicketsPage() {
       startDate: "",
       endDate: ""
     })
+    setPage(1)
   }
 
   const abrirModal = (ticket: string) => {
@@ -115,6 +136,10 @@ export default function TicketsPage() {
 
   const handleConcluido = (ticket: string) => {
     setTickets(prev => prev.filter(t => t.ticket !== ticket))
+  }
+
+  function goToPage(p: number) {
+    if (p >= 1 && p <= totalPages) setPage(p)
   }
 
 
@@ -166,21 +191,21 @@ export default function TicketsPage() {
             <input
               placeholder="Filtrar por nome..."
               value={filters.nome}
-              onChange={e => setFilters({ ...filters, nome: e.target.value })}
+              onChange={e => updateFilter("nome", e.target.value)}
               className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
               style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
             />
             <input
-              placeholder="Número do Ticket"
+              placeholder="Numero do Ticket"
               value={filters.ticket}
-              onChange={e => setFilters({ ...filters, ticket: e.target.value })}
+              onChange={e => updateFilter("ticket", e.target.value)}
               className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
               style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
             />
             
             <select
               value={filters.prioridade}
-              onChange={e => setFilters({ ...filters, prioridade: e.target.value })}
+              onChange={e => updateFilter("prioridade", e.target.value)}
               className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)]"
               style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
             >
@@ -192,7 +217,7 @@ export default function TicketsPage() {
 
             <select
               value={filters.status}
-              onChange={e => setFilters({ ...filters, status: e.target.value })}
+              onChange={e => updateFilter("status", e.target.value)}
               className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)]"
               style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
             >
@@ -200,7 +225,7 @@ export default function TicketsPage() {
               <option value="NOVO">Novo</option>
               <option value="EM_ATENDIMENTO">Em Atendimento</option>
               <option value="AGUARDANDO">Aguardando</option>
-              <option value="CONCLUIDO">Concluído</option>
+              <option value="CONCLUIDO">Concluido</option>
               <option value="CANCELADO">Cancelado</option>
             </select>
           </div>
@@ -256,6 +281,49 @@ export default function TicketsPage() {
                 )}
               </tbody>
             </table>
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-4 py-3 border-t" style={{ borderColor: "var(--border-subtle)" }}>
+                <span className="text-xs font-bold opacity-40">
+                  {total} chamado{(total !== 1 ? "s" : "")}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => goToPage(page - 1)}
+                    disabled={page <= 1}
+                    className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-20 hover:bg-[var(--background)]"
+                    style={{ color: "var(--foreground)" }}
+                  >
+                    Anterior
+                  </button>
+                  {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                    const start = Math.max(1, Math.min(page - 3, totalPages - 6))
+                    const p = start + i
+                    if (p > totalPages) return null
+                    return (
+                      <button
+                        key={p}
+                        onClick={() => goToPage(p)}
+                        className="w-8 h-8 rounded-lg text-xs font-bold transition-all"
+                        style={{
+                          backgroundColor: p === page ? "var(--primary)" : "transparent",
+                          color: p === page ? "white" : "var(--foreground)",
+                        }}
+                      >
+                        {p}
+                      </button>
+                    )
+                  })}
+                  <button
+                    onClick={() => goToPage(page + 1)}
+                    disabled={page >= totalPages}
+                    className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-20 hover:bg-[var(--background)]"
+                    style={{ color: "var(--foreground)" }}
+                  >
+                    Proximo
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <KanbanBoard
