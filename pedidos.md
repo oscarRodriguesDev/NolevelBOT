@@ -27,3 +27,9 @@
 ## PED-007: Exibir "all" para ADMIN sem setor na listagem de usuários
 **Data:** 12/06/2026
 **Descrição:** Na coluna "Setor" das páginas de listagem de usuários, quando o usuário for ADMIN e não tiver um setor definido (pois herda todos os setores), exibir "all" em vez de campo vazio ou "—".
+
+## PED-008: Upload de fotos e avisos no formulário de oficina e chatbots
+**Data:** 12/06/2026
+**Descrição:** Adicionar capacidade de enviar foto do problema/documentação no formulário de chamado da oficina e nos chatbots (corporativo e oficina). Também exibir avisos relacionados ou específicos para o usuário quando houver.
+**Data:** 12/06/2026
+**Descrição:** Na coluna "Setor" das páginas de listagem de usuários, quando o usuário for ADMIN e não tiver um setor definido (pois herda todos os setores), exibir "all" em vez de campo vazio ou "—".

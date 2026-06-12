@@ -10,6 +10,18 @@
 da5f8eb revert: remove toda refatoracao dos dashboards (volta ao estado 2f0e380 antes de qualquer melhoria)
 ```
 
+### Mudancas desta sessao (12/06/2026) — QUARTA RODADA (Upload de fotos + avisos)
+
+| Arquivo | Alteracao |
+|---------|-----------|
+| `src/app/api/oficina/tickets/route.ts` | POST aceita multipart/form-data com upload de anexo (Supabase Storage) |
+| `src/app/oficina/chamado/page.tsx` | FileUpload, validacao de matricula, setor, avisos, API real |
+| `src/app/corporativo/chatbot-app/page.tsx` | Upload de fotos, preview inline, botao avisos |
+| `src/app/oficina/chatbot-app/page.tsx` | Upload de fotos, preview inline, botao avisos |
+| `memorias.md` | Registro de autoria |
+| `pedidos.md` | PED-008 registrado |
+| `ideias.md` | REL-004 registrado |
+
 ### Mudancas desta sessao (12/06/2026) — TERCEIRA RODADA (Relatorios)
 
 | Arquivo | Alteracao |
@@ -49,8 +61,8 @@ da5f8eb revert: remove toda refatoracao dos dashboards (volta ao estado 2f0e380 
 
 1. ~~setar data e hora automatico pelo whats~~ ✅ Feito
 2. ~~mudar as nomeclaturas necessarias no formulario e opcoes para oficina~~ ✅ Feito
-3. ⬜ opcao de foto no modulo de oficina (parcial: webhook-oficina ja coleta foto opcional)
-4. ⬜ funcionalidade de entregar os avisos para os motoristas
+3. ~~opcao de foto no modulo de oficina~~ ✅ Feito
+4. ⬜ funcionalidade de entregar os avisos para os motoristas (parcial: avisos ja aparecem no formulario e chatbot)
 5. ~~melhorar dashboards para visualizacao de oficina~~ ✅ Feito
 6. ~~onde estiver apontando como motorista coloca colaborador~~ ✅ Feito
 7. ~~quando logado como atendente deve redirecionar para os chamados~~ ✅ Feito

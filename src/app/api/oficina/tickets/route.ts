@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { uploadFile } from '@/lib/upload'
 
 export async function GET(req: NextRequest) {
   try {
@@ -41,8 +42,38 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
-    const { matricula, nome, funcao, numeroOnibus, data, defeito, setor } = body
+    const contentType = req.headers.get('content-type') || ''
+    const isMultipart = contentType.includes('multipart/form-data')
+
+    let matricula = ''
+    let nome = ''
+    let funcao = ''
+    let numeroOnibus = ''
+    let data = ''
+    let defeito = ''
+    let setor = ''
+    let file: File | null = null
+
+    if (isMultipart) {
+      const formData = await req.formData()
+      matricula = (formData.get('matricula') as string) || ''
+      nome = (formData.get('nome') as string) || ''
+      funcao = (formData.get('funcao') as string) || ''
+      numeroOnibus = (formData.get('numeroOnibus') as string) || ''
+      data = (formData.get('data') as string) || ''
+      defeito = (formData.get('defeito') as string) || ''
+      setor = (formData.get('setor') as string) || ''
+      file = formData.get('anexo') as File | null
+    } else {
+      const body = await req.json()
+      matricula = body.matricula || ''
+      nome = body.nome || ''
+      funcao = body.funcao || ''
+      numeroOnibus = body.numeroOnibus || ''
+      data = body.data || ''
+      defeito = body.defeito || ''
+      setor = body.setor || ''
+    }
 
     const campos: string[] = []
     if (!matricula) campos.push('matricula')
@@ -61,6 +92,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Matrícula não encontrada' }, { status: 404 })
     }
 
+    let anexoUrl: string | null = null
+    if (file && file.size > 0) {
+      try {
+        anexoUrl = await uploadFile({
+          bucket: 'anexo',
+          folder: matricula,
+          file,
+          defaultUrl: '',
+        })
+      } catch (uploadError) {
+        console.error('ERRO AO FAZER UPLOAD DO ANEXO:', uploadError)
+      }
+    }
+
     const descricao = JSON.stringify({ funcao, numeroOnibus, data, defeito })
     const ticket = `TKT-${Date.now()}`
 
@@ -73,6 +118,7 @@ export async function POST(req: NextRequest) {
         descricao,
         prioridade: 'normal',
         empresaId: registro.empresaId,
+        anexoUrl,
       },
     })
 

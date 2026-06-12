@@ -2,33 +2,128 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { ThemeToggle } from '../../components/theme-toggle'
+import { LuPaperclip, LuMegaphone, LuX } from 'react-icons/lu'
 
 type Message = {
   id: number
   role: 'user' | 'assistant'
   content: string
+  imageUrl?: string
+}
+
+type Aviso = {
+  id: string
+  titulo: string
+  conteudo: string
+  setor: string | null
 }
 
 const BOT_NAME = process.env.NEXT_PUBLIC_BOT_NAME || "Hevelyn"
 
 export default function MobileChat() {
   const [messages, setMessages] = useState<Message[]>([
-      {
-          id: 1,
-          role: 'assistant',
-          content: 'Olá, eu sou a Hevelyn. Como posso ajudar você hoje?'
-        } 
+    {
+      id: 1,
+      role: 'assistant',
+      content: 'Olá, eu sou a Hevelyn. Como posso ajudar você hoje?'
+    }
   ])
 
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [typing, setTyping] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [avisos, setAvisos] = useState<Aviso[]>([])
+  const [showAvisos, setShowAvisos] = useState(false)
 
   const bottomRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
+
+  async function uploadFile(file: File): Promise<string | null> {
+    setUploading(true)
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      form.append('bucket', 'anexo')
+      form.append('folder', 'chatbot')
+
+      const res = await fetch('/api/upload', { method: 'POST', body: form })
+      const data = await res.json()
+      return data.url || null
+    } catch {
+      return null
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const url = await uploadFile(file)
+    if (!url) {
+      setMessages(prev => [...prev, {
+        id: Date.now(),
+        role: 'assistant',
+        content: 'Erro ao enviar imagem. Tente novamente.'
+      }])
+      return
+    }
+
+    const userMessage: Message = {
+      id: Date.now(),
+      role: 'user',
+      content: file.type.startsWith('image/') ? '[Enviou uma imagem]' : `[Enviou: ${file.name}]`,
+      imageUrl: url
+    }
+
+    setMessages(prev => [...prev, userMessage])
+    setLoading(true)
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: `Enviei um arquivo: ${url}` })
+      })
+
+      const data = await res.json()
+
+      const botMessage: Message = {
+        id: Date.now() + 1,
+        role: 'assistant',
+        content: data.reply || 'Não consegui responder.'
+      }
+
+      setMessages(prev => [...prev, botMessage])
+    } catch {
+      const botMessage: Message = {
+        id: Date.now() + 1,
+        role: 'assistant',
+        content: `Erro ao conectar com ${BOT_NAME}.`
+      }
+      setMessages(prev => [...prev, botMessage])
+    }
+
+    setLoading(false)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  async function fetchAvisos() {
+    try {
+      const res = await fetch('/api/quadro-avisos/mostrar-avisos')
+      if (res.ok) {
+        const data = await res.json()
+        setAvisos(data)
+        setShowAvisos(true)
+      }
+    } catch { }
+  }
 
   async function sendMessage() {
     if (!input.trim() || loading) return
@@ -82,9 +177,18 @@ export default function MobileChat() {
         color: "var(--foreground)",
       }}
     >
-      <div className="absolute right-4 top-4 z-50">
+      <div className="absolute right-4 top-4 z-50 flex items-center gap-2">
+        <button
+          onClick={fetchAvisos}
+          className="p-2 rounded-lg transition-all duration-300 hover:scale-105"
+          style={{ color: 'var(--primary)', backgroundColor: 'var(--surface)' }}
+          title="Ver avisos"
+        >
+          <LuMegaphone size={18} />
+        </button>
         <ThemeToggle />
       </div>
+
       <div className="w-full max-w-3xl flex flex-col">
         <header
           className="h-16 sm:h-20 flex items-center justify-center border-b shadow-sm shrink-0 transition-colors duration-300"
@@ -94,6 +198,42 @@ export default function MobileChat() {
           }}
         >
         </header>
+
+        {showAvisos && avisos.length > 0 && (
+          <div
+            className="border-b p-3 space-y-2 max-h-48 overflow-y-auto shrink-0 transition-colors duration-300"
+            style={{
+              backgroundColor: "color-mix(in srgb, var(--primary) 5%, transparent)",
+              borderColor: "var(--border-subtle)",
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-1" style={{ color: 'var(--primary)' }}>
+                <LuMegaphone size={14} />
+                Avisos
+              </span>
+              <button onClick={() => setShowAvisos(false)} className="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
+                <LuX size={14} />
+              </button>
+            </div>
+            {avisos.map((aviso) => (
+              <div
+                key={aviso.id}
+                className="p-2 rounded-lg border text-xs"
+                style={{
+                  backgroundColor: 'var(--surface)',
+                  borderColor: 'var(--border-subtle)',
+                }}
+              >
+                <span className="font-bold" style={{ color: 'var(--primary)' }}>{aviso.titulo}</span>
+                {aviso.setor && (
+                  <span className="ml-2 text-[10px] opacity-50 uppercase">({aviso.setor})</span>
+                )}
+                <p className="opacity-70 mt-0.5 whitespace-pre-wrap">{aviso.conteudo}</p>
+              </div>
+            ))}
+          </div>
+        )}
 
         <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-5">
           {messages.map((msg) => {
@@ -139,6 +279,13 @@ export default function MobileChat() {
                     border: msg.role === 'user' ? 'none' : '1px solid',
                   }}
                 >
+                  {msg.imageUrl && (
+                    <img
+                      src={msg.imageUrl}
+                      alt="Foto enviada"
+                      className="max-w-full rounded-lg mb-2 max-h-48 object-cover"
+                    />
+                  )}
                   {renderContent(msg.content)}
                 </div>
               </div>
@@ -158,7 +305,7 @@ export default function MobileChat() {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              {BOT_NAME} está digitando...
+              {uploading ? 'Enviando imagem...' : `${BOT_NAME} está digitando...`}
             </div>
           )}
 
@@ -173,6 +320,24 @@ export default function MobileChat() {
             borderColor: "var(--border-subtle)",
           }}
         >
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept="image/png,image/jpeg,image/jpg"
+            onChange={handleFileSelected}
+            className="hidden"
+          />
+
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={loading || uploading}
+            className="p-3 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 flex-shrink-0"
+            style={{ color: 'var(--primary)', backgroundColor: 'var(--surface-elevated)' }}
+            title="Anexar foto"
+          >
+            <LuPaperclip size={20} />
+          </button>
+
           <input
             className="flex-1 text-base sm:text-lg md:text-xl px-4 py-3 rounded-xl border outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
             style={{

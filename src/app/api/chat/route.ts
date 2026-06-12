@@ -17,7 +17,7 @@ const statusLabels: Record<string, string> = {
   FECHADO: "🔒 Fechado",
 }
 
-const sessions = new Map<string, UserSession & { pendingState?: string }>()
+const sessions = new Map<string, UserSession & { pendingState?: string; setorAtual?: string }>()
 
 export async function POST(req: NextRequest) {
   try {
@@ -57,8 +57,8 @@ export async function POST(req: NextRequest) {
       }
 case FlowState.IDENTIFICACAO_CPF: {
         const cleanCPF = userInput.replace(/\D/g, "")
-        if (cleanCPF.length !== 11) {
-          return NextResponse.json({ reply: "Por favor, informe um CPF válido (apenas os 11 números)." })
+        if (cleanCPF.length < 3 || cleanCPF.length > 11) {
+          return NextResponse.json({ reply: "Por favor, informe um CPF ou matrícula válida (3 a 11 números)." })
         }
 
         const resCpf = await validarCpf(cleanCPF)
@@ -246,12 +246,131 @@ case FlowState.IDENTIFICACAO_CPF: {
           })
         }
 
-        const ok = await enviarChamado(session.nome || "Usuário", session.cpf || "", setor, session.motivoAtual || "")
+        session.setorAtual = setor
+        session.state = FlowState.PERGUNTAR_ANEXO
+        return NextResponse.json({
+          reply: `Certo, vou encaminhar para o setor *${setor}*. Você precisa enviar uma foto do problema? (Sim/Não)`
+        })
+      }
+
+      case FlowState.PERGUNTAR_ANEXO: {
+        const intent = detectFileIntent(userInput)
+
+        if (intent === "send_file") {
+          session.state = FlowState.COLETAR_MIDIA
+          return NextResponse.json({
+            reply: "Ok! Pode enviar a foto pelo botão de anexar abaixo."
+          })
+        }
+
+        if (intent === "no_file") {
+          const ok = await enviarChamado(
+            session.nome || "Usuário",
+            session.cpf || "",
+            session.setorAtual || "",
+            session.motivoAtual || ""
+          )
+
+          if (ok) {
+            session.state = FlowState.MENU_PRINCIPAL
+            return NextResponse.json({
+              reply: `✅ Tudo pronto! Seu chamado para *${session.setorAtual}* foi registrado.\n\nDeseja tratar de mais algum assunto?\n\n${menuString}`
+            })
+          } else {
+            const ticketErr = generateRandomTicket()
+            return NextResponse.json({
+              reply: `O sistema de registro automático oscilou, mas seu protocolo é *${ticketErr}*. Nossa equipe já está ciente.`
+            })
+          }
+        }
+
+        const resp = await botIA(
+          session, userInput,
+          `O usuário respondeu sobre enviar foto. Se ele disse sim ou algo positivo, retorne apenas "SIM". Se disse não ou algo negativo, retorne apenas "NAO".`,
+          avisos
+        )
+
+        if (resp.toUpperCase().includes("SIM")) {
+          session.state = FlowState.COLETAR_MIDIA
+          return NextResponse.json({ reply: "Ok! Pode enviar a foto pelo botão de anexar abaixo." })
+        }
+
+        if (resp.toUpperCase().includes("NAO")) {
+          const ok = await enviarChamado(
+            session.nome || "Usuário",
+            session.cpf || "",
+            session.setorAtual || "",
+            session.motivoAtual || ""
+          )
+
+          if (ok) {
+            session.state = FlowState.MENU_PRINCIPAL
+            return NextResponse.json({
+              reply: `✅ Tudo pronto! Seu chamado para *${session.setorAtual}* foi registrado.\n\nDeseja tratar de mais algum assunto?\n\n${menuString}`
+            })
+          } else {
+            const ticketErr = generateRandomTicket()
+            return NextResponse.json({
+              reply: `O sistema de registro automático oscilou, mas seu protocolo é *${ticketErr}*. Nossa equipe já está ciente.`
+            })
+          }
+        }
+
+        return NextResponse.json({
+          reply: "Não entendi. Precisa enviar uma foto do problema? (Sim/Não)"
+        })
+      }
+
+      case FlowState.COLETAR_MIDIA: {
+        const urlMatch = userInput.match(/https?:\/\/[^\s]+/)
+        const url = urlMatch ? urlMatch[0] : null
+
+        if (!url) {
+          const photoIntent = detectFileIntent(userInput)
+          if (photoIntent === "send_file") {
+            return NextResponse.json({
+              reply: "Ok! Use o botão de anexar (📎) para enviar a foto."
+            })
+          }
+          if (photoIntent === "no_file") {
+            const ok = await enviarChamado(
+              session.nome || "Usuário",
+              session.cpf || "",
+              session.setorAtual || "",
+              session.motivoAtual || ""
+            )
+
+            if (ok) {
+              session.state = FlowState.MENU_PRINCIPAL
+              return NextResponse.json({
+                reply: `✅ Tudo pronto! Seu chamado para *${session.setorAtual}* foi registrado sem foto.\n\nDeseja tratar de mais algum assunto?\n\n${menuString}`
+              })
+            } else {
+              const ticketErr = generateRandomTicket()
+              return NextResponse.json({
+                reply: `O sistema de registro automático oscilou, mas seu protocolo é *${ticketErr}*. Nossa equipe já está ciente.`
+              })
+            }
+          }
+
+          return NextResponse.json({
+            reply: "Não identifiquei a foto. Envie a imagem pelo botão de anexar ou digite 'não' se não quiser enviar."
+          })
+        }
+
+        session.anexoUrl = url
+        const ok = await enviarChamado(
+          session.nome || "Usuário",
+          session.cpf || "",
+          session.setorAtual || "",
+          session.motivoAtual || "",
+          session.anexoUrl
+        )
 
         if (ok) {
           session.state = FlowState.MENU_PRINCIPAL
           return NextResponse.json({
-            reply: `✅ Tudo pronto! Seu chamado para *${setor}* foi registrado.\n\nDeseja tratar de mais algum assunto?\n\n${menuString}`
+            reply: `✅ Tudo pronto! Seu chamado para *${session.setorAtual}* foi registrado com a foto.\n\nDeseja tratar de mais algum assunto?\n\n${menuString}`
           })
         } else {
           const ticketErr = generateRandomTicket()

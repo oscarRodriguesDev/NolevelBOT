@@ -1,7 +1,8 @@
 'use client'
 import { useState } from 'react'
-import { LuCheck, LuWrench, LuTruck, LuClipboardList } from 'react-icons/lu'
+import { LuCheck, LuWrench, LuTruck, LuClipboardList, LuLoader, LuArrowRight, LuMegaphone } from 'react-icons/lu'
 import { ThemeToggle } from '../../components/theme-toggle'
+import { FileUpload } from '../../components/fileInput'
 import toast from 'react-hot-toast'
 
 type TipoRegistro = 'defeito' | 'socorro' | 'sem_defeito' | null
@@ -18,11 +19,17 @@ export default function ManutencaoPage() {
   })
 
   const [tipoRegistro, setTipoRegistro] = useState<TipoRegistro>(null)
+  const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [setoresDisponiveis, setSetoresDisponiveis] = useState<string[]>([])
+  const [setorSelecionado, setSetorSelecionado] = useState('')
+  const [avisos, setAvisos] = useState<any[]>([])
+  const [showAvisos, setShowAvisos] = useState(false)
+  const [matriculaValida, setMatriculaValida] = useState(false)
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target
     if (name === 'matricula') {
@@ -31,6 +38,45 @@ export default function ManutencaoPage() {
       return
     }
     setFormData(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0])
+    }
+  }
+
+  async function validarMatricula(matricula: string) {
+    if (matricula.length < 3) return
+    try {
+      const res = await fetch(`/api/oficina/tickets?matricula=${matricula}`)
+      if (res.ok) {
+        const data = await res.json()
+        setFormData(prev => ({ ...prev, nome: data.nome || prev.nome }))
+        setSetoresDisponiveis(data.setores || [])
+        setMatriculaValida(true)
+        fetchAvisos(matricula)
+      } else {
+        setMatriculaValida(false)
+        setSetoresDisponiveis([])
+      }
+    } catch {
+      setMatriculaValida(false)
+    }
+  }
+
+  async function fetchAvisos(matricula: string) {
+    try {
+      const res = await fetch(`/api/quadro-avisos/mostrar-avisos?cpf=${matricula}`)
+      if (res.ok) {
+        const data = await res.json()
+        const filtrados = data.filter((a: any) =>
+          !a.setor || a.setor === setorSelecionado || a.setor === ''
+        )
+        setAvisos(filtrados)
+        if (filtrados.length > 0) setShowAvisos(true)
+      }
+    } catch { }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -46,14 +92,46 @@ export default function ManutencaoPage() {
       return
     }
 
+    if (!setorSelecionado) {
+      toast.error('Selecione o setor de destino')
+      return
+    }
+
     setLoading(true)
 
-    // Simula envio (sem API por enquanto)
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    try {
+      const form = new FormData()
+      form.append('matricula', formData.matricula)
+      form.append('nome', formData.nome)
+      form.append('funcao', tipoRegistro)
+      form.append('numeroOnibus', formData.veiculo)
+      form.append('data', formData.data)
+      form.append('defeito', formData.discriminacao)
+      form.append('setor', setorSelecionado)
 
-    setLoading(false)
-    setSubmitted(true)
-    toast.success('Solicitação registrada com sucesso')
+      if (file) {
+        form.append('anexo', file)
+      }
+
+      const response = await fetch('/api/oficina/tickets', {
+        method: 'POST',
+        body: form,
+      })
+
+      const data = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        throw new Error(data?.error || `Erro HTTP ${response.status}`)
+      }
+
+      setLoading(false)
+      setSubmitted(true)
+      toast.success('Solicitação registrada com sucesso')
+    } catch (error: any) {
+      console.error('Erro ao registrar:', error)
+      toast.error(error?.message || 'Erro ao processar. Tente novamente.')
+      setLoading(false)
+    }
   }
 
   if (submitted) {
@@ -163,6 +241,7 @@ export default function ManutencaoPage() {
                   name="matricula"
                   value={formData.matricula}
                   onChange={handleChange}
+                  onBlur={() => validarMatricula(formData.matricula)}
                   required
                   maxLength={6}
                   className="w-full px-4 py-3 rounded-xl outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
@@ -335,6 +414,34 @@ export default function ManutencaoPage() {
               </div>
             )}
 
+            {matriculaValida && setoresDisponiveis.length > 0 && (
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
+                  Setor de Destino
+                </label>
+                <select
+                  name="setor"
+                  value={setorSelecionado}
+                  onChange={(e) => setSetorSelecionado(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 rounded-xl outline-none transition-all duration-300 border focus:ring-2 focus:ring-opacity-50"
+                  style={{
+                    backgroundColor: 'var(--surface-elevated)',
+                    color: 'var(--foreground)',
+                    borderColor: 'var(--border-subtle)',
+                    '--tw-ring-color': 'var(--primary)',
+                  } as never}
+                >
+                  <option value="" disabled>Selecione o setor</option>
+                  {setoresDisponiveis.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <FileUpload file={file} setFile={setFile} handleFileChange={handleFileChange} />
+
             <div className="pt-6">
               <button
                 type="submit"
@@ -354,10 +461,7 @@ export default function ManutencaoPage() {
               >
                 {loading ? (
                   <>
-                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
+                    <LuLoader className="animate-spin h-5 w-5" />
                     Registrando...
                   </>
                 ) : (
@@ -369,6 +473,52 @@ export default function ManutencaoPage() {
               </button>
             </div>
           </form>
+
+          {showAvisos && avisos.length > 0 && (
+            <div className="mt-6 space-y-3">
+              <div className="flex items-center gap-2 mb-1">
+                <LuMegaphone className="h-4 w-4" style={{ color: 'var(--primary)' }} />
+                <span className="text-xs font-bold uppercase tracking-wider opacity-70">Avisos</span>
+              </div>
+              {avisos.map((aviso: any) => (
+                <div
+                  key={aviso.id}
+                  className="p-4 rounded-xl border text-sm transition-colors duration-300"
+                  style={{
+                    backgroundColor: 'color-mix(in srgb, var(--primary) 5%, transparent)',
+                    borderColor: 'color-mix(in srgb, var(--primary) 15%, transparent)',
+                    color: 'var(--foreground)',
+                  }}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-bold text-xs uppercase tracking-wider" style={{ color: 'var(--primary)' }}>
+                      {aviso.titulo}
+                    </span>
+                    {aviso.setor && (
+                      <span
+                        className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+                        style={{
+                          backgroundColor: 'var(--surface-elevated)',
+                          color: 'var(--foreground)',
+                          opacity: 0.6,
+                        }}
+                      >
+                        {aviso.setor}
+                      </span>
+                    )}
+                  </div>
+                  <p className="opacity-80 whitespace-pre-wrap text-xs">{aviso.conteudo}</p>
+                </div>
+              ))}
+              <button
+                onClick={() => setShowAvisos(false)}
+                className="text-xs font-semibold opacity-60 hover:opacity-100 transition-opacity"
+                style={{ color: 'var(--primary)' }}
+              >
+                Fechar avisos
+              </button>
+            </div>
+          )}
 
           <div
             className="mt-6 p-3 rounded-xl text-xs border"

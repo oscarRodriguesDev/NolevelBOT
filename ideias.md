@@ -17,3 +17,6 @@
 ## REL-003: Badge visual "all" para ADMIN sem setor (relacionado ao PED-007)
 **Ideia:** Em vez de apenas texto "all", usar um badge visual (tag estilizada) para destacar que o administrador tem acesso a todos os setores, similar ao "Todos os setores" usado na página de criação de usuários.
 
+## REL-004: Preview ampliado de imagem no chatbot (relacionado ao PED-008)
+**Ideia:** Ao clicar na imagem preview no chat, abrir um modal/lightbox com a foto em tamanho original para melhor visualização do problema/documentação.
+
