@@ -956,59 +956,18 @@ Unificar o login fora dos módulos corporativo/oficina: usuário faz login em `/
 
 ---
 
-## Sess�o: 11/06/2026 � Atualiza��o /api-docs com novos endpoints
+## Sess�o: 11/06/2026 � Atualiza��o /api-docs com novos endpoints
 
 ### Pendentes:
-- ~~src/app/api-docs/page.tsx � Adicionados todos os endpoints faltantes~~ ?
+- ~~src/app/api-docs/page.tsx � Adicionados todos os endpoints faltantes~~ ?
   - webhook26, webhook27, webhook-oficina, upload, oficina/tickets, empresa/prompt
-  - users/admins, cpfs/general_cpf, e m�todos PUT/DELETE faltantes em v�rias rotas
+  - users/admins, cpfs/general_cpf, e m�todos PUT/DELETE faltantes em v�rias rotas
   - Total: de 29 para 58 rotas documentadas
-- ~~checkpoint.md � Atualizado~~ ?
+- ~~checkpoint.md � Atualizado~~ ?
 - ~~
-pm run build � compilado com sucesso ?~~ ?
+pm run build � compilado com sucesso ?~~ ?
 
-### Commits realizados nesta sessão:
+### Commits realizados nesta sess�o:
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
 | 1 | 192dbad | docs: atualiza api-docs com todos os endpoints novos - webhook26, webhook27, webhook-oficina, upload, oficina/tickets, empresa/prompt, users/admins, cpfs/general_cpf e metodos faltantes (PUT/DELETE) | 11/06/2026 |
-
----
-
-## Sessão: 12/06/2026 — Refatoração dos Dashboards
-
-### Objetivo
-Dashboards mais bonitos visualmente, com indicadores relevantes por módulo (Corporativo/Oficina/Eventos) e seleção personalizável de indicadores via checkboxes com persistência em localStorage.
-
-### O que foi feito
-
-| # | Tarefa | Status |
-|---|--------|--------|
-| 1 | API `/api/dashboards` refatorada: multi-tenancy + métricas expandidas | ✅ |
-| 2 | Componentes de dashboard em `src/app/components/dashboard/` (7 arquivos) | ✅ |
-| 3 | DashboardContainer com seletor de período + painel "Personalizar" + localStorage | ✅ |
-| 4 | Página corporativo simplificada (usa DashboardContainer) | ✅ |
-| 5 | Página oficina simplificada (usa DashboardContainer) | ✅ |
-| 6 | Página eventos simplificada (usa DashboardContainer) | ✅ |
-| 7 | Build validado | ✅ |
-
-### Arquivos criados (7)
-| Arquivo | Descrição |
-|---------|-----------|
-| `src/app/components/dashboard/types.ts` | Tipos e definições de indicadores |
-| `src/app/components/dashboard/KpiCard.tsx` | Card de KPI |
-| `src/app/components/dashboard/PieChartCard.tsx` | Gráfico de rosca |
-| `src/app/components/dashboard/BarChartCard.tsx` | Gráfico de barras |
-| `src/app/components/dashboard/LineChartCard.tsx` | Gráfico de linha |
-| `src/app/components/dashboard/RankingTable.tsx` | Tabela rankeada |
-| `src/app/components/dashboard/DashboardContainer.tsx` | Container principal |
-
-### Arquivos modificados (4)
-| Arquivo | Mudança |
-|---------|---------|
-| `src/app/api/dashboards/route.ts` | Multi-tenancy + métricas expandidas |
-| `src/app/corporativo/(atendimento)/dashboards/page.tsx` | Simplificado |
-| `src/app/oficina/(atendimento)/dashboards/page.tsx` | Simplificado |
-| `src/app/eventos/(atendimento)/dashboards/page.tsx` | Simplificado |
-
-### Build
-✅ `npm run build` — compilado com sucesso
