@@ -953,3 +953,21 @@ Unificar o login fora dos mÃ³dulos corporativo/oficina: usuÃ¡rio faz login em `/
 - ~~`memorias.md` â€” SeÃ§Ã£o 55 documentando as mudanÃ§as~~ âœ…
 - ~~`checkpoint.md` â€” Atualizado~~ âœ…
 - ~~`npm run build` â€” compilado com sucesso âœ…~~ âœ…
+
+---
+
+## Sessão: 11/06/2026 — Atualização /api-docs com novos endpoints
+
+### Pendentes:
+- ~~src/app/api-docs/page.tsx — Adicionados todos os endpoints faltantes~~ ?
+  - webhook26, webhook27, webhook-oficina, upload, oficina/tickets, empresa/prompt
+  - users/admins, cpfs/general_cpf, e métodos PUT/DELETE faltantes em várias rotas
+  - Total: de 29 para 58 rotas documentadas
+- ~~checkpoint.md — Atualizado~~ ?
+- ~~
+pm run build — compilado com sucesso ?~~ ?
+
+### Commits realizados nesta sessão:
+| # | Hash | Mensagem | Data |
+|---|------|----------|------|
+| 1 | 192dbad | docs: atualiza api-docs com todos os endpoints novos - webhook26, webhook27, webhook-oficina, upload, oficina/tickets, empresa/prompt, users/admins, cpfs/general_cpf e metodos faltantes (PUT/DELETE) | 11/06/2026 |

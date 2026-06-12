@@ -2538,58 +2538,58 @@ Adicionada validaÃ§Ã£o + fallback ao banco de dados em `api/users/route.ts`:
 
 ---
 
-## Seção 55: Coleta opcional de foto no webhook-oficina + avisos específicos + ATENDENTE redirecionado + nome da empresa na lista de usuários
+## Seï¿½ï¿½o 55: Coleta opcional de foto no webhook-oficina + avisos especï¿½ficos + ATENDENTE redirecionado + nome da empresa na lista de usuï¿½rios
 
 ### Contexto
-Quatro mudanças solicitadas após a implementação do webhook-oficina:
-1. Coleta de mídia (foto do problema) deve ser **opcional**, não obrigatória
-2. Avisos específicos (relacionados à matrícula do motorista) devem ser entregues **imediatamente** após a identificação, separados dos avisos gerais do veículo
-3. ATENDENTE logado na oficina deve ser redirecionado para /all-tickets e não deve ver a opção Dashboard no menu lateral
-4. Na lista de usuários (corporativo e oficina), exibir o **nome da empresa** em vez do ID truncado (8 primeiros caracteres)
+Quatro mudanï¿½as solicitadas apï¿½s a implementaï¿½ï¿½o do webhook-oficina:
+1. Coleta de mï¿½dia (foto do problema) deve ser **opcional**, nï¿½o obrigatï¿½ria
+2. Avisos especï¿½ficos (relacionados ï¿½ matrï¿½cula do motorista) devem ser entregues **imediatamente** apï¿½s a identificaï¿½ï¿½o, separados dos avisos gerais do veï¿½culo
+3. ATENDENTE logado na oficina deve ser redirecionado para /all-tickets e nï¿½o deve ver a opï¿½ï¿½o Dashboard no menu lateral
+4. Na lista de usuï¿½rios (corporativo e oficina), exibir o **nome da empresa** em vez do ID truncado (8 primeiros caracteres)
 
 ---
 
-### Implementação 1: Coleta opcional de foto no webhook-oficina
+### Implementaï¿½ï¿½o 1: Coleta opcional de foto no webhook-oficina
 
 **Arquivo:** src/app/api/webhook-oficina/route.ts
 
 - Adicionados estados PERGUNTAR_ANEXO e COLETAR_MIDIA ao enum FlowState
 - Quando o motorista descreve o defeito:
-  - Se já enviou mídia na descrição ? vai direto para CONFIRMAR
-  - Se **não** enviou mídia ? vai para PERGUNTAR_ANEXO (pergunta "Deseja enviar uma foto do problema?")
+  - Se jï¿½ enviou mï¿½dia na descriï¿½ï¿½o ? vai direto para CONFIRMAR
+  - Se **nï¿½o** enviou mï¿½dia ? vai para PERGUNTAR_ANEXO (pergunta "Deseja enviar uma foto do problema?")
     - Se responder "sim" ? vai para COLETAR_MIDIA (aguarda o upload da foto)
-    - Se responder "não" ? vai para CONFIRMAR (segue sem foto)
-    - Se responder algo inválido ? IA tenta interpretar; se não entender, retorna à pergunta
+    - Se responder "nï¿½o" ? vai para CONFIRMAR (segue sem foto)
+    - Se responder algo invï¿½lido ? IA tenta interpretar; se nï¿½o entender, retorna ï¿½ pergunta
 
 **Fluxo completo:**
 `
 COLETAR_DEFEITO (texto do motorista)
-  +-- mídia presente ? vai para CONFIRMAR
-  +-- sem mídia ? PERGUNTAR_ANEXO
+  +-- mï¿½dia presente ? vai para CONFIRMAR
+  +-- sem mï¿½dia ? PERGUNTAR_ANEXO
                     +-- "sim" ? COLETAR_MIDIA ? CONFIRMAR
-                    +-- "não" ? CONFIRMAR
+                    +-- "nï¿½o" ? CONFIRMAR
 `
 
 ---
 
-### Implementação 2: Avisos específicos por matrícula
+### Implementaï¿½ï¿½o 2: Avisos especï¿½ficos por matrï¿½cula
 
 **Arquivo:** src/app/api/webhook-oficina/route.ts
 
-A função uscarAvisosParaMotorista foi dividida em duas:
+A funï¿½ï¿½o uscarAvisosParaMotorista foi dividida em duas:
 
 - **uscarAvisosEspecificos(matricula)** ? busca avisos onde paraMatricula === matricula
-  - Chamada **imediatamente** após a identificação (IDENTIFICACAO_MATRICULA)
-  - Os avisos são enviados em sua **própria mensagem** no WhatsApp (separada da mensagem de saudação com as perguntas de função/veículo)
-  - Se não houver avisos específicos, o fluxo continua normalmente
+  - Chamada **imediatamente** apï¿½s a identificaï¿½ï¿½o (IDENTIFICACAO_MATRICULA)
+  - Os avisos sï¿½o enviados em sua **prï¿½pria mensagem** no WhatsApp (separada da mensagem de saudaï¿½ï¿½o com as perguntas de funï¿½ï¿½o/veï¿½culo)
+  - Se nï¿½o houver avisos especï¿½ficos, o fluxo continua normalmente
 
 - **uscarAvisosDoVeiculo(prefixo)** ? busca avisos onde paraOnibus === prefixo
-  - Chamada após a coleta do número do ônibus (COLETAR_ONIBUS), mantendo o comportamento original
-  - Os avisos gerais continuam sendo entregues após o veículo ser identificado
+  - Chamada apï¿½s a coleta do nï¿½mero do ï¿½nibus (COLETAR_ONIBUS), mantendo o comportamento original
+  - Os avisos gerais continuam sendo entregues apï¿½s o veï¿½culo ser identificado
 
 ---
 
-### Implementação 3: ATENDENTE redirecionado e sem Dashboard
+### Implementaï¿½ï¿½o 3: ATENDENTE redirecionado e sem Dashboard
 
 **Arquivos modificados:**
 - src/app/components/sidebar.tsx
@@ -2597,39 +2597,82 @@ A função uscarAvisosParaMotorista foi dividida em duas:
 - src/app/corporativo/(atendimento)/usuarios/page.tsx
 
 **Sidebar:**
-- Dashboard agora é show: userRole !== "ATENDENTE" tanto em corporativo quanto em oficina
+- Dashboard agora ï¿½ show: userRole !== "ATENDENTE" tanto em corporativo quanto em oficina
 
-**Layout de usuários (oficina):**
+**Layout de usuï¿½rios (oficina):**
 - ATENDENTE redirecionado de /oficina/dashboards ? /oficina/all-tickets
 
-**Layout de usuários (corporativo):**
+**Layout de usuï¿½rios (corporativo):**
 - ATENDENTE redirecionado de /dashboard ? /corporativo/all-tickets
 
 ---
 
-### Implementação 4: Nome da empresa na lista de usuários
+### Implementaï¿½ï¿½o 4: Nome da empresa na lista de usuï¿½rios
 
 **Arquivos modificados:**
-- src/app/api/users/route.ts — GET inclui Empresa: { select: { nome: true } }
-- src/app/corporativo/(atendimento)/usuarios/page.tsx — exibe u.Empresa?.nome em vez de u.empresaId?.slice(0, 8)
-- src/app/oficina/(atendimento)/usuarios/page.tsx — exibe u.Empresa?.nome em vez de u.empresaId?.slice(0, 8)
+- src/app/api/users/route.ts ï¿½ GET inclui Empresa: { select: { nome: true } }
+- src/app/corporativo/(atendimento)/usuarios/page.tsx ï¿½ exibe u.Empresa?.nome em vez de u.empresaId?.slice(0, 8)
+- src/app/oficina/(atendimento)/usuarios/page.tsx ï¿½ exibe u.Empresa?.nome em vez de u.empresaId?.slice(0, 8)
 
 **Detalhes:**
-- Campo Empresa?: { nome: string } adicionado à interface UserItem
-- Fallback para u.empresaId?.slice(0, 8) ou "—" caso Empresa venha vazio
+- Campo Empresa?: { nome: string } adicionado ï¿½ interface UserItem
+- Fallback para u.empresaId?.slice(0, 8) ou "ï¿½" caso Empresa venha vazio
 
 ---
 
 ### Arquivos modificados
 
-| Arquivo | Mudança |
+| Arquivo | Mudanï¿½a |
 |---------|---------|
-| src/app/api/webhook-oficina/route.ts | Coleta opcional de foto + separação avisos específicos/gerais |
-| src/app/components/sidebar.tsx | Dashboard invisível para ATENDENTE |
+| src/app/api/webhook-oficina/route.ts | Coleta opcional de foto + separaï¿½ï¿½o avisos especï¿½ficos/gerais |
+| src/app/components/sidebar.tsx | Dashboard invisï¿½vel para ATENDENTE |
 | src/app/oficina/(atendimento)/usuarios/page.tsx | Redirect para /all-tickets + nome empresa |
 | src/app/corporativo/(atendimento)/usuarios/page.tsx | Redirect para /corporativo/all-tickets + nome empresa |
 | src/app/api/users/route.ts | GET inclui Empresa.nome no select |
 
 ### Build
 - 
-pm run build — compilado com sucesso ?
+pm run build ï¿½ compilado com sucesso ?
+
+---
+
+## 56. ATUALIZAÃ‡ÃƒO DA DOCUMENTAÃ‡ÃƒO DA API â€” /api-docs (11/06/2026)
+
+### Objetivo
+Atualizar a pÃ¡gina de documentaÃ§Ã£o da API (`/api-docs`) para refletir todos os endpoints criados desde a Ãºltima atualizaÃ§Ã£o do documento.
+
+### O que foi adicionado
+De **29 endpoints** para **58 endpoints** documentados:
+
+#### Novos endpoints adicionados:
+| Endpoint | MÃ©todos | DescriÃ§Ã£o |
+|----------|---------|-----------|
+| `/api/webhook26` | POST | Webhook com prompt personalizado por empresa (useIA3) |
+| `/api/webhook27` | POST | Webhook com IA (useIA4) |
+| `/api/webhook-oficina` | POST | Registro de manutenÃ§Ã£o veicular por motoristas |
+| `/api/upload` | POST | Upload genÃ©rico para Supabase Storage |
+| `/api/oficina/tickets` | GET, POST | ValidaÃ§Ã£o de matrÃ­cula e criaÃ§Ã£o de chamado da oficina |
+| `/api/empresa/prompt` | GET, POST, PUT, DELETE | Gerenciamento de prompt do bot por empresa (GOD) |
+| `/api/users/admins` | GET, PUT, DELETE | CRUD de administradores (GOD only) |
+| `/api/cpfs/general_cpf` | GET, DELETE | Consulta e remoÃ§Ã£o de CPF geral (usado pelos bots) |
+
+#### MÃ©todos faltantes adicionados em endpoints existentes:
+| Endpoint | MÃ©todos novos |
+|----------|--------------|
+| `/api/empresa` | PUT, DELETE |
+| `/api/tickets/search` | GET, PUT, DELETE |
+| `/api/quadro-avisos` | PUT, DELETE |
+| `/api/memories` | GET |
+| `/api/cpfs` | GET, DELETE |
+| `/api/cpfs/general_cpf` | GET, DELETE |
+
+### Arquivo modificado
+- `src/app/api-docs/page.tsx` â€” Lista completa de 58 endpoints com mÃ©todo, rota, auth e descriÃ§Ã£o
+
+### Build
+- `npm run build` â€” compilado com sucesso âœ…
+
+### Commit
+| Hash | Mensagem |
+|------|----------|
+| `192dbad` | docs: atualiza api-docs com todos os endpoints novos |
