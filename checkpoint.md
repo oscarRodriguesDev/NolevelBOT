@@ -970,8 +970,9 @@ pm run build � compilado com sucesso ?~~ ?
 ### Commits realizados nesta sessão:
 | # | Hash | Mensagem | Data |
 |---|------|----------|------|
-| 1 | 9cd9a0b | feat: refatora dashboards com componentes reutilizaveis, indicadores por modulo e selecao personalizavel | 12/06/2026 |
-| 2 | a32c8b8 | feat: adiciona funil de status, exportacao XLSX e comparativo entre periodos nos dashboards | 12/06/2026 |
+| 1 | 192dbad | docs: atualiza api-docs com todos os endpoints novos - webhook26, webhook27, webhook-oficina, upload, oficina/tickets, empresa/prompt, users/admins, cpfs/general_cpf e metodos faltantes (PUT/DELETE) | 11/06/2026 |
+
+---
 
 ## Sessão: 12/06/2026 — Refatoração dos Dashboards
 
@@ -1008,37 +1009,6 @@ Dashboards mais bonitos visualmente, com indicadores relevantes por módulo (Cor
 | `src/app/corporativo/(atendimento)/dashboards/page.tsx` | Simplificado |
 | `src/app/oficina/(atendimento)/dashboards/page.tsx` | Simplificado |
 | `src/app/eventos/(atendimento)/dashboards/page.tsx` | Simplificado |
-
-### Build
-✅ `npm run build` — compilado com sucesso
-
----
-
-## Sessão: 12/06/2026 — Funil, Exportação e Comparativo (2º batch)
-
-### O que foi feito
-
-| # | Tarefa | Status |
-|---|--------|--------|
-| 1 | FunnelCard.tsx — gráfico de funil de status (NOVO → EM_ATENDIMENTO → AGUARDANDO → CONCLUIDO) | ✅ |
-| 2 | API `/api/dashboards` — campo `chamadosPorStatusSteps` para o funil | ✅ |
-| 3 | API `/api/dashboards` — campo `comparativo` com dados do período anterior + variação % | ✅ |
-| 4 | DashboardContainer — botão "Exportar XLSX" que gera Excel com todos indicadores | ✅ |
-| 5 | DashboardContainer — toggle "Comparar" que ativa comparativo com cards de variação | ✅ |
-| 6 | Types — novos indicadores `funilStatus`, `comparativo`, tipo `PeriodoKey` | ✅ |
-| 7 | Build validado | ✅ |
-
-### Arquivos criados (1)
-| Arquivo | Descrição |
-|---------|-----------|
-| `src/app/components/dashboard/FunnelCard.tsx` | Gráfico de funil com steps e % de retenção |
-
-### Arquivos modificados (3)
-| Arquivo | Mudança |
-|---------|---------|
-| `src/app/api/dashboards/route.ts` | Funil + comparativo + filtro por data + `computeMetrics()` reutilizável |
-| `src/app/components/dashboard/DashboardContainer.tsx` | Funil, export XLSX, toggle comparativo, variação em KPI/evolução |
-| `src/app/components/dashboard/types.ts` | `chamadosPorStatusSteps`, `comparativo`, `PeriodoKey`, novos indicadores |
 
 ### Build
 ✅ `npm run build` — compilado com sucesso
