@@ -25,7 +25,7 @@ interface Empresa {
 
 const MODULOS_OPCOES = [
   { valor: 'CORPORATIVO', label: 'Corporativo', icon: Headphones, cor: 'var(--status-new)' },
-  { valor: 'OFICINA', label: 'Oficina', icon: Wrench, cor: 'var(--status-in-progress)' },
+  { valor: 'OFICINA', label: 'Operacional', icon: Wrench, cor: 'var(--status-in-progress)' },
   { valor: 'EVENTOS', label: 'Eventos', icon: CalendarCheck, cor: 'var(--status-waiting)' },
 ]
 

@@ -36,8 +36,8 @@ export function ModalChamado({
 
     async function fetchChamado() {
       const res = await fetch(`/api/tickets?ticket=${ticket}`)
-      const data = await res.json()
-      const chamadoData = data[0]
+      const json = await res.json()
+      const chamadoData = json.data?.[0]
 
       setChamado(chamadoData)
       setNovoStatus(chamadoData?.status || "")

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import {
   ResponsiveContainer,
   BarChart,
@@ -46,6 +47,7 @@ const STATUS_CORES: Record<string, string> = {
 }
 
 export default function Dashboard() {
+  const router = useRouter()
   const [periodo, setPeriodo] = useState<"dia" | "semana" | "mes" | "ano">("mes")
   const [chamadosPorSetor, setChamadosPorSetor] = useState<StatItem[]>([])
   const [chamadosPeriodo, setChamadosPeriodo] = useState<StatItem[]>([])
@@ -151,9 +153,38 @@ export default function Dashboard() {
   }
 
   function downloadCSV() {
-    const header = "setor,total\n"
-    const rows = chamadosPorSetor.map((t) => `${t.setor},${t.total}`).join("\n")
-    const blob = new Blob([header + rows], { type: "text/csv" })
+    const linhas: string[] = []
+    linhas.push(`Relatorio de Eventos - Periodo: ${periodo}`)
+    linhas.push(`Gerado em: ${new Date().toLocaleString("pt-BR")}`)
+    linhas.push("")
+    linhas.push("--- INDICADORES ---")
+    linhas.push(`Total de Chamados,${totalGeral}`)
+    linhas.push(`Em Aberto,${totalAbertos}`)
+    linhas.push(`Concluidos,${totalFechados}`)
+    linhas.push(`Taxa de Conclusao,${taxaConclusao}%`)
+    linhas.push(`Tempo Medio,${tempoMedio}h`)
+    linhas.push(`Total de Leads,${totalLeads}`)
+    linhas.push("")
+    linhas.push("--- STATUS ---")
+    linhas.push("Status,Total")
+    statusStats.forEach((s) => linhas.push(`${s.status},${s.total}`))
+    linhas.push("")
+    linhas.push("--- CHAMADOS POR SETOR ---")
+    linhas.push("Setor,Total")
+    chamadosPorSetor.forEach((t) => linhas.push(`${t.setor},${t.total}`))
+    linhas.push("")
+    linhas.push("--- TOP MOTIVOS ---")
+    linhas.push("Motivo,Total")
+    motivosStats.forEach((m) => linhas.push(`${m.motivo},${m.total}`))
+    linhas.push("")
+    linhas.push("--- LEADS POR PERIODO ---")
+    linhas.push("Periodo,Total")
+    leadsPorMes.forEach((l) => linhas.push(`${l.periodo},${l.total}`))
+    linhas.push("")
+    linhas.push("--- EVOLUCAO TEMPORAL ---")
+    linhas.push("Periodo,Total")
+    chamadosPeriodo.forEach((c) => linhas.push(`${c.periodo},${c.total}`))
+    const blob = new Blob([linhas.join("\n")], { type: "text/csv;charset=utf-8" })
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
@@ -164,30 +195,87 @@ export default function Dashboard() {
 
   function downloadPDF() {
     const pdf = new jsPDF()
+    let y = 20
+    const pageHeight = 280
+    const checkPage = () => { if (y > pageHeight) { pdf.addPage(); y = 20 } }
+
     pdf.setFontSize(18)
-    pdf.text("Relatorio de Eventos", 10, 20)
-    pdf.setFontSize(12)
-    pdf.text(
-      `Periodo: ${periodo} | Chamados: ${totalGeral} | Leads: ${totalLeads} | TM: ${tempoMedio}h`,
-      10,
-      30
-    )
+    pdf.text("Relatorio de Eventos", 10, y)
+    y += 8
+    pdf.setFontSize(10)
+    pdf.text(`Gerado em: ${new Date().toLocaleString("pt-BR")} | Periodo: ${periodo}`, 10, y)
+    y += 12
 
-    let y = 50
-    pdf.text("Leads cadastrados:", 10, y)
-    y += 7
-    pdf.text(`Total: ${totalLeads}`, 10, y)
+    pdf.setFontSize(14)
+    pdf.text("Indicadores", 10, y); y += 8
+    pdf.setFontSize(11)
+    pdf.text(`Total de Chamados: ${totalGeral}`, 15, y); y += 6
+    pdf.text(`Em Aberto: ${totalAbertos}`, 15, y); y += 6
+    pdf.text(`Concluidos: ${totalFechados}`, 15, y); y += 6
+    pdf.text(`Taxa de Conclusao: ${taxaConclusao}%`, 15, y); y += 6
+    pdf.text(`Tempo Medio: ${tempoMedio} horas`, 15, y); y += 6
+    pdf.text(`Total de Leads Captados: ${totalLeads}`, 15, y); y += 10
+    checkPage()
 
-    y += 10
-    pdf.text("Status dos chamados:", 10, y)
-    y += 7
-    statusStats.forEach((s) => {
-      pdf.text(`${s.status}: ${s.total}`, 10, y)
-      y += 6
-    })
+    if (statusStats.length > 0) {
+      pdf.setFontSize(14)
+      pdf.text("Status dos Chamados", 10, y); y += 8
+      pdf.setFontSize(11)
+      statusStats.forEach((s) => {
+        pdf.text(`${s.status}: ${s.total}`, 15, y); y += 6; checkPage()
+      })
+      y += 4; checkPage()
+    }
+
+    if (chamadosPorSetor.length > 0) {
+      pdf.setFontSize(14)
+      pdf.text("Chamados por Setor", 10, y); y += 8
+      pdf.setFontSize(11)
+      chamadosPorSetor.slice(0, 15).forEach((t) => {
+        pdf.text(`${t.setor}: ${t.total}`, 15, y); y += 6; checkPage()
+      })
+      y += 4; checkPage()
+    }
+
+    if (motivosStats.length > 0) {
+      pdf.setFontSize(14)
+      pdf.text("Top Motivos", 10, y); y += 8
+      pdf.setFontSize(11)
+      motivosStats.slice(0, 20).forEach((m) => {
+        const txt = (m.motivo || "Sem motivo")
+        const motivo = txt.length > 70 ? txt.slice(0, 70) + "..." : txt
+        pdf.text(`${motivo}: ${m.total}`, 15, y); y += 6; checkPage()
+      })
+      y += 4; checkPage()
+    }
+
+    if (leadsPorMes.length > 0) {
+      pdf.setFontSize(14)
+      pdf.text("Leads por Periodo", 10, y); y += 8
+      pdf.setFontSize(11)
+      leadsPorMes.forEach((l) => {
+        pdf.text(`${l.periodo}: ${l.total}`, 15, y); y += 6; checkPage()
+      })
+      y += 4; checkPage()
+    }
+
+    if (chamadosPeriodo.length > 0) {
+      pdf.setFontSize(14)
+      pdf.text("Evolucao Temporal", 10, y); y += 8
+      pdf.setFontSize(11)
+      chamadosPeriodo.forEach((c) => {
+        pdf.text(`${c.periodo}: ${c.total}`, 15, y); y += 6; checkPage()
+      })
+    }
 
     pdf.save("dashboard_eventos.pdf")
   }
+
+  useEffect(() => {
+    if (!hasPermission) {
+      router.push("/eventos/all-tickets")
+    }
+  }, [hasPermission, router])
 
   if (!hasPermission) {
     return (

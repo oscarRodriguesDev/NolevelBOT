@@ -34,8 +34,8 @@ const MODULOS_DISPONIVEIS: ModuloInfo[] = [
   },
   {
     key: "OFICINA",
-    label: "Oficina",
-    descricao: "Manutenção veicular para transportadoras",
+    label: "Operacional",
+    descricao: "Manutenção veicular e operações",
     icon: LuWrench,
     href: "/oficina/dashboards",
   },

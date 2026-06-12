@@ -25,7 +25,7 @@ interface Empresa {
 
 const MODULOS_OPCOES = [
   { valor: 'CORPORATIVO', label: 'Corporativo', icon: Headphones, cor: 'var(--status-new)' },
-  { valor: 'OFICINA', label: 'Oficina', icon: Wrench, cor: 'var(--status-in-progress)' },
+  { valor: 'OFICINA', label: 'Operacional', icon: Wrench, cor: 'var(--status-in-progress)' },
   { valor: 'EVENTOS', label: 'Eventos', icon: CalendarCheck, cor: 'var(--status-waiting)' },
 ]
 
@@ -63,6 +63,7 @@ export default function EmpresaPage() {
     }
   }, [status, session, router])
 
+
   useEffect(() => {
     setHeader({
       titulo: 'Empresas',
@@ -70,6 +71,8 @@ export default function EmpresaPage() {
     })
   }, [setHeader])
 
+
+  //busca de empesas
   async function fetchEmpresas() {
     try {
       const res = await fetch('/api/empresa')
@@ -83,10 +86,13 @@ export default function EmpresaPage() {
     }
   }
 
+  //buscando empresas
   useEffect(() => {
     fetchEmpresas()
   }, [])
 
+
+  //edição de empresa
   function startEdit(emp: Empresa) {
     setEditingId(emp.id)
     setEditForm({
@@ -99,6 +105,7 @@ export default function EmpresaPage() {
     setEditLogoPreview(emp.logoUrl || null)
   }
 
+  //cancelar edição
   function cancelEdit() {
     setEditingId(null)
     setEditForm({ nome: '', cnpj: '', setores: '', modulos: [] })
@@ -106,6 +113,7 @@ export default function EmpresaPage() {
     setEditLogoPreview(null)
   }
 
+  //salvar edição
   async function saveEdit(id: string) {
     try {
       let finalLogoUrl = editLogoPreview
@@ -153,6 +161,8 @@ export default function EmpresaPage() {
     }
   }
 
+
+  //deletar empresa
   async function handleDelete(id: string, nome: string) {
     if (!confirm(`Tem certeza que deseja excluir a empresa "${nome}"?\n\nEsta ação não pode ser desfeita.`)) return
 
@@ -172,6 +182,7 @@ export default function EmpresaPage() {
     }
   }
 
+  //configuração do bot
   function openBotConfig(emp: Empresa) {
     setBotConfigId(emp.id)
     setBotForm({
@@ -183,11 +194,14 @@ export default function EmpresaPage() {
     })
   }
 
+
+  //fechar configuração do bot
   function closeBotConfig() {
     setBotConfigId(null)
     setBotForm({ botName: '', botPresentation: '', botServiceDesc: '', botAvisosDesc: '', botPrompt: '' })
   }
 
+  //gerar prompt do bot
   async function handleGerarPrompt() {
     if (!botForm.botPresentation && !botForm.botServiceDesc && !botForm.botAvisosDesc) {
       toast.error('Preencha pelo menos uma descrição')
@@ -217,6 +231,9 @@ export default function EmpresaPage() {
     }
   }
 
+
+
+  //salvar configuração do bot
   async function handleSaveBotConfig() {
     try {
       const res = await fetch('/api/empresa/prompt', {
@@ -240,6 +257,7 @@ export default function EmpresaPage() {
     }
   }
 
+  //limpar configuração do bot
   async function handleClearBotConfig() {
     if (!confirm('Remover toda a configuração do bot desta empresa?')) return
     try {
@@ -253,6 +271,8 @@ export default function EmpresaPage() {
     }
   }
 
+
+  //filtrar empresas
   const filteredEmpresas = empresas.filter(emp =>
     emp.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
     emp.cnpj.includes(searchTerm)
@@ -448,9 +468,16 @@ export default function EmpresaPage() {
                   <>
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex items-center gap-3">
-                        <div className="p-3 rounded-lg" style={{ backgroundColor: "var(--primary)", color: "#fff" }}>
+                        <div
+                          className="w-12 h-12 flex items-center justify-center rounded-xl shadow-sm shrink-0"
+                          style={{ backgroundColor: "#fff", color: "#000" }}
+                        >
                           {empresa.logoUrl ? (
-                            <img src={empresa.logoUrl} alt="" className="w-6 h-6 object-contain" />
+                            <img
+                              src={empresa.logoUrl}
+                              alt={`Logo da empresa ${empresa.nome || ""}`}
+                              className="w-full h-full object-contain p-2"
+                            />
                           ) : (
                             <Building2 size={24} />
                           )}

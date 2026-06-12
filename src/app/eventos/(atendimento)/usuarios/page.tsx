@@ -38,7 +38,7 @@ export default function UsuariosPage() {
   useEffect(() => {
     if (status === 'loading') return
     if (!userRole || userRole === 'ATENDENTE') {
-      router.replace('/corporativo/all-tickets')
+      router.replace('/eventos/all-tickets')
       return
     }
   }, [status, userRole, router])

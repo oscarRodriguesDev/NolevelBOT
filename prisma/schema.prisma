@@ -170,3 +170,17 @@ model cpfsLeads{
   @@index([cpf])
   @@index([telefone])
 }
+
+model logs_de_acesso{
+  id        String   @id @default(uuid())
+  cpf       String?
+  nome      String?
+  empresa   String
+  modulo    modulo
+  acao      String //ex: "login", "criou chamado", "fechou chamado", etc.
+  createdAt DateTime @default(now())
+
+  @@index([cpf])
+  @@index([empresa])
+  @@index([modulo]) 
+}

@@ -35,7 +35,7 @@ export default function CreateEmpresa() {
 
   const MODULOS_DISPONIVEIS = [
     { valor: 'CORPORATIVO', label: 'Corporativo', icon: Headphones, desc: 'Gestão de chamados, dashboard, avisos e CPFs' },
-    { valor: 'OFICINA', label: 'Oficina', icon: Wrench, desc: 'Manutenção veicular para transportadoras' },
+    { valor: 'OFICINA', label: 'Operacional', icon: Wrench, desc: 'Manutenção veicular e operações' },
     { valor: 'EVENTOS', label: 'Eventos', icon: CalendarCheck, desc: 'Captura de leads em feiras e eventos' },
   ]
 

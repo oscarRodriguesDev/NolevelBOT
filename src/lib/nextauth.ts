@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { compare } from "bcryptjs"
 import { Chamado, ROLE } from "@prisma/client"
 import { needsCaptcha, verifyTurnstileToken, trackFailedLogin, resetFailedLogin } from "@/lib/rate-limit"
+import { logAcesso } from "@/lib/audit-log"
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -42,6 +43,19 @@ export const authOptions: NextAuthOptions = {
         }
 
         resetFailedLogin(credentials.email)
+
+        const empresa = await prisma.empresa.findUnique({
+          where: { id: user.empresaId },
+          select: { nome: true },
+        })
+
+        logAcesso({
+          cpf: user.cpf,
+          nome: user.name,
+          empresa: empresa?.nome || "Desconhecida",
+          modulo: "CORPORATIVO",
+          acao: "login",
+        })
 
         const chamadosSetor = await prisma.chamado.findMany({
           where: {

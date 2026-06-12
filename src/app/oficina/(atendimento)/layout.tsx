@@ -65,8 +65,8 @@ export default function AtendimentoLayout({
     checkAuthorization()
   }, [session, status, userRole, router])
 
-  const [titulo, setTitulo] = useState('Oficina')
-  const [descricao, setDescricao] = useState('Manutenção de Veículos')
+  const [titulo, setTitulo] = useState('Operacional')
+  const [descricao, setDescricao] = useState('Gestão de Manutenção')
 
   function setHeader(data: { titulo: string; descricao: string }) {
     setTitulo(data.titulo)

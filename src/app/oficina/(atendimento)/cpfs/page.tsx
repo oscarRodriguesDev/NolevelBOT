@@ -18,7 +18,7 @@ interface Admin {
   Empresa: { id: string; nome: string } | null
 }
 
-export default function CadastroMotoristas() {
+export default function CadastroColaboradores() {
   const { data: session } = useSession()
   const userRole = session?.user?.role as ROLE | null
   const isGod = userRole === "GOD"
@@ -27,7 +27,7 @@ export default function CadastroMotoristas() {
   const [nome, setNome] = useState("")
   const [matricula, setMatricula] = useState("")
   const [file, setFile] = useState<File | null>(null)
-  const [motoristas, setMotoristas] = useState<{ id?: string; nome: string; cpf: string }[]>([])
+  const [colaboradores, setColaboradores] = useState<{ id?: string; nome: string; cpf: string }[]>([])
   const [searchTerm, setSearchTerm] = useState("")
 
   const [, setAdmins] = useState<Admin[]>([])
@@ -36,13 +36,13 @@ export default function CadastroMotoristas() {
 
   const { setHeader } = useHeader()
 
-  async function fetchMotoristas() {
+  async function fetchColaboradores() {
     try {
       const res = await fetch("/api/cpfs")
       const data = await res.json()
-      setMotoristas(data)
+      setColaboradores(data)
     } catch (error) {
-      console.error("Erro ao buscar motoristas", error)
+      console.error("Erro ao buscar colaboradores", error)
     }
   }
 
@@ -61,17 +61,17 @@ export default function CadastroMotoristas() {
 
 useEffect(() => {
   setHeader({
-    titulo: "Cadastro de Motoristas",
-    descricao: "Gerencie motoristas cadastrados no sistema",
+    titulo: "Cadastro de Colaboradores",
+    descricao: "Gerencie colaboradores cadastrados no sistema",
   })
 
   const loadData = async () => {
     try {
       const res = await fetch("/api/cpfs")
       const data = await res.json()
-      setMotoristas(data)
+      setColaboradores(data)
     } catch (error) {
-      console.error("Erro ao buscar motoristas", error)
+      console.error("Erro ao buscar colaboradores", error)
     }
   }
 
@@ -92,7 +92,7 @@ useEffect(() => {
         return
       }
 
-      setMotoristas(prev => prev.filter(item => item.cpf !== cpfToDelete))
+      setColaboradores(prev => prev.filter(item => item.cpf !== cpfToDelete))
       toast.success("CPF deletado com sucesso")
     } catch {
       toast.error("Erro ao deletar CPF")
@@ -117,7 +117,7 @@ useEffect(() => {
       toast.success("CPF cadastrado com sucesso")
       setNome("")
       setMatricula("")
-      fetchMotoristas()
+      fetchColaboradores()
     } catch {
       toast.error("Erro ao conectar com o servidor")
     }
@@ -148,7 +148,7 @@ useEffect(() => {
 
       toast.success(`Arquivo importado com sucesso (${data.inseridos ?? 0} registros)`)
       setFile(null)
-      fetchMotoristas()
+      fetchColaboradores()
     } catch {
       toast.error("Erro ao conectar com o servidor")
     }
@@ -211,7 +211,7 @@ useEffect(() => {
     }
   }
 
-  const cpfsFiltrados = motoristas.filter((item) => {
+  const cpfsFiltrados = colaboradores.filter((item) => {
     if (!searchTerm) return true
     const termo = searchTerm.toLowerCase()
     const matchNome = item.nome.toLowerCase().includes(termo)

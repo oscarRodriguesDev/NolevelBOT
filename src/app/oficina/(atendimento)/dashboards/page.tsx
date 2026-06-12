@@ -123,9 +123,37 @@ export default function Dashboard() {
   }, [hasPermission, router])
 
   function downloadCSV() {
-    const header = "defeito,total\n"
-    const rows = defeitosStats.map((t) => `${t.defeito},${t.total}`).join("\n")
-    const blob = new Blob([header + rows], { type: "text/csv" })
+    const linhas: string[] = []
+    linhas.push(`Relatorio de Manutencao - Oficina - Periodo: ${periodo}`)
+    linhas.push(`Gerado em: ${new Date().toLocaleString("pt-BR")}`)
+    linhas.push("")
+    linhas.push("--- INDICADORES ---")
+    linhas.push(`Total de Solicitacoes,${totalGeral}`)
+    linhas.push(`Em Aberto,${totalAbertos}`)
+    linhas.push(`Concluidas,${totalFechados}`)
+    linhas.push(`Taxa de Conclusao,${taxaConclusao}%`)
+    linhas.push(`Tempo Medio,${tempoMedio}h`)
+    linhas.push("")
+    linhas.push("--- STATUS ---")
+    linhas.push("Status,Total")
+    statusStats.forEach((s) => linhas.push(`${s.status},${s.total}`))
+    linhas.push("")
+    linhas.push("--- DEFEITOS MAIS COMUNS ---")
+    linhas.push("Defeito,Total")
+    defeitosStats.forEach((d) => linhas.push(`${d.defeito},${d.total}`))
+    linhas.push("")
+    linhas.push("--- POR FUNCAO ---")
+    linhas.push("Funcao,Total")
+    funcoesStats.forEach((f) => linhas.push(`${f.funcao},${f.total}`))
+    linhas.push("")
+    linhas.push("--- POR VEICULO ---")
+    linhas.push("Veiculo,Total")
+    veiculosStats.forEach((v) => linhas.push(`${v.veiculo},${v.total}`))
+    linhas.push("")
+    linhas.push("--- EVOLUCAO TEMPORAL ---")
+    linhas.push("Periodo,Total")
+    chamadosPeriodo.forEach((c) => linhas.push(`${c.periodo},${c.total}`))
+    const blob = new Blob([linhas.join("\n")], { type: "text/csv;charset=utf-8" })
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
@@ -136,30 +164,75 @@ export default function Dashboard() {
 
   function downloadPDF() {
     const pdf = new jsPDF()
+    let y = 20
+    const pageHeight = 280
+    const checkPage = () => { if (y > pageHeight) { pdf.addPage(); y = 20 } }
+
     pdf.setFontSize(18)
-    pdf.text("Relatorio de Manutencao - Oficina", 10, 20)
-    pdf.setFontSize(12)
-    pdf.text(
-      `Periodo: ${periodo} | Total: ${totalGeral} | TM: ${tempoMedio}h | Taxa: ${taxaConclusao}%`,
-      10,
-      30
-    )
+    pdf.text("Relatorio de Manutencao - Oficina", 10, y)
+    y += 8
+    pdf.setFontSize(10)
+    pdf.text(`Gerado em: ${new Date().toLocaleString("pt-BR")} | Periodo: ${periodo}`, 10, y)
+    y += 12
 
-    let y = 50
-    pdf.text("Defeitos mais comuns:", 10, y)
-    y += 7
-    defeitosStats.slice(0, 10).forEach((t) => {
-      pdf.text(`${t.defeito}: ${t.total}`, 10, y)
-      y += 6
-    })
+    pdf.setFontSize(14)
+    pdf.text("Indicadores", 10, y); y += 8
+    pdf.setFontSize(11)
+    pdf.text(`Total de Solicitacoes: ${totalGeral}`, 15, y); y += 6
+    pdf.text(`Em Aberto: ${totalAbertos}`, 15, y); y += 6
+    pdf.text(`Concluidas: ${totalFechados}`, 15, y); y += 6
+    pdf.text(`Taxa de Conclusao: ${taxaConclusao}%`, 15, y); y += 6
+    pdf.text(`Tempo Medio: ${tempoMedio} horas`, 15, y); y += 10
+    checkPage()
 
-    y += 10
-    pdf.text("Por funcao:", 10, y)
-    y += 7
-    funcoesStats.forEach((f) => {
-      pdf.text(`${f.funcao}: ${f.total}`, 10, y)
-      y += 6
-    })
+    if (statusStats.length > 0) {
+      pdf.setFontSize(14)
+      pdf.text("Status", 10, y); y += 8
+      pdf.setFontSize(11)
+      statusStats.forEach((s) => {
+        pdf.text(`${s.status}: ${s.total}`, 15, y); y += 6; checkPage()
+      })
+      y += 4; checkPage()
+    }
+
+    if (defeitosStats.length > 0) {
+      pdf.setFontSize(14)
+      pdf.text("Defeitos mais Comuns", 10, y); y += 8
+      pdf.setFontSize(11)
+      defeitosStats.slice(0, 20).forEach((d) => {
+        pdf.text(`${d.defeito}: ${d.total}`, 15, y); y += 6; checkPage()
+      })
+      y += 4; checkPage()
+    }
+
+    if (funcoesStats.length > 0) {
+      pdf.setFontSize(14)
+      pdf.text("Por Funcao", 10, y); y += 8
+      pdf.setFontSize(11)
+      funcoesStats.forEach((f) => {
+        pdf.text(`${f.funcao}: ${f.total}`, 15, y); y += 6; checkPage()
+      })
+      y += 4; checkPage()
+    }
+
+    if (veiculosStats.length > 0) {
+      pdf.setFontSize(14)
+      pdf.text("Por Veiculo", 10, y); y += 8
+      pdf.setFontSize(11)
+      veiculosStats.slice(0, 20).forEach((v) => {
+        pdf.text(`Veiculo ${v.veiculo}: ${v.total}`, 15, y); y += 6; checkPage()
+      })
+      y += 4; checkPage()
+    }
+
+    if (chamadosPeriodo.length > 0) {
+      pdf.setFontSize(14)
+      pdf.text("Evolucao Temporal", 10, y); y += 8
+      pdf.setFontSize(11)
+      chamadosPeriodo.forEach((c) => {
+        pdf.text(`${c.periodo}: ${c.total}`, 15, y); y += 6; checkPage()
+      })
+    }
 
     pdf.save("dashboard_oficina.pdf")
   }

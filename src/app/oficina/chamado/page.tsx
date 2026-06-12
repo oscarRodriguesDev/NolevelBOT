@@ -379,7 +379,7 @@ export default function ManutencaoPage() {
             }}
           >
             <p className="opacity-60">
-              * Preencha todos os campos obrigatórios. Ao registrar sem defeito, apenas os dados do motorista e veículo serão salvos.
+              * Preencha todos os campos obrigatórios. Ao registrar sem defeito, apenas os dados do colaborador e veículo serão salvos.
             </p>
           </div>
         </div>

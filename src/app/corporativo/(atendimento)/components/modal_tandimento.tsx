@@ -4,6 +4,17 @@ import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import Image from "next/image"
 import type { HistoricoItem, Chamado } from "@/types/chamado"
+import {
+  LuX,
+  LuUser,
+  LuFileText,
+  LuClock,
+  LuTag,
+  LuPaperclip,
+  LuMessageSquare,
+  LuSend,
+  LuCheck as LuCheckCircle,
+} from "react-icons/lu"
 
 interface ModalChamadoProps {
   ticket: string | null
@@ -13,8 +24,6 @@ interface ModalChamadoProps {
 }
 
 export function ModalChamado({
-
-
   ticket,
   open,
   onClose,
@@ -26,22 +35,19 @@ export function ModalChamado({
   const [descricao, setDescricao] = useState("")
   const [historico, setHistorico] = useState<HistoricoItem[]>([])
   const [loading, setLoading] = useState(false)
-  const [doc, setDoc] = useState<string | null>(null)
 
   const session = useSession()
-
 
   useEffect(() => {
     if (!ticket || !open) return
 
     async function fetchChamado() {
       const res = await fetch(`/api/tickets?ticket=${ticket}`)
-      const data = await res.json()
-      const chamadoData = data[0]
+      const json = await res.json()
+      const chamadoData = json.data?.[0]
 
       setChamado(chamadoData)
       setNovoStatus(chamadoData?.status || "")
-
       setDescricao(chamadoData?.descricao || "")
 
       if (chamadoData?.historico) {
@@ -95,6 +101,8 @@ export function ModalChamado({
   }
 
   async function concluirChamado() {
+    const confirmacao = window.confirm("Tem certeza que deseja fechar este chamado? Ele será removido da lista de atendimento.")
+    if (!confirmacao) return
     if (!ticket) return
 
     await fetch(`/api/tickets?atendimento=${ticket}`, {
@@ -105,203 +113,246 @@ export function ModalChamado({
     onClose()
   }
 
+  // Função auxiliar para cores de status (fallback seguro com tailwind)
+  const getStatusBadge = (status: string) => {
+    const badges: Record<string, string> = {
+      NOVO: "bg-blue-100 text-blue-700 border-blue-200",
+      EM_ATENDIMENTO: "bg-amber-100 text-amber-700 border-amber-200",
+      AGUARDANDO: "bg-purple-100 text-purple-700 border-purple-200",
+      CONCLUIDO: "bg-emerald-100 text-emerald-700 border-emerald-200",
+      CANCELADO: "bg-red-100 text-red-700 border-red-200",
+    }
+    return badges[status] || "bg-gray-100 text-gray-700 border-gray-200"
+  }
+
   if (!open || !chamado) return null
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-chamado-title"
       onKeyDown={(e) => e.key === 'Escape' && onClose()}
     >
       <div
-        className="w-full max-w-4xl rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 relative border transition-colors duration-300 my-4"
+        className="w-full max-w-5xl max-h-[95vh] flex flex-col rounded-3xl shadow-2xl border overflow-hidden transition-all animate-in fade-in zoom-in duration-300"
         style={{
           backgroundColor: "var(--surface)",
           borderColor: "var(--border-subtle)",
         }}
       >
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 sm:top-6 sm:right-6 text-lg transition-colors duration-200 hover:scale-110"
-          style={{ color: "var(--foreground)" }}
-          aria-label="Fechar modal"
+        {/* HEADER FIXO */}
+        <header 
+          className="flex items-center justify-between px-6 py-5 border-b shrink-0"
+          style={{ borderColor: "var(--border-subtle)" }}
         >
-          ✕
-        </button>
-
-        <h2 id="modal-chamado-title" className="text-xl sm:text-2xl lg:text-3xl font-bold mb-4 sm:mb-6 pr-8" style={{ color: "var(--primary)" }}>
-          Chamado {chamado.ticket}
-        </h2>
-
-        {/* Informações do Chamado */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-          <div className="space-y-2 text-xs sm:text-sm">
-            <p><strong>Nome:</strong> {chamado.nome}</p>
-            <p><strong>CPF:</strong> {chamado.cpf}</p>
-            <p><strong>Setor:</strong> {chamado.setor}</p>
-          </div>
-          <div className="space-y-2 text-xs sm:text-sm">
-            <p><strong>Prioridade:</strong> {chamado.prioridade}</p>
-            <p><strong>Status:</strong> {chamado.status}</p>
-            <p><strong>Data:</strong> {new Date(chamado.createdAt).toLocaleString("pt-BR")}</p>
-          </div>
-        </div>
-
-
-        {chamado.anexoUrl ? (
-          <a
-            href={chamado.anexoUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block mb-6"
-          >
-            <Image
-              src={chamado.anexoUrl}
-              alt="Prévia do anexo"
-              width={100}
-              height={100}
-              className="object-cover rounded-md border"
-            />
-          </a>
-        ) : (
-          <div className="text-xs sm:text-sm mb-6 text-gray-500">
-            Nenhum documento anexado
-          </div>
-        )}
-
-        {/* Descrição do Chamado */}
-        <div className="mb-6">
-          <h3 className="text-sm font-semibold mb-2">Descrição</h3>
-          <div
-            className="border rounded-lg p-3 sm:p-4 text-xs sm:text-sm whitespace-pre-wrap transition-colors duration-300 max-h-32 overflow-y-auto"
-            style={{
-              backgroundColor: "var(--surface-elevated)",
-              borderColor: "var(--border-subtle)",
-              color: "var(--foreground)",
-            }}
-          >
-            {descricao}
-          </div>
-        </div>
-
-        {/* Histórico */}
-        <div
-          className="border rounded-lg p-4 sm:p-6 mb-6 transition-colors duration-300"
-          style={{
-            backgroundColor: "var(--surface-elevated)",
-            borderColor: "var(--border-subtle)",
-          }}
-        >
-          <h3 className="font-semibold mb-3 text-sm">Evolução do Chamado</h3>
-
-          <div
-            className="h-32 sm:h-40 overflow-y-auto border rounded-lg p-3 mb-4 text-xs transition-colors duration-300"
-            style={{
-              backgroundColor: "var(--background)",
-              borderColor: "var(--border-subtle)",
-              color: "var(--foreground)",
-            }}
-          >
-            {historico.length === 0 && <p style={{ opacity: 0.6 }}>Nenhuma evolução registrada</p>}
-
-            {historico.map((item, index) => (
-              <div key={index} className="mb-3 border-b pb-2 last:border-b-0" style={{ borderColor: "var(--border-subtle)" }}>
-                <p className="font-semibold text-xs">{new Date(item.data).toLocaleString("pt-BR")}</p>
-                <p className="text-xs">{item.acao}</p>
-                {item.observacao && <p style={{ opacity: 0.7 }} className="text-xs">Obs: {item.observacao}</p>}
-                {item.atendente && <p style={{ opacity: 0.6 }} className="text-xs">Atendente: {item.atendente}</p>}
-              </div>
-            ))}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <h2 id="modal-chamado-title" className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>
+              Ticket <span style={{ color: "var(--primary)" }}>#{chamado.ticket}</span>
+            </h2>
+            <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${getStatusBadge(chamado.status)}`}>
+              {chamado.status.replace("_", " ")}
+            </span>
           </div>
 
-          {/* Formulário de Atualização */}
-          <div className="space-y-3">
-            <div>
-              <label className="block text-xs sm:text-sm font-medium mb-1">Novo Status</label>
-              <select
-                value={novoStatus}
-                onChange={(e) => setNovoStatus(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none transition-colors duration-300"
-                style={{
-                  borderColor: "var(--border-subtle)",
-                  backgroundColor: "var(--background)",
-                  color: "var(--foreground)",
-                }}
-              >
-                <option value="NOVO">Novo</option>
-                <option value="EM_ATENDIMENTO">Em Atendimento</option>
-                <option value="AGUARDANDO">Aguardando</option>
-                <option value="CONCLUIDO">Concluído</option>
-                <option value="CANCELADO">Cancelado</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs sm:text-sm font-medium mb-1">Observação</label>
-              <textarea
-                placeholder="Adicionar observação..."
-                value={observacao}
-                onChange={(e) => setObservacao(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none transition-colors duration-300 resize-none"
-                style={{
-                  borderColor: "var(--border-subtle)",
-                  backgroundColor: "var(--background)",
-                  color: "var(--foreground)",
-                }}
-                rows={2}
-              />
-            </div>
-
-            <button
-              onClick={atualizarChamado}
-              disabled={loading}
-              className="w-full text-white px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
-              style={{ backgroundColor: "var(--primary)" }}
-              onMouseEnter={e => {
-                if (e.currentTarget instanceof HTMLElement && !loading) {
-                  e.currentTarget.style.backgroundColor = "var(--primary-hover)";
-                }
-              }}
-              onMouseLeave={e => {
-                if (e.currentTarget instanceof HTMLElement) {
-                  e.currentTarget.style.backgroundColor = "var(--primary)";
-                }
-              }}
-            >
-              {loading ? "Atualizando..." : "Atualizar Chamado"}
-            </button>
-          </div>
-        </div>
-
-        {/* Botão Concluir */}
-        <div className="flex flex-col sm:flex-row gap-3 justify-end">
           <button
             onClick={onClose}
-            className="text-white px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 hover:scale-105 active:scale-95"
-            style={{ backgroundColor: "var(--border-subtle)" }}
+            className="p-2 rounded-full transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+            style={{ color: "var(--foreground)" }}
+            aria-label="Fechar modal"
           >
-            Fechar
+            <LuX size={24} />
+          </button>
+        </header>
+
+        {/* CORPO ROLÁVEL */}
+        <div className="flex-1 overflow-y-auto p-6 scroll-smooth">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            {/* COLUNA ESQUERDA: DETALHES */}
+            <div className="lg:col-span-2 space-y-8">
+              
+              {/* Cards de Informação */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-4 rounded-2xl border" style={{ backgroundColor: "var(--background)", borderColor: "var(--border-subtle)" }}>
+                  <div className="flex items-center gap-2 mb-3 text-sm font-semibold opacity-70">
+                    <LuUser size={16} /> Solicitante
+                  </div>
+                  <p className="font-medium text-base mb-1">{chamado.nome}</p>
+                  <p className="text-sm opacity-60">CPF: {chamado.cpf}</p>
+                  <p className="text-sm opacity-60">Setor: {chamado.setor}</p>
+                </div>
+
+                <div className="p-4 rounded-2xl border" style={{ backgroundColor: "var(--background)", borderColor: "var(--border-subtle)" }}>
+                  <div className="flex items-center gap-2 mb-3 text-sm font-semibold opacity-70">
+                    <LuTag size={16} /> Classificação
+                  </div>
+                  <p className="font-medium text-base mb-1 text-red-500">{chamado.prioridade}</p>
+                  <div className="flex items-center gap-2 text-sm opacity-60 mt-2">
+                    <LuClock size={14} />
+                    {new Date(chamado.createdAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Descrição */}
+              <div>
+                <h3 className="flex items-center gap-2 text-base font-semibold mb-3">
+                  <LuFileText size={18} style={{ color: "var(--primary)" }}/> Descrição do Problema
+                </h3>
+                <div
+                  className="p-5 rounded-2xl border text-sm leading-relaxed whitespace-pre-wrap shadow-sm"
+                  style={{
+                    backgroundColor: "var(--background)",
+                    borderColor: "var(--border-subtle)",
+                    color: "var(--foreground)",
+                  }}
+                >
+                  {descricao || <span className="opacity-50 italic">Nenhuma descrição fornecida.</span>}
+                </div>
+              </div>
+
+              {/* Anexos */}
+              {chamado.anexoUrl && (
+                <div>
+                  <h3 className="flex items-center gap-2 text-base font-semibold mb-3">
+                    <LuPaperclip size={18} style={{ color: "var(--primary)" }}/> Anexo
+                  </h3>
+                  <a
+                    href={chamado.anexoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group relative inline-block rounded-xl overflow-hidden border shadow-sm transition-all hover:shadow-md"
+                    style={{ borderColor: "var(--border-subtle)" }}
+                  >
+                    <Image
+                      src={chamado.anexoUrl}
+                      alt="Prévia do anexo"
+                      width={160}
+                      height={160}
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-sm font-medium">
+                      Ver Anexo
+                    </div>
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {/* COLUNA DIREITA: AÇÕES E HISTÓRICO */}
+            <div className="space-y-6">
+              
+              {/* Form Atualização */}
+              <div 
+                className="p-5 rounded-2xl border shadow-sm"
+                style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)" }}
+              >
+                <h3 className="flex items-center gap-2 text-sm font-semibold mb-4">
+                  <LuMessageSquare size={16} /> Atualizar Status
+                </h3>
+                
+                <div className="space-y-4">
+                  <div>
+                    <select
+                      value={novoStatus}
+                      onChange={(e) => setNovoStatus(e.target.value)}
+                      className="w-full border rounded-xl px-4 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-opacity-50 appearance-none cursor-pointer"
+                      style={{
+                        borderColor: "var(--border-subtle)",
+                        backgroundColor: "var(--background)",
+                        color: "var(--foreground)",
+                      }}
+                    >
+                      <option value="NOVO">Novo</option>
+                      <option value="EM_ATENDIMENTO">Em Atendimento</option>
+                      <option value="AGUARDANDO">Aguardando</option>
+                      <option value="CONCLUIDO">Concluído</option>
+                      <option value="CANCELADO">Cancelado</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <textarea
+                      placeholder="Adicionar nota técnica ou observação..."
+                      value={observacao}
+                      onChange={(e) => setObservacao(e.target.value)}
+                      className="w-full border rounded-xl px-4 py-3 text-sm outline-none transition-all resize-none focus:ring-2 focus:ring-opacity-50"
+                      style={{
+                        borderColor: "var(--border-subtle)",
+                        backgroundColor: "var(--background)",
+                        color: "var(--foreground)",
+                      }}
+                      rows={3}
+                    />
+                  </div>
+
+                  <button
+                    onClick={atualizarChamado}
+                    disabled={loading || (!observacao && novoStatus === chamado.status)}
+                    className="w-full flex items-center justify-center gap-2 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all hover:brightness-110 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                    style={{ backgroundColor: "var(--primary)" }}
+                  >
+                    {loading ? "Salvando..." : (
+                      <>
+                        <LuSend size={16} /> Registrar Evolução
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Histórico Timeline */}
+              <div>
+                <h3 className="text-sm font-semibold mb-4 opacity-80">Timeline de Evolução</h3>
+                <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                  {historico.length === 0 ? (
+                    <p className="text-sm opacity-50 italic text-center py-4">Nenhuma evolução registrada.</p>
+                  ) : (
+                    historico.map((item, index) => (
+                      <div key={index} className="relative pl-6 before:absolute before:left-[11px] before:top-2 before:bottom-[-24px] before:w-px before:bg-border last:before:hidden">
+                        <div className="absolute left-0 top-1.5 w-6 h-6 rounded-full border-4 flex items-center justify-center bg-white" style={{ borderColor: "var(--background)" }}>
+                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "var(--primary)" }} />
+                        </div>
+                        <div className="bg-background border rounded-xl p-3 text-sm" style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--background)" }}>
+                          <div className="flex justify-between items-start mb-1">
+                            <span className="font-semibold text-xs">{item.acao}</span>
+                            <span className="text-[10px] opacity-60">{new Date(item.data).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</span>
+                          </div>
+                          {item.observacao && <p className="opacity-80 mt-1 text-xs">{item.observacao}</p>}
+                          {item.atendente && <p className="text-[10px] opacity-50 mt-2 font-medium">Por: {item.atendente}</p>}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        {/* FOOTER FIXO */}
+        <footer 
+          className="flex flex-col-reverse sm:flex-row justify-end gap-3 px-6 py-4 border-t shrink-0 bg-black/5 dark:bg-white/5"
+          style={{ borderColor: "var(--border-subtle)" }}
+        >
+          <button
+            onClick={onClose}
+            className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:bg-black/5 dark:hover:bg-white/10"
+            style={{ color: "var(--foreground)" }}
+          >
+            Voltar para Lista
           </button>
           <button
             onClick={concluirChamado}
-            className="text-white px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 hover:scale-105 active:scale-95"
-            style={{ backgroundColor: "var(--status-cancelled)" }}
-            onMouseEnter={e => {
-              if (e.currentTarget instanceof HTMLElement) {
-                e.currentTarget.style.opacity = "0.8";
-              }
-            }}
-            onMouseLeave={e => {
-              if (e.currentTarget instanceof HTMLElement) {
-                e.currentTarget.style.opacity = "1";
-              }
-            }}
+            className="flex items-center justify-center gap-2 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-80 active:scale-95"
+            style={{ backgroundColor: "var(--status-cancelled, #ef4444)" }} // Fallback red se a var não existir
           >
-            Concluir Chamado
+            <LuCheckCircle size={18} /> Fechar Chamado Definitivamente
           </button>
-        </div>
+        </footer>
       </div>
     </div>
   )

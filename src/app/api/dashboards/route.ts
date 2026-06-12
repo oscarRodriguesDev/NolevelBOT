@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getSessionOrFail } from "@/util/permission"
+import { getTicketWhereClause } from "@/lib/rbac"
+import { ROLE } from "@prisma/client"
 
 function getWeek(date: Date) {
   const first = new Date(date.getFullYear(), 0, 1)
@@ -29,16 +31,14 @@ export async function GET(req: Request) {
     const periodo = searchParams.get("periodo") || "mes"
     const modulo = searchParams.get("modulo") || "corporativo"
 
+    const userRole = session.user.role as ROLE
+    const userSetor = session.user.setor || ""
     const empresaId = session.user.empresaId
 
-    const where: Record<string, unknown> = {}
-
-    if (empresaId) {
-      where.empresaId = empresaId
-    }
+    const where = getTicketWhereClause(userRole, userSetor, empresaId)
 
     const chamados = await prisma.chamado.findMany({
-      where,
+      where: where as Record<string, unknown>,
       select: {
         id: true,
         setor: true,

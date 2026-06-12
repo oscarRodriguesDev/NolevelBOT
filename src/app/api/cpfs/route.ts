@@ -6,7 +6,7 @@ import { limparCPF } from "@/util/limparcpfs"
 import { CAN_BATCH_CPF } from "@/lib/rbac"
 
 export async function POST(req: NextRequest) {
-  const session = await getSessionOrFail(["GOD", "ADMIN", "GESTOR", "ATENDENTE"])
+  const session = await getSessionOrFail(["GOD", "ADMIN", "GESTOR"])
   const empresaId = session?.user?.empresaId
 
   if (!session || !empresaId) {

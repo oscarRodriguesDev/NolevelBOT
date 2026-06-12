@@ -20,7 +20,7 @@ export default function AtendimentoError({
     >
       <div className="text-center max-w-md">
         <div className="text-6xl mb-4">⚠</div>
-        <h1 className="text-2xl font-bold mb-2">Erro na área da oficina</h1>
+        <h1 className="text-2xl font-bold mb-2">Erro na área operacional</h1>
         <p className="mb-6" style={{ opacity: 0.7 }}>
           Não foi possível carregar esta página. Tente novamente.
         </p>

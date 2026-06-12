@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { useHeader } from "../layout"
+import { useSession } from "next-auth/react"
+import { ROLE } from "@prisma/client"
 
 type Aviso = {
   id: string
@@ -13,14 +15,20 @@ type Aviso = {
 }
 
 export default function AvisosPage() {
+  const { data: session } = useSession()
+  const userRole = session?.user?.role as ROLE | undefined
+  const userSetor = session?.user?.setor || ""
+  const podeEscolherSetor = userRole === "ADMIN" || userRole === "GOD"
+
   const [avisos, setAvisos] = useState<Aviso[]>([])
   const [open, setOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
 
   const [titulo, setTitulo] = useState("")
   const [conteudo, setConteudo] = useState("")
-  const [setor, setSetor] = useState("")
+  const [setor, setSetor] = useState(podeEscolherSetor ? "" : userSetor)
   const [duracao, setDuracao] = useState("")
+  const [setoresDisponiveis, setSetoresDisponiveis] = useState<string[]>([])
   
   // Novos estados para controle de erro e loading
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -34,6 +42,17 @@ export default function AvisosPage() {
       descricao: "Comunicados importantes da sua empresa",
     })
   }, [setHeader])
+
+  useEffect(() => {
+    if (podeEscolherSetor && session?.user?.empresaId) {
+      fetch(`/api/empresa?id=${session.user.empresaId}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.setores) setSetoresDisponiveis(data.setores)
+        })
+        .catch(console.error)
+    }
+  }, [podeEscolherSetor, session?.user?.empresaId])
 
   // Função única de busca (corrigida a duplicidade)
   async function fetchAvisos() {
@@ -54,7 +73,7 @@ export default function AvisosPage() {
   function resetForm() {
     setTitulo("")
     setConteudo("")
-    setSetor("")
+    setSetor(podeEscolherSetor ? "" : userSetor)
     setDuracao("")
     setEditingId(null)
     setErrorMessage(null)
@@ -72,7 +91,7 @@ export default function AvisosPage() {
     const payload = {
       titulo,
       conteudo,
-      setor,
+      setor: podeEscolherSetor ? setor : userSetor,
       duracao: duracao ? String(duracao) : null
     }
 
@@ -188,13 +207,27 @@ export default function AvisosPage() {
                 style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
               />
 
-              <input
-                value={setor}
-                onChange={e => setSetor(e.target.value)}
-                placeholder="Setor Alvo (Ex: TI, RH)"
-                className="w-full border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all"
-                style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
-              />
+              {podeEscolherSetor ? (
+                <select
+                  value={setor}
+                  onChange={e => setSetor(e.target.value)}
+                  className="w-full border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all"
+                  style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
+                >
+                  <option value="">Todos os setores</option>
+                  {setoresDisponiveis.map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  value={setor}
+                  readOnly
+                  disabled
+                  className="w-full border rounded-xl px-4 py-3 outline-none opacity-60 cursor-not-allowed"
+                  style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
+                />
+              )}
 
               <input
                 type="number"

@@ -115,7 +115,7 @@ export default function OficinaPage() {
             Registro Enviado!
           </h2>
           <p className="mb-6 text-sm opacity-70">
-            Seu registro de defeito foi enviado para a oficina. Acompanhe pelo sistema de chamados.
+            Seu registro de defeito foi enviado para a operacional. Acompanhe pelo sistema de chamados.
           </p>
           <button
             onClick={() => window.close()}
@@ -144,7 +144,7 @@ export default function OficinaPage() {
           <div className="space-y-2 mb-8">
             <h2 className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--primary)' }}>
               <LuBus className="inline mr-2 mb-1" />
-              Registro de Defeito - Oficina
+              Registro de Defeito - Operacional
             </h2>
             <p className="text-sm opacity-70">Preencha os dados do veículo e do defeito encontrado</p>
           </div>
@@ -173,7 +173,7 @@ export default function OficinaPage() {
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
-                  Nome do Motorista
+                  Nome do Colaborador
                 </label>
                 <input
                   type="text"
@@ -204,7 +204,7 @@ export default function OficinaPage() {
                     color: 'var(--foreground)',
                     '--tw-ring-color': 'var(--primary)',
                   } as never}
-                  placeholder="Ex: Motorista, Cobrador..."
+                  placeholder="Ex: Colaborador, Cobrador..."
                 />
               </div>
 
@@ -330,7 +330,7 @@ export default function OficinaPage() {
         <div className="text-center mb-8">
           <LuBus className="h-12 w-12 mx-auto mb-4" style={{ color: 'var(--primary)' }} />
           <h2 className="text-2xl font-bold" style={{ color: 'var(--primary)' }}>
-            Oficina - Registro de Defeito
+            Operacional - Registro de Defeito
           </h2>
           <p className="text-sm opacity-70 mt-2">
             Digite sua matrícula para começar

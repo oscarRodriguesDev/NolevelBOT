@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { LuMenu, LuX, LuTickets, LuBell, LuUsers, LuHouse, LuSettings, LuBuilding2, LuWrench, LuChevronDown, LuChevronRight, LuHeadphones, LuTruck } from 'react-icons/lu'
+import { LuMenu, LuX, LuTickets, LuBell, LuUsers, LuHouse, LuSettings, LuBuilding2, LuWrench, LuChevronDown, LuChevronRight, LuHeadphones, LuTruck, LuGlobe } from 'react-icons/lu'
 import { useSession } from 'next-auth/react'
 import { ROLE } from '@prisma/client'
 import packageJson from '../../../package.json'
@@ -58,19 +58,18 @@ export function Sidebar() {
         { label: 'CPFs Autorizados', href: '/corporativo/cpfs', icon: LuUsers, show: true },
         { label: 'Usuários', href: '/corporativo/usuarios', icon: LuUsers, show: isAdmin },
         { label: 'Criar Usuário', href: '/corporativo/gestao-de-usuarios', icon: LuSettings, show: isAdmin },
-        { label: 'Empresas', href: '/corporativo/empresa', icon: LuBuilding2, show: userRole === "GOD" },
       ],
     },
     {
       key: 'oficina',
-      label: 'Oficina',
+      label: 'Operacional',
       icon: LuWrench,
       modulos: ['OFICINA'],
       items: [
         { label: 'Dashboard', href: '/oficina/dashboards', icon: LuHouse, show: userRole !== "ATENDENTE" },
         { label: 'Solicitações', href: '/oficina/all-tickets', icon: LuTickets, show: true },
         { label: 'Avisos', href: '/oficina/avisos', icon: LuBell, show: true },
-        { label: 'Motoristas', href: '/oficina/cpfs', icon: LuTruck, show: true },
+        { label: 'Colaboradores', href: '/oficina/cpfs', icon: LuTruck, show: true },
         { label: 'Usuários', href: '/oficina/usuarios', icon: LuUsers, show: isAdmin },
         { label: 'Criar Usuário', href: '/oficina/gestao-de-usuarios', icon: LuSettings, show: userRole !== "GOD" && isAdmin },
        
@@ -93,7 +92,23 @@ export function Sidebar() {
     },
   ]
 
-  const modulosDisponiveis = modulos.filter(m => m.modulos.some(mod => temModulo(mod)))
+  if (userRole === "GOD") {
+    modulos.length = 0
+    modulos.push({
+      key: 'plataforma',
+      label: 'Plataforma',
+      icon: LuGlobe,
+      modulos: [],
+      items: [
+        { label: 'Dashboard Global', href: '/god/dashboard', icon: LuHouse, show: true },
+        { label: 'Empresas', href: '/corporativo/empresa', icon: LuBuilding2, show: true },
+        { label: 'Usuários', href: '/god/usuarios', icon: LuUsers, show: true },
+        { label: 'Admins', href: '/god/admins', icon: LuSettings, show: true },
+      ],
+    })
+  }
+
+  const modulosDisponiveis = modulos.filter(m => m.modulos.some(mod => temModulo(mod)) || m.key === 'plataforma')
 
   const [modulosAbertos, setModulosAbertos] = useState<string[]>(() => {
     const inicial: string[] = []

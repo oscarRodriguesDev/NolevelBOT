@@ -4,48 +4,19 @@ import { getToken } from "next-auth/jwt"
 
 export async function proxy(req: NextRequest) {
   const token = await getToken({ req })
-
   const { pathname } = req.nextUrl
 
-  const protectedRoutes = [
-    "/oficina/dashboards",
-     "/corporativo/dashboards",
-    "/all-tickets",
-    "/gestao-de-usuarios",
-    "/avisos",
-    "/cpfs",
-  ]
-
-  const isProtected = protectedRoutes.some((route) =>
-    pathname.startsWith(route)
-  )
-
-  // não logado tentando acessar rota protegida
-  if (isProtected && !token) {
-    return NextResponse.redirect(new URL("/login", req.url))
+  if (!token && pathname !== "/") {
+    return NextResponse.redirect(new URL("/", req.url))
   }
 
-  // logado tentando acessar login (mas NÃO a "/")
   if (token && pathname === "/") {
-    return NextResponse.redirect(new URL("/all-tickets", req.url))
-  }
-
-  // controle de role
-  if (pathname.startsWith("/admin") && token?.role !== "ADMIN") {
-    return NextResponse.redirect(new URL("/unauthorized", req.url))
+    return NextResponse.redirect(new URL("/dashboard", req.url))
   }
 
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: [
-    "/",
-    "/dashboards/:path*",
-    "/all-tickets/:path*",
-    "/gestao-de-usuarios/:path*",
-    "/avisos/:path*",
-    "/cpfs/:path*",
-    "/admin/:path*",
-  ],
+  matcher: ["/", "/corporativo/:path*", "/oficina/:path*", "/eventos/:path*", "/god/:path*", "/dashboard/:path*"],
 }

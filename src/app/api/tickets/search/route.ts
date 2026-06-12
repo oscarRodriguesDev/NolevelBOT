@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import type { Prisma } from '@prisma/client'
 export const dynamic = 'force-dynamic'
 import { getSessionOrFail } from '@/util/permission'
+import { getTicketWhereClause } from '@/lib/rbac'
 import { uploadFile } from '@/lib/upload'
 import type { HistoricoItem } from '@/types/chamado'
 import { normalizarStatus } from '@/types/chamado'
@@ -72,12 +73,12 @@ export async function GET(req: NextRequest) {
     const cpf = searchParams.get("cpf")
     const ticket = searchParams.get("ticket")
 
-    const where: Prisma.ChamadoWhereInput = {}
-
     const session = await getSessionOrFail()
-    if (session?.user?.empresaId) {
-      where.empresaId = session.user.empresaId
-    }
+    const userRole = session?.user?.role as ROLE | undefined
+    const userSetor = session?.user?.setor || ""
+    const empresaId = session?.user?.empresaId || ""
+
+    const where: Prisma.ChamadoWhereInput = getTicketWhereClause(userRole || "ATENDENTE", userSetor, empresaId)
 
     if (ticket) {
       where.ticket = ticket

@@ -215,7 +215,7 @@ export default function SolicitacoesPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-4 border-t" style={{ borderColor: "var(--border-subtle)" }}>
             <input
-              placeholder="Filtrar por motorista..."
+              placeholder="Filtrar por colaborador..."
               value={filters.nome}
               onChange={e => updateFilter("nome", e.target.value)}
               className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
