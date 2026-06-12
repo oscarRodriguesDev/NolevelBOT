@@ -115,7 +115,7 @@ export default function OficinaPage() {
             Registro Enviado!
           </h2>
           <p className="mb-6 text-sm opacity-70">
-            Seu registro de defeito foi enviado para a operacional. Acompanhe pelo sistema de chamados.
+            Seu registro de defeito foi enviado para a operacional. Acompanhe pelo sistema de Pedidos de Manutenção (PM).
           </p>
           <button
             onClick={() => window.close()}

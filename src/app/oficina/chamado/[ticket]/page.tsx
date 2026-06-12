@@ -111,7 +111,7 @@ export default function TicketPage() {
             Solicitação Enviada
           </h2>
           <p className="mb-6 text-sm opacity-70">
-            O chamado foi enviado com sucesso.
+            O Pedido de Manutenção (PM) foi enviado com sucesso.
           </p>
           <button
             onClick={() => window.close()}
@@ -153,7 +153,7 @@ export default function TicketPage() {
       <div className="max-w-2xl mx-auto">
         <div className="space-y-2 mb-8">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold" style={{ color: "var(--primary)" }}>
-            Criar Novo Chamado
+            Criar Novo Pedido de Manutenção
           </h2>
           <p className="text-sm opacity-70">Preencha os campos abaixo para registrar uma solicitação</p>
         </div>
@@ -227,7 +227,7 @@ export default function TicketPage() {
                   "--tw-ring-color": "var(--primary)",
                 } as never}
               >
-                <option value="">Esse chamado é para qual setor?</option>
+                <option value="">Esse Pedido de Manutenção é para qual setor?</option>
                 {SETORES.map(setor => (
                   <option key={setor} value={setor}>
                     {setor}
@@ -314,7 +314,7 @@ export default function TicketPage() {
                   </>
                 ) : (
                   <>
-                    Enviar Chamado
+                    Enviar Pedido de Manutenção
                     <LuArrowRight className="h-5 w-5" />
                   </>
                 )}

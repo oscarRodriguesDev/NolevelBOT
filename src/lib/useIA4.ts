@@ -87,7 +87,7 @@ async function getEmpresaConfig(cpf?: string): Promise<EmpresaConfig> {
 
   if (!cpf) {
     return {
-      botName: "Assistente",
+      botName: "bot",
       botPrompt: null,
       presentation: null,
       serviceDesc: null,
@@ -124,7 +124,7 @@ async function getEmpresaConfig(cpf?: string): Promise<EmpresaConfig> {
   }
 
   return {
-    botName: empresa.botName || "Assistente",
+    botName: empresa.botName || "bot",
     botPrompt: empresa.botPrompt,
     presentation: empresa.botPresentation,
     serviceDesc: empresa.botServiceDesc,

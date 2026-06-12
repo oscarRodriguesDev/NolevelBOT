@@ -101,7 +101,7 @@ export function ModalChamado({
   }
 
   async function concluirChamado() {
-    const confirmacao = window.confirm("Tem certeza que deseja fechar este chamado? Ele será removido da lista de atendimento.")
+    const confirmacao = window.confirm("Tem certeza que deseja fechar este Pedido de Manutenção? Ele será removido da lista de atendimento.")
     if (!confirmacao) return
     if (!ticket) return
 
@@ -350,7 +350,7 @@ export function ModalChamado({
             className="flex items-center justify-center gap-2 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-80 active:scale-95"
             style={{ backgroundColor: "var(--status-cancelled, #ef4444)" }} // Fallback red se a var não existir
           >
-            <LuCheckCircle size={18} /> Fechar Chamado Definitivamente
+            <LuCheckCircle size={18} /> Fechar Pedido de Manutenção Definitivamente
           </button>
         </footer>
       </div>

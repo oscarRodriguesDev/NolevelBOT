@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(chamado, { status: 201 })
   } catch (error) {
-    console.error('Erro ao criar chamado da oficina:', error)
-    return NextResponse.json({ error: 'Erro ao criar chamado' }, { status: 500 })
+    console.error('Erro ao criar Pedido de Manutenção:', error)
+    return NextResponse.json({ error: 'Erro ao criar Pedido de Manutenção' }, { status: 500 })
   }
 }

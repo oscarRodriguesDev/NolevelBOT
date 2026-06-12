@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
 
     let session = sessions.get(sessionId)
     if (!session || (Date.now() - session.lastInteraction > 1000 * 60 * 60 * 2)) {
-      session = { state: FlowState.INICIO, lastInteraction: Date.now(), modulo: moduloRequisitado || undefined }
+      session = { state: FlowState.IDENTIFICACAO_CPF, lastInteraction: Date.now(), modulo: moduloRequisitado || undefined }
       sessions.set(sessionId, session)
     }
     if (moduloRequisitado && !session.modulo) {

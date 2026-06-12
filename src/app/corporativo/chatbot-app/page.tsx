@@ -18,16 +18,8 @@ type Aviso = {
   setor: string | null
 }
 
-const BOT_NAME = process.env.NEXT_PUBLIC_BOT_NAME || "Hevelyn"
-
 export default function MobileChat() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 1,
-      role: 'assistant',
-      content: 'Olá, eu sou a Hevelyn. Como posso ajudar você hoje?'
-    }
-  ])
+  const [messages, setMessages] = useState<Message[]>([])
 
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -105,7 +97,7 @@ export default function MobileChat() {
       const botMessage: Message = {
         id: Date.now() + 1,
         role: 'assistant',
-        content: `Erro ao conectar com ${BOT_NAME}.`
+        content: 'Erro ao enviar arquivo. Tente novamente.'
       }
       setMessages(prev => [...prev, botMessage])
     }
@@ -160,7 +152,7 @@ export default function MobileChat() {
       const botMessage: Message = {
         id: Date.now() + 1,
         role: 'assistant',
-        content: `Erro ao conectar com ${BOT_NAME}.`
+        content: 'Erro ao enviar mensagem. Tente novamente.'
       }
 
       setMessages(prev => [...prev, botMessage])
@@ -305,7 +297,7 @@ export default function MobileChat() {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              {uploading ? 'Enviando imagem...' : `${BOT_NAME} está digitando...`}
+              {uploading ? 'Enviando imagem...' : 'Assistente está digitando...'}
             </div>
           )}
 
