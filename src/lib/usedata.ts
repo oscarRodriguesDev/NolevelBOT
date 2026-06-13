@@ -364,6 +364,27 @@ export async function validarCpf(cpf: string) {
 
 
 
+export async function checkEmpresaModule(
+  empresaId: string,
+  modulo: "OFICINA" | "CORPORATIVO" | "EVENTOS"
+): Promise<{ hasModule: boolean; activeModules: string[] }> {
+  try {
+    const { prisma } = await import("@/lib/prisma");
+    const empresa = await prisma.empresa.findUnique({
+      where: { id: empresaId },
+      select: { modulos: true },
+    });
+    if (!empresa) return { hasModule: false, activeModules: [] };
+    const modulos = empresa.modulos as string[];
+    return {
+      hasModule: modulos.includes(modulo),
+      activeModules: modulos,
+    };
+  } catch {
+    return { hasModule: false, activeModules: [] };
+  }
+}
+
 export async function getNomeBot(cpf: string) {
   try {
     const { prisma } = await import("@/lib/prisma");

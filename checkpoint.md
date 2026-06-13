@@ -1,6 +1,21 @@
 # CHECKPOINT — NolevelBOT
 
-## Sessao: 12/06/2026
+## Sessao: 13/06/2026
+
+### Interacoes desta sessao
+
+| Item | Descricao |
+|------|-----------|
+| PED-009 | Usuario redefiniu: validar modulo da empresa nos webhooks (26=CRP, 27=CRP, oficina=OFICINA). Se empresa nao tiver o modulo, informa e orienta canal correto. Se tiver, fluxo normal. |
+| `src/lib/usedata.ts` | Adicionado `checkEmpresaModule()` |
+| `src/app/api/webhook26/route.ts` | Check CORPORATIVO apos validar CPF |
+| `src/app/api/webhook27/route.ts` | Check CORPORATIVO apos validar CPF |
+| `src/app/api/webhook-oficina/route.ts` | Check OFICINA apos validar matricula |
+| `pedidos.md` | PED-009 atualizado para concluido |
+| `memorias.md` | Registro de autoria |
+| Build | ✅ Compilado com sucesso |
+
+---
 
 ### Branch Atual
 `vibecode` (sincronizada com `origin/vibecode`)

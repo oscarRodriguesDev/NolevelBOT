@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendEvolutionText, downloadEvolutionMedia } from "@/lib/usedata";
+import { sendEvolutionText, downloadEvolutionMedia, checkEmpresaModule } from "@/lib/usedata";
 import { uploadBuffer } from "@/lib/upload";
 import { getSetores } from "@/lib/setores";
 import { prisma } from "@/lib/prisma";
@@ -207,6 +207,22 @@ export async function POST(req: NextRequest) {
         session.matricula = matricula;
         session.nome = registro.nome;
         session.empresaId = registro.empresaId;
+
+        if (session.empresaId) {
+          const { hasModule, activeModules } = await checkEmpresaModule(session.empresaId, "OFICINA");
+          if (!hasModule) {
+            const modulosMsg = activeModules.length > 0
+              ? `Sua empresa possui o(s) módulo(s): ${activeModules.join(", ")}.`
+              : "Sua empresa não possui módulos de atendimento ativos.";
+            await sendEvolutionText(
+              instance,
+              number,
+              `Olá, ${registro.nome}! Sua matrícula foi encontrada ✅, mas sua empresa não possui o módulo *OFICINA* ativo.\n\n${modulosMsg}\n\nPor favor, utilize o canal de atendimento correto para o módulo desejado. Se precisar de ajuda, entre em contato com a administração da sua empresa.`
+            );
+            sessions.delete(number);
+            return NextResponse.json({ ok: true });
+          }
+        }
 
         const avisosEspecificos = session.empresaId
           ? await buscarAvisosEspecificos(session.empresaId, matricula)

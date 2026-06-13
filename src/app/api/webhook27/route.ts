@@ -9,6 +9,7 @@ import {
   buscarAvisos,
   buscarAvisosPorCpf,
   downloadEvolutionMedia,
+  checkEmpresaModule,
 } from "@/lib/usedata";
 import { uploadBuffer } from "@/lib/upload";
 import { registerPhone } from "@/lib/phoneMap";
@@ -155,6 +156,20 @@ export async function POST(req: NextRequest) {
           session.cpf = cleanCPF;
           session.nome = resCpf.nome;
           session.empresaId = await getEmpresaIdFromCpf(cleanCPF);
+
+          if (session.empresaId) {
+            const { hasModule, activeModules } = await checkEmpresaModule(session.empresaId, "CORPORATIVO");
+            if (!hasModule) {
+              const nomeEmpresa = activeModules.length > 0 ? activeModules.join(", ") : "nenhum módulo ativo";
+              await sendEvolutionText(
+                instance,
+                number,
+                `Olá, ${resCpf.nome}! Seu CPF foi encontrado ✅, mas sua empresa não possui o módulo *CORPORATIVO* ativo.\n\nMódulos disponíveis na sua empresa: ${nomeEmpresa}.\n\nPor favor, utilize o canal de atendimento correto para o módulo desejado. Se precisar de ajuda, entre em contato com a administração da sua empresa.`
+              );
+              sessions.delete(number);
+              return NextResponse.json({ ok: true });
+            }
+          }
 
           registerPhone(cleanCPF, number, instance);
           avisos = await buscarAvisosPorCpf(cleanCPF);

@@ -31,5 +31,12 @@
 ## PED-008: Upload de fotos e avisos no formulário de oficina e chatbots
 **Data:** 12/06/2026
 **Descrição:** Adicionar capacidade de enviar foto do problema/documentação no formulário de chamado da oficina e nos chatbots (corporativo e oficina). Também exibir avisos relacionados ou específicos para o usuário quando houver.
-**Data:** 12/06/2026
-**Descrição:** Na coluna "Setor" das páginas de listagem de usuários, quando o usuário for ADMIN e não tiver um setor definido (pois herda todos os setores), exibir "all" em vez de campo vazio ou "—".
+
+## PED-009: Validar módulo da empresa nos webhooks (26, 27 e webhook-oficina)
+**Data:** 13/06/2026
+**Status:** ✅ Concluído
+**Descrição:** Cada webhook agora valida se a empresa vinculada ao CPF/matrícula possui o módulo ativo correspondente antes de permitir abertura de chamado:
+- webhook26 e 27 → validam módulo CORPORATIVO
+- webhook-oficina → valida módulo OFICINA
+- Se a empresa não tiver o módulo, o usuário é informado e orientado a usar o canal correto.
+- Se a empresa tiver o módulo, o fluxo segue normalmente.

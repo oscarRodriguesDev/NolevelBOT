@@ -198,6 +198,15 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 
 ---
 
+### Mudança: Validação de módulo da empresa nos webhooks
+**Autor:** Vibecode
+**Arquivos:** `src/lib/usedata.ts`, `src/app/api/webhook26/route.ts`, `src/app/api/webhook27/route.ts`, `src/app/api/webhook-oficina/route.ts`
+**Data:** 13/06/2026
+**Descrição:**
+- Criada função `checkEmpresaModule(empresaId, modulo)` em `usedata.ts` que consulta os módulos ativos da empresa.
+- **webhook26 e 27:** Após validar CPF e obter `empresaId`, verifica se a empresa possui módulo CORPORATIVO ativo. Se não tiver, informa o usuário com a lista de módulos disponíveis da empresa e orienta a usar o canal correto. Se tiver, fluxo normal.
+- **webhook-oficina:** Após validar matrícula e obter `empresaId`, verifica se a empresa possui módulo OFICINA ativo. Mesmo comportamento de orientação.
+
 ## Preferências do Projeto
 
 - **Idioma:** Português (Brasil) — código, commits, docs
