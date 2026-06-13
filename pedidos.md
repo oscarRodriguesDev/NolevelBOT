@@ -31,5 +31,24 @@
 ## PED-008: Upload de fotos e avisos no formulário de oficina e chatbots
 **Data:** 12/06/2026
 **Descrição:** Adicionar capacidade de enviar foto do problema/documentação no formulário de chamado da oficina e nos chatbots (corporativo e oficina). Também exibir avisos relacionados ou específicos para o usuário quando houver.
+
+## PED-009: Fix redirect loop no proxy (ERR_TOO_MANY_REDIRECTS)
 **Data:** 12/06/2026
-**Descrição:** Na coluna "Setor" das páginas de listagem de usuários, quando o usuário for ADMIN e não tiver um setor definido (pois herda todos os setores), exibir "all" em vez de campo vazio ou "—".
+**Descrição:** Corrigir loop infinito de redirecionamento em `/` quando usuário não autenticado. O proxy redirecionava `!/token` → `/`, e como `/` está no matcher, o proxy interceptava novamente e redirecionava de volta para `/`, infinitamente. A correção adiciona um guard para dar `NextResponse.next()` se pathname === "/" e não há token.
+
+## PED-010: Atualizar rotina de testes — proteção e documentação
+**Data:** 12/06/2026
+**Descrição:** Atualizar a infraestrutura de testes: adicionar guard `ENABLE_TESTES` no proxy para bloquear `/testes` e `/api/testes` em produção (retornando 404), incluir essas rotas no matcher do proxy, e atualizar o template `testes.md` para refletir o proxy real com lógica de autenticação completa.
+
+## PED-011: Correção de vulnerabilidades — Grupo A (proxy + headers)
+**Data:** 13/06/2026
+**Descrição:** Implementar correções de segurança do Grupo A do plano de ação:
+- A1: Remover header `X-Powered-By` via `poweredByHeader: false` no next.config.ts
+- A2: Adicionar headers de segurança (X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy) via `headers()` no next.config.ts
+- A3: Proteger `/api-docs` no proxy.ts — removido de publicRoutes, exige autenticação via JWT token
+- A4: Rate limiting para page routes (`/` e `/dashboard`) no proxy.ts com store em memória (60 req/min e 120 req/min respectivamente)
+- A5: Bloqueio brute force por IP — tracking de acessos não autenticados a páginas protegidas (20 tentativas a cada 15 min)
+
+## PED-012: Proteger /api/cpfs/general_cpf com API Key (B1)
+**Data:** 13/06/2026
+**Descrição:** Adicionar autenticação via header `X-API-Key` no GET de `/api/cpfs/general_cpf`. A chave é validada contra a env var `BOT_API_KEY`. Bots existentes precisam enviar o header com a chave configurada no .env.

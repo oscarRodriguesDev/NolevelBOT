@@ -316,3 +316,85 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 **Descrição:** 
 - **Frontend:** GESTOR/ATENDENTE veem campo setor bloqueado com seu próprio setor. ADMIN/GOD veem um select com os setores da empresa (buscados via `/api/empresa`). Setor forçado no payload do submit conforme a role.
 - **Backend:** POST e PUT de `/api/quadro-avisos` forçam `setor = user.setor` para GESTOR/ATENDENTE, ignorando o valor enviado no body. ADMIN/GOD mantêm o valor enviado.
+
+### Mudança: Fix redirect loop no proxy (ERR_TOO_MANY_REDIRECTS)
+**Autor:** Vibecode
+**Arquivos:** `src/proxy.ts`
+**Data:** 12/06/2026
+**Descrição:** Quando o usuário não autenticado acessava `/`, o proxy redirecionava para `/` (mesma URL), que era novamente interceptada pelo matcher, causando loop infinito. Adicionado guard para dar `NextResponse.next()` quando pathname === "/" e não há token, permitindo que a página de login renderize normalmente.
+
+### Mudança: Proteção ENABLE_TESTES e atualização da rotina de testes
+**Autor:** Vibecode
+**Arquivos:** `src/proxy.ts`, `testes.md`
+**Data:** 12/06/2026
+**Descrição:**
+- Adicionado guard `ENABLE_TESTES` no proxy — rotas `/testes` e `/api/testes` retornam 404 a menos que `ENABLE_TESTES=true` no ambiente.
+- Adicionado `/testes/:path*` e `/api/testes/:path*` ao matcher do proxy para que o guard seja executado.
+- Atualizado `testes.md` (seção 7) para refletir o proxy real com lógica de autenticação completa, não apenas o bloco de proteção isolado.
+
+
+### Mudança: Proteção do GET general_cpf com API Key (B1)
+**Autor:** Vibecode
+**Arquivos:** `src/app/api/cpfs/general_cpf/route.ts`, `.env`, `.env.example`, `pedidos.md`, `checkpoint.md`
+**Data:** 13/06/2026
+**Descrição:** Adicionada função `validarBotApiKey()` que valida header `X-API-Key` contra env var `BOT_API_KEY`. O GET de `/api/cpfs/general_cpf` agora retorna 401 se a chave não for enviada ou for inválida. Bots existentes precisam ser atualizados para enviar o header com a chave configurada.
+
+### Mudança: Correção de vulnerabilidades Grupo A (proxy + headers de segurança)
+**Autor:** Vibecode
+**Arquivos:** `next.config.ts`, `proxy.ts`, `pedidos.md`, `checkpoint.md`, `memorias.md`
+**Data:** 13/06/2026
+**Descrição:**
+- **A1:** `poweredByHeader: false` no `next.config.ts` remove header `X-Powered-By: Next.js`
+- **A2:** `async headers()` no `next.config.ts` adiciona `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: geolocation=(), microphone=(), camera=()`
+- **A3:** `/api-docs` removido de `publicRoutes` no proxy, agora verifica JWT token antes de permitir acesso. Matcher atualizado com `/api-docs/:path*`
+- **A4:** Rate limit para `/` (60 req/min/IP) e `/dashboard` (120 req/min/IP) via `Map` em memória no proxy (best-effort, funciona para instância única)
+- **A5:** Tracking de brute force por IP em acessos não autenticados a páginas protegidas (20 tentativas a cada 15 min por IP)
+
+# Informação super importante pra vc não errar mais isso: font documentação Nextjs
+
+Proxy
+Última atualização: 20 de dezembro de 2025
+Proxy
+É bom saber : a partir do Next.js 16, o Middleware passou a se chamar Proxy para melhor refletir sua finalidade. A funcionalidade permanece a mesma.
+
+O proxy permite executar código antes que uma solicitação seja concluída. Em seguida, com base na solicitação recebida, você pode modificar a resposta reescrevendo-a, redirecionando-a, modificando os cabeçalhos da solicitação ou da resposta ou respondendo diretamente.
+
+Casos de uso
+Alguns cenários comuns em que o Proxy é eficaz incluem:
+
+Modificar cabeçalhos para todas as páginas ou para um subconjunto delas.
+Reescrever para páginas diferentes com base em testes A/B ou experimentos
+Redirecionamentos programáticos baseados nas propriedades da solicitação recebida.
+Para redirecionamentos simples, considere usar a redirectsconfiguração next.config.tspadrão. O proxy deve ser usado quando você precisar acessar os dados da requisição ou uma lógica mais complexa.
+
+O Proxy não foi projetado para busca lenta de dados. Embora o Proxy possa ser útil para verificações otimistas, como redirecionamentos baseados em permissões, ele não deve ser usado como uma solução completa de gerenciamento de sessão ou autorização.
+
+Usar `fetch` com options.cache`, options.next.revalidate` ou options.next.tags`,` não tem efeito no Proxy.
+
+Convenção
+Crie um arquivo proxy.ts(ou .js) na raiz do projeto, ou dentro dele srcse aplicável, para que ele esteja localizado no mesmo nível que pagesou app.
+
+Observação : Embora apenas um proxy.tsarquivo seja suportado por projeto, você ainda pode organizar sua lógica de proxy em módulos. Separe as funcionalidades de proxy em arquivos separados .tse .jsimporte-os para o seu proxy.tsarquivo principal. Isso permite um gerenciamento mais organizado do proxy específico de cada rota, agregando-o para um proxy.tscontrole centralizado. Ao impor um único arquivo de proxy, você simplifica a configuração, evita possíveis conflitos e otimiza o desempenho, evitando múltiplas camadas de proxy.
+
+Exemplo
+Você pode exportar sua função proxy como uma exportação padrão ou como uma proxyexportação nomeada:
+
+proxy.ts
+TypeScript
+
+TypeScript
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+ 
+// This function can be marked `async` if using `await` inside
+export function proxy(request: NextRequest) {
+  return NextResponse.redirect(new URL('/home', request.url))
+}
+ 
+// Alternatively, you can use a default export:
+// export default function proxy(request: NextRequest) { ... }
+ 
+export const config = {
+  matcher: '/about/:path*',
+}
+A matcherconfiguração permite filtrar o Proxy para ser executado em caminhos específicos. Consulte a documentação do Matcher para obter mais detalhes sobre a correspondência de caminhos.

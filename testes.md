@@ -258,16 +258,32 @@ Inclua inputs de email + senha, botão "Testar Acesso", e exiba:
 
 ---
 
-## 7. Proteção de Branch (Next.js 16)
+## 7. Proteção das Rotas de Teste (Next.js 16)
 
 ### `src/proxy.ts`
 
-Bloqueia rotas de teste a menos que `ENABLE_TESTES=true`:
+Bloqueia rotas de teste a menos que `ENABLE_TESTES=true`. O guard deve vir **antes** da lógica de autenticação para evitar que o proxy tente redirecionar usuários não logados para `/`:
 
 ```ts
+import { NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
+import { getToken } from "next-auth/jwt"
+
+const publicRoutes = [
+  '/corporativo/chamado',
+  '/corporativo/chatbot-app',
+  '/corporativo/consulta',
+  '/oficina/chamado',
+  '/oficina/chatbot-app',
+  '/oficina/consulta',
+  '/contact',
+  '/api-docs',
+]
+
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
 
+  // Guard ENABLE_TESTES: bloqueia rotas de teste em produção
   if (process.env.ENABLE_TESTES !== 'true') {
     if (
       pathname === '/testes' ||
@@ -279,17 +295,41 @@ export async function proxy(req: NextRequest) {
     }
   }
 
+  const token = await getToken({ req })
+
+  const isPublic = publicRoutes.some(route =>
+    pathname.startsWith(route) || pathname === route.replace(/\/$/, '')
+  )
+  if (isPublic || pathname === '/oficina') {
+    return NextResponse.next()
+  }
+
+  if (token && pathname === "/") {
+    return NextResponse.redirect(new URL("/dashboard", req.url))
+  }
+
+  if (!token) {
+    if (pathname === "/") {
+      return NextResponse.next()
+    }
+    return NextResponse.redirect(new URL("/", req.url))
+  }
+
+  if (pathname.startsWith('/god') && token.role !== 'GOD') {
+    return NextResponse.redirect(new URL("/dashboard", req.url))
+  }
+
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/testes/:path*', '/api/testes/:path*'],
+  matcher: ["/", "/corporativo/:path*", "/oficina/:path*", "/eventos/:path*", "/god/:path*", "/dashboard/:path*", "/testes/:path*", "/api/testes/:path*"],
 }
 ```
 
 > **Nota**: Next.js 16 usa `proxy.ts`. Em versões anteriores, use `middleware.ts` com `export function middleware(...)`.
 
-### `.env.example`
+### `.env`
 
 ```env
 # Testes (apenas na branch testes)
