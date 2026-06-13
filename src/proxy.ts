@@ -26,11 +26,11 @@ export async function proxy(req: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", req.url))
   }
 
-  if (!token) {
+  if (!token && pathname !== "/") {
     return NextResponse.redirect(new URL("/", req.url))
   }
 
-  if (pathname.startsWith('/god') && token.role !== 'GOD') {
+  if (pathname.startsWith('/god') && token?.role !== 'GOD') {
     return NextResponse.redirect(new URL("/dashboard", req.url))
   }
 

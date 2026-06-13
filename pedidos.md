@@ -40,3 +40,8 @@
 - webhook-oficina → valida módulo OFICINA
 - Se a empresa não tiver o módulo, o usuário é informado e orientado a usar o canal correto.
 - Se a empresa tiver o módulo, o fluxo segue normalmente.
+
+## PED-010: Corrigir loop de redirect (ERR_TOO_MANY_REDIRECTS) no proxy
+**Data:** 13/06/2026
+**Status:** ✅ Concluído
+**Descrição:** Proxy redirecionava usuários sem token de `/` para `/` infinitamente porque a raiz agora é a tela de login. Adicionada condição `&& pathname !== "/"` no redirect de não-autenticado. Também corrigido `token.role` → `token?.role` para TypeScript.

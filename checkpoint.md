@@ -14,6 +14,8 @@
 | `pedidos.md` | PED-009 atualizado para concluido |
 | `memorias.md` | Registro de autoria |
 | Build | ✅ Compilado com sucesso |
+| PED-010 | Usuario reportou ERR_TOO_MANY_REDIRECTS em /. Causa: proxy redirecionava !token de / para /. Fix: `&& pathname !== "/"` no redirect. |
+| `src/proxy.ts` | Adicionado `&& pathname !== "/"` + `token?.role` para TS |
 
 ---
 

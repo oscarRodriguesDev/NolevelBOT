@@ -207,6 +207,14 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 - **webhook26 e 27:** Após validar CPF e obter `empresaId`, verifica se a empresa possui módulo CORPORATIVO ativo. Se não tiver, informa o usuário com a lista de módulos disponíveis da empresa e orienta a usar o canal correto. Se tiver, fluxo normal.
 - **webhook-oficina:** Após validar matrícula e obter `empresaId`, verifica se a empresa possui módulo OFICINA ativo. Mesmo comportamento de orientação.
 
+### Mudança: Fix loop de redirect no proxy (ERR_TOO_MANY_REDIRECTS)
+**Autor:** Vibecode
+**Arquivos:** `src/proxy.ts`
+**Data:** 13/06/2026
+**Descrição:**
+- Adicionado `&& pathname !== "/"` no bloco `if (!token)` para evitar redirect infinito quando a raiz é a tela de login.
+- Adicionado `token?.role` (optional chaining) no check de `/god` para resolver erro de tipo TS.
+
 ## Preferências do Projeto
 
 - **Idioma:** Português (Brasil) — código, commits, docs
