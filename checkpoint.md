@@ -19,6 +19,7 @@ c42e525 added mescle
 | `pedidos.md` | PED-011 registrado |
 | `memorias.md` | Registro de autoria |
 | `src/app/api/cpfs/general_cpf/route.ts` | GET protegido com `X-API-Key` header (B1) |
+| `src/app/api/empresa/route.ts` | `id` removido da resposta pública `?cpf=` + rate limit 30 req/min/IP (B2) |
 | `.env` / `.env.example` | Adicionado `BOT_API_KEY` |
 | `pedidos.md` | PED-012 registrado |
 | `checkpoint.md` | Sessao 13/06 atualizada |
