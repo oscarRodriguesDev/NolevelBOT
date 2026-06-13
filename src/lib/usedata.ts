@@ -288,7 +288,7 @@ export async function downloadEvolutionMedia(
     console.error(`[downloadMedia] REST Evolution...`);
 
     const headers = { "Content-Type": "application/json", apikey: process.env.EVOLUTION_API_KEY! };
-    const baseUrl = process.env.EVOLUTION_API_URL || "http://evolution-api:8080";
+    const baseUrl = process.env.EVOLUTION_API_URL || "https://evolution.nolevel.hiskra.com.br/";
 
     // V1: /chat/downloadMediaMessage/{instance}
     const body = {
