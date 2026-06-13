@@ -1,30 +1,54 @@
 import { NextResponse } from "next/server";
 
+const EVOLUTION_URL = "https://evolution.nolevel.hiskra.com.br";
+const INSTANCE = "bot";
+
 export async function POST(req: Request) {
-  const body = await req.json();
-
-  console.log("WEBHOOK RECEBEU:", JSON.stringify(body));
-
   try {
+    const body = await req.json();
+
+    console.log("WEBHOOK RECEBEU:", JSON.stringify(body));
+
+    if (body?.event !== "messages.upsert") {
+      return NextResponse.json({ ok: true, ignored: true });
+    }
+
+    const remoteJid = body?.data?.key?.remoteJid;
+
+    if (!remoteJid) {
+      return NextResponse.json({
+        ok: false,
+        error: "remoteJid não encontrado",
+      });
+    }
+
     const response = await fetch(
-      "https://evolution.nolevel.hiskra.com.br/instance/fetchInstances",
+      `${EVOLUTION_URL}/message/sendText/${INSTANCE}`,
       {
+        method: "POST",
         headers: {
+          "Content-Type": "application/json",
           apikey: process.env.EVOLUTION_API_KEY || "",
         },
+        body: JSON.stringify({
+          number: remoteJid,
+          text: "teste passed",
+        }),
       }
     );
 
-    const data = await response.text();
+    const result = await response.text();
 
-    console.log("EVOLUTION RESPONDEU:", data);
+    console.log("SEND TEXT STATUS:", response.status);
+    console.log("SEND TEXT RESPONSE:", result);
 
     return NextResponse.json({
       ok: true,
-      evolution: data,
+      status: response.status,
+      response: result,
     });
   } catch (error) {
-    console.error("ERRO FETCH:", error);
+    console.error("ERRO:", error);
 
     return NextResponse.json({
       ok: false,
