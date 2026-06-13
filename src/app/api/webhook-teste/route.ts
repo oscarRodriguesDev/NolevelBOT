@@ -1,34 +1,34 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-export async function GET() {
-  return NextResponse.json({
-    ok: true,
-    message: "Webhook teste funcionando",
-    timestamp: new Date().toISOString(),
-  });
-}
+export async function POST(req: Request) {
+  const body = await req.json();
 
-export async function POST(req: NextRequest) {
+  console.log("WEBHOOK RECEBEU:", JSON.stringify(body));
+
   try {
-    const body = await req.json();
+    const response = await fetch(
+      "https://evolution.nolevel.hiskra.com.br/instance/fetchInstances",
+      {
+        headers: {
+          apikey: process.env.EVOLUTION_API_KEY || "",
+        },
+      }
+    );
 
-    console.log("WEBHOOK TESTE RECEBIDO:");
-    console.log(JSON.stringify(body, null, 2));
+    const data = await response.text();
+
+    console.log("EVOLUTION RESPONDEU:", data);
 
     return NextResponse.json({
       ok: true,
-      received: true,
-      timestamp: new Date().toISOString(),
+      evolution: data,
     });
   } catch (error) {
-    console.error("Erro webhook teste:", error);
+    console.error("ERRO FETCH:", error);
 
-    return NextResponse.json(
-      {
-        ok: false,
-        error: "Erro ao processar webhook",
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      ok: false,
+      error: String(error),
+    });
   }
 }
