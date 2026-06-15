@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
-import { Prisma } from "@prisma/client"
+import { Prisma } from "@prisma/client" 
 import { getSessionOrFail } from "@/util/permission"
 import { uploadFile } from "@/lib/upload"
 import { authOptions } from "@/lib/nextauth"
