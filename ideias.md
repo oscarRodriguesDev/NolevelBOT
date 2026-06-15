@@ -20,3 +20,6 @@
 ## REL-004: Preview ampliado de imagem no chatbot (relacionado ao PED-008)
 **Ideia:** Ao clicar na imagem preview no chat, abrir um modal/lightbox com a foto em tamanho original para melhor visualização do problema/documentação.
 
+## REL-005: Mesmo padrão de loop pode existir em outros webhooks (relacionado ao PED-017)
+**Ideia:** Webhook26 e webhook-oficina podem ter o mesmo problema no COLETAR_MOTIVO quando não há avisos, pois compartilham a mesma lógica de fallback para MENU_PRINCIPAL. Se ocorrer loop semelhante, aplicar o mesmo fix.
+

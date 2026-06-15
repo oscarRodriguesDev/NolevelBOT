@@ -1,11 +1,19 @@
 import { prisma } from "@/lib/prisma"
 
-export async function obterBaseDeConhecimento(): Promise<string> {
+export async function obterBaseDeConhecimento(cpf: string): Promise<string> {
   try {
-    const nomeEmpresa = process.env.PUBLIC_NAME_EMPRESA || "Nolevel"
-    const empresa = await prisma.empresa.findFirst({
-      where: { nome: nomeEmpresa },
-      select: { id: true }
+    const usuario = await prisma.cpfsLeads.findUnique({
+      where: { cpf },
+      select: { empresa: true },
+    })
+
+    if (!usuario?.empresa) {
+      return "Não há informações adicionais no banco de dados no momento."
+    }
+
+    const empresa = await prisma.empresa.findUnique({
+      where: { nome: usuario.empresa },
+      select: { id: true },
     })
 
     if (!empresa) {
@@ -17,22 +25,22 @@ export async function obterBaseDeConhecimento(): Promise<string> {
         empresaId: empresa.id,
         OR: [
           { expiresAt: null },
-          { expiresAt: { gt: new Date() } }
-        ]
+          { expiresAt: { gt: new Date() } },
+        ],
       },
       select: {
         titulo: true,
-        conteudo: true
-      }
+        conteudo: true,
+      },
     })
 
-    if (!avisos || avisos.length === 0) {
+    if (avisos.length === 0) {
       return "Não há informações adicionais no banco de dados no momento."
     }
 
     return avisos.map(aviso => `${aviso.conteudo}`).join('\n\n')
   } catch (error) {
-    console.error("Erro ao buscar avisos no Prisma:", error)
+    console.error("Erro ao buscar base de conhecimento por CPF no Prisma:", error)
     return "Erro ao carregar base de conhecimento."
   }
 }

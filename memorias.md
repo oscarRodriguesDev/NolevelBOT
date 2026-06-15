@@ -198,6 +198,23 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 
 ---
 
+### Mudança: Validação de módulo da empresa nos webhooks
+**Autor:** Vibecode
+**Arquivos:** `src/lib/usedata.ts`, `src/app/api/webhook26/route.ts`, `src/app/api/webhook27/route.ts`, `src/app/api/webhook-oficina/route.ts`
+**Data:** 13/06/2026
+**Descrição:**
+- Criada função `checkEmpresaModule(empresaId, modulo)` em `usedata.ts` que consulta os módulos ativos da empresa.
+- **webhook26 e 27:** Após validar CPF e obter `empresaId`, verifica se a empresa possui módulo CORPORATIVO ativo. Se não tiver, informa o usuário com a lista de módulos disponíveis da empresa e orienta a usar o canal correto. Se tiver, fluxo normal.
+- **webhook-oficina:** Após validar matrícula e obter `empresaId`, verifica se a empresa possui módulo OFICINA ativo. Mesmo comportamento de orientação.
+
+### Mudança: Fix loop de redirect no proxy (ERR_TOO_MANY_REDIRECTS)
+**Autor:** Vibecode
+**Arquivos:** `src/proxy.ts`
+**Data:** 13/06/2026
+**Descrição:**
+- Adicionado `&& pathname !== "/"` no bloco `if (!token)` para evitar redirect infinito quando a raiz é a tela de login.
+- Adicionado `token?.role` (optional chaining) no check de `/god` para resolver erro de tipo TS.
+
 ## Preferências do Projeto
 
 - **Idioma:** Português (Brasil) — código, commits, docs
@@ -317,6 +334,7 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 - **Frontend:** GESTOR/ATENDENTE veem campo setor bloqueado com seu próprio setor. ADMIN/GOD veem um select com os setores da empresa (buscados via `/api/empresa`). Setor forçado no payload do submit conforme a role.
 - **Backend:** POST e PUT de `/api/quadro-avisos` forçam `setor = user.setor` para GESTOR/ATENDENTE, ignorando o valor enviado no body. ADMIN/GOD mantêm o valor enviado.
 
+<<<<<<< HEAD
 ### Mudança: Fix redirect loop no proxy (ERR_TOO_MANY_REDIRECTS)
 **Autor:** Vibecode
 **Arquivos:** `src/proxy.ts`
@@ -398,3 +416,128 @@ export const config = {
   matcher: '/about/:path*',
 }
 A matcherconfiguração permite filtrar o Proxy para ser executado em caminhos específicos. Consulte a documentação do Matcher para obter mais detalhes sobre a correspondência de caminhos.
+=======
+### Mudança: Página god/admins reescrita para Criar Usuário
+**Autor:** Usuário
+**Arquivos:** `src/app/god/admins/page.tsx`, `.gitignore`, `src/app/api/webhook-teste/route.txt` (novo)
+**Data:** 14/06/2026
+**Descrição:** 
+- Página de administradores (`/god/admins`) completamente reescrita: agora é uma página de criação de usuário com suporte a avatar, seleção de empresa, papel, setor e senha.
+- `.gitignore` adicionada entrada `/api/webhook-teste`
+- Novo arquivo `src/app/api/webhook-teste/route.txt` criado (não rastreado)
+
+### Mudança: Formulário corporativo/chamado adaptado do modelo oficina
+**Autor:** Vibecode
+**Arquivos:** `src/app/corporativo/chamado/page.tsx`
+**Data:** 14/06/2026
+**Descrição:**
+- Página reescrita para seguir o mesmo layout/estilo de `/oficina/chamado`.
+- CPF com formatação automática (000.000.000-00) e validação ao sair do campo.
+- Ao validar CPF via `/api/empresa?cpf=...`, busca setores da empresa e avisos.
+- Campos: Nome, CPF, Telefone (opcional), Descrição, Setor de Destino (select após validar CPF), upload de arquivo.
+- Seção de avisos exibida automaticamente quando há avisos relacionados.
+- Submit para `/api/tickets` (POST).
+
+### Mudança: Consulta pública de tickets (CPF/matrícula) sem autenticação
+**Autor:** Vibecode
+**Arquivos:** `src/app/api/tickets/search/route.ts`
+**Data:** 14/06/2026
+**Descrição:**
+- `GET /api/tickets/search`: quando busca por `ticket` → sempre público, sem autenticação.
+- Quando busca por `cpf` sem sessão → público, busca direta por CPF.
+- Quando busca por `cpf` com sessão (usuário logado) → mantém o filtro role-based via `getTicketWhereClause`.
+- Corrige as páginas públicas `/corporativo/consulta`, `/corporativo/consulta/[ticket]`, `/oficina/consulta`, `/oficina/consulta/[ticket]` que não funcionavam por falta de autenticação.
+
+### Mudança: HeaderContext adicionado ao layout god
+**Autor:** Vibecode
+**Arquivos:** `src/app/god/layout.tsx`, `src/app/god/admins/page.tsx`, `src/app/god/usuarios/page.tsx`
+**Data:** 14/06/2026
+**Descrição:**
+- Adicionado `HeaderContext.Provider` + `useHeader()` exportado no layout `/god`.
+- Adicionado componente `<Header>` no layout god (mesmo estilo do corporativo/oficina/eventos), com ThemeToggle.
+- Páginas `/god/admins` e `/god/usuarios` agora importam `useHeader` do `../layout` (god) em vez de ter título inline.
+- Caminho do header reutilizado: `@/app/corporativo/(atendimento)/components/header`.
+
+### Mudança: Edição inline de ADMINS em god/usuarios
+**Autor:** Vibecode
+**Arquivos:** `src/app/god/usuarios/page.tsx`
+**Data:** 14/06/2026
+**Descrição:**
+- Adicionada edição inline (nome e email) para usuários ADMIN na página god/usuarios.
+- Botão "Editar" (ícone lápis) aparece apenas para role ADMIN.
+- Ao editar, as células viram inputs com botões Salvar/ Cancelar (Check/X).
+- Botão "Remover" trocado de texto para ícone (Trash2), igual ao padrão do corporativo.
+- Delete continua com regra do backend: ADMIN só pode ser removido se houver substituto na mesma empresa.
+
+### Mudança: Fix useHeader em /god/admins
+**Autor:** Vibecode
+**Arquivos:** `src/app/god/admins/page.tsx`
+**Data:** 14/06/2026
+**Descrição:** 
+- Removido import e uso de `useHeader` (proveniente do layout `corporativo/(atendimento)`) que causava erro "useHeader must be used within provider" porque a página está sob rota `/god`, que tem layout próprio sem esse contexto.
+- Adicionado título inline "Criar Novo Usuário" no JSX da página para substituir o header que era definido via contexto.
+
+### Mudança: Chatbots apontando para novas rotas de API
+**Autor:** Usuário
+**Arquivos:** `src/app/corporativo/chatbot-app/page.tsx`, `src/app/oficina/chatbot-app/page.tsx`
+**Data:** 14/06/2026
+**Descrição:**
+- Chatbot corporativo: endpoint `/api/chat` alterado para `/api/chat-corporativo`.
+- Chatbot oficina: endpoint `/api/chat` alterado para `/api/chat-operacional`.
+- Novos diretórios não rastreados: `src/app/api/chat-corporativo/` e `src/app/api/chat-operacional/`.
+
+### Mudança: Consulta pública da oficina — matrícula de 6 para 8 dígitos
+**Autor:** Usuário
+**Arquivos:** `src/app/oficina/consulta/page.tsx`
+**Data:** 14/06/2026
+**Descrição:**
+- Validação `matriculaValida` (4-8 dígitos) adicionada antes de buscar.
+- `maxLength` alterado de 6 para 8.
+- Botão desabilitado baseado em `matriculaValida` em vez de `!matricula`.
+
+### Mudança: Deleção do módulo /oficina/userFacil
+**Autor:** Usuário
+**Arquivos:** `src/app/oficina/userFacil/page.tsx` (deletado)
+**Data:** 14/06/2026
+**Descrição:** Página `/oficina/userFacil` deletada.
+
+### Mudança: smartSearch adaptado para buscar por CPF
+**Autor:** Usuário
+**Arquivos:** `src/lib/smartSearch.ts`
+**Data:** 14/06/2026
+**Descrição:**
+- `obterBaseDeConhecimento()` agora recebe `cpf: string` como parâmetro.
+- Busca o registro na tabela `cpfsLeads` pelo CPF para descobrir o nome da empresa.
+- Consulta avisos usando o nome da empresa extraído do CPF, em vez de `PUBLIC_NAME_EMPRESA`.
+
+### Mudança: Rota pública /eventos/leads adicionada ao proxy
+**Autor:** Usuário
+**Arquivos:** `src/proxy.ts`
+**Data:** 14/06/2026
+**Descrição:** `/eventos/leads` adicionado ao array `publicRoutes` para permitir acesso sem autenticação.
+
+### Mudança: Alterações em webhook-leads e consulta corporativa
+**Autor:** Usuário
+**Arquivos:** `src/app/api/webhook-leads/route.ts`, `src/app/corporativo/consulta/page.tsx`, `src/app/api/tickets/search/route.ts`
+**Data:** 14/06/2026
+**Descrição:** Ajustes pontuais nos arquivos.
+
+### Mudança: Correção da busca de avisos no smartSearch e webhook-leads
+**Autor:** Vibecode
+**Arquivos:** `src/lib/smartSearch.ts`, `src/app/api/webhook-leads/route.ts`
+**Data:** 15/06/2026
+**Descrição:**
+- **smartSearch.ts:** `obterBaseDeConhecimento(cpf)` agora faz lookup em 3 etapas: 1) busca `cpfsLeads` pelo CPF para obter o nome da empresa (`empresa`), 2) busca `empresa` pelo nome para obter o `id`, 3) filtra `avisos` por `empresaId`. Antes tentava `where: { Empresa: usuario.empresa }` que não funciona porque `avisos` usa FK `empresaId`.
+- **webhook-leads/route.ts:** `consultarLeadPorCpf()` agora consulta Prisma diretamente (`prisma.cpfsLeads.findUnique`) em vez de fazer auto-requisição HTTP GET para `/api/webhook-leads?cpf=...` (endpoint GET inexistente causava 405).
+
+### Mudança: Fix loop no webhook27 — COLETAR_MOTIVO sem avisos ia para MENU_PRINCIPAL
+**Autor:** Vibecode
+**Arquivos:** `src/app/api/webhook27/route.ts`
+**Data:** 15/06/2026
+**Descrição:**
+- No estado `COLETAR_MOTIVO`, quando não há avisos cadastrados, `buscarAvisos` + `buscarAvisosPorCpf` retornam "Sem avisos." ou "Sem avisos no momento.".
+- A função `botIA4()` em `useIA4.ts` pula o bloco `instrucaoAvisos` quando o texto é exatamente "Sem avisos." ou "Sem avisos no momento." (linha 162-174), então a IA não recebe as instruções sobre `PROSSEGUIR_FLUXO` e `AVISO_RESOLVE`.
+- Sem essas instruções, a IA segue a `reconducao` (que manda reconduzir para o menu) e apresenta as opções novamente.
+- O `else` no webhook27 envia a resposta da IA e seta `MENU_PRINCIPAL`, criando um loop infinito.
+- **Fix:** Quando não há avisos, o fluxo agora pula a análise da IA e vai direto para `PERGUNTAR_ANEXO` (perguntar sobre anexos), eliminando o loop.
+>>>>>>> ab2e515b19cde2af985ada629608206a6c43fddf

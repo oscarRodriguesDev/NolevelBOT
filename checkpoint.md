@@ -1,6 +1,26 @@
 # CHECKPOINT — NolevelBOT
 
 ## Sessao: 13/06/2026
+<<<<<<< HEAD
+=======
+
+### Interacoes desta sessao
+
+| Item | Descricao |
+|------|-----------|
+| PED-009 | Usuario redefiniu: validar modulo da empresa nos webhooks (26=CRP, 27=CRP, oficina=OFICINA). Se empresa nao tiver o modulo, informa e orienta canal correto. Se tiver, fluxo normal. |
+| `src/lib/usedata.ts` | Adicionado `checkEmpresaModule()` |
+| `src/app/api/webhook26/route.ts` | Check CORPORATIVO apos validar CPF |
+| `src/app/api/webhook27/route.ts` | Check CORPORATIVO apos validar CPF |
+| `src/app/api/webhook-oficina/route.ts` | Check OFICINA apos validar matricula |
+| `pedidos.md` | PED-009 atualizado para concluido |
+| `memorias.md` | Registro de autoria |
+| Build | ✅ Compilado com sucesso |
+| PED-010 | Usuario reportou ERR_TOO_MANY_REDIRECTS em /. Causa: proxy redirecionava !token de / para /. Fix: `&& pathname !== "/"` no redirect. |
+| `src/proxy.ts` | Adicionado `&& pathname !== "/"` + `token?.role` para TS |
+
+---
+>>>>>>> ab2e515b19cde2af985ada629608206a6c43fddf
 
 ### Branch Atual
 `testes`

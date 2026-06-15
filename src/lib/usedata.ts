@@ -288,7 +288,7 @@ export async function downloadEvolutionMedia(
     console.error(`[downloadMedia] REST Evolution...`);
 
     const headers = { "Content-Type": "application/json", apikey: process.env.EVOLUTION_API_KEY! };
-    const baseUrl = process.env.EVOLUTION_API_URL || "http://evolution-api:8080";
+    const baseUrl = process.env.EVOLUTION_API_URL || "https://evolution.nolevel.hiskra.com.br/";
 
     // V1: /chat/downloadMediaMessage/{instance}
     const body = {
@@ -363,6 +363,27 @@ export async function validarCpf(cpf: string) {
 }
 
 
+
+export async function checkEmpresaModule(
+  empresaId: string,
+  modulo: "OFICINA" | "CORPORATIVO" | "EVENTOS"
+): Promise<{ hasModule: boolean; activeModules: string[] }> {
+  try {
+    const { prisma } = await import("@/lib/prisma");
+    const empresa = await prisma.empresa.findUnique({
+      where: { id: empresaId },
+      select: { modulos: true },
+    });
+    if (!empresa) return { hasModule: false, activeModules: [] };
+    const modulos = empresa.modulos as string[];
+    return {
+      hasModule: modulos.includes(modulo),
+      activeModules: modulos,
+    };
+  } catch {
+    return { hasModule: false, activeModules: [] };
+  }
+}
 
 export async function getNomeBot(cpf: string) {
   try {

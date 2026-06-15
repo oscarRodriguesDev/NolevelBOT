@@ -78,7 +78,7 @@ export default function MobileChat() {
     setLoading(true)
 
     try {
-      const res = await fetch('/api/chat', {
+      const res = await fetch('/api/chat-operacional', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: `Enviei um arquivo: ${url}`, module: 'OFICINA' })
@@ -133,7 +133,7 @@ export default function MobileChat() {
     setLoading(true)
 
     try {
-      const res = await fetch('/api/chat', {
+      const res = await fetch('/api/chat-operacional', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text, module: 'OFICINA' })
