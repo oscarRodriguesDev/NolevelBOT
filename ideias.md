@@ -23,3 +23,6 @@
 ## REL-005: Mesmo padrão de loop pode existir em outros webhooks (relacionado ao PED-017)
 **Ideia:** Webhook26 e webhook-oficina podem ter o mesmo problema no COLETAR_MOTIVO quando não há avisos, pois compartilham a mesma lógica de fallback para MENU_PRINCIPAL. Se ocorrer loop semelhante, aplicar o mesmo fix.
 
+## REL-006: Testes para upload.ts e validarCpf (relacionado ao PED-013)
+**Ideia:** Adicionar testes para `upload.ts` (uploadFile, uploadBuffer com mock do Supabase) e para `validarCpf` em `usedata.ts`. Ambos dependem de serviços externos (Supabase/Prisma) e podem ser testados com mocks. Também considerar tests de integração para webhooks com Evolution API mockada.
+

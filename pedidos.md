@@ -52,3 +52,12 @@
 ## PED-012: Proteger /api/cpfs/general_cpf com API Key (B1)
 **Data:** 13/06/2026
 **Descrição:** Adicionar autenticação via header `X-API-Key` no GET de `/api/cpfs/general_cpf`. A chave é validada contra a env var `BOT_API_KEY`. Bots existentes precisam enviar o header com a chave configurada no .env.
+
+## PED-013: Atualizar suite de testes para cobrir novas funcionalidades
+**Data:** 15/06/2026
+**Descrição:** Criar testes para módulos adicionados recentemente que não estavam cobertos:
+- `rate-limit.test.ts` — checkRateLimit, trackFailedLogin, resetFailedLogin, needsCaptcha, getClientIp (15 testes)
+- `audit-log.test.ts` — logAcesso com parâmetros e tratamento de erro (3 testes)
+- `smartSearch.test.ts` — obterBaseDeConhecimento com mocks de Prisma (6 testes)
+- `usedata.test.ts` — generateRandomTicket, saudacao, checkEmpresaModule (10 testes)
+- Total: 169 testes (antes 135, +34 novos)

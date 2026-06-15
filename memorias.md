@@ -367,6 +367,17 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 - **A4:** Rate limit para `/` (60 req/min/IP) e `/dashboard` (120 req/min/IP) via `Map` em memória no proxy (best-effort, funciona para instância única)
 - **A5:** Tracking de brute force por IP em acessos não autenticados a páginas protegidas (20 tentativas a cada 15 min por IP)
 
+### Mudança: Suite de testes expandida (+34 testes, 169 total)
+**Autor:** Vibecode
+**Arquivos:** `src/__tests__/rate-limit.test.ts` (novo), `src/__tests__/audit-log.test.ts` (novo), `src/__tests__/smartSearch.test.ts` (novo), `src/__tests__/usedata.test.ts` (novo)
+**Data:** 15/06/2026
+**Descrição:**
+- **rate-limit.test.ts:** 15 testes para checkRateLimit, trackFailedLogin, resetFailedLogin, needsCaptcha, getClientIp — cobre rate limiting e proteção brute force.
+- **audit-log.test.ts:** 3 testes para logAcesso com mock de prisma.$executeRawUnsafe — verifica parâmetros corretos, aceitação de nulos e tolerância a falha.
+- **smartSearch.test.ts:** 6 testes para obterBaseDeConhecimento com mock de Prisma — CPF não encontrado, empresa não encontrada, sem avisos, com avisos, erro de banco, filtro de expiração.
+- **usedata.test.ts:** 10 testes para generateRandomTicket (formato e unicidade), saudacao (4 períodos do dia), checkEmpresaModule (mock de Prisma: módulo presente/ausente/erro).
+- Total: 169 testes passando em 8 arquivos (antes 135 em 4 arquivos).
+
 # Informação super importante pra vc não errar mais isso: font documentação Nextjs
 
 Proxy

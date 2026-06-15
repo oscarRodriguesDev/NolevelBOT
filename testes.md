@@ -9,10 +9,14 @@ Este documento descreve o padrão usado para criar uma central de testes automat
 ```
 src/
   __tests__/
-    rbac.test.ts          # Testes de permissões e hierarquia
-    validation.test.ts    # Testes de schemas de validação (Zod, etc.)
-    phoneMap.test.ts      # Testes de persistência em disco
-    security.test.ts      # Testes de segurança e multi-tenancy
+    rbac.test.ts          # Testes de permissões e hierarquia (60 testes)
+    validation.test.ts    # Testes de schemas de validação Zod (43 testes)
+    phoneMap.test.ts      # Testes de persistência em disco (12 testes)
+    security.test.ts      # Testes de segurança e multi-tenancy (20 testes)
+    rate-limit.test.ts    # Testes de rate limiting e brute force (15 testes)
+    audit-log.test.ts     # Testes de log de acesso com mock Prisma (3 testes)
+    smartSearch.test.ts   # Testes de busca de conhecimento com mock Prisma (6 testes)
+    usedata.test.ts       # Testes de utilitários diversos (10 testes)
   app/
     api/
       testes/
@@ -390,6 +394,10 @@ git config core.hooksPath .githooks
 - [ ] Criar `vitest.config.ts`
 - [ ] Adicionar scripts `test` e `test:watch` no `package.json`
 - [ ] Criar `src/__tests__/` com ao menos 4 arquivos de teste
+- [ ] Criar testes para `rate-limit.ts` (checkRateLimit, trackFailedLogin, getClientIp)
+- [ ] Criar testes para `audit-log.ts` (logAcesso com mock de prisma)
+- [ ] Criar testes para `smartSearch.ts` (obterBaseDeConhecimento com mock de prisma)
+- [ ] Criar testes para `usedata.ts` (generateRandomTicket, saudacao, checkEmpresaModule)
 - [ ] Criar `src/app/api/testes/route.ts` (roda vitest via exec)
 - [ ] Criar `src/app/api/testes/login/route.ts` (teste de acesso por papel)
 - [ ] Criar `src/app/testes/page.tsx` (página interativa)
