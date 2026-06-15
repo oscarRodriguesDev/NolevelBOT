@@ -11,6 +11,7 @@ const publicRoutes = [
   '/oficina/consulta',
   '/contact',
   '/api-docs',
+  '/eventos/leads',
 ]
 
 export async function proxy(req: NextRequest) {

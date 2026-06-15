@@ -45,3 +45,33 @@
 **Data:** 13/06/2026
 **Status:** ✅ Concluído
 **Descrição:** Proxy redirecionava usuários sem token de `/` para `/` infinitamente porque a raiz agora é a tela de login. Adicionada condição `&& pathname !== "/"` no redirect de não-autenticado. Também corrigido `token.role` → `token?.role` para TypeScript.
+
+## PED-011: Corrigir erro useHeader em /god/admins
+**Data:** 14/06/2026
+**Status:** ✅ Concluído
+**Descrição:** Página `/god/admins` estava importando `useHeader` do layout `corporativo/(atendimento)`, mas a rota `/god` tem seu próprio layout sem o `HeaderProvider`. Removido o hook e adicionado título inline no JSX.
+
+## PED-012: HeaderContext adicionado ao layout god
+**Data:** 14/06/2026
+**Status:** ✅ Concluído
+**Descrição:** Adicionado `HeaderContext.Provider` com `useHeader()` no layout `/god`. Páginas god/admins e god/usuarios agora usam o hook corretamente. Header visual (Nolevel • titulo + descricao + ThemeToggle) aparece nas páginas god.
+
+## PED-013: Consulta pública de tickets sem autenticação
+**Data:** 14/06/2026
+**Status:** ✅ Concluído
+**Descrição:** As páginas públicas de consulta (corporativo/consulta e oficina/consulta) não funcionavam porque a API `/api/tickets/search` exigia autenticação e aplicava filtro role-based. Agora, buscas por `ticket` ou `cpf` sem sessão são públicas e retornam os chamados diretamente.
+
+## PED-014: Formulário corporativo/chamado adaptado do modelo oficina
+**Data:** 14/06/2026
+**Status:** ✅ Concluído
+**Descrição:** Página /corporativo/chamado reescrita para seguir o mesmo layout/estilo de /oficina/chamado, com CPF formatado, validação ao sair do campo, setores carregados via API, avisos, upload e submit para /api/tickets.
+
+## PED-015: Edição inline de ADMINS em god/usuarios
+**Data:** 14/06/2026
+**Status:** ✅ Concluído
+**Descrição:** Adicionada edição inline (nome e email) para usuários ADMIN na página god/usuarios. GOD pode editar nome e email de qualquer ADMIN de qualquer empresa. Botão de deletar convertido para ícone. Regra de deleção de ADMIN mantida (back-end exige substituto).
+
+## PED-016: Corrigir busca de avisos no smartSearch por CPF
+**Data:** 15/06/2026
+**Status:** ✅ Concluído
+**Descrição:** A função `obterBaseDeConhecimento()` em `smartSearch.ts` estava tentando filtrar `avisos` usando `Empresa: usuario.empresa` (nome da empresa), mas a tabela `avisos` usa `empresaId` (UUID). Corrigido com lookup em duas etapas: 1) busca o nome da empresa em `cpfsLeads.empresa`, 2) busca o ID da empresa em `empresa.nome`, 3) filtra `avisos` por `empresaId`. Também corrigido `consultarLeadPorCpf()` no webhook-leads que fazia auto-requisição HTTP GET para endpoint inexistente — agora consulta Prisma diretamente.

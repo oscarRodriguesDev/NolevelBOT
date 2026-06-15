@@ -74,15 +74,40 @@ export async function GET(req: NextRequest) {
     const ticket = searchParams.get("ticket")
 
     const session = await getSessionOrFail()
+
+    if (ticket) {
+      const chamados = await prisma.chamado.findMany({
+        where: { ticket },
+        orderBy: { createdAt: "desc" },
+        include: {
+          atendente: {
+            select: { id: true, name: true, email: true, avatarUrl: true },
+          },
+        },
+      })
+      return NextResponse.json(chamados)
+    }
+
+    if (cpf && !session) {
+      const chamados = await prisma.chamado.findMany({
+        where: { cpf },
+        orderBy: { createdAt: "desc" },
+        include: {
+          atendente: {
+            select: { id: true, name: true, email: true, avatarUrl: true },
+          },
+        },
+      })
+      return NextResponse.json(chamados)
+    }
+
     const userRole = session?.user?.role as ROLE | undefined
     const userSetor = session?.user?.setor || ""
     const empresaId = session?.user?.empresaId || ""
 
     const where: Prisma.ChamadoWhereInput = getTicketWhereClause(userRole || "ATENDENTE", userSetor, empresaId)
 
-    if (ticket) {
-      where.ticket = ticket
-    } else if (cpf) {
+    if (cpf) {
       where.cpf = cpf
     }
 

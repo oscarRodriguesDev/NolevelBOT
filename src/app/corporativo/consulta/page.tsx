@@ -21,13 +21,24 @@ export default function ConsultaTickets() {
   const [loading, setLoading] = useState(false)
   const route = useRouter()
 
+  function formatCPF(value: string): string {
+    const digits = value.replace(/\D/g, "").slice(0, 11)
+    return digits
+      .replace(/^(\d{3})(\d)/, "$1.$2")
+      .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+      .replace(/\.(\d{3})(\d)/, ".$1-$2")
+  }
+
+  const cpfDigits = cpf.replace(/\D/g, "")
+  const cpfValido = cpfDigits.length === 11
+
   async function buscarTickets() {
-    if (!cpf) return
+    if (!cpfValido) return
 
     setLoading(true)
 
     try {
-      const res = await fetch(`/api/tickets/search?cpf=${cpf}`)
+      const res = await fetch(`/api/tickets/search?cpf=${cpfDigits}`)
       const data = await res.json()
 
       const chamados: Chamado[] = data.map((c: Chamado) => ({
@@ -82,7 +93,7 @@ export default function ConsultaTickets() {
               type="text"
               placeholder="000.000.000-00"
               value={cpf}
-              onChange={(e) => setCpf(e.target.value)}
+              onChange={(e) => setCpf(formatCPF(e.target.value))}
               className="w-full px-4 py-3 border rounded-lg outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
               style={{
                 borderColor: "var(--border-subtle)",
@@ -95,7 +106,7 @@ export default function ConsultaTickets() {
 
           <button
             onClick={buscarTickets}
-            disabled={loading || !cpf}
+            disabled={loading || !cpfValido}
             className="w-full py-3 rounded-lg font-semibold text-white transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-2"
             style={{ backgroundColor: "var(--primary)" }}
           >

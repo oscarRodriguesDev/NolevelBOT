@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
+import { prisma } from "@/lib/prisma"
 import { sendEvolutionText, saudacao, getMemoria, saveMemoria } from "@/lib/usedata"
 import { obterBaseDeConhecimento } from "@/lib/smartSearch"
 
@@ -63,11 +64,12 @@ ${historico ? historico : "Início da conversa."}`
 
 async function consultarLeadPorCpf(cpf: string) {
   try {
-    const baseUrl = process.env.BASE_URL || process.env.NEXT_PUBLIC_BASE_URL
-    if (!baseUrl) return null
-    const res = await fetch(`${baseUrl}/api/leads-network?cpf=${cpf}`)
-    if (!res.ok) return null
-    return await res.json()
+    const lead = await prisma.cpfsLeads.findUnique({
+      where: { cpf },
+      select: { nome: true, empresa: true },
+    })
+    if (!lead) return null
+    return { nome: lead.nome, empresa: lead.empresa }
   } catch {
     return null
   }
@@ -163,7 +165,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true })
     }
 
-    const baseDeConhecimento = await obterBaseDeConhecimento()
+    const baseDeConhecimento = await obterBaseDeConhecimento(session.cpf || "")
 
     // 2. A Hevelyn analisa a pergunta e a base de dados de forma semântica
     const resposta = await gerarRespostaInteligente(

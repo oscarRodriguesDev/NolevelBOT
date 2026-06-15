@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { ROLE } from "@prisma/client"
+import { Pencil, Trash2, Check, X } from "lucide-react"
+import { useHeader } from "../layout"
 import toast from "react-hot-toast"
 
 interface Empresa {
@@ -41,6 +43,17 @@ export default function GodUsuariosPage() {
   const [filtroRole, setFiltroRole] = useState("")
   const [search, setSearch] = useState("")
 
+  const { setHeader } = useHeader()
+
+  useEffect(() => {
+    setHeader({
+      titulo: 'Usuários',
+      descricao: 'Todos os usuários de todas as empresas',
+    })
+  }, [setHeader])
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState({ name: "", email: "" })
+
   useEffect(() => {
     if (status === "loading") return
     const role = session?.user?.role as ROLE | undefined
@@ -76,6 +89,36 @@ export default function GodUsuariosPage() {
       .catch(() => {})
   }, [])
 
+  function startEdit(user: Usuario) {
+    setEditingId(user.id)
+    setEditForm({ name: user.name, email: user.email })
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setEditForm({ name: "", email: "" })
+  }
+
+  async function saveEdit(id: string) {
+    try {
+      const res = await fetch("/api/users", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, ...editForm }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        toast.error(err.error || "Erro ao atualizar")
+        return
+      }
+      toast.success("Usuário atualizado")
+      cancelEdit()
+      fetchUsuarios()
+    } catch {
+      toast.error("Erro ao conectar com o servidor")
+    }
+  }
+
   async function deletarUsuario(id: string, nome: string) {
     if (!confirm(`Tem certeza que deseja remover "${nome}"?`)) return
     try {
@@ -104,11 +147,6 @@ export default function GodUsuariosPage() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold" style={{ color: "var(--primary)" }}>Usuários</h1>
-        <p className="text-sm opacity-70 mt-1">Todos os usuários de todas as empresas</p>
-      </div>
-
       <div className="flex flex-wrap gap-3 mb-6">
         <input
           placeholder="Buscar por nome, email ou CPF..."
@@ -163,31 +201,89 @@ export default function GodUsuariosPage() {
             <tbody>
               {filtrados.map(u => (
                 <tr key={u.id} className="transition-colors hover:opacity-80" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-                  <td className="p-4 font-medium">{u.name}</td>
-                  <td className="p-4 opacity-70">{u.email}</td>
-                  <td className="p-4 opacity-70">{u.cpf}</td>
-                  <td className="p-4">
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-semibold" style={{
-                      backgroundColor: u.role === "GOD" ? "var(--primary)" : "var(--surface-elevated)",
-                      color: u.role === "GOD" ? "#fff" : "var(--foreground)",
-                    }}>
-                      {ROLE_LABEL[u.role] || u.role}
-                    </span>
-                  </td>
-                  <td className="p-4 opacity-70">{u.role === 'ADMIN' && !u.setor ? 'all' : u.setor || "—"}</td>
-                  <td className="p-4 opacity-70">{u.Empresa?.nome || "—"}</td>
-                  <td className="p-4 opacity-70">{new Date(u.createdAt).toLocaleDateString("pt-BR")}</td>
-                  <td className="p-4">
-                    {u.role !== "GOD" && (
-                      <button
-                        onClick={() => deletarUsuario(u.id, u.name)}
-                        className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all hover:scale-105"
-                        style={{ backgroundColor: "var(--surface-elevated)", color: "var(--foreground)" }}
-                      >
-                        Remover
-                      </button>
-                    )}
-                  </td>
+                  {editingId === u.id ? (
+                    <>
+                      <td className="p-4">
+                        <input
+                          value={editForm.name}
+                          onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))}
+                          className="w-full px-3 py-1.5 rounded-lg border text-xs outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                          style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
+                        />
+                      </td>
+                      <td className="p-4">
+                        <input
+                          value={editForm.email}
+                          onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))}
+                          className="w-full px-3 py-1.5 rounded-lg border text-xs outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                          style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
+                        />
+                      </td>
+                      <td className="p-4 opacity-70">{u.cpf}</td>
+                      <td className="p-4">
+                        <span className="px-2.5 py-1 rounded-lg text-xs font-semibold" style={{
+                          backgroundColor: "var(--primary)",
+                          color: "#fff",
+                        }}>
+                          {ROLE_LABEL[u.role] || u.role}
+                        </span>
+                      </td>
+                      <td className="p-4 opacity-70">{u.role === 'ADMIN' && !u.setor ? 'all' : u.setor || "—"}</td>
+                      <td className="p-4 opacity-70">{u.Empresa?.nome || "—"}</td>
+                      <td className="p-4 opacity-70">{new Date(u.createdAt).toLocaleDateString("pt-BR")}</td>
+                      <td className="p-4">
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => saveEdit(u.id)} className="p-1.5 rounded-lg transition-all hover:scale-105" style={{ color: "var(--status-completed)" }} title="Salvar">
+                            <Check size={16} />
+                          </button>
+                          <button onClick={cancelEdit} className="p-1.5 rounded-lg transition-all hover:scale-105" style={{ color: "var(--status-cancelled)" }} title="Cancelar">
+                            <X size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="p-4 font-medium">{u.name}</td>
+                      <td className="p-4 opacity-70">{u.email}</td>
+                      <td className="p-4 opacity-70">{u.cpf}</td>
+                      <td className="p-4">
+                        <span className="px-2.5 py-1 rounded-lg text-xs font-semibold" style={{
+                          backgroundColor: u.role === "GOD" ? "var(--primary)" : "var(--surface-elevated)",
+                          color: u.role === "GOD" ? "#fff" : "var(--foreground)",
+                        }}>
+                          {ROLE_LABEL[u.role] || u.role}
+                        </span>
+                      </td>
+                      <td className="p-4 opacity-70">{u.role === 'ADMIN' && !u.setor ? 'all' : u.setor || "—"}</td>
+                      <td className="p-4 opacity-70">{u.Empresa?.nome || "—"}</td>
+                      <td className="p-4 opacity-70">{new Date(u.createdAt).toLocaleDateString("pt-BR")}</td>
+                      <td className="p-4">
+                        {u.role !== "GOD" && (
+                          <div className="flex items-center gap-1">
+                            {u.role === "ADMIN" && (
+                              <button
+                                onClick={() => startEdit(u)}
+                                className="p-1.5 rounded-lg transition-all hover:scale-105"
+                                style={{ color: "var(--primary)" }}
+                                title="Editar"
+                              >
+                                <Pencil size={14} />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => deletarUsuario(u.id, u.name)}
+                              className="p-1.5 rounded-lg transition-all hover:scale-105"
+                              style={{ color: "var(--status-cancelled)" }}
+                              title="Remover"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </>
+                  )}
                 </tr>
               ))}
             </tbody>

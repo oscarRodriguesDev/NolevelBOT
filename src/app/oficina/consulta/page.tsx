@@ -21,8 +21,10 @@ export default function ConsultaSolicitacoes() {
   const [loading, setLoading] = useState(false)
   const route = useRouter()
 
+  const matriculaValida = matricula.length >= 4 && matricula.length <= 8
+
   async function buscarSolicitacoes() {
-    if (!matricula) return
+    if (!matriculaValida) return
 
     setLoading(true)
 
@@ -89,8 +91,8 @@ export default function ConsultaSolicitacoes() {
               type="text"
               placeholder="000000"
               value={matricula}
-              onChange={(e) => setMatricula(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              maxLength={6}
+              onChange={(e) => setMatricula(e.target.value.replace(/\D/g, '').slice(0, 8))}
+              maxLength={8}
               className="w-full px-4 py-3 border rounded-lg outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
               style={{
                 borderColor: "var(--border-subtle)",
@@ -103,7 +105,7 @@ export default function ConsultaSolicitacoes() {
 
           <button
             onClick={buscarSolicitacoes}
-            disabled={loading || !matricula}
+            disabled={loading || !matriculaValida}
             className="w-full py-3 rounded-lg font-semibold text-white transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-2"
             style={{ backgroundColor: "var(--primary)" }}
           >
