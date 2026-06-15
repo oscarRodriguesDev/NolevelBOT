@@ -75,3 +75,8 @@
 **Data:** 15/06/2026
 **Status:** ✅ Concluído
 **Descrição:** A função `obterBaseDeConhecimento()` em `smartSearch.ts` estava tentando filtrar `avisos` usando `Empresa: usuario.empresa` (nome da empresa), mas a tabela `avisos` usa `empresaId` (UUID). Corrigido com lookup em duas etapas: 1) busca o nome da empresa em `cpfsLeads.empresa`, 2) busca o ID da empresa em `empresa.nome`, 3) filtra `avisos` por `empresaId`. Também corrigido `consultarLeadPorCpf()` no webhook-leads que fazia auto-requisição HTTP GET para endpoint inexistente — agora consulta Prisma diretamente.
+
+## PED-017: Fix loop no webhook27 — COLETAR_MOTIVO sem avisos não pode ir para MENU_PRINCIPAL
+**Data:** 15/06/2026
+**Status:** ✅ Concluído
+**Descrição:** Webhook27 entrava em loop quando o usuário descrevia o problema no estado COLETAR_MOTIVO e não havia avisos cadastrados. A IA não recebia as instruções de PROSSEGUIR_FLUXO (bloco instrucaoAvisos pulado quando sem avisos), seguia a reconducao (apresentar menu) e o else do webhook setava MENU_PRINCIPAL. Fix: quando não há avisos, skipping a análise da IA e indo direto para PERGUNTAR_ANEXO.

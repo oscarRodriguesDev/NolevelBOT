@@ -446,3 +446,14 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 **Descrição:**
 - **smartSearch.ts:** `obterBaseDeConhecimento(cpf)` agora faz lookup em 3 etapas: 1) busca `cpfsLeads` pelo CPF para obter o nome da empresa (`empresa`), 2) busca `empresa` pelo nome para obter o `id`, 3) filtra `avisos` por `empresaId`. Antes tentava `where: { Empresa: usuario.empresa }` que não funciona porque `avisos` usa FK `empresaId`.
 - **webhook-leads/route.ts:** `consultarLeadPorCpf()` agora consulta Prisma diretamente (`prisma.cpfsLeads.findUnique`) em vez de fazer auto-requisição HTTP GET para `/api/webhook-leads?cpf=...` (endpoint GET inexistente causava 405).
+
+### Mudança: Fix loop no webhook27 — COLETAR_MOTIVO sem avisos ia para MENU_PRINCIPAL
+**Autor:** Vibecode
+**Arquivos:** `src/app/api/webhook27/route.ts`
+**Data:** 15/06/2026
+**Descrição:**
+- No estado `COLETAR_MOTIVO`, quando não há avisos cadastrados, `buscarAvisos` + `buscarAvisosPorCpf` retornam "Sem avisos." ou "Sem avisos no momento.".
+- A função `botIA4()` em `useIA4.ts` pula o bloco `instrucaoAvisos` quando o texto é exatamente "Sem avisos." ou "Sem avisos no momento." (linha 162-174), então a IA não recebe as instruções sobre `PROSSEGUIR_FLUXO` e `AVISO_RESOLVE`.
+- Sem essas instruções, a IA segue a `reconducao` (que manda reconduzir para o menu) e apresenta as opções novamente.
+- O `else` no webhook27 envia a resposta da IA e seta `MENU_PRINCIPAL`, criando um loop infinito.
+- **Fix:** Quando não há avisos, o fluxo agora pula a análise da IA e vai direto para `PERGUNTAR_ANEXO` (perguntar sobre anexos), eliminando o loop.

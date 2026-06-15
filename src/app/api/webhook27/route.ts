@@ -300,6 +300,18 @@ export async function POST(req: NextRequest) {
           todosAvisos = await buscarAvisosPorCpf(session.cpf!);
         }
 
+        const semAvisos = todosAvisos === "Sem avisos." || todosAvisos === "Sem avisos no momento.";
+
+        if (semAvisos) {
+          await sendEvolutionText(
+            instance,
+            number,
+            `Certo! Você precisa enviar alguma foto ou documento ou comprovante?`
+          );
+          session.state = FlowState.PERGUNTAR_ANEXO;
+          break;
+        }
+
         const analiseIA = await botIA(
           session,
           userInput,

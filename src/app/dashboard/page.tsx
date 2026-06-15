@@ -39,13 +39,13 @@ const MODULOS_DISPONIVEIS: ModuloInfo[] = [
     icon: LuWrench,
     href: "/oficina/dashboards",
   },
-  {
+ /*  {
     key: "EVENTOS",
     label: "Eventos",
     descricao: "Captura de leads em feiras e eventos",
     icon: LuCalendarCheck,
     href: "/corporativo/leads",
-  },
+  }, */
 ]
 
 export default function DashboardPage() {
