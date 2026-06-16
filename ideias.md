@@ -20,6 +20,21 @@
 ## REL-004: Preview ampliado de imagem no chatbot (relacionado ao PED-008)
 **Ideia:** Ao clicar na imagem preview no chat, abrir um modal/lightbox com a foto em tamanho original para melhor visualização do problema/documentação.
 
+## REL-009: Alertas automáticos de reincidência (relacionado ao PED-019)
+**Ideia:** Quando um veículo atingir 3+ reincidências no mesmo defeito em 30 dias, disparar notificação para o gestor da oficina informando que o reparo anterior pode não ter sido eficaz.
+
+## REL-010: Previsão de defeitos por sazonalidade (relacionado ao PED-019)
+**Ideia:** Usar os dados de sazonalidade para prever quais defeitos tendem a aumentar no próximo mês (ex: superaquecimento no verão) e sugerir manutenção preventiva.
+
+## REL-006: Mesmo padrão de indicadores para Oficina e Eventos (relacionado ao PED-018)
+**Ideia:** Os mesmos indicadores de tickets_evitados, taxa de automação e economia podem ser aplicados aos dashboards de Oficina e Eventos, já que o model tickets_evitados é multi-módulo (tem setor e empresaId). Bastaria replicar a lógica nos endpoints e páginas correspondentes.
+
+## REL-007: Notificação quando taxa de automação cai (relacionado ao PED-018)
+**Ideia:** Se a taxa de automação cair abaixo de um threshold (ex: 10%), enviar notificação para o ADMIN/GESTOR sugerindo revisar/criar mais avisos para melhorar a taxa de resolução automática do bot.
+
+## REL-008: Sugestão automática de avisos baseada em motivos evitados (relacionado ao PED-018)
+**Ideia:** Analisar os motivos mais frequentes em `tickets_evitados.descricao` e sugerir ao ADMIN a criação de avisos para esses tópicos, aumentando ainda mais a taxa de automação.
+
 ## REL-005: Mesmo padrão de loop pode existir em outros webhooks (relacionado ao PED-017)
 **Ideia:** Webhook26 e webhook-oficina podem ter o mesmo problema no COLETAR_MOTIVO quando não há avisos, pois compartilham a mesma lógica de fallback para MENU_PRINCIPAL. Se ocorrer loop semelhante, aplicar o mesmo fix.
 

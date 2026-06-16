@@ -76,7 +76,7 @@ export default function AtendimentoLayout({
   if (status === 'loading' || autorizado === null) {
     return (
       <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: 'var(--background)' }}>
-        <div className="animate-spin w-8 h-8 border-2 border(--primary)] border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-2 border-[var(--primary)] border-t-transparent rounded-full" />
       </div>
     )
   }

@@ -249,6 +249,45 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 **Data:** 12/06/2026
 **Descrição:** A página de login foi movida de `/login` para `/` (raiz). O arquivo `src/app/login/page.tsx` foi deletado e seu conteúdo copiado para `src/app/page.tsx`, substituindo a landing page original.
 
+### Mudança: Dashboard oficina enriquecido (melhores veiculos, correlacao, reincidencia, sazonalidade, tempo por defeito)
+**Autor:** Vibecode
+**Arquivos:** `src/app/api/dashboards/route.ts`, `src/app/oficina/(atendimento)/dashboards/page.tsx`
+**Data:** 15/06/2026
+**Descrição:**
+- **API (`/api/dashboards`):**
+  - Adicionado `melhoresVeiculos` (veículos com menos ocorrências, ordem crescente).
+  - Adicionado `correlacaoDefeitoVeiculo` (cruzamento: para cada defeito, lista veículos afetados).
+  - Adicionado `tempoMedioPorDefeito` (média de horas para resolver cada tipo de defeito).
+  - Adicionado `reincidenciaStats` (mesmo veículo + mesmo defeito em até 15 dias, com contagem de ocorrências e intervalo).
+  - Adicionado `sazonalidadeDefeitos` (defeitos agrupados por mês para identificar padrões sazonais).
+- **Frontend (`oficina/dashboards/page.tsx`):**
+  - Novo card "Tempo Médio por Defeito" (gráfico de barras horizontal).
+  - Novo card "Melhores Veículos" (gráfico de barras com veículos de menor incidência).
+  - Novo card "Reincidência (<=15dias)" (tabela com veículo, defeito, ocorrências e intervalo).
+  - Nova seção "Sazonalidade de Defeitos" (tabela multi-mês com top 5 defeitos por mês).
+  - Novo grid "Correlação Defeito x Veículo" (cards dinâmicos mostrando quais veículos sofrem cada defeito).
+  - CSV e PDF atualizados com todos os novos indicadores.
+
+### Mudança: Indicadores do dashboard corporativo enriquecidos (tickets_evitados, tempo médio detalhado, comparativo avisos vs evitados)
+**Autor:** Vibecode
+**Arquivos:** `src/app/api/dashboards/route.ts`, `src/app/corporativo/(atendimento)/dashboards/page.tsx`
+**Data:** 15/06/2026
+**Descrição:**
+- **API (`/api/dashboards`):**
+  - Adicionada query a `tickets_evitados` (filtrada por `empresaId` e `periodo`) com try-catch para não quebrar se a tabela não existir.
+  - Adicionados `tempoMedioDiario` (resolvidos em <= 1 dia), `tempoMedioSemanal` (<= 7 dias), `tempoMedioMensal` (<= 30 dias).
+  - Adicionados `totalEvitados`, `totalAvisos`, `taxaAutomacao` (evitados / (evitados + chamados) * 100), `economiaHoras` (evitados * tempoMedio).
+  - Adicionado `evitadosPorMotivo` (top motivos que o bot resolveu).
+  - Adicionado `comparativoAvisos` (agrupamento mensal de avisos criados vs chamados evitados para correlação).
+  - Helpers `inPeriodo()` e `getMonthKey()` para filtrar/agrupar por período de forma consistente.
+- **Frontend (`dashboards/page.tsx`):**
+  - 8 KPIs na primeira linha (4 originais + 4 novos: Chamados Evitados, Avisos Ativos, Taxa de Automação, Economia).
+  - Card de Tempo Médio reformulado: exibe média geral + breakdown diário/semanal/mensal.
+  - Novo gráfico "Avisos vs Chamados Evitados" (barras agrupadas, recharts com Legend).
+  - Nova tabela "Top Motivos Evitados".
+  - Card explicativo da relação entre avisos e chamados evitados.
+  - CSV e PDF atualizados com todas as novas métricas.
+
 ### Mudança: Instruções de colaboração atualizadas
 **Autor:** Usuário
 **Arquivos:** `prompt .md`

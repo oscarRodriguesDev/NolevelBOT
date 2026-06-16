@@ -179,8 +179,23 @@ model logs_de_acesso{
   modulo    modulo
   acao      String //ex: "login", "criou chamado", "fechou chamado", etc.
   createdAt DateTime @default(now())
-
   @@index([cpf])
   @@index([empresa])
   @@index([modulo]) 
+}
+
+//contabilizar os chamados evitados pelo bot, para mostrar no dashboard o quanto o bot tem ajudado a reduzir a carga de trabalho dos atendentes humanos
+model tickets_evitados{
+  id         String   @id @default(uuid())
+  nome       String
+  empresaId  String
+  cpf        String
+  setor      String
+  descricao  String
+  prioridade String
+  anexoUrl   String?
+  atendente  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
 }

@@ -15,6 +15,7 @@ import {
   PieChart,
   Pie,
   Cell,
+  Legend,
 } from "recharts"
 import jsPDF from "jspdf"
 import { useHeader } from "../layout"
@@ -26,6 +27,12 @@ interface StatItem {
   status?: string;
   prioridade?: string;
   total: number;
+}
+
+interface ComparativoItem {
+  mes: string;
+  avisos: number;
+  evitados: number;
 }
 
 const STATUS_CORES: Record<string, string> = {
@@ -53,9 +60,18 @@ export default function Dashboard() {
   const [statusStats, setStatusStats] = useState<StatItem[]>([])
   const [prioridadeStats, setPrioridadeStats] = useState<StatItem[]>([])
   const [tempoMedio, setTempoMedio] = useState(0)
+  const [tempoMedioDiario, setTempoMedioDiario] = useState(0)
+  const [tempoMedioSemanal, setTempoMedioSemanal] = useState(0)
+  const [tempoMedioMensal, setTempoMedioMensal] = useState(0)
   const [totalAbertos, setTotalAbertos] = useState(0)
   const [totalFechados, setTotalFechados] = useState(0)
   const [taxaConclusao, setTaxaConclusao] = useState(0)
+  const [totalEvitados, setTotalEvitados] = useState(0)
+  const [taxaAutomacao, setTaxaAutomacao] = useState(0)
+  const [economiaHoras, setEconomiaHoras] = useState(0)
+  const [totalAvisos, setTotalAvisos] = useState(0)
+  const [evitadosPorMotivo, setEvitadosPorMotivo] = useState<StatItem[]>([])
+  const [comparativoAvisos, setComparativoAvisos] = useState<ComparativoItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [hasPermission, setHasPermission] = useState(true)
 
@@ -100,9 +116,18 @@ export default function Dashboard() {
           setStatusStats(data.statusStats || [])
           setPrioridadeStats(data.prioridadeStats || [])
           setTempoMedio(data.tempoMedio || 0)
+          setTempoMedioDiario(data.tempoMedioDiario || 0)
+          setTempoMedioSemanal(data.tempoMedioSemanal || 0)
+          setTempoMedioMensal(data.tempoMedioMensal || 0)
           setTotalAbertos(data.totalAbertos || 0)
           setTotalFechados(data.totalFechados || 0)
           setTaxaConclusao(data.taxaConclusao || 0)
+          setTotalEvitados(data.totalEvitados || 0)
+          setTaxaAutomacao(data.taxaAutomacao || 0)
+          setEconomiaHoras(data.economiaHoras || 0)
+          setTotalAvisos(data.totalAvisos || 0)
+          setEvitadosPorMotivo(data.evitadosPorMotivo || [])
+          setComparativoAvisos(data.comparativoAvisos || [])
           setHasPermission(true)
         }
       } catch (error) {
@@ -130,6 +155,13 @@ export default function Dashboard() {
     linhas.push(`Concluidos,${totalFechados}`)
     linhas.push(`Taxa de Conclusao,${taxaConclusao}%`)
     linhas.push(`Tempo Medio,${tempoMedio}h`)
+    linhas.push(`Tempo Medio (<=1dia),${tempoMedioDiario}h`)
+    linhas.push(`Tempo Medio (<=7dias),${tempoMedioSemanal}h`)
+    linhas.push(`Tempo Medio (<=30dias),${tempoMedioMensal}h`)
+    linhas.push(`Chamados Evitados,${totalEvitados}`)
+    linhas.push(`Avisos Ativos,${totalAvisos}`)
+    linhas.push(`Taxa de Automacao,${taxaAutomacao}%`)
+    linhas.push(`Economia (horas),${economiaHoras}h`)
     linhas.push("")
     linhas.push("--- CHAMADOS POR SETOR ---")
     linhas.push("Setor,Total")
@@ -146,6 +178,14 @@ export default function Dashboard() {
     linhas.push("--- TOP MOTIVOS ---")
     linhas.push("Motivo,Total")
     motivosStats.forEach((m) => linhas.push(`${m.motivo},${m.total}`))
+    linhas.push("")
+    linhas.push("--- TOP MOTIVOS EVITADOS ---")
+    linhas.push("Motivo,Total")
+    evitadosPorMotivo.forEach((m) => linhas.push(`${m.motivo},${m.total}`))
+    linhas.push("")
+    linhas.push("--- AVISOS VS CHAMADOS EVITADOS ---")
+    linhas.push("Mes,Avisos Criados,Chamados Evitados")
+    comparativoAvisos.forEach((c) => linhas.push(`${c.mes},${c.avisos},${c.evitados}`))
     linhas.push("")
     linhas.push("--- EVOLUCAO TEMPORAL ---")
     linhas.push("Periodo,Total")
@@ -179,7 +219,14 @@ export default function Dashboard() {
     pdf.text(`Em Aberto: ${totalAbertos}`, 15, y); y += 6
     pdf.text(`Concluidos: ${totalFechados}`, 15, y); y += 6
     pdf.text(`Taxa de Conclusao: ${taxaConclusao}%`, 15, y); y += 6
-    pdf.text(`Tempo Medio: ${tempoMedio} horas`, 15, y); y += 10
+    pdf.text(`Tempo Medio: ${tempoMedio} horas`, 15, y); y += 6
+    pdf.text(`Tempo Medio (<=1dia): ${tempoMedioDiario}h`, 15, y); y += 6
+    pdf.text(`Tempo Medio (<=7dias): ${tempoMedioSemanal}h`, 15, y); y += 6
+    pdf.text(`Tempo Medio (<=30dias): ${tempoMedioMensal}h`, 15, y); y += 6
+    pdf.text(`Chamados Evitados: ${totalEvitados}`, 15, y); y += 6
+    pdf.text(`Avisos Ativos: ${totalAvisos}`, 15, y); y += 6
+    pdf.text(`Taxa de Automacao: ${taxaAutomacao}%`, 15, y); y += 6
+    pdf.text(`Economia: ${economiaHoras} horas`, 15, y); y += 10
     checkPage()
 
     if (chamadosPorSetor.length > 0) {
@@ -220,6 +267,28 @@ export default function Dashboard() {
         const txt = (m.motivo || "Sem motivo")
         const motivo = txt.length > 70 ? txt.slice(0, 70) + "..." : txt
         pdf.text(`${motivo}: ${m.total}`, 15, y); y += 6; checkPage()
+      })
+      y += 4; checkPage()
+    }
+
+    if (evitadosPorMotivo.length > 0) {
+      pdf.setFontSize(14)
+      pdf.text("Top Motivos Evitados", 10, y); y += 8
+      pdf.setFontSize(11)
+      evitadosPorMotivo.slice(0, 15).forEach((m) => {
+        const txt = (m.motivo || "Sem motivo")
+        const motivo = txt.length > 70 ? txt.slice(0, 70) + "..." : txt
+        pdf.text(`${motivo}: ${m.total}`, 15, y); y += 6; checkPage()
+      })
+      y += 4; checkPage()
+    }
+
+    if (comparativoAvisos.length > 0) {
+      pdf.setFontSize(14)
+      pdf.text("Avisos vs Chamados Evitados", 10, y); y += 8
+      pdf.setFontSize(11)
+      comparativoAvisos.forEach((c) => {
+        pdf.text(`${c.mes}: ${c.avisos} avisos, ${c.evitados} evitados`, 15, y); y += 6; checkPage()
       })
       y += 4; checkPage()
     }
@@ -314,31 +383,15 @@ export default function Dashboard() {
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-12 grid grid-cols-2 md:grid-cols-4 gap-4">
-          <KPICard
-            label="Total Geral"
-            value={isLoading ? "..." : totalGeral}
-            unit="chamados"
-            color="var(--foreground)"
-          />
-          <KPICard
-            label="Abertos"
-            value={isLoading ? "..." : totalAbertos}
-            unit="em andamento"
-            color="var(--status-in-progress)"
-          />
-          <KPICard
-            label="Concluidos"
-            value={isLoading ? "..." : totalFechados}
-            unit="finalizados"
-            color="var(--status-completed)"
-          />
-          <KPICard
-            label="Taxa de Conclusao"
-            value={isLoading ? "..." : `${taxaConclusao}%`}
-            unit={taxaConclusao > 50 ? "acima da media" : "abaixo da media"}
-            color="var(--primary)"
-          />
+        <div className="lg:col-span-12 grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-4">
+          <KPICard label="Total Geral" value={isLoading ? "..." : totalGeral} unit="chamados" color="var(--foreground)" />
+          <KPICard label="Abertos" value={isLoading ? "..." : totalAbertos} unit="em andamento" color="var(--status-in-progress)" />
+          <KPICard label="Concluidos" value={isLoading ? "..." : totalFechados} unit="finalizados" color="var(--status-completed)" />
+          <KPICard label="Taxa de Conclusao" value={isLoading ? "..." : `${taxaConclusao}%`} unit={taxaConclusao > 50 ? "acima da media" : "abaixo da media"} color="var(--primary)" />
+          <KPICard label="Chamados Evitados" value={isLoading ? "..." : totalEvitados} unit="pelo bot" color="var(--status-waiting)" />
+          <KPICard label="Avisos Ativos" value={isLoading ? "..." : totalAvisos} unit="cadastrados" color="#8b5cf6" />
+          <KPICard label="Taxa de Automacao" value={isLoading ? "..." : `${taxaAutomacao}%`} unit={taxaAutomacao > 50 ? "acima da media" : "abaixo da media"} color="var(--status-completed)" />
+          <KPICard label="Economia (horas)" value={isLoading ? "..." : economiaHoras} unit="horas economizadas" color="var(--status-in-progress)" />
         </div>
 
         <div className="lg:col-span-4 bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
@@ -455,20 +508,28 @@ export default function Dashboard() {
 
         <div className="lg:col-span-4 bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xs font-black uppercase tracking-[0.2em] opacity-70">Tempo Medio</h2>
+            <h2 className="text-xs font-black uppercase tracking-[0.2em] opacity-70">Tempo Medio de Atendimento</h2>
           </div>
-          <div className="flex items-center justify-center h-[200px]">
+          <div className="space-y-5">
             <div className="text-center">
-              <p className="text-6xl font-black" style={{ color: "var(--primary)" }}>
+              <p className="text-5xl font-black" style={{ color: "var(--primary)" }}>
                 {isLoading ? "..." : tempoMedio}
               </p>
-              <p className="text-sm font-bold opacity-40 mt-2 uppercase tracking-widest">Horas</p>
+              <p className="text-sm font-bold opacity-40 mt-1 uppercase tracking-widest">Media Geral (horas)</p>
             </div>
-          </div>
-          <div className="flex flex-wrap justify-center gap-3 mt-4">
-            <div className="flex items-center gap-1.5 text-[10px] font-bold opacity-50">
-              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "var(--status-completed)" }} />
-              Baseado em chamados concluidos
+            <div className="grid grid-cols-3 gap-3 pt-4 border-t border-[var(--border-subtle)]">
+              <div className="text-center">
+                <p className="text-xl font-black" style={{ color: "var(--status-completed)" }}>{isLoading ? "..." : tempoMedioDiario}</p>
+                <p className="text-[9px] font-bold opacity-40 uppercase tracking-wider mt-1">{'<='} 1dia</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xl font-black" style={{ color: "var(--status-in-progress)" }}>{isLoading ? "..." : tempoMedioSemanal}</p>
+                <p className="text-[9px] font-bold opacity-40 uppercase tracking-wider mt-1">{'<='} 7dias</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xl font-black" style={{ color: "var(--status-waiting)" }}>{isLoading ? "..." : tempoMedioMensal}</p>
+                <p className="text-[9px] font-bold opacity-40 uppercase tracking-wider mt-1">{'<='} 30dias</p>
+              </div>
             </div>
           </div>
         </div>
@@ -628,6 +689,109 @@ export default function Dashboard() {
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+
+        {/* Comparativo Avisos vs Chamados Evitados */}
+        <div className="lg:col-span-12 bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xs font-black uppercase tracking-[0.2em] opacity-70">
+              Avisos vs Chamados Evitados
+            </h2>
+            <span className="text-[10px] font-bold opacity-40">CORRELACAO</span>
+          </div>
+          <div className="h-[300px]">
+            {isLoading ? (
+              <div className="w-full h-full flex items-center justify-center opacity-20 font-black text-xs tracking-widest">
+                CARREGANDO...
+              </div>
+            ) : comparativoAvisos.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={comparativoAvisos}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" opacity={0.5} />
+                  <XAxis dataKey="mes" axisLine={false} tickLine={false} fontSize={10} fontWeight="bold" opacity={0.5} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} fontSize={10} opacity={0.5} />
+                  <Tooltip cursor={{ fill: "var(--background)", opacity: 0.4 }}
+                    contentStyle={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-subtle)", borderRadius: "12px", fontSize: "12px", fontWeight: "bold" }}
+                  />
+                  <Bar dataKey="avisos" name="Avisos" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={24} />
+                  <Bar dataKey="evitados" name="Chamados Evitados" fill="var(--status-completed)" radius={[4, 4, 0, 0]} barSize={24} />
+                  <Legend wrapperStyle={{ fontSize: "11px", fontWeight: "bold", opacity: 0.7, paddingTop: "16px" }} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center opacity-30 font-bold uppercase text-xs tracking-widest">
+                Sem dados
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Top Motivos Evitados */}
+        <div className="lg:col-span-6 bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-[var(--border-subtle)] bg-[var(--background)] bg-opacity-20 flex justify-between items-center">
+            <h2 className="text-xs font-black uppercase tracking-[0.2em] opacity-70">
+              Top Motivos Evitados
+            </h2>
+            <span className="text-[10px] font-bold opacity-40">RANKING</span>
+          </div>
+          <div className="overflow-auto max-h-[300px]">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-left opacity-30 border-b border-[var(--border-subtle)]">
+                  <th className="px-6 py-3 font-black tracking-widest text-[9px]">#</th>
+                  <th className="px-6 py-3 font-black tracking-widest text-[9px]">MOTIVO</th>
+                  <th className="px-6 py-3 font-black tracking-widest text-right text-[9px]">TOTAL</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border-subtle)]">
+                {evitadosPorMotivo.length > 0 ? (
+                  evitadosPorMotivo.slice(0, 10).map((m, i) => (
+                    <tr key={i} className="hover:bg-[var(--background)] hover:bg-opacity-40 transition-colors group">
+                      <td className="px-6 py-3 font-black opacity-30 w-10">{String(i + 1).padStart(2, "0")}</td>
+                      <td className="px-6 py-3 font-bold opacity-80 group-hover:opacity-100 max-w-[400px] truncate">
+                        {m.motivo}
+                      </td>
+                      <td className="px-6 py-3 text-right">
+                        <span className="bg-[var(--background)] px-3 py-1 rounded-lg font-black" style={{ color: "var(--status-completed)" }}>
+                          {m.total}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={3} className="p-10 text-center opacity-30 font-bold uppercase tracking-widest">
+                      {isLoading ? "Buscando dados..." : "Nenhum chamado evitado no periodo"}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Legenda: Avisos vs Evitados */}
+        <div className="lg:col-span-6 bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
+          <div className="flex items-start justify-center h-full flex-col space-y-4">
+            <h2 className="text-xs font-black uppercase tracking-[0.2em] opacity-70">Entendendo a Relacao</h2>
+            <p className="text-sm font-bold opacity-60 leading-relaxed">
+              Quanto mais avisos a empresa cadastrar na aba de avisos, mais o bot consegue
+              resolver problemas automaticamente, evitando a abertura de novos chamados.
+            </p>
+            <div className="flex items-center gap-6 pt-2">
+              <div className="flex items-center gap-2 text-[11px] font-bold">
+                <div className="w-3 h-3 rounded" style={{ backgroundColor: "#8b5cf6" }} />
+                Avisos Criados
+              </div>
+              <div className="flex items-center gap-2 text-[11px] font-bold">
+                <div className="w-3 h-3 rounded" style={{ backgroundColor: "var(--status-completed)" }} />
+                Chamados Evitados
+              </div>
+            </div>
+            <p className="text-[10px] font-bold opacity-30 mt-2">
+              {totalAvisos} avisos ativos &middot; {totalEvitados} chamados evitados no periodo &middot; {taxaAutomacao}% de automacao
+            </p>
           </div>
         </div>
       </div>

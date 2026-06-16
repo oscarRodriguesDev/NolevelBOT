@@ -76,6 +76,29 @@
 **Status:** ✅ Concluído
 **Descrição:** A função `obterBaseDeConhecimento()` em `smartSearch.ts` estava tentando filtrar `avisos` usando `Empresa: usuario.empresa` (nome da empresa), mas a tabela `avisos` usa `empresaId` (UUID). Corrigido com lookup em duas etapas: 1) busca o nome da empresa em `cpfsLeads.empresa`, 2) busca o ID da empresa em `empresa.nome`, 3) filtra `avisos` por `empresaId`. Também corrigido `consultarLeadPorCpf()` no webhook-leads que fazia auto-requisição HTTP GET para endpoint inexistente — agora consulta Prisma diretamente.
 
+## PED-019: Enriquecedor indicadores do dashboard oficina (reincidencia, correlacao, sazonalidade, melhores veiculos)
+**Data:** 15/06/2026
+**Status:** ✅ Concluído
+**Descrição:** Adicionou ao dashboard de oficina:
+- Melhores veículos (menos ocorrências)
+- Correlação Defeito x Veículo (quais veículos mais sofrem cada defeito)
+- Tempo médio por defeito (horas para resolver cada tipo)
+- Reincidência (mesmo veículo + defeito em até 15 dias)
+- Sazonalidade de defeitos (defeitos por mês)
+- Todos os indicadores incluídos em CSV e PDF
+
+## PED-018: Melhorar indicadores do dashboard corporativo com tickets_evitados
+**Data:** 15/06/2026
+**Status:** ✅ Concluído
+**Descrição:** Enriqueceu o dashboard corporativo com dados do novo model `tickets_evitados`:
+- Chamados evitados pelo bot (contagem por período)
+- Tempo médio de atendimento detalhado (diário, semanal, mensal)
+- Taxa de automação (evitados / total)
+- Economia estimada em horas
+- Top motivos que o bot resolveu
+- Gráfico de correlação "Avisos vs Chamados Evitados"
+- Todos os indicadores incluídos em CSV e PDF
+
 ## PED-017: Fix loop no webhook27 — COLETAR_MOTIVO sem avisos não pode ir para MENU_PRINCIPAL
 **Data:** 15/06/2026
 **Status:** ✅ Concluído

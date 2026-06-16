@@ -30,6 +30,28 @@ interface StatItem {
   total: number;
 }
 
+interface CorrelacaoItem {
+  defeito: string;
+  veiculos: StatItem[];
+}
+
+interface SazonalidadeItem {
+  mes: string;
+  defeitos: StatItem[];
+}
+
+interface ReincidenciaItem {
+  veiculo: string;
+  defeito: string;
+  ocorrencias: number;
+  intervaloDias: number;
+}
+
+interface TempoDefeitoItem {
+  defeito: string;
+  total: number;
+}
+
 const STATUS_CORES: Record<string, string> = {
   NOVO: "var(--status-new)",
   EM_ATENDIMENTO: "var(--status-in-progress)",
@@ -52,8 +74,16 @@ export default function Dashboard() {
   const [defeitosStats, setDefeitosStats] = useState<StatItem[]>([])
   const [funcoesStats, setFuncoesStats] = useState<StatItem[]>([])
   const [veiculosStats, setVeiculosStats] = useState<StatItem[]>([])
+  const [melhoresVeiculos, setMelhoresVeiculos] = useState<StatItem[]>([])
+  const [tempoMedioPorDefeito, setTempoMedioPorDefeito] = useState<StatItem[]>([])
+  const [reincidenciaStats, setReincidenciaStats] = useState<ReincidenciaItem[]>([])
+  const [correlacaoDefeitoVeiculo, setCorrelacaoDefeitoVeiculo] = useState<CorrelacaoItem[]>([])
+  const [sazonalidadeDefeitos, setSazonalidadeDefeitos] = useState<SazonalidadeItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [hasPermission, setHasPermission] = useState(true)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => { setMounted(true) }, [])
 
   const { setHeader } = useHeader()
 
@@ -100,6 +130,11 @@ export default function Dashboard() {
           setDefeitosStats(data.defeitosStats || [])
           setFuncoesStats(data.funcoesStats || [])
           setVeiculosStats(data.veiculosStats || [])
+          setMelhoresVeiculos(data.melhoresVeiculos || [])
+          setTempoMedioPorDefeito(data.tempoMedioPorDefeito || [])
+          setReincidenciaStats(data.reincidenciaStats || [])
+          setCorrelacaoDefeitoVeiculo(data.correlacaoDefeitoVeiculo || [])
+          setSazonalidadeDefeitos(data.sazonalidadeDefeitos || [])
           setHasPermission(true)
         }
       } catch (error) {
@@ -149,6 +184,22 @@ export default function Dashboard() {
     linhas.push("--- POR VEICULO ---")
     linhas.push("Veiculo,Total")
     veiculosStats.forEach((v) => linhas.push(`${v.veiculo},${v.total}`))
+    linhas.push("")
+    linhas.push("--- MELHORES VEICULOS (MENOS OCORRENCIAS) ---")
+    linhas.push("Veiculo,Total")
+    melhoresVeiculos.forEach((v) => linhas.push(`${v.veiculo},${v.total}`))
+    linhas.push("")
+    linhas.push("--- TEMPO MEDIO POR DEFEITO ---")
+    linhas.push("Defeito,Tempo(h)")
+    tempoMedioPorDefeito.forEach((t) => linhas.push(`${t.defeito},${t.total}`))
+    linhas.push("")
+    linhas.push("--- REINCIDENCIA (<=15 DIAS) ---")
+    linhas.push("Veiculo,Defeito,Ocorrencias,Intervalo(dias)")
+    reincidenciaStats.forEach((r) => linhas.push(`${r.veiculo},${r.defeito},${r.ocorrencias},${r.intervaloDias}`))
+    linhas.push("")
+    linhas.push("--- SAZONALIDADE DE DEFEITOS ---")
+    linhas.push("Mes,Defeito,Total")
+    sazonalidadeDefeitos.forEach((s) => s.defeitos.forEach((d) => linhas.push(`${s.mes},${d.defeito},${d.total}`)))
     linhas.push("")
     linhas.push("--- EVOLUCAO TEMPORAL ---")
     linhas.push("Periodo,Total")
@@ -221,6 +272,49 @@ export default function Dashboard() {
       pdf.setFontSize(11)
       veiculosStats.slice(0, 20).forEach((v) => {
         pdf.text(`Veiculo ${v.veiculo}: ${v.total}`, 15, y); y += 6; checkPage()
+      })
+      y += 4; checkPage()
+    }
+
+    if (melhoresVeiculos.length > 0) {
+      pdf.setFontSize(14)
+      pdf.text("Melhores Veiculos (menos ocorrencias)", 10, y); y += 8
+      pdf.setFontSize(11)
+      melhoresVeiculos.slice(0, 10).forEach((v) => {
+        pdf.text(`Veiculo ${v.veiculo}: ${v.total}`, 15, y); y += 6; checkPage()
+      })
+      y += 4; checkPage()
+    }
+
+    if (tempoMedioPorDefeito.length > 0) {
+      pdf.setFontSize(14)
+      pdf.text("Tempo Medio por Defeito", 10, y); y += 8
+      pdf.setFontSize(11)
+      tempoMedioPorDefeito.forEach((t) => {
+        pdf.text(`${t.defeito}: ${t.total}h`, 15, y); y += 6; checkPage()
+      })
+      y += 4; checkPage()
+    }
+
+    if (reincidenciaStats.length > 0) {
+      pdf.setFontSize(14)
+      pdf.text("Reincidencia (<=15 dias)", 10, y); y += 8
+      pdf.setFontSize(11)
+      reincidenciaStats.forEach((r) => {
+        pdf.text(`${r.veiculo} - ${r.defeito}: ${r.ocorrencias}x em ${r.intervaloDias}d`, 15, y); y += 6; checkPage()
+      })
+      y += 4; checkPage()
+    }
+
+    if (sazonalidadeDefeitos.length > 0) {
+      pdf.setFontSize(14)
+      pdf.text("Sazonalidade de Defeitos", 10, y); y += 8
+      pdf.setFontSize(11)
+      sazonalidadeDefeitos.forEach((s) => {
+        pdf.text(`${s.mes}:`, 15, y); y += 5
+        s.defeitos.slice(0, 5).forEach((d) => {
+          pdf.text(`  ${d.defeito}: ${d.total}`, 20, y); y += 5; checkPage()
+        })
       })
       y += 4; checkPage()
     }
@@ -344,36 +438,38 @@ export default function Dashboard() {
                 CARREGANDO...
               </div>
             ) : statusStats.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={statusStats.map((s) => ({ ...s, name: s.status }))}
-                    dataKey="total"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={55}
-                    outerRadius={90}
-                    paddingAngle={3}
-                  >
-                    {statusStats.map((s) => (
-                      <Cell
-                        key={s.status}
-                        fill={STATUS_CORES[s.status || ""] || "var(--primary)"}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "var(--surface)",
-                      border: "1px solid var(--border-subtle)",
-                      borderRadius: "12px",
-                      fontSize: "12px",
-                      fontWeight: "bold",
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+              mounted ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={statusStats.map((s) => ({ ...s, name: s.status }))}
+                      dataKey="total"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={55}
+                      outerRadius={90}
+                      paddingAngle={3}
+                    >
+                      {statusStats.map((s) => (
+                        <Cell
+                          key={s.status}
+                          fill={STATUS_CORES[s.status || ""] || "var(--primary)"}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "var(--surface)",
+                        border: "1px solid var(--border-subtle)",
+                        borderRadius: "12px",
+                        fontSize: "12px",
+                        fontWeight: "bold",
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : <div className="w-full h-full" />
             ) : (
               <div className="w-full h-full flex items-center justify-center opacity-30 font-bold uppercase text-xs tracking-widest">
                 Sem dados
@@ -400,7 +496,7 @@ export default function Dashboard() {
               <div className="w-full h-full flex items-center justify-center opacity-20 font-black text-xs tracking-widest">
                 CARREGANDO...
               </div>
-            ) : (
+            ) : mounted ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={funcoesStats} layout="vertical">
                   <CartesianGrid
@@ -438,7 +534,8 @@ export default function Dashboard() {
                   />
                 </BarChart>
               </ResponsiveContainer>
-            )}
+            ) : <div className="w-full h-full" />
+            }
           </div>
         </div>
 
@@ -449,7 +546,7 @@ export default function Dashboard() {
               <div className="w-full h-full flex items-center justify-center opacity-20 font-black text-xs tracking-widest">
                 CARREGANDO...
               </div>
-            ) : (
+            ) : mounted ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={veiculosStats}>
                   <CartesianGrid
@@ -490,6 +587,90 @@ export default function Dashboard() {
                   />
                 </BarChart>
               </ResponsiveContainer>
+            ) : <div className="w-full h-full" />
+            }
+          </div>
+        </div>
+
+        {/* Tempo Medio por Defeito */}
+        <div className="lg:col-span-4 bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
+          <h2 className="text-xs font-black uppercase tracking-[0.2em] mb-6 opacity-70">Tempo Medio por Defeito</h2>
+          <div className="h-[260px]">
+            {isLoading ? (
+              <div className="w-full h-full flex items-center justify-center opacity-20 font-black text-xs tracking-widest">CARREGANDO...</div>
+            ) : tempoMedioPorDefeito.length > 0 ? (
+              mounted ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={tempoMedioPorDefeito} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border-subtle)" opacity={0.5} />
+                    <XAxis type="number" axisLine={false} tickLine={false} fontSize={10} opacity={0.5} unit="h" />
+                    <YAxis type="category" dataKey="defeito" axisLine={false} tickLine={false} fontSize={10} fontWeight="bold" opacity={0.7} width={100} />
+                    <Tooltip cursor={{ fill: "var(--background)", opacity: 0.4 }} contentStyle={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-subtle)", borderRadius: "12px", fontSize: "12px", fontWeight: "bold" }} />
+                    <Bar dataKey="total" fill="var(--status-in-progress)" radius={[0, 6, 6, 0]} barSize={24} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : <div className="w-full h-full" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center opacity-30 font-bold uppercase text-xs tracking-widest">Sem dados</div>
+            )}
+          </div>
+        </div>
+
+        {/* Melhores Veiculos */}
+        <div className="lg:col-span-4 bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
+          <h2 className="text-xs font-black uppercase tracking-[0.2em] mb-6 opacity-70">Melhores Veiculos</h2>
+          <div className="h-[260px]">
+            {isLoading ? (
+              <div className="w-full h-full flex items-center justify-center opacity-20 font-black text-xs tracking-widest">CARREGANDO...</div>
+            ) : melhoresVeiculos.length > 0 ? (
+              mounted ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={[...melhoresVeiculos].reverse().slice(0, 10)}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" opacity={0.5} />
+                    <XAxis dataKey="veiculo" axisLine={false} tickLine={false} fontSize={10} fontWeight="bold" opacity={0.5} dy={10} interval={0} angle={-30} textAnchor="end" height={50} />
+                    <YAxis axisLine={false} tickLine={false} fontSize={10} opacity={0.5} />
+                    <Tooltip cursor={{ fill: "var(--background)", opacity: 0.4 }} contentStyle={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-subtle)", borderRadius: "12px", fontSize: "12px", fontWeight: "bold" }} />
+                    <Bar dataKey="total" fill="var(--status-completed)" radius={[6, 6, 0, 0]} barSize={28} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : <div className="w-full h-full" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center opacity-30 font-bold uppercase text-xs tracking-widest">Sem dados</div>
+            )}
+          </div>
+        </div>
+
+        {/* Reincidencia */}
+        <div className="lg:col-span-4 bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
+          <h2 className="text-xs font-black uppercase tracking-[0.2em] mb-6 opacity-70">{'Reincidencia (<=15dias)'}</h2>
+          <div className="h-[260px] overflow-auto">
+            {isLoading ? (
+              <div className="w-full h-full flex items-center justify-center opacity-20 font-black text-xs tracking-widest">CARREGANDO...</div>
+            ) : reincidenciaStats.length > 0 ? (
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-left opacity-30 border-b border-[var(--border-subtle)]">
+                    <th className="pb-2 font-black tracking-widest text-[9px]">VEICULO</th>
+                    <th className="pb-2 font-black tracking-widest text-[9px]">DEFEITO</th>
+                    <th className="pb-2 font-black tracking-widest text-right text-[9px]">REINCIDENCIAS</th>
+                    <th className="pb-2 font-black tracking-widest text-right text-[9px]">INTERVALO</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--border-subtle)]">
+                  {reincidenciaStats.slice(0, 8).map((r, i) => (
+                    <tr key={i} className="hover:bg-[var(--background)] hover:bg-opacity-40 transition-colors">
+                      <td className="py-2 pr-2 font-bold opacity-80 text-[10px]">{r.veiculo}</td>
+                      <td className="py-2 pr-2 font-bold opacity-60 text-[10px] max-w-[100px] truncate">{r.defeito}</td>
+                      <td className="py-2 text-right">
+                        <span className="bg-[var(--background)] px-2 py-0.5 rounded-lg font-black text-[11px]" style={{ color: "var(--status-waiting)" }}>{r.ocorrencias}x</span>
+                      </td>
+                      <td className="py-2 text-right text-[10px] font-bold opacity-40">{r.intervaloDias}d</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center opacity-30 font-bold uppercase text-xs tracking-widest">Sem reincidencias</div>
             )}
           </div>
         </div>
@@ -503,7 +684,7 @@ export default function Dashboard() {
               <div className="w-full h-full flex items-center justify-center opacity-20 font-black text-xs tracking-widest">
                 CARREGANDO...
               </div>
-            ) : (
+            ) : mounted ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={defeitosStats} layout="vertical">
                   <CartesianGrid
@@ -541,7 +722,8 @@ export default function Dashboard() {
                   />
                 </BarChart>
               </ResponsiveContainer>
-            )}
+            ) : <div className="w-full h-full" />
+            }
           </div>
         </div>
 
@@ -550,40 +732,42 @@ export default function Dashboard() {
             Evolucao Temporal
           </h2>
           <div className="h-[280px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chamadosPeriodo}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  vertical={false}
-                  stroke="var(--border-subtle)"
-                  opacity={0.5}
-                />
-                <XAxis
-                  dataKey="periodo"
-                  axisLine={false}
-                  tickLine={false}
-                  fontSize={10}
-                  fontWeight="bold"
-                  opacity={0.5}
-                />
-                <YAxis axisLine={false} tickLine={false} fontSize={10} opacity={0.5} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "var(--surface)",
-                    border: "1px solid var(--border-subtle)",
-                    borderRadius: "12px",
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="total"
-                  stroke="var(--status-in-progress)"
-                  strokeWidth={4}
-                  dot={{ r: 4, fill: "var(--status-in-progress)", strokeWidth: 2, stroke: "var(--surface)" }}
-                  activeDot={{ r: 6, strokeWidth: 0 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            {mounted ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chamadosPeriodo}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    vertical={false}
+                    stroke="var(--border-subtle)"
+                    opacity={0.5}
+                  />
+                  <XAxis
+                    dataKey="periodo"
+                    axisLine={false}
+                    tickLine={false}
+                    fontSize={10}
+                    fontWeight="bold"
+                    opacity={0.5}
+                  />
+                  <YAxis axisLine={false} tickLine={false} fontSize={10} opacity={0.5} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "var(--surface)",
+                      border: "1px solid var(--border-subtle)",
+                      borderRadius: "12px",
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="total"
+                    stroke="var(--status-in-progress)"
+                    strokeWidth={4}
+                    dot={{ r: 4, fill: "var(--status-in-progress)", strokeWidth: 2, stroke: "var(--surface)" }}
+                    activeDot={{ r: 6, strokeWidth: 0 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : <div className="w-full h-full" />}
           </div>
         </div>
 
@@ -640,6 +824,63 @@ export default function Dashboard() {
             </table>
           </div>
         </div>
+
+        {/* Sazonalidade de Defeitos */}
+        <div className="lg:col-span-12 bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xs font-black uppercase tracking-[0.2em] opacity-70">Sazonalidade de Defeitos</h2>
+            <span className="text-[10px] font-bold opacity-40">DEFEITOS POR MES</span>
+          </div>
+          <div className="overflow-auto max-h-[400px]">
+            {isLoading ? (
+              <div className="w-full h-40 flex items-center justify-center opacity-20 font-black text-xs tracking-widest">CARREGANDO...</div>
+            ) : sazonalidadeDefeitos.length > 0 ? (
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-left opacity-30 border-b border-[var(--border-subtle)]">
+                    <th className="px-4 py-3 font-black tracking-widest text-[9px]">MES</th>
+                    <th className="px-4 py-3 font-black tracking-widest text-[9px]">DEFEITO</th>
+                    <th className="px-4 py-3 font-black tracking-widest text-right text-[9px]">TOTAL</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--border-subtle)]">
+                  {sazonalidadeDefeitos.map((s, mi) => s.defeitos.slice(0, 5).map((d, di) => (
+                    <tr key={`${mi}-${di}`} className="hover:bg-[var(--background)] hover:bg-opacity-40 transition-colors">
+                      {di === 0 && (
+                        <td className="px-4 py-3 font-black opacity-50 align-top" rowSpan={Math.min(s.defeitos.length, 5)}>
+                          {s.mes}
+                        </td>
+                      )}
+                      <td className="px-4 py-3 font-bold opacity-80">{d.defeito}</td>
+                      <td className="px-4 py-3 text-right">
+                        <span className="bg-[var(--background)] px-3 py-1 rounded-lg font-black" style={{ color: "var(--status-in-progress)" }}>
+                          {d.total}
+                        </span>
+                      </td>
+                    </tr>
+                  )))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="w-full h-40 flex items-center justify-center opacity-30 font-bold uppercase text-xs tracking-widest">Sem dados</div>
+            )}
+          </div>
+        </div>
+
+        {/* Correlacao Defeito x Veiculo */}
+        {correlacaoDefeitoVeiculo.length > 0 && correlacaoDefeitoVeiculo.slice(0, 5).map((item) => (
+          <div key={item.defeito} className="lg:col-span-4 bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
+            <h2 className="text-xs font-black uppercase tracking-[0.2em] mb-4 opacity-70 truncate">{item.defeito}</h2>
+            <div className="space-y-2">
+              {item.veiculos.slice(0, 6).map((v, i) => (
+                <div key={i} className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold opacity-70 truncate mr-2">{v.veiculo}</span>
+                  <span className="text-[11px] font-black" style={{ color: "var(--status-cancelled)" }}>{v.total}x</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )
