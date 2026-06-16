@@ -103,3 +103,8 @@
 **Data:** 15/06/2026
 **Status:** ✅ Concluído
 **Descrição:** Webhook27 entrava em loop quando o usuário descrevia o problema no estado COLETAR_MOTIVO e não havia avisos cadastrados. A IA não recebia as instruções de PROSSEGUIR_FLUXO (bloco instrucaoAvisos pulado quando sem avisos), seguia a reconducao (apresentar menu) e o else do webhook setava MENU_PRINCIPAL. Fix: quando não há avisos, skipping a análise da IA e indo direto para PERGUNTAR_ANEXO.
+
+## PED-020: Rebranding Nolevel → Skora
+**Data:** 16/06/2026
+**Status:** ✅ Concluído
+**Descrição:** Substituir todas as ocorrências do nome "Nolevel" por "Skora" no texto visível da aplicação (títulos, headers, sidebar, login, fallbacks de nome de empresa nos webhooks). Manter intactas nomenclaturas de rotas, arquivos, pacotes, variáveis de ambiente, CI/CD e schema do Prisma.

@@ -33,19 +33,19 @@ export type UserSession = {
 };
 
 async function getEmpresaName(cpf?: string): Promise<string> {
-  if (!cpf) return 'Nolevel'
+  if (!cpf) return 'Skora'
   try {
     const { prisma } = await import('@/lib/prisma')
     const { getEmpresaIdByCpf } = await import('@/lib/searchEmpresa')
     const empresaId = await getEmpresaIdByCpf(cpf)
-    if (!empresaId) return 'Nolevel'
+    if (!empresaId) return 'Skora'
     const empresa = await prisma.empresa.findUnique({
       where: { id: empresaId },
       select: { nome: true },
     })
-    return empresa?.nome || 'Nolevel'
+    return empresa?.nome || 'Skora'
   } catch {
-    return 'Nolevel'
+    return 'Skora'
   }
 }
 

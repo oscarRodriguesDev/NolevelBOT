@@ -120,7 +120,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-3">
             <Image
               src={icone}
-              alt="Nolevel"
+              alt="Skora"
               width={40}
               height={40}
               className="h-8 w-8"
@@ -131,7 +131,7 @@ export default function DashboardPage() {
                 className="font-bold text-lg"
                 style={{ color: "var(--foreground)" }}
               >
-                Nolevel
+                Skora
               </h1>
 
               <p className="text-xs opacity-50">
@@ -182,7 +182,7 @@ export default function DashboardPage() {
               className="text-sm font-semibold mb-3"
               style={{ color: "var(--primary)" }}
             >
-              Plataforma Nolevel
+              Plataforma Skora
             </p>
 
             <h2
@@ -337,7 +337,7 @@ export default function DashboardPage() {
         className="border-t py-4 text-center text-xs opacity-40"
         style={{ borderColor: "var(--border-subtle)" }}
       >
-        Nolevel v{packageJson.version}
+        Skora v{packageJson.version}
       </footer>
     </div>
   )

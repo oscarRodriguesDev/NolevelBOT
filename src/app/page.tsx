@@ -133,7 +133,7 @@ export default function LoginPage() {
 
             <div className="relative z-10 p-12 text-center">
               <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center">
-                <span className="text-4xl font-black text-white">N</span>
+                <span className="text-4xl font-black text-white">S</span>
               </div>
 
               <h2 className="text-3xl font-bold text-white mb-3">
@@ -154,7 +154,7 @@ export default function LoginPage() {
               className="text-4xl sm:text-5xl font-black tracking-tight"
               style={{ color: "var(--primary)" }}
             >
-              Nolevel
+              Skora
             </h1>
 
             <p className="text-sm opacity-50 font-medium">
