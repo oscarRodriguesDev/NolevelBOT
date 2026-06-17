@@ -5,7 +5,7 @@ function getOpenAI(): OpenAI {
   return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 }
 
-const LINK_PORTAL = process.env.NEXT_PUBLIC_BASE_URL
+const LINK_PORTAL = process.env.NEXT_PUBLIC_BASE_URL_WP
 const LINK_CHAMADOS = `${LINK_PORTAL}/chamado`;
 
 export const FlowState = {

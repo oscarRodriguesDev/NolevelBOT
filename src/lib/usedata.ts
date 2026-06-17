@@ -1,18 +1,7 @@
 import crypto from "crypto";
 
-const baseUrl = process.env.BASE_URL_WP;
-//buscar os avisos no banco
-/* export async function buscarAvisos() {
-  try {
-    const res = await fetch(`${baseUrl}/api/quadro-avisos`);
-    type Aviso = { titulo: string; conteudo: string };
-    const data: Aviso[] = await res.json();
-    return data
-      .map(a => `📢 *${a.titulo}*: ${a.conteudo}`)
-      .join("\n") || "Sem avisos.";
-  } catch { return "Sem avisos no momento."; }
-}
- */
+const baseUrl = process.env.BASE_URL_WP||process.env.NEXT_PUBLIC_BASE_URL_WP;
+
 
 async function filtrarAvisosValidos(avisos: { titulo: string; conteudo: string; createdAt: Date; duracao: string | null }[]) {
   const agora = new Date();

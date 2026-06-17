@@ -36,7 +36,7 @@ type Webhook27Session = UserSession & {
 };
 
 const sessions = new Map<string, Webhook27Session>();
-const link = `${process.env.NEXT_PUBLIC_BASE_URL}/chamado`; 
+const link = `${process.env.NEXT_PUBLIC_BASE_URL_WP}/chamado`; 
 
 export async function POST(req: NextRequest) {
   try {
