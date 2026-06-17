@@ -55,7 +55,6 @@
 
 ## PED-013: Atualizar suite de testes para cobrir novas funcionalidades
 **Data:** 15/06/2026
-<<<<<<< HEAD
 **Status:** ✅ Concluído
 **Descrição:** A função `obterBaseDeConhecimento()` em `smartSearch.ts` estava tentando filtrar `avisos` usando `Empresa: usuario.empresa` (nome da empresa), mas a tabela `avisos` usa `empresaId` (UUID). Corrigido com lookup em duas etapas: 1) busca o nome da empresa em `cpfsLeads.empresa`, 2) busca o ID da empresa em `empresa.nome`, 3) filtra `avisos` por `empresaId`. Também corrigido `consultarLeadPorCpf()` no webhook-leads que fazia auto-requisição HTTP GET para endpoint inexistente — agora consulta Prisma diretamente.
 
@@ -91,11 +90,3 @@
 **Data:** 16/06/2026
 **Status:** ✅ Concluído
 **Descrição:** Substituir todas as ocorrências do nome "Nolevel" por "Skora" no texto visível da aplicação (títulos, headers, sidebar, login, fallbacks de nome de empresa nos webhooks). Manter intactas nomenclaturas de rotas, arquivos, pacotes, variáveis de ambiente, CI/CD e schema do Prisma.
-=======
-**Descrição:** Criar testes para módulos adicionados recentemente que não estavam cobertos:
-- `rate-limit.test.ts` — checkRateLimit, trackFailedLogin, resetFailedLogin, needsCaptcha, getClientIp (15 testes)
-- `audit-log.test.ts` — logAcesso com parâmetros e tratamento de erro (3 testes)
-- `smartSearch.test.ts` — obterBaseDeConhecimento com mocks de Prisma (6 testes)
-- `usedata.test.ts` — generateRandomTicket, saudacao, checkEmpresaModule (10 testes)
-- Total: 169 testes (antes 135, +34 novos)
->>>>>>> 67999bbf7c258112353d96058df1c9302999739d
