@@ -154,24 +154,27 @@ export async function POST(req: NextRequest) {
 
 
 
-// Certifique-se de que o caminho do prisma está correto
-//aqui é rota onde os bots buscam por isso não filtra por empresa, tem que pensar melhor no que fazer
+function validarBotApiKey(req: NextRequest): boolean {
+  const apiKey = req.headers.get("x-api-key")
+  const botApiKey = process.env.BOT_API_KEY
+  if (!botApiKey) return true
+  return apiKey === botApiKey
+}
+
+// Rota usada pelos bots — exige X-API-Key header
 export async function GET(req: NextRequest) {
+  if (!validarBotApiKey(req)) {
+    return NextResponse.json({ error: "API key inválida" }, { status: 401 })
+  }
+
   try {
-    // Captura o parâmetro 'cpf' da URL (ex: ?cpf=12345678901)
     const { searchParams } = new URL(req.url);
     const cpfParaFiltrar = searchParams.get("cpf");
 
-    // Se um CPF foi passado, fazemos a busca específica (validação)
     if (cpfParaFiltrar) {
       const registro = await prisma.cpfs.findUnique({
-        where: {
-          cpf: cpfParaFiltrar,
-        },
-        select: {
-          nome: true,
-          cpf: true
-        }
+        where: { cpf: cpfParaFiltrar },
+        select: { nome: true, cpf: true }
       });
 
       if (!registro) {
@@ -187,16 +190,11 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Se NÃO informou CPF, traz todos os registros
     const todosCPFs = await prisma.cpfs.findMany({
-      select: {
-        nome: true,
-        cpf: true
-      }
+      select: { nome: true, cpf: true }
     });
 
     return NextResponse.json(todosCPFs);
-
   } catch (error) {
     console.error("Erro na rota GET CPFs:", error);
     return NextResponse.json(

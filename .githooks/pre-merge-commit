@@ -1,0 +1,21 @@
+#!/bin/sh
+# Bloqueia merge da branch 'testes' em branches que não sejam 'testes'
+
+CURRENT_BRANCH=$(git symbolic-ref HEAD 2>/dev/null | sed 's|refs/heads/||')
+[ "$CURRENT_BRANCH" = "testes" ] && exit 0
+
+MERGE_MSG=$(head -1 .git/MERGE_MSG 2>/dev/null)
+case "$MERGE_MSG" in
+  *testes*)
+    echo "==========================================="
+    echo "  BLOQUEADO: merge de 'testes' em '$CURRENT_BRANCH'"
+    echo ""
+    echo "  A branch 'testes' é sink-only:"
+    echo "  ✅ Ela pode fazer pull de qualquer branch"
+    echo "  ❌ Nenhuma branch pode fazer pull dela"
+    echo "==========================================="
+    exit 1
+    ;;
+esac
+
+exit 0

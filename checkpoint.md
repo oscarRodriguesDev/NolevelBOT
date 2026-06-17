@@ -2,30 +2,45 @@
 
 ## Sessao: 13/06/2026
 
-### Interacoes desta sessao
-
-| Item | Descricao |
-|------|-----------|
-| PED-009 | Usuario redefiniu: validar modulo da empresa nos webhooks (26=CRP, 27=CRP, oficina=OFICINA). Se empresa nao tiver o modulo, informa e orienta canal correto. Se tiver, fluxo normal. |
-| `src/lib/usedata.ts` | Adicionado `checkEmpresaModule()` |
-| `src/app/api/webhook26/route.ts` | Check CORPORATIVO apos validar CPF |
-| `src/app/api/webhook27/route.ts` | Check CORPORATIVO apos validar CPF |
-| `src/app/api/webhook-oficina/route.ts` | Check OFICINA apos validar matricula |
-| `pedidos.md` | PED-009 atualizado para concluido |
-| `memorias.md` | Registro de autoria |
-| Build | ✅ Compilado com sucesso |
-| PED-010 | Usuario reportou ERR_TOO_MANY_REDIRECTS em /. Causa: proxy redirecionava !token de / para /. Fix: `&& pathname !== "/"` no redirect. |
-| `src/proxy.ts` | Adicionado `&& pathname !== "/"` + `token?.role` para TS |
-
----
-
 ### Branch Atual
-`vibecode` (sincronizada com `origin/vibecode`)
+`testes`
+
+### Ultimo Commit (HEAD)
+```
+c42e525 added mescle
+```
+
+### Mudancas desta sessao (13/06/2026) — SEXTA RODADA (Correcao vulnerabilidades Grupo A)
+
+| Arquivo | Alteracao |
+|---------|-----------|
+| `next.config.ts` | `poweredByHeader: false` + `headers()` com security headers (X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy) |
+| `proxy.ts` | `/api-docs` removido de publicRoutes e protegido (exige JWT). Rate limiting para `/` (60 req/min) e `/dashboard` (120 req/min). Tracking de brute force por IP (20 tentativas/15min). Adicionado `/api-docs/:path*` ao matcher |
+| `pedidos.md` | PED-011 registrado |
+| `memorias.md` | Registro de autoria |
+| `src/app/api/cpfs/general_cpf/route.ts` | GET protegido com `X-API-Key` header (B1) |
+| `src/app/api/empresa/route.ts` | `id` removido da resposta pública `?cpf=` + rate limit 30 req/min/IP (B2) |
+| `.env` / `.env.example` | Adicionado `BOT_API_KEY` |
+| `pedidos.md` | PED-012 registrado |
+| `checkpoint.md` | Sessao 13/06 atualizada |
+| `recomendações.md` | Substituído pelas diretrizes atuais |
+
+## Sessao: 12/06/2026
 
 ### Ultimo Commit (HEAD)
 ```
 da5f8eb revert: remove toda refatoracao dos dashboards (volta ao estado 2f0e380 antes de qualquer melhoria)
 ```
+
+### Mudancas desta sessao (12/06/2026) — QUINTA RODADA (Fix proxy + atualizacao testes)
+
+| Arquivo | Alteracao |
+|---------|-----------|
+| `src/proxy.ts` | Guard ENABLE_TESTES + `/testes` e `/api/testes` no matcher |
+| `src/proxy.ts` | Fix redirect loop ERR_TOO_MANY_REDIRECTS (guard para pathname === "/") |
+| `testes.md` | Seção 7 atualizada com proxy real (autenticação completa) |
+| `memorias.md` | Registro de autoria |
+| `pedidos.md` | PED-009 e PED-010 registrados |
 
 ### Mudancas desta sessao (12/06/2026) — QUARTA RODADA (Upload de fotos + avisos)
 

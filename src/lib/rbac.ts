@@ -15,7 +15,7 @@ export const CREATE_ROLE_MAP: Record<ROLE, ROLE[]> = {
 }
 
 export const DELETE_ROLE_MAP: Record<ROLE, ROLE[]> = {
-  GOD: ["ADMIN", "GESTOR", "ATENDENTE"],
+  GOD: ["ADMIN", "GESTOR", "ATENDENTE"], //pode ser que no futuro ele delete apenas o admin
   ADMIN: ["GESTOR", "ATENDENTE"],
   GESTOR: ["ATENDENTE"],
   ATENDENTE: [],

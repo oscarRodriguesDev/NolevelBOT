@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionOrFail } from '@/util/permission'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
   const session = await getSessionOrFail(["GOD"])
@@ -72,6 +73,14 @@ export async function GET(request: Request) {
       return NextResponse.json(empresa)
     }
 
+    if (cpf) {
+      const ip = getClientIp(request)
+      const rateCheck = checkRateLimit(`empresa:cpf:${ip}`, 30, 60 * 1000)
+      if (!rateCheck.allowed) {
+        return NextResponse.json({ error: "Muitas requisições deste IP" }, { status: 429 })
+      }
+    }
+
     if (!cpf) {
       const session = await getSessionOrFail(["GOD", "ADMIN", "GESTOR"])
       if (!session) {
@@ -129,7 +138,6 @@ export async function GET(request: Request) {
       select: {
         Empresa: {
           select: {
-            id: true,
             nome: true,
             cnpj: true,
             setores: true,
