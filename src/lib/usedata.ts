@@ -1,6 +1,6 @@
 import crypto from "crypto";
 
-const baseUrl = process.env.BASE_URL;
+const baseUrl = process.env.BASE_URL_WP;
 //buscar os avisos no banco
 /* export async function buscarAvisos() {
   try {
@@ -288,7 +288,7 @@ export async function downloadEvolutionMedia(
     console.error(`[downloadMedia] REST Evolution...`);
 
     const headers = { "Content-Type": "application/json", apikey: process.env.EVOLUTION_API_KEY! };
-    const baseUrl = process.env.EVOLUTION_API_URL || "https://evolution.nolevel.hiskra.com.br/";
+    const urlEvolution = process.env.EVOLUTION_API_URL || "https://evolution.nolevel.hiskra.com.br/";
 
     // V1: /chat/downloadMediaMessage/{instance}
     const body = {
@@ -296,7 +296,7 @@ export async function downloadEvolutionMedia(
       message: { imageMessage: mediaMessage },
       contextInfo: undefined,
     };
-    const res = await fetch(`${baseUrl}/chat/downloadMediaMessage/${instance}`, {
+    const res = await fetch(`${urlEvolution}/chat/downloadMediaMessage/${instance}`, {
       method: "POST",
       headers,
       body: JSON.stringify(body),
@@ -306,7 +306,7 @@ export async function downloadEvolutionMedia(
     console.error(`[downloadMedia] REST downloadMediaMessage falhou (${res.status}), tentando getBase64...`);
 
     // V2: /chat/getBase64FromMediaMessage/{instance}
-    const res2 = await fetch(`${baseUrl}/chat/getBase64FromMediaMessage/${instance}`, {
+    const res2 = await fetch(`${urlEvolution}/chat/getBase64FromMediaMessage/${instance}`, {
       method: "POST",
       headers,
       body: JSON.stringify({ message: { key } }),

@@ -7,7 +7,6 @@ function getOpenAI(): OpenAI {
 
 const LINK_PORTAL = process.env.NEXT_PUBLIC_BASE_URL
 const LINK_CHAMADOS = `${LINK_PORTAL}/chamado`;
-const lINK_CONSULTA = `${LINK_PORTAL}/consulta`;
 
 export const FlowState = {
   INICIO: "inicio",

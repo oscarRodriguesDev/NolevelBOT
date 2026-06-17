@@ -29,7 +29,7 @@ const statusLabels: Record<string, string> = {
   FECHADO: "🔒 Fechado",
 };
 
-type Webhook27Session = UserSession & {
+type Webhook27Session = UserSession & { 
   anexoUrl?: string;
   empresaId?: string;
   pendingState?: string;
