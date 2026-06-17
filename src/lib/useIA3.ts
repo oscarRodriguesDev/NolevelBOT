@@ -72,7 +72,7 @@ const defaultConfig: EmpresaConfig = {
   serviceDesc: null,
   avisosDesc: null,
   logoUrl: null,
-  nome: "Nolevel",
+  nome: "Skora",
 };
 
 async function getEmpresaConfig(empresaId?: string): Promise<EmpresaConfig> {
@@ -91,7 +91,7 @@ async function getEmpresaConfig(empresaId?: string): Promise<EmpresaConfig> {
         nome: true,
       },
     });
-    if (!empresa) return { ...defaultConfig, nome: "Nolevel" };
+    if (!empresa) return { ...defaultConfig, nome: "Skora" };
     return {
       botName: empresa.botName || "Hevelyn",
       botPrompt: empresa.botPrompt,

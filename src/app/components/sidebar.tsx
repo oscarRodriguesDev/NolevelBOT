@@ -271,7 +271,7 @@ export function Sidebar() {
           >
             <UserCard />
 
-            <p className="mt-4">Nolevel</p>
+            <p className="mt-4">Skora</p>
             <p>Versão: {packageJson.version}</p>
           </div>
         </div>

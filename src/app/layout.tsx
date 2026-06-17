@@ -6,7 +6,7 @@ import RootLayoutClient from "./layout-client";
 
 
 export const metadata: Metadata = {
-  title: "NolevelBOT - Sistema de Chamados",
+  title: "Skora - Sistema de Chamados",
   description: "Sistema inteligente de gestão de chamados e atendimento",
 };
 
