@@ -10,6 +10,7 @@ const publicRoutes = [
   '/oficina/chatbot-app',
   '/oficina/consulta',
   '/contact',
+  '/ideias',
 ]
 
 const rateStore = new Map<string, { count: number; resetAt: number }>()
@@ -114,5 +115,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/corporativo/:path*", "/oficina/:path*", "/eventos/:path*", "/god/:path*", "/dashboard/:path*", "/testes/:path*", "/api/testes/:path*", "/api-docs/:path*"],
+  matcher: ["/", "/corporativo/:path*", "/oficina/:path*", "/eventos/:path*", "/god/:path*", "/dashboard/:path*", "/testes/:path*", "/api/testes/:path*", "/api-docs/:path*", "/ideias/:path*"],
 }

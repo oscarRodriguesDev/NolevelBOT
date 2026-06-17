@@ -346,6 +346,22 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 - `src/app/oficina/(atendimento)/all-tickets/page.tsx`: paginação adicionada (controles anterior/próximo, botões de página), filtros resetam página para 1, `updateFilter` helper, estado `page`/`total`/`totalPages`.
 - Dashboards refinados com KPIs, pizza de status, gráficos por módulo.
 
+### Mudança: Limpeza de arquivos obsoletos
+**Autor:** Usuário
+**Arquivos:** `.github/workflows/deploy-homologa.yml` (deletado), `apresentação.md` (deletado), `checkpoint.md` (deletado), `control` (deletado), `landing.json` (deletado), `next.config.ts.txt` (deletado), `recomendações.md` (deletado), `pedidos.md` (esvaziado), `ideias.md` (esvaziado)
+**Data:** 17/06/2026
+**Descrição:** Limpeza geral de arquivos não utilizados e obsoletos. Inclui workflow de CI/CD antigo, apresentação, checkpoint, landing page JSON, config backup, recomendações, e esvaziamento dos registros de pedidos e ideias.
+
+### Mudança: Remove src/proxy.ts obsoleto (duplicata)
+**Autor:** Vibecode
+**Arquivos:** `src/proxy.ts` (deletado)
+**Data:** 17/06/2026
+**Descrição:**
+- Havia dois arquivos `proxy.ts`: um na raiz (`proxy.ts`, 118 linhas, ativo) e outro em `src/proxy.ts` (43 linhas, obsoleto).
+- O root `proxy.ts` é o middleware real do Next.js 16 (rate limiting, proteção `/api-docs`, guard ENABLE_TESTES, brute force).
+- O `src/proxy.ts` era uma versão antiga, não importada por nada, sem as features de segurança recentes.
+- Deletado `src/proxy.ts`. Build: ✅ sucesso.
+
 ### Mudança: Model logs_de_acesso e migration
 **Autor:** Usuário
 **Arquivos:** `prisma/schema.prisma`, `prisma/migrations/20260612150058_created_logs_de_user/`
@@ -427,6 +443,17 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 - Sem essas instruções, a IA segue a `reconducao` (que manda reconduzir para o menu) e apresenta as opções novamente.
 - O `else` no webhook27 envia a resposta da IA e seta `MENU_PRINCIPAL`, criando um loop infinito.
 - **Fix:** Quando não há avisos, o fluxo agora pula a análise da IA e vai direto para `PERGUNTAR_ANEXO` (perguntar sobre anexos), eliminando o loop.
+
+### Mudança: Análise completa do sistema e página pública de ideias
+**Autor:** Vibecode
+**Arquivos:** `ideias.md` (reescrito), `src/app/ideias/page.tsx` (novo), `proxy.ts`
+**Data:** 17/06/2026
+**Descrição:**
+- Análise minuciosa do sistema identificando 30+ oportunidades de melhoria em 6 categorias (Segurança, Arquitetura, Performance, UX, Infraestrutura, Testes).
+- `ideias.md` reescrito com 32 itens detalhados, organizados por severidade (🔴 CRÍTICO a 🔵 BAIXO) com sugestões de solução e estimativa de esforço.
+- Criada página pública `/ideias` com visualização estilizada (tema escuro, cards, badges de severidade) que renderiza o conteúdo do `ideias.md`.
+- `proxy.ts`: `/ideias` adicionado às rotas públicas e ao matcher.
+- Build: ✅ sucesso.
 
 ### Mudança: Rebranding Nolevel → Skora (texto visível)
 **Autor:** Vibecode
