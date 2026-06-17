@@ -446,12 +446,19 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 
 ### Mudança: Análise completa do sistema e página pública de ideias
 **Autor:** Vibecode
-**Arquivos:** `ideias.md` (reescrito), `src/app/ideias/page.tsx` (novo), `proxy.ts`
+**Arquivos:** `ideias.md` (reescrito), `src/lib/ideias-data.ts` (novo), `src/app/ideias/page.tsx` (reescrito), `src/app/ideias/ideias-client.tsx` (novo), `proxy.ts`
 **Data:** 17/06/2026
 **Descrição:**
 - Análise minuciosa do sistema identificando 30+ oportunidades de melhoria em 6 categorias (Segurança, Arquitetura, Performance, UX, Infraestrutura, Testes).
 - `ideias.md` reescrito com 32 itens detalhados, organizados por severidade (🔴 CRÍTICO a 🔵 BAIXO) com sugestões de solução e estimativa de esforço.
-- Criada página pública `/ideias` com visualização estilizada (tema escuro, cards, badges de severidade) que renderiza o conteúdo do `ideias.md`.
+- `src/lib/ideias-data.ts`: parser do markdown para dados estruturados (severidade, local, problema, sugestão, esforço).
+- `src/app/ideias/page.tsx`: server component que lê e parseia `ideias.md`.
+- `src/app/ideias/ideias-client.tsx`: componente cliente interativo com:
+  - Filtros por severidade (CRÍTICO/ALTO/MÉDIO/BAIXO) e esforço (Pequeno/Médio/Grande)
+  - Busca textual por ID, título, local, problema ou sugestão
+  - Ordenação por severidade ou esforço
+  - Cards expansíveis com detalhes completos
+  - Tema claro/escuro via CSS variables do sistema
 - `proxy.ts`: `/ideias` adicionado às rotas públicas e ao matcher.
 - Build: ✅ sucesso.
 
