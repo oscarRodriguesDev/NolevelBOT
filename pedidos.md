@@ -4,7 +4,7 @@
 **Data:** 17/06/2026
 **Status:** ✅ Concluído
 **Descrição:** Realizar análise minuciosa e detalhada de todo o sistema, registrar todas as oportunidades de melhoria no arquivo `ideias.md`, e criar uma página pública em `/ideias` para visualização estilizada.
-**Commit:** `684f4e6`
+**Commit:** `684f4e6` (1ª versão) · `714fa5b` (filtros + tema claro)
 **Entregues:**
 - `ideias.md` reescrito com 32 itens em 6 categorias (Segurança, Arquitetura, Performance, UX, Infraestrutura, Testes)
 - `src/lib/ideias-data.ts` — parser do markdown para dados estruturados
