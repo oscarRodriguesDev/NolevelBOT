@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { compare } from 'bcryptjs'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/nextauth'
 import {
   podeCriarRole, podeDeletarRole, getSetorFilter,
   roleParaDisplay, rolesQuePodeCriar, rolesQuePodeVer,
@@ -11,6 +13,10 @@ import type { ROLE } from '@prisma/client'
 const ALL_ROLES: ROLE[] = ['GOD', 'ADMIN', 'GESTOR', 'ATENDENTE']
 
 export async function POST(request: Request) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user || (session.user as any).role !== 'GOD') {
+    return NextResponse.json({ error: 'Acesso restrito a GOD' }, { status: 403 })
+  }
   try {
     const { email, password } = await request.json()
 

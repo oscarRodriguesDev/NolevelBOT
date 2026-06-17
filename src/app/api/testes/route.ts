@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { exec } from 'child_process'
 import { promisify } from 'util'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/nextauth'
 
 const execAsync = promisify(exec)
 
@@ -95,6 +97,15 @@ function buildReport(vitestData: VitestReport) {
 
 export async function GET() {
   try {
+    if (process.env.ENABLE_TESTES !== 'true') {
+      return NextResponse.json({ error: 'Testes desabilitados' }, { status: 404 })
+    }
+
+    const session = await getServerSession(authOptions)
+    if (!session?.user || (session.user as any).role !== 'GOD') {
+      return NextResponse.json({ error: 'Acesso restrito a GOD' }, { status: 403 })
+    }
+
     const { stdout, stderr } = await execAsync(
       'npx vitest run --reporter=json --reporter=verbose 2>&1',
       {
