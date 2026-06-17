@@ -64,6 +64,26 @@ export async function verifyTurnstileToken(token: string): Promise<boolean> {
   }
 }
 
+import { NextResponse } from "next/server"
+
+export function applyRateLimit(
+  req: Request | null | undefined,
+  prefix: string,
+  maxRequests = 30,
+  windowMs = 60000
+): NextResponse | null {
+  if (!req) return null
+  const ip = getClientIp(req)
+  const result = checkRateLimit(`${prefix}:${ip}`, maxRequests, windowMs)
+  if (!result.allowed) {
+    return NextResponse.json(
+      { error: "Muitas requisições. Tente novamente em instantes." },
+      { status: 429 }
+    )
+  }
+  return null
+}
+
 export function getClientIp(req: Request): string {
   const forwarded = req.headers.get("x-forwarded-for")
   if (forwarded) return forwarded.split(",")[0].trim()

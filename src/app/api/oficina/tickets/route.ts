@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { applyRateLimit } from '@/lib/rate-limit'
 import { prisma } from '@/lib/prisma'
 import { uploadFile } from '@/lib/upload'
 
 export async function GET(req: NextRequest) {
+  const rateLimit = applyRateLimit(req, "oficina-tickets", 30, 60 * 1000)
+  if (rateLimit) return rateLimit
   try {
     const { searchParams } = new URL(req.url)
     const matricula = searchParams.get('matricula')?.replace(/\D/g, '')
@@ -43,6 +46,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const rateLimit = applyRateLimit(req, "oficina-tickets", 10, 60 * 1000)
+  if (rateLimit) return rateLimit
   try {
     const contentType = req.headers.get('content-type') || ''
     const isMultipart = contentType.includes('multipart/form-data')

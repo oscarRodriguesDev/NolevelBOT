@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { applyRateLimit } from "@/lib/rate-limit";
 import { sendEvolutionText, downloadEvolutionMedia, checkEmpresaModule } from "@/lib/usedata";
 import { uploadBuffer } from "@/lib/upload";
 import { getSetores } from "@/lib/setores";
@@ -112,6 +113,9 @@ async function buscarAvisosDoVeiculo(
 }
 
 export async function POST(req: NextRequest) {
+  const rateLimit = applyRateLimit(req, "webhook-oficina", 60, 60 * 1000)
+  if (rateLimit) return rateLimit
+
   try {
     const body = await req.json();
     if (body.event !== "messages.upsert") return NextResponse.json({ ok: true });

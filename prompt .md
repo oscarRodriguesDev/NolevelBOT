@@ -52,10 +52,14 @@ Ao receber minha confirmação para codificar, siga este processo:
 
 # Registro de pedidos
 
+- Assim que finalizar o pedido do usuario, vc deve fazer commit descrevendo na mensagem do commit um resumo do que foi feito, para que o usuario tenha ciencia de qual commit foi realizado e por qual motivo, isso precisa ser bem claro e objetivo ok. obs: o commit deve ser realizado tanto no local como remoto, e somente na branch: vibecode
+
 - No arquivo pedidos.md preciso que atualize sempre os pedidos e solicitações do usuario, para ficar registrado o que ele pediu que fosse feito
+e coloque a identificaão unica do commit para que seja possivel restaurar quando necessario
 
 - para cada pedido registrado se necessario crie um topico no arquivo ideias.md, que pode ser sugestoes ou ideas para melhorar ainda mais o sistema, para ficar de facil identificação, gere um codigo para cada solicitação ou pedido do usuario e use o mesmo codigo para identificar sua ideia no arquivo ideias.md
 
+# ignore as anotações abaixo
 #gerar: networks
 #supabase_network_supabase
 #supabase_default

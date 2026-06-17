@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { applyRateLimit } from '@/lib/rate-limit'
 import { prisma } from '@/lib/prisma'
 import type { Prisma } from '@prisma/client'
 export const dynamic = 'force-dynamic'
@@ -10,6 +11,8 @@ import { normalizarStatus } from '@/types/chamado'
 import { ROLE } from '@prisma/client'
 
 export async function POST(req: NextRequest) {
+  const rateLimit = applyRateLimit(req, "tickets-search", 10, 60 * 1000)
+  if (rateLimit) return rateLimit
   try {
     const formData = await req.formData()
 
@@ -68,6 +71,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  const rateLimit = applyRateLimit(req, "tickets-search", 30, 60 * 1000)
+  if (rateLimit) return rateLimit
   try {
     const { searchParams } = new URL(req.url)
     const cpf = searchParams.get("cpf")
@@ -128,6 +133,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
+  const rateLimit = applyRateLimit(req, "tickets-search", 20, 60 * 1000)
+  if (rateLimit) return rateLimit
   const session = await getSessionOrFail()
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -209,6 +216,8 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const rateLimit = applyRateLimit(req, "tickets-search", 15, 60 * 1000)
+  if (rateLimit) return rateLimit
   const session = await getSessionOrFail()
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

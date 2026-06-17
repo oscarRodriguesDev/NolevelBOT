@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { applyRateLimit } from "@/lib/rate-limit"
 import { prisma } from "@/lib/prisma"
 import { getSessionOrFail } from "@/util/permission"
 import { ROLE } from "@prisma/client"
@@ -75,6 +76,8 @@ export async function GET() {
 
 // POST - Criar novo aviso
 export async function POST(request: Request) {
+  const rateLimit = applyRateLimit(request, "quadro-avisos", 20, 60 * 1000)
+  if (rateLimit) return rateLimit
     const session = await getSessionOrFail(["ADMIN", "GESTOR", "GOD"])
     const empresaId = session?.user.empresaId
     if (!session) {
@@ -134,6 +137,8 @@ export async function POST(request: Request) {
 
 // PUT - Editar aviso
 export async function PUT(request: Request) {
+  const rateLimit = applyRateLimit(request, "quadro-avisos", 20, 60 * 1000)
+  if (rateLimit) return rateLimit
    const session = await getSessionOrFail(["ADMIN", "GESTOR", "GOD"])
   
   if (!session) {
@@ -187,6 +192,8 @@ export async function PUT(request: Request) {
 
 // DELETE - Deletar aviso
 export async function DELETE(request: Request) {
+  const rateLimit = applyRateLimit(request, "quadro-avisos", 15, 60 * 1000)
+  if (rateLimit) return rateLimit
   const session = await getSessionOrFail(["ADMIN", "GESTOR", "GOD"])// Apenas usuários autenticados podem deletar avisos
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

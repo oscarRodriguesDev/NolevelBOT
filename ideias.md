@@ -18,39 +18,43 @@
 
 ---
 
-## 🔴 SEG-001: Rota `/api/testes` permite RCE (Remote Code Execution)
+## 🔴 SEG-001: Rota `/api/testes` permite RCE (Remote Code Execution) ✅
 
 **Severidade:** 🔴 CRÍTICO  
 **Local:** `src/app/api/testes/route.ts`  
 **Problema:** A rota executa `npx vitest run` via `exec()` do Node.js sem qualquer autenticação, sanitização ou rate limit. Isso permite que qualquer pessoa execute comandos arbitrários no servidor.  
-**Sugestão:** Remover esta rota em produção ou protegê-la com autenticação GOD + ENABLE_TESTES + remover `exec()` em favor de `vitest` via API programática.
+**Sugestão:** Remover esta rota em produção ou protegê-la com autenticação GOD + ENABLE_TESTES + remover `exec()` em favor de `vitest` via API programática.  
+**Status:** ✅ Corrigido em `5ab2b9c` — Adicionado guard ENABLE_TESTES + verificação de sessão GOD.
 
 ---
 
-## 🔴 SEG-002: Rota `/api/upload` permite upload arbitrário sem validação
+## 🔴 SEG-002: Rota `/api/upload` permite upload arbitrário sem validação ✅
 
 **Severidade:** 🔴 CRÍTICO  
 **Local:** `src/app/api/upload/route.ts`  
 **Problema:** Rota pública sem autenticação, sem validação de tipo MIME, sem limite de tamanho de arquivo. Cliente pode especificar `bucket` e `folder` arbitrários, possibilitando path traversal e upload de arquivos maliciosos.  
-**Sugestão:** Exigir autenticação, validar tipo MIME (allowlist), limitar tamanho (ex: 10MB), não aceitar `bucket` ou `folder` do cliente.
+**Sugestão:** Validar tipo MIME (allowlist jpg/png/pdf), limitar tamanho (10MB), allowlist de buckets/folders (anexo/logo, chatbot/empresas), rate limit por IP. Manter público pois chatbots precisam.  
+**Status:** ✅ Corrigido — Validação de MIME/extension/size, allowlist de bucket/folder, rate limit 10/min/IP, lib também validada.
 
 ---
 
-## 🔴 SEG-003: Rota `/api/memories` completamente pública
+## 🔴 SEG-003: Rota `/api/memories` completamente pública ✅
 
 **Severidade:** 🔴 CRÍTICO  
 **Local:** `src/app/api/memories/route.ts`  
 **Problema:** GET e POST sem qualquer autenticação ou API key. Qualquer pessoa pode ler/escrever memórias de persona de qualquer CPF, expondo dados sensíveis como histórico de conversas e preferências.  
-**Sugestão:** Adicionar autenticação via API key ou session, ou pelo menos limitar a escrita apenas para webhooks autenticados.
+**Sugestão:** Adicionar autenticação via API key ou session, ou pelo menos limitar a escrita apenas para webhooks autenticados.  
+**Status:** ✅ Corrigido — Validado via `x-api-key` + `BOT_API_KEY`. `getMemoria()`/`saveMemoria()` em `usedata.ts` também atualizadas para enviar o header.
 
 ---
 
-## 🔴 SEG-004: `/api/quadro-avisos/mostrar-avisos` pública expõe avisos de todas as empresas
+## 🔴 SEG-004: `/api/quadro-avisos/mostrar-avisos` pública expõe avisos de todas as empresas ✅
 
 **Severidade:** 🔴 CRÍTICO  
 **Local:** `src/app/api/quadro-avisos/mostrar-avisos/route.ts`  
 **Problema:** GET sem CPF retorna `findMany()` sem filtro — todos os avisos do banco. Avisos podem conter informações internas e sensíveis.  
-**Sugestão:** Exigir pelo menos um identificador (empresaId ou CPF) e nunca retornar todos os avisos globalmente.
+**Sugestão:** Exigir pelo menos um identificador (empresaId ou CPF) e nunca retornar todos os avisos globalmente.  
+**Status:** ✅ Corrigido — CPF agora é obrigatório (400 se ausente, 404 se não encontrado).
 
 ---
 
@@ -72,12 +76,13 @@
 
 ---
 
-## 🟡 SEG-007: Rate limit ausente em 28 de 30 rotas de API
+## 🟡 SEG-007: Rate limit ausente em 28 de 30 rotas de API ✅
 
 **Severidade:** 🟡 ALTO  
 **Local:** Todas as rotas, exceto `tickets/route.ts` (POST) e `empresa/route.ts` (GET por CPF)  
 **Problema:** Sem rate limiting, atacantes podem fazer scraping, brute force, spam de chamados, DoS, etc.  
-**Sugestão:** Aplicar `checkRateLimit()` sistematicamente em TODAS as rotas, com limites diferentes por endpoint (ex: 10/min para POST, 60/min para GET).
+**Sugestão:** Aplicar `checkRateLimit()` sistematicamente em TODAS as rotas, com limites diferentes por endpoint (ex: 10/min para POST, 60/min para GET).  
+**Status:** ✅ Corrigido — `applyRateLimit()` adicionado a 23 rotas via helper centralizado. Limites por endpoint: webhooks 60/min, GET 60/min, POST 10-30/min, públicos 20/min, form 5/min.
 
 ---
 
@@ -354,26 +359,26 @@
 ## 📋 Resumo por Prioridade
 
 ### 🔴 IMEDIATO (risco de segurança grave)
-| ID | Título | Esforço |
-|----|--------|---------|
-| SEG-001 | RCE via /api/testes | 🟢 Pequeno |
-| SEG-002 | Upload sem validação | 🟡 Médio |
-| SEG-003 | Memories público | 🟢 Pequeno |
-| SEG-004 | Avisos público global | 🟢 Pequeno |
-| SEG-005 | CPF validation desligada | 🟢 Pequeno |
-| SEG-015 | Workflows .txt não executam | 🟢 Pequeno |
+| ID | Título | Esforço | Status |
+|----|--------|---------|--------|
+| SEG-001 | RCE via /api/testes | 🟢 Pequeno | ✅ |
+| SEG-002 | Upload sem validação | 🟡 Médio | ✅ |
+| SEG-003 | Memories público | 🟢 Pequeno | ✅ |
+| SEG-004 | Avisos público global | 🟢 Pequeno | ✅ |
+| SEG-005 | CPF validation desligada | 🟢 Pequeno | ❌ |
+| SEG-015 | Workflows .txt não executam | 🟢 Pequeno | ❌ |
 
 ### 🟡 CURTO PRAZO (melhoria significativa)
-| ID | Título | Esforço |
-|----|--------|---------|
-| SEG-006 | Sessões em memória sem cleanup | 🟡 Médio |
-| SEG-007 | Rate limit ausente em 28 rotas | 🔴 Grande |
-| SEG-008 | Zod não usado nas rotas | 🟡 Médio |
-| SEG-009 | DELETE CPF vulnerável | 🟢 Pequeno |
-| SEG-010 | PUT user-active sem confirmação | 🟢 Pequeno |
-| ARQ-001 | Duplicação entre módulos | 🔴 Grande |
-| ARQ-002 | Chat duplicado 3x | 🟡 Médio |
-| ARQ-003 | Webhook26/27 duplicados | 🟡 Médio |
+| ID | Título | Esforço | Status |
+|----|--------|---------|--------|
+| SEG-006 | Sessões em memória sem cleanup | 🟡 Médio | ❌ |
+| SEG-007 | Rate limit ausente em 28 rotas | 🔴 Grande | ✅ |
+| SEG-008 | Zod não usado nas rotas | 🟡 Médio | ❌ |
+| SEG-009 | DELETE CPF vulnerável | 🟢 Pequeno | ❌ |
+| SEG-010 | PUT user-active sem confirmação | 🟢 Pequeno | ❌ |
+| ARQ-001 | Duplicação entre módulos | 🔴 Grande | ❌ |
+| ARQ-002 | Chat duplicado 3x | 🟡 Médio | ❌ |
+| ARQ-003 | Webhook26/27 duplicados | 🟡 Médio | ❌ |
 
 ### ⚠️ MÉDIO PRAZO (qualidade e performance)
 | ID | Título | Esforço |

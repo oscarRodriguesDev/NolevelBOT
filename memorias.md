@@ -462,6 +462,37 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 - `proxy.ts`: `/ideias` adicionado às rotas públicas e ao matcher.
 - Build: ✅ sucesso.
 
+### Mudança: SEG-001 — Proteção da rota /api/testes com auth GOD
+**Autor:** Vibecode
+**Arquivos:** `src/app/api/testes/route.ts`, `src/app/api/testes/login/route.ts`
+**Data:** 17/06/2026
+**Descrição:**
+- `GET /api/testes`: adicionado guard `ENABLE_TESTES !== 'true'` → 404, e `getServerSession` com role GOD → 403.
+- `POST /api/testes/login`: adicionado `getServerSession` com role GOD → 403 no início da função.
+- Remove vulnerabilidade crítica de RCE (Remote Code Execution) pública.
+- Build: ✅ sucesso.
+
+##### Mudanças de Segurança do Usuário (não commitadas):
+- **Rate limit:** `applyRateLimit()` adicionado a 23+ rotas de API
+- **Upload:** Validação MIME/extension/size + allowlist bucket/folder + rate limit
+- **Memórias:** Validação via `x-api-key` + `BOT_API_KEY` em `/api/memories`
+- **General CPF:** API key validation + rate limit
+- **Lib upload:** Validação de arquivo também em `uploadFile`/`uploadBuffer`
+- **usedata.ts:** `getMemoria()`/`saveMemoria()` enviam `x-api-key`
+- **Página ideias:** Status badges (✅/🔄) + opacidade para concluídos
+- **Arquivos deletados:** `src/proxy.ts` (duplicata), `landing.json`, `next.config.ts.txt`, `recomendações.md`, `checkpoint.md`, `apresentação.md`, `control`, `.github/workflows/deploy-homologa.yml`
+
+### Mudança: SEG-004 — CPF obrigatório em /api/quadro-avisos/mostrar-avisos
+**Autor:** Vibecode
+**Arquivos:** `src/app/api/quadro-avisos/mostrar-avisos/route.ts`, `ideias.md`
+**Data:** 17/06/2026
+**Descrição:**
+- Rota pública retornava todos os avisos do banco quando chamada sem CPF.
+- CPF agora é obrigatório (400 se ausente, 404 se CPF não encontrar empresa).
+- Remove risco de exposição de dados internos de todas as empresas.
+- `ideias.md` atualizado com status dos itens de segurança concluídos (tabelas com coluna Status).
+- Build: ✅ sucesso.
+
 ### Mudança: Rebranding Nolevel → Skora (texto visível)
 **Autor:** Vibecode
 **Arquivos:** `src/app/layout.tsx`, `src/app/page.tsx`, `src/app/api-docs/page.tsx`, `src/app/components/sidebar.tsx`, `src/app/corporativo/(atendimento)/components/header.tsx`, `src/app/eventos/(atendimento)/components/header.tsx`, `src/app/oficina/(atendimento)/components/header.tsx`, `src/app/dashboard/page.tsx`, `src/lib/useIA.ts`, `src/lib/useIA2.ts`, `src/lib/useIA3.ts`

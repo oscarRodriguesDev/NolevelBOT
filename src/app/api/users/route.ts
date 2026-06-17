@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { applyRateLimit } from "@/lib/rate-limit"
 import { prisma } from "@/lib/prisma"
 import { hash } from "bcryptjs"
 import { ROLE } from "@prisma/client"
@@ -16,6 +17,8 @@ const roleMap: Record<string, ROLE> = {
 }
 
 export async function POST(req: NextRequest) {
+  const rateLimit = applyRateLimit(req, "users", 20, 60 * 1000)
+  if (rateLimit) return rateLimit
   const { session, error } = await getServerSessionRBAC(["GOD", "ADMIN", "GESTOR"])
   if (error) return error
 
@@ -165,6 +168,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  const rateLimit = applyRateLimit(req, "users", 60, 60 * 1000)
+  if (rateLimit) return rateLimit
   const { session, error } = await getServerSessionRBAC(["GOD", "ADMIN", "GESTOR"])
   if (error) return error
 
@@ -217,6 +222,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const rateLimit = applyRateLimit(req, "users", 20, 60 * 1000)
+  if (rateLimit) return rateLimit
   const { session, error } = await getServerSessionRBAC(["GOD", "ADMIN", "GESTOR"])
   if (error) return error
 
@@ -310,6 +317,8 @@ export async function DELETE(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
+  const rateLimit = applyRateLimit(req, "users", 20, 60 * 1000)
+  if (rateLimit) return rateLimit
   const { session, error } = await getServerSessionRBAC(["GOD", "ADMIN", "GESTOR"])
   if (error) return error
 

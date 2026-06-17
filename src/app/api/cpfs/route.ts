@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { applyRateLimit } from "@/lib/rate-limit"
 import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
 import { getSessionOrFail } from '@/util/permission'
@@ -6,6 +7,8 @@ import { limparCPF } from "@/util/limparcpfs"
 import { CAN_BATCH_CPF } from "@/lib/rbac"
 
 export async function POST(req: NextRequest) {
+  const rateLimit = applyRateLimit(req, "cpfs", 30, 60 * 1000)
+  if (rateLimit) return rateLimit
   const session = await getSessionOrFail(["GOD", "ADMIN", "GESTOR"])
   const empresaId = session?.user?.empresaId
 
@@ -109,6 +112,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  const rateLimit = applyRateLimit(req, "cpfs", 60, 60 * 1000)
+  if (rateLimit) return rateLimit
   try {
     const session = await getSessionOrFail()
     const empresaId = session?.user?.empresaId
@@ -145,6 +150,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const rateLimit = applyRateLimit(req, "cpfs", 20, 60 * 1000)
+  if (rateLimit) return rateLimit
   const session = await getSessionOrFail(["GOD", "ADMIN", "GESTOR"])
   if (!session) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 })

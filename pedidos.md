@@ -1,5 +1,24 @@
 # Pedidos e Solicitações do Usuário
 
+## SEG-004: `/api/quadro-avisos/mostrar-avisos` pública expõe avisos de todas as empresas
+**Data:** 17/06/2026
+**Status:** ✅ Concluído
+**Descrição:** Rota pública retornava todos os avisos do banco quando chamada sem CPF. Corrigido:
+- CPF agora é obrigatório (retorna 400 se ausente)
+- Se CPF não encontrar empresa, retorna 404
+- Remove risco de exposição de dados internos de todas as empresas
+
+## SEG-001: Rota `/api/testes` permitia RCE público
+**Data:** 17/06/2026
+**Status:** ✅ Concluído
+**Descrição:** A rota `/api/testes` executava `npx vitest run` via `exec()` sem qualquer autenticação. Corrigido com:
+- Guard `ENABLE_TESTES !== 'true'` retorna 404 (defense in depth, já existia no proxy.ts)
+- Verificação de sessão GOD (`getServerSession` + role check) retorna 403
+- Mesma proteção aplicada em `/api/testes/login`
+**Commit:** `5ab2b9c`
+
+# # atenção sempre que adcionar os pedido preciso que aponte o docido do commit que foi realizado
+
 ## PED-021: Análise completa do sistema + página pública de ideias
 **Data:** 17/06/2026
 **Status:** ✅ Concluído

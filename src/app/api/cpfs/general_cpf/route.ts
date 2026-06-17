@@ -1,5 +1,5 @@
-// app/api/cpfs/route.ts
 import { NextRequest, NextResponse } from "next/server"
+import { applyRateLimit } from "@/lib/rate-limit"
 import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
 import { getSessionOrFail } from '@/util/permission';
@@ -9,6 +9,8 @@ import { limparCPF } from "@/util/limparcpfs";
 //post salva os cpfs, se for multipart/form-data, importa do excel ou csv, se for json, cadastra manualmente
 //testar salvamento por planilha excel 
 export async function POST(req: NextRequest) {
+  const rateLimit = applyRateLimit(req, "general-cpf", 30, 60 * 1000)
+  if (rateLimit) return rateLimit
   const session = await getSessionOrFail(["GOD", "ADMIN", "GESTOR"])
   const empresaId = session?.user?.empresaId
 
@@ -163,6 +165,8 @@ function validarBotApiKey(req: NextRequest): boolean {
 
 // Rota usada pelos bots — exige X-API-Key header
 export async function GET(req: NextRequest) {
+  const rateLimit = applyRateLimit(req, "general-cpf", 30, 60 * 1000)
+  if (rateLimit) return rateLimit
   if (!validarBotApiKey(req)) {
     return NextResponse.json({ error: "API key inválida" }, { status: 401 })
   }
@@ -206,6 +210,8 @@ export async function GET(req: NextRequest) {
 
 
 export async function DELETE(req: NextRequest) {
+  const rateLimit = applyRateLimit(req, "general-cpf", 20, 60 * 1000)
+  if (rateLimit) return rateLimit
   const session = await getSessionOrFail(["GESTOR", "ADMIN","GOD"])
   
   if (!session ) {  

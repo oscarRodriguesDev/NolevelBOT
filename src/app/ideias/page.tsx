@@ -137,7 +137,10 @@ export default function IdeiasPage() {
               const itemMatch = sec.content.match(/([🔴🟡⚡🎨🛠️🧪])\s+(\w+)-(\d+):\s*(.+)/)
 
               if (itemMatch) {
-                const [, emoji, prefix, num, title] = itemMatch
+                const [, emoji, prefix, num, rawTitle] = itemMatch
+                const hasCheck = rawTitle.includes('✅')
+                const hasProgress = rawTitle.includes('🔄')
+                const title = rawTitle.replace(/ [✅🔄]$/, '')
                 const severityColors: Record<string, string> = {
                   '🔴': '#FF4444',
                   '🟡': '#FF8C00',
@@ -145,6 +148,45 @@ export default function IdeiasPage() {
                   '🔵': '#00BFFF',
                 }
                 const color = severityColors[emoji] || '#888'
+
+                let statusBadge = null
+                if (hasCheck) {
+                  statusBadge = (
+                    <span
+                      style={{
+                        background: '#22c55e22',
+                        color: '#22c55e',
+                        padding: '2px 8px',
+                        borderRadius: 4,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        fontFamily: 'monospace',
+                        marginLeft: 'auto',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      ✅ CONCLUÍDO
+                    </span>
+                  )
+                } else if (hasProgress) {
+                  statusBadge = (
+                    <span
+                      style={{
+                        background: '#eab30822',
+                        color: '#eab308',
+                        padding: '2px 8px',
+                        borderRadius: 4,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        fontFamily: 'monospace',
+                        marginLeft: 'auto',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      🔄 EM ANDAMENTO
+                    </span>
+                  )
+                }
 
                 return (
                   <div
@@ -156,6 +198,7 @@ export default function IdeiasPage() {
                       border: `1px solid ${color}44`,
                       borderLeft: `4px solid ${color}`,
                       boxShadow: 'var(--shadow-sm)',
+                      opacity: hasCheck ? 0.6 : 1,
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
@@ -174,6 +217,7 @@ export default function IdeiasPage() {
                         {prefix}-{num}
                       </span>
                       <h4 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>{title}</h4>
+                      {statusBadge}
                     </div>
                   </div>
                 )

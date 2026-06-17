@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { applyRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 
 // Funções de banco
@@ -23,8 +24,22 @@ async function upsertResumoPersona(cpf: string, nome: string, resumo: string) {
   }
 }
 
+function validarBotApiKey(req: NextRequest): boolean {
+  const apiKey = req.headers.get("x-api-key")
+  const botApiKey = process.env.BOT_API_KEY
+  if (!botApiKey) return true
+  return apiKey === botApiKey
+}
+
 // Endpoint
 export async function GET(req: NextRequest) {
+  const rateLimit = applyRateLimit(req, "memories", 20, 60 * 1000)
+  if (rateLimit) return rateLimit
+
+  if (!validarBotApiKey(req)) {
+    return NextResponse.json({ error: "API key inválida" }, { status: 401 })
+  }
+
   const { searchParams } = new URL(req.url);
   const cpf = searchParams.get("cpf");
 
@@ -41,6 +56,13 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const rateLimit = applyRateLimit(req, "memories", 20, 60 * 1000)
+  if (rateLimit) return rateLimit
+
+  if (!validarBotApiKey(req)) {
+    return NextResponse.json({ error: "API key inválida" }, { status: 401 })
+  }
+
   try {
     const { cpf, nome, resumo } = await req.json();
 

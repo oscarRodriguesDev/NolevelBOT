@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { applyRateLimit } from "@/lib/rate-limit"
 import { getSetores } from "@/lib/setores"
 import { botIA4 as botIA, FlowState, UserSession, detectFileIntent } from "@/lib/useIA4" 
 import { validarCpf, StatusChamado, enviarChamado, buscarAvisos, buscarAvisosPorCpf, generateRandomTicket } from "@/lib/usedata"
@@ -20,6 +21,9 @@ const statusLabels: Record<string, string> = {
 const sessions = new Map<string, UserSession & { pendingState?: string; setorAtual?: string; modulo?: string }>()
 
 export async function POST(req: NextRequest) {
+  const rateLimit = applyRateLimit(req, "chat", 30, 60 * 1000)
+  if (rateLimit) return rateLimit
+
   try {
     const body = await req.json()
     const userInput = body.message?.trim() || ""

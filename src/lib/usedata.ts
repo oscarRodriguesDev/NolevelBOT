@@ -99,8 +99,8 @@ export function generateRandomTicket() {
 //buscar memoria do bot
 export async function getMemoria(cpf: string) {
   try {
-    
-    const res = await fetch(`${baseUrl}/api/memories?cpf=${cpf}`, { cache: 'no-store' });
+    const headers: Record<string, string> = { "x-api-key": process.env.BOT_API_KEY || "" }
+    const res = await fetch(`${baseUrl}/api/memories?cpf=${cpf}`, { cache: 'no-store', headers });
     return res.ok ? (await res.json())?.resumo : null;
   } catch { return null; }
 }
@@ -109,10 +109,9 @@ export async function getMemoria(cpf: string) {
 //salvar memoria do bot
 export async function saveMemoria(cpf: string, nome: string, resumo: string) {
   try {
-   
     await fetch(`${baseUrl}/api/memories`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-api-key": process.env.BOT_API_KEY || "" },
       body: JSON.stringify({ cpf, nome, resumo }),
     });
   } catch { console.error("Erro ao salvar memória"); }

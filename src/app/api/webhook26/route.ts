@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { applyRateLimit } from "@/lib/rate-limit";
 import { FlowState, detectFileIntent, botIA3 } from "@/lib/useIA3";
 import type { UserSession } from "@/lib/useIA3";
 import {
@@ -38,6 +39,9 @@ const sessions = new Map<string, Webhook26Session>();
 const link = `${process.env.NEXT_PUBLIC_BASE_URL_WP}/chamado`;  
 
 export async function POST(req: NextRequest) {
+  const rateLimit = applyRateLimit(req, "webhook26", 60, 60 * 1000)
+  if (rateLimit) return rateLimit
+
   try {
     const body = await req.json();
     if (body.event !== "messages.upsert") return NextResponse.json({ ok: true });

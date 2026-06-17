@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
+import { applyRateLimit } from "@/lib/rate-limit"
 
 export async function POST(req: NextRequest) {
+  const rateLimit = applyRateLimit(req, "send-form", 5, 60 * 1000)
+  if (rateLimit) return rateLimit
   try {
     const body = await req.json()
     const { nome, email, empresa, telefone, mensagem } = body

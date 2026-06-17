@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { applyRateLimit } from "@/lib/rate-limit"
 import { prisma } from "@/lib/prisma"
 import { getSessionOrFail } from "@/util/permission"
 import { getTicketWhereClause } from "@/lib/rbac"
@@ -21,6 +22,8 @@ function parseOficinaDescricao(descricao: string) {
 }
 
 export async function GET(req: Request) {
+  const rateLimit = applyRateLimit(req, "dashboards", 60, 60 * 1000)
+  if (rateLimit) return rateLimit
   const session = await getSessionOrFail(["ADMIN", "GESTOR", "GOD"])
   if (!session) {
     return NextResponse.json({ error: "Acesso negado" }, { status: 403 })

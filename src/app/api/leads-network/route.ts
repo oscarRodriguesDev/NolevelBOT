@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
+import { applyRateLimit } from "@/lib/rate-limit"
 import { prisma } from "@/lib/prisma"
 import { getSessionOrFail } from "@/util/permission"
 
 export async function GET(req: NextRequest) {
+  const rateLimit = applyRateLimit(req, "leads-network", 30, 60 * 1000)
+  if (rateLimit) return rateLimit
   try {
     const { searchParams } = new URL(req.url)
     const cpf = searchParams.get("cpf")
@@ -43,6 +46,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const rateLimit = applyRateLimit(req, "leads-network", 30, 60 * 1000)
+  if (rateLimit) return rateLimit
   try {
     const body = await req.json()
 

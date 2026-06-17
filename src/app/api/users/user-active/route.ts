@@ -1,5 +1,6 @@
 
 import { NextRequest, NextResponse } from "next/server"
+import { applyRateLimit } from "@/lib/rate-limit"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import { Prisma } from "@prisma/client" 
@@ -59,6 +60,8 @@ export async function GET() {
 
 
 export async function PUT(req: NextRequest) {
+  const rateLimit = applyRateLimit(req, "user-active", 20, 60 * 1000)
+  if (rateLimit) return rateLimit
   const logado = await getServerSession(authOptions)
 
 

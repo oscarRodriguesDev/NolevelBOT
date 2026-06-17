@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
+import { applyRateLimit } from "@/lib/rate-limit";
 
 const EVOLUTION_URL = "https://evolution.nolevel.hiskra.com.br";
 const INSTANCE = "bot";
 
 export async function POST(req: Request) {
+  const rateLimit = applyRateLimit(req, "webhook-teste", 60, 60 * 1000)
+  if (rateLimit) return rateLimit
+
   try {
     const body = await req.json();
 

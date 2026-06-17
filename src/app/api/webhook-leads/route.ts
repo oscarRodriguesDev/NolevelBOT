@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { applyRateLimit } from "@/lib/rate-limit"
 import OpenAI from "openai"
 import { prisma } from "@/lib/prisma"
 import { sendEvolutionText, saudacao, getMemoria, saveMemoria } from "@/lib/usedata"
@@ -78,6 +79,9 @@ async function consultarLeadPorCpf(cpf: string) {
 const saudacoes = new Set(['oi', 'ola', 'olá', 'bom', 'boa', 'oie', 'opa', 'hey', 'alo', 'alô', 'salve'])
 
 export async function POST(req: NextRequest) {
+  const rateLimit = applyRateLimit(req, "webhook-leads", 60, 60 * 1000)
+  if (rateLimit) return rateLimit
+
   try {
     const body = await req.json()
     if (body.event !== "messages.upsert") return NextResponse.json({ ok: true })
