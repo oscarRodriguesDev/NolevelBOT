@@ -10,8 +10,19 @@ const nextConfig = {
   images: {
     remotePatterns: [
       {
+        protocol: "https",
+        hostname: "supabase.nolevel.hiskra.com.br",
+        pathname: "/storage/v1/object/public/**",
+      },
+      {
         protocol: "http",
         hostname: "localhost",
+        port: "8000",
+        pathname: "/storage/v1/object/public/**",
+      },
+      {
+        protocol: "http",
+        hostname: "177.153.33.179",
         port: "8000",
         pathname: "/storage/v1/object/public/**",
       },
