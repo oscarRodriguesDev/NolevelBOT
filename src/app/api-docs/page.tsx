@@ -101,7 +101,7 @@ export default function ApiDocsPage() {
         <ThemeToggle />
       </div>
       <div className="max-w-5xl mx-auto">
-        <h1 className="text-3xl font-bold mb-2" style={{ color: "var(--primary)" }}>API - NolevelBOT</h1>
+        <h1 className="text-3xl font-bold mb-2" style={{ color: "var(--primary)" }}>API - Skora</h1>
         <p className="mb-8 opacity-60 text-sm">
           Lista de todos os endpoints disponíveis no sistema ({endpoints.length} rotas)
         </p>
