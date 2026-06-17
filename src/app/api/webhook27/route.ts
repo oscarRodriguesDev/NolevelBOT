@@ -29,14 +29,14 @@ const statusLabels: Record<string, string> = {
   FECHADO: "🔒 Fechado",
 };
 
-type Webhook27Session = UserSession & {
+type Webhook27Session = UserSession & { 
   anexoUrl?: string;
   empresaId?: string;
   pendingState?: string;
 };
 
 const sessions = new Map<string, Webhook27Session>();
-const link = `${process.env.NEXT_PUBLIC_BASE_URL}/chamado`; 
+const link = `${process.env.NEXT_PUBLIC_BASE_URL_WP}/chamado`; 
 
 export async function POST(req: NextRequest) {
   try {

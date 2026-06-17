@@ -337,7 +337,7 @@ export default function DashboardPage() {
         className="border-t py-4 text-center text-xs opacity-40"
         style={{ borderColor: "var(--border-subtle)" }}
       >
-        Skora v{packageJson.version}
+        Skora - V: {packageJson.version}
       </footer>
     </div>
   )
