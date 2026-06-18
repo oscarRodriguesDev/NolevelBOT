@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { applyRateLimit } from "@/lib/rate-limit"
+import { validateOrError } from "@/lib/validate"
+import { createUserSchema, updateUserSchema } from "@/lib/validation"
 import { prisma } from "@/lib/prisma"
 import { hash } from "bcryptjs"
 import { ROLE } from "@prisma/client"
@@ -85,13 +87,8 @@ export async function POST(req: NextRequest) {
     const setor = formData.get("setor") as string
     const file = formData.get("avatar") as File | null
 
-    if (!name?.trim()) return NextResponse.json({ error: "Nome é obrigatório" }, { status: 400 })
-    if (!email?.trim()) return NextResponse.json({ error: "Email é obrigatório" }, { status: 400 })
-    if (!cpf) return NextResponse.json({ error: "CPF é obrigatório" }, { status: 400 })
-    if (!password?.trim()) return NextResponse.json({ error: "Senha é obrigatória" }, { status: 400 })
-    if (finalRole !== "ADMIN" && !setor?.trim()) {
-      return NextResponse.json({ error: "Setor é obrigatório" }, { status: 400 })
-    }
+    const parsed = validateOrError({ name, email, cpf, password, setor, empresaId: empresaID, role: finalRole }, createUserSchema)
+    if (parsed instanceof NextResponse) return parsed
 
     if (userRole === "GESTOR") {
       if (setor !== session!.setor) {
@@ -324,11 +321,11 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const { id, name, email, cpf, setor, empresaId, role } = body
 
-    if (!id) {
-      return NextResponse.json({ error: "ID é obrigatório" }, { status: 400 })
-    }
+    const parsed = validateOrError(body, updateUserSchema)
+    if (parsed instanceof NextResponse) return parsed
+
+    const { id, name, email, cpf, setor, empresaId, role } = parsed
 
     const targetUser = await prisma.user.findUnique({
       where: { id },

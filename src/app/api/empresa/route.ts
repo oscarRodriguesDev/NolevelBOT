@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionOrFail } from '@/util/permission'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+import { validateOrError } from '@/lib/validate'
+import { createEmpresaSchema } from '@/lib/validation'
 
 export async function POST(req: NextRequest) {
   const session = await getSessionOrFail(["GOD"])
@@ -11,11 +13,10 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
 
-    const data: any = {
-      nome: body.nome,
-      cnpj: body.cnpj,
-      setores: body.setores || [],
-    }
+    const parsed = validateOrError(body, createEmpresaSchema)
+    if (parsed instanceof NextResponse) return parsed
+
+    const data: any = { ...parsed }
 
     if (body.modulos !== undefined) data.modulos = body.modulos
     if (body.logoUrl !== undefined) data.logoUrl = body.logoUrl

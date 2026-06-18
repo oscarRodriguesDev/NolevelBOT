@@ -1,5 +1,20 @@
 # Pedidos e Solicitações do Usuário
 
+## SEG-008: Nenhuma rota usa validação Zod em produção
+**Data:** 17/06/2026
+**Status:** ✅ Concluído
+**Descrição:** Schemas Zod já definidos em `validation.ts` mas nunca usados. Criado helper `validateOrError()` e aplicado em 7 rotas de API.
+**Schemas criados:** `sendFormSchema`, `createAvisoSchema`, `updateAvisoSchema`, `updateUserSchema`
+**Rotas com Zod:**
+- `POST /api/users` — `createUserSchema` (formData → objeto)
+- `PUT /api/users` — `updateUserSchema`
+- `POST /api/tickets` — `createTicketSchema` (formData → objeto)
+- `POST /api/empresa` — `createEmpresaSchema`
+- `POST /api/leads-network` — `createLeadSchema`
+- `POST /api/send-form` — `sendFormSchema`
+- `POST /api/quadro-avisos` — `createAvisoSchema`
+- `PUT /api/quadro-avisos` — `updateAvisoSchema`
+
 ## SEG-006: Sessões em memória sem cleanup em 6 webhooks
 **Data:** 17/06/2026
 **Status:** ✅ Concluído

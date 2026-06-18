@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import type { Prisma } from '@prisma/client'
 export const dynamic = 'force-dynamic'
 import { uploadFile } from '@/lib/upload'
+import { validateOrError } from '@/lib/validate'
+import { createTicketSchema, isValidCPF } from '@/lib/validation'
 import { getSessionOrFail } from '@/util/permission'
 import { getPhoneByCpf, registerPhone } from '@/lib/phoneMap'
 import { sendEvolutionText } from '@/lib/usedata'
@@ -11,7 +13,6 @@ import { normalizarStatus } from '@/types/chamado'
 import { getTicketWhereClause } from '@/lib/rbac'
 import { ROLE } from '@prisma/client'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
-import { isValidCPF } from '@/lib/validation'
 
 type ContatoTelefone = { telefone: string; instance: string } | null
 
@@ -103,19 +104,8 @@ export async function POST(req: NextRequest) {
     const telefone = (formData.get("telefone") as string || "").replace(/\D/g, "").slice(0, 15) || null
     const file = formData.get("anexo") as File | null
 
-    const camposFaltando: string[] = []
-    if (!nome) camposFaltando.push("nome")
-    if (!cpfRaw) camposFaltando.push("cpf")
-    if (!setor) camposFaltando.push("setor")
-    if (!descricao) camposFaltando.push("descricao")
-    if (camposFaltando.length > 0) {
-      console.error("Campos obrigatórios faltando:", camposFaltando, { nome, cpf: cpfRaw, setor, descricao: descricao?.substring(0, 50) })
-      return NextResponse.json({ error: `Campos obrigatórios: ${camposFaltando.join(", ")}` }, { status: 400 })
-    }
-
-    if (!isValidCPF(cpfRaw)) {
-      return NextResponse.json({ error: "CPF inválido" }, { status: 400 })
-    }
+    const parsed = validateOrError({ nome, cpf: cpfRaw, setor, descricao, prioridade }, createTicketSchema)
+    if (parsed instanceof NextResponse) return parsed
 
     const cpfRecord = await prisma.cpfs.findFirst({ where: { cpf: cpfRaw } })
     if (!cpfRecord) {

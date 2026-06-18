@@ -87,12 +87,13 @@
 
 ---
 
-## 🟡 SEG-008: Nenhuma rota usa validação Zod em produção
+## 🟡 SEG-008: Nenhuma rota usa validação Zod em produção ✅
 
 **Severidade:** 🟡 ALTO  
 **Local:** Todas as rotas de API  
 **Problema:** Schemas Zod definidos em `validation.ts` mas NUNCA importados/usados nas rotas. Toda validação é manual (undefined checks, typeof) — frágil e inconsistente.  
-**Sugestão:** Integrar Zod em todas as rotas de escrita (POST/PUT), usando `safeParse()` com mensagens de erro padronizadas.
+**Sugestão:** Integrar Zod em todas as rotas de escrita (POST/PUT), usando `safeParse()` com mensagens de erro padronizadas.  
+**Status:** ✅ Corrigido — Criado helper `validateOrError()` em `src/lib/validate.ts`. Aplicado em 7 rotas: POST /api/users, PUT /api/users, POST /api/tickets, POST /api/empresa, POST /api/leads-network, POST /api/send-form, POST/PUT /api/quadro-avisos.
 
 ---
 
@@ -374,7 +375,7 @@
 |----|--------|---------|--------|
 | SEG-006 | Sessões em memória sem cleanup | 🟡 Médio | ✅ |
 | SEG-007 | Rate limit ausente em 28 rotas | 🔴 Grande | ✅ |
-| SEG-008 | Zod não usado nas rotas | 🟡 Médio | ❌ |
+| SEG-008 | Zod não usado nas rotas | 🟡 Médio | ✅ |
 | SEG-009 | DELETE CPF vulnerável | 🟢 Pequeno | ❌ |
 | SEG-010 | PUT user-active sem confirmação | 🟢 Pequeno | ❌ |
 | ARQ-001 | Duplicação entre módulos | 🔴 Grande | ❌ |

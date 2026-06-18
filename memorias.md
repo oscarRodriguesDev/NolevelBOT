@@ -504,6 +504,17 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 - `ideias.md`: SEG-006 marcado como ✅.
 - Build: ✅ sucesso.
 
+### Mudança: SEG-008 — Validação Zod integrada nas rotas de API
+**Autor:** Vibecode
+**Arquivos:** `src/lib/validate.ts` (novo), `src/lib/validation.ts`, `src/app/api/users/route.ts`, `src/app/api/tickets/route.ts`, `src/app/api/empresa/route.ts`, `src/app/api/leads-network/route.ts`, `src/app/api/send-form/route.ts`, `src/app/api/quadro-avisos/route.ts`, `ideias.md`
+**Data:** 17/06/2026
+**Descrição:**
+- Criado helper `validateOrError(data, schema)` em `src/lib/validate.ts`: usa `safeParse()` do Zod e retorna `NextResponse` com erros padronizados se falhar.
+- Adicionados schemas: `sendFormSchema`, `createAvisoSchema`, `updateAvisoSchema`, `updateUserSchema`.
+- Aplicado em 7 rotas que recebem input do usuário (POST/PUT), substituindo validações manuais frágeis.
+- `ideias.md`: SEG-008 marcado como ✅.
+- Build: ✅ sucesso.
+
 ### Mudança: Rebranding Nolevel → Skora (texto visível)
 **Autor:** Vibecode
 **Arquivos:** `src/app/layout.tsx`, `src/app/page.tsx`, `src/app/api-docs/page.tsx`, `src/app/components/sidebar.tsx`, `src/app/corporativo/(atendimento)/components/header.tsx`, `src/app/eventos/(atendimento)/components/header.tsx`, `src/app/oficina/(atendimento)/components/header.tsx`, `src/app/dashboard/page.tsx`, `src/lib/useIA.ts`, `src/lib/useIA2.ts`, `src/lib/useIA3.ts`

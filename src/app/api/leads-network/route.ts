@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { applyRateLimit } from "@/lib/rate-limit"
+import { validateOrError } from "@/lib/validate"
+import { createLeadSchema } from "@/lib/validation"
 import { prisma } from "@/lib/prisma"
 import { getSessionOrFail } from "@/util/permission"
 
@@ -62,19 +64,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true })
     }
 
-    const { cpf, nome, telefone, empresa } = body
+    const parsed = validateOrError(body, createLeadSchema)
+    if (parsed instanceof NextResponse) return parsed
 
-    if (!cpf || !nome || !telefone) {
-      return NextResponse.json(
-        { error: "CPF, nome e telefone são obrigatórios" },
-        { status: 400 }
-      )
-    }
+    const { cpf, nome, telefone, empresa } = parsed
 
     const leadExists = await prisma.cpfsLeads.findUnique({
-      where: {
-        cpf,
-      },
+      where: { cpf },
     })
 
     if (leadExists) {

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
 import { applyRateLimit } from "@/lib/rate-limit"
+import { validateOrError } from "@/lib/validate"
+import { createAvisoSchema, updateAvisoSchema } from "@/lib/validation"
 import { prisma } from "@/lib/prisma"
 import { getSessionOrFail } from "@/util/permission"
 import { ROLE } from "@prisma/client"
@@ -85,16 +87,13 @@ export async function POST(request: Request) {
     }
   try {
     const body = await request.json()
-    let { titulo, conteudo, setor, duracao } = body
+
+    const parsed = validateOrError(body, createAvisoSchema)
+    if (parsed instanceof NextResponse) return parsed
+
+    let { titulo, conteudo, setor, duracao } = parsed
     const userRole = session.user.role as ROLE
     const userSetor = session.user.setor || ""
-
-    if (!titulo || !conteudo) {
-      return NextResponse.json(
-        { error: "Título e conteúdo são obrigatórios" },
-        { status: 400 }
-      )
-    }
 
     if (userRole !== "ADMIN" && userRole !== "GOD") {
       setor = userSetor
@@ -146,16 +145,14 @@ export async function PUT(request: Request) {
   }
   try {
     const body = await request.json()
-    let { id, titulo, conteudo, setor, duracao, expiresAt } = body
+
+    const parsed = validateOrError(body, updateAvisoSchema)
+    if (parsed instanceof NextResponse) return parsed
+
+    let { id, titulo, conteudo, setor, duracao } = parsed
+    let { expiresAt } = body
     const userRole = session.user.role as ROLE
     const userSetor = session.user.setor || ""
-
-    if (!id) {
-      return NextResponse.json(
-        { error: "ID é obrigatório" },
-        { status: 400 }
-      )
-    }
 
     if (userRole !== "ADMIN" && userRole !== "GOD") {
       setor = userSetor
