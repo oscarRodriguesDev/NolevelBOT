@@ -212,6 +212,7 @@
 **Local:** `src/app/api/webhook-oficina/route.ts`  
 **Problema:** Grande parte da lógica de state machine, IA e envio de mensagens é idêntica aos webhooks corporativos.  
 **Sugestão:** Extrair lógica compartilhada para libs (ex: `src/lib/webhook-core.ts`) com funções reutilizáveis.
+**Status:** ✅ Concluído — Criado `src/lib/webhook-core.ts` com 7 funções compartilhadas (parsing, rate limit, sessão, mídia, sair, erro). webhook27 e webhook-oficina refatorados para usar o core. Fluxo específico de transporte público (matrícula, ônibus, defeito, confirmação) mantido intacto. ~110 linhas de boilerplate eliminadas. Commit `HEAD`
 
 ---
 
@@ -392,6 +393,7 @@
 | SEG-016 | console.log expõe senhas | 🟡 Médio | ✅ |
 | ARQ-002 | Chat duplicado 3x | 🟡 Médio | ✅ |
 | ARQ-003 | Webhook26/27 duplicados | 🟡 Médio | ✅ |
+| ARQ-004 | webhook-oficina + core compartilhado | 🟡 Médio | ✅ |
 
 ### ⚠️ MÉDIO PRAZO (qualidade e performance)
 | ID | Título | Esforço |

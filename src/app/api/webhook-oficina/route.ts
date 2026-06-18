@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { applyRateLimit } from "@/lib/rate-limit";
 import { TTLMap } from "@/lib/ttl-map";
-import { sendEvolutionText, downloadEvolutionMedia, checkEmpresaModule } from "@/lib/usedata";
-import { uploadBuffer } from "@/lib/upload";
+import { sendEvolutionText, checkEmpresaModule } from "@/lib/usedata";
 import { getSetores } from "@/lib/setores";
 import { prisma } from "@/lib/prisma";
+import {
+  parseWebhookMessage,
+  rateLimited,
+  getOrCreateSession,
+  handleExit,
+  processWebhookMedia,
+  saveSession,
+  webhookError,
+} from "@/lib/webhook-core";
 
 const FlowState = {
   INICIO: "inicio",
@@ -114,75 +121,30 @@ async function buscarAvisosDoVeiculo(
 }
 
 export async function POST(req: NextRequest) {
-  const rateLimit = applyRateLimit(req, "webhook-oficina", 60, 60 * 1000)
+  const rateLimit = rateLimited(req, "webhook-oficina")
   if (rateLimit) return rateLimit
 
   try {
     const body = await req.json();
-    if (body.event !== "messages.upsert") return NextResponse.json({ ok: true });
+    const msg = parseWebhookMessage(body);
+    if (!msg) return NextResponse.json({ ok: true });
 
+    const { number, instance, userInput, lowerInput, hasImage, hasDocument, hasMedia } = msg;
     const data = body.data;
-    if (!data?.message || data.key?.fromMe) return NextResponse.json({ ok: true });
 
-    const number = data.key.remoteJid;
-    const instance = body.instance;
-    const hasImage = !!data.message.imageMessage;
-    const hasMedia = hasImage || !!data.message.documentMessage;
-    const caption = data.message.imageMessage?.caption || data.message.documentMessage?.caption || "";
-    const userInput = (
-      data.message.conversation ||
-      data.message.extendedTextMessage?.text ||
-      caption ||
-      ""
-    ).trim();
-    const lowerInput = userInput.toLowerCase();
+    const session = getOrCreateSession(sessions, number, {
+      state: FlowState.INICIO,
+      lastInteraction: Date.now(),
+    });
 
-    let session = sessions.get(number);
-
-    if (!session) {
-      session = { state: FlowState.INICIO, lastInteraction: Date.now() };
-      sessions.set(number, session);
-    }
-
-    session.lastInteraction = Date.now();
-
-    if (["sair", "encerrar", "cancelar"].includes(lowerInput)) {
-      await sendEvolutionText(instance, number, "Atendimento encerrado. Quando precisar, é só me chamar!");
-      sessions.delete(number);
-      return NextResponse.json({ ok: true });
-    }
+    const exit = await handleExit(userInput, instance, number, sessions, number);
+    if (exit) return exit;
 
     const sess = session;
     async function processMedia(): Promise<string | undefined> {
-      if (!hasMedia) return undefined;
-
-      const mediaMsg = data.message.imageMessage || data.message.documentMessage;
-      const mimeType = mediaMsg.mimetype || "application/octet-stream";
-      const ext = (mimeType.split("/").pop() || "bin").replace(/[^a-z0-9]/g, "");
-      const nomeArquivo = data.message.documentMessage?.fileName || `anexo_${Date.now()}.${ext}`;
-
-      const buffer = await downloadEvolutionMedia(instance, data.key, data.message?.base64, mediaMsg);
-
-      if (buffer) {
-        const url = await uploadBuffer({
-          buffer,
-          fileName: nomeArquivo,
-          mimeType,
-          folder: sess.matricula || "oficina",
-        });
-
-        if (url) {
-          sess.anexoUrl = url;
-          const tipo = hasImage ? "foto" : "documento";
-          await sendEvolutionText(instance, number, `Recebi ${tipo === "foto" ? "a foto" : "o documento"}! ✅`);
-        } else {
-          await sendEvolutionText(instance, number, `Ops, tive um problema ao salvar o arquivo. Mas vou seguir com o registro mesmo assim.`);
-        }
-      } else {
-        await sendEvolutionText(instance, number, `Não consegui baixar o arquivo. Mas vamos continuar!`);
-      }
-
-      return userInput || caption;
+      const url = await processWebhookMedia(data, instance, number, hasImage, hasDocument, sess.matricula || "oficina");
+      if (url) sess.anexoUrl = url;
+      return userInput;
     }
 
     switch (session.state) {
@@ -295,16 +257,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ ok: true });
           }
           if (session.defeito) {
-            const resumo =
-              `*Resumo do Registro:*\n\n` +
-              `👤 Nome: ${session.nome}\n` +
-              `🔢 Matrícula: ${session.matricula}\n` +
-              `📋 Função: ${session.funcao}\n` +
-              `🚌 Ônibus: ${session.numeroOnibus}\n` +
-              `📅 Data: ${session.data}\n` +
-              `🔧 Defeito: ${session.defeito}\n` +
-              (session.anexoUrl ? `📎 Foto anexada: ✅\n` : "") +
-              `\nOs dados estão corretos? (sim/não)`;
+            const resumo = montarResumo(session);
             await sendEvolutionText(instance, number, resumo);
             session.state = FlowState.CONFIRMAR;
           }
@@ -327,17 +280,7 @@ export async function POST(req: NextRequest) {
       case FlowState.PERGUNTAR_ANEXO: {
         if (hasMedia) {
           await processMedia();
-          const resumo =
-            `*Resumo do Registro:*\n\n` +
-            `👤 Nome: ${session.nome}\n` +
-            `🔢 Matrícula: ${session.matricula}\n` +
-            `📋 Função: ${session.funcao}\n` +
-            `🚌 Ônibus: ${session.numeroOnibus}\n` +
-            `📅 Data: ${session.data}\n` +
-            `🔧 Defeito: ${session.defeito}\n` +
-            (session.anexoUrl ? `📎 Foto anexada: ✅\n` : "") +
-            `\nOs dados estão corretos? (sim/não)`;
-          await sendEvolutionText(instance, number, resumo);
+          await sendEvolutionText(instance, number, montarResumo(session));
           session.state = FlowState.CONFIRMAR;
         } else if (["sim", "s", "quero", "ok"].some(v => lowerInput.includes(v))) {
           await sendEvolutionText(
@@ -347,16 +290,7 @@ export async function POST(req: NextRequest) {
           );
           session.state = FlowState.COLETAR_MIDIA;
         } else {
-          const resumo =
-            `*Resumo do Registro:*\n\n` +
-            `👤 Nome: ${session.nome}\n` +
-            `🔢 Matrícula: ${session.matricula}\n` +
-            `📋 Função: ${session.funcao}\n` +
-            `🚌 Ônibus: ${session.numeroOnibus}\n` +
-            `📅 Data: ${session.data}\n` +
-            `🔧 Defeito: ${session.defeito}\n` +
-            `\nOs dados estão corretos? (sim/não)`;
-          await sendEvolutionText(instance, number, resumo);
+          await sendEvolutionText(instance, number, montarResumo(session));
           session.state = FlowState.CONFIRMAR;
         }
         break;
@@ -365,29 +299,10 @@ export async function POST(req: NextRequest) {
       case FlowState.COLETAR_MIDIA: {
         if (hasMedia) {
           await processMedia();
-          const resumo =
-            `*Resumo do Registro:*\n\n` +
-            `👤 Nome: ${session.nome}\n` +
-            `🔢 Matrícula: ${session.matricula}\n` +
-            `📋 Função: ${session.funcao}\n` +
-            `🚌 Ônibus: ${session.numeroOnibus}\n` +
-            `📅 Data: ${session.data}\n` +
-            `🔧 Defeito: ${session.defeito}\n` +
-            (session.anexoUrl ? `📎 Foto anexada: ✅\n` : "") +
-            `\nOs dados estão corretos? (sim/não)`;
-          await sendEvolutionText(instance, number, resumo);
+          await sendEvolutionText(instance, number, montarResumo(session));
           session.state = FlowState.CONFIRMAR;
         } else if (["não", "nao", "n", "sem foto", "sem arquivo"].some(v => lowerInput.includes(v))) {
-          const resumo =
-            `*Resumo do Registro:*\n\n` +
-            `👤 Nome: ${session.nome}\n` +
-            `🔢 Matrícula: ${session.matricula}\n` +
-            `📋 Função: ${session.funcao}\n` +
-            `🚌 Ônibus: ${session.numeroOnibus}\n` +
-            `📅 Data: ${session.data}\n` +
-            `🔧 Defeito: ${session.defeito}\n` +
-            `\nOs dados estão corretos? (sim/não)`;
-          await sendEvolutionText(instance, number, resumo);
+          await sendEvolutionText(instance, number, montarResumo(session));
           session.state = FlowState.CONFIRMAR;
         } else {
           await sendEvolutionText(
@@ -494,10 +409,23 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    sessions.set(number, session);
+    saveSession(sessions, number, session);
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error("Erro crítico no webhook-oficina:", error);
-    return NextResponse.json({ ok: true });
+    return webhookError("webhook-oficina")(error)
   }
+}
+
+function montarResumo(session: Session): string {
+  return (
+    `*Resumo do Registro:*\n\n` +
+    `👤 Nome: ${session.nome}\n` +
+    `🔢 Matrícula: ${session.matricula}\n` +
+    `📋 Função: ${session.funcao}\n` +
+    `🚌 Ônibus: ${session.numeroOnibus}\n` +
+    `📅 Data: ${session.data}\n` +
+    `🔧 Defeito: ${session.defeito}\n` +
+    (session.anexoUrl ? `📎 Foto anexada: ✅\n` : "") +
+    `\nOs dados estão corretos? (sim/não)`
+  );
 }
