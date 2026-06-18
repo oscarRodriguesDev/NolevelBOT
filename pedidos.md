@@ -3,6 +3,7 @@
 ## SEG-009: DELETE /api/cpfs pode deletar CPF de outra empresa
 **Data:** 17/06/2026
 **Status:** ✅ Concluído
+**Commit:** `0ac5cbe`
 **Descrição:** `prisma.cpfs.delete({ where: { cpf } })` sem filtro de `empresaId` — em concorrência podia deletar CPF de outra empresa. Substituído por `prisma.cpfs.deleteMany({ where: { cpf, empresaId } })`.
 
 ## SEG-008: Nenhuma rota usa validação Zod em produção
