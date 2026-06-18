@@ -171,12 +171,12 @@
 
 ---
 
-## 🟡 ARQ-001: Duplicação massiva entre módulos Corporativo, Oficina e Eventos
+## ~~🟡 ARQ-001: Duplicação massiva entre módulos Corporativo, Oficina e Eventos~~ ✅
 
 **Severidade:** 🟡 ALTO  
 **Local:** Múltiplos arquivos nos 3 módulos  
-**Problema:** Headers, layouts, páginas de avisos, CPFs, usuários, gestão de usuários são praticamente idênticos entre os 3 módulos. Qualquer correção ou melhoria precisa ser replicada 3x.  
-**Sugestão:** Criar componentes compartilhados parametrizáveis por módulo (ex: `<ModuleLayout module="corporativo" />`, `<AvisosPage module="corporativo" />`).
+**Problema:** Headers, layouts, páginas de avisos, CPFs, usuários, gestão de usuários eram praticamente idênticos entre os 3 módulos.  
+**Solução:** Layout unificado (`module-layout.tsx`), header compartilhado (`module-header.tsx`), páginas movidas para `components/shared-*.tsx` com prop `setHeader`. Cada página nos módulos virou wrapper de ~3 linhas.
 
 ---
 
@@ -380,7 +380,7 @@
 | SEG-008 | Zod não usado nas rotas | 🟡 Médio | ✅ |
 | SEG-009 | DELETE CPF vulnerável | 🟢 Pequeno | ✅ |
 | SEG-010 | PUT user-active sem confirmação | 🟢 Pequeno | ✅ |
-| ARQ-001 | Duplicação entre módulos | 🔴 Grande | ❌ |
+| ARQ-001 | Duplicação entre módulos | 🔴 Grande | ✅ |
 | ARQ-002 | Chat duplicado 3x | 🟡 Médio | ❌ |
 | ARQ-003 | Webhook26/27 duplicados | 🟡 Médio | ❌ |
 

@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState } from 'react'
 import { Sidebar } from '@/app/components/sidebar'
-import { Header } from '@/app/corporativo/(atendimento)/components/header'
+import { Header } from '@/app/components/module-header'
 
 type HeaderContextType = {
   titulo: string
