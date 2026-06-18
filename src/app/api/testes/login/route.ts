@@ -101,16 +101,16 @@ export async function POST(request: Request) {
       {
         nome: 'Pode criar GESTOR',
         resultado: podeCriarRole(userRole, 'GESTOR'),
-        esperado: userRole === 'GOD' || userRole === 'ADMIN',
+        esperado: userRole === 'ADMIN',
         critico: false,
         explicacao: 'GOD e ADMIN podem criar GESTOR.',
       },
       {
         nome: 'Pode criar ATENDENTE',
         resultado: podeCriarRole(userRole, 'ATENDENTE'),
-        esperado: userRole !== 'ATENDENTE',
+        esperado: userRole === 'GESTOR',
         critico: false,
-        explicacao: 'GOD, ADMIN e GESTOR criam ATENDENTE. ATENDENTE não cria ninguém.',
+        explicacao: 'GESTOR criam ATENDENTE. ATENDENTE não cria ninguém.',
       },
       {
         nome: 'Pode deletar GOD',
