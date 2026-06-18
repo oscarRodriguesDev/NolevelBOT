@@ -25,6 +25,7 @@ export function UserProfileModal({ open, onClose }: Props) {
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [currentPassword, setCurrentPassword] = useState("")
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   
   const [loading, setLoading] = useState(false)
@@ -92,6 +93,10 @@ export function UserProfileModal({ open, onClose }: Props) {
       if (isChangingPassword) formData.append("password", password)
       if (isAvatarChanged) formData.append("avatarFile", avatarFile)
 
+      if (isEmailChanged || isChangingPassword) {
+        formData.append("currentPassword", currentPassword)
+      }
+
       const res = await fetch("/api/users/user-active", {
         method: "PUT",
         body: formData,
@@ -123,6 +128,7 @@ export function UserProfileModal({ open, onClose }: Props) {
 
       toast.success("Perfil atualizado com sucesso!")
       setPassword("")
+      setCurrentPassword("")
       setAvatarFile(null)
       onClose()
       
@@ -268,6 +274,27 @@ export function UserProfileModal({ open, onClose }: Props) {
                   />
                 </div>
               </div>
+
+              {(email !== user?.email || password.trim().length > 0) && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold uppercase tracking-wider ml-1 opacity-70 text-[var(--foreground)]">
+                    Confirme sua senha atual
+                  </label>
+                  <div className="relative">
+                    <Lock
+                      className="absolute left-4 top-1/2 -translate-y-1/2 opacity-50 text-[var(--foreground)]"
+                      size={18}
+                    />
+                    <input
+                      type="password"
+                      placeholder="Senha atual para confirmar alteração"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      className="w-full pl-11 pr-4 py-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--background)] text-[var(--foreground)] text-sm outline-none transition-all focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-3 mt-8">
