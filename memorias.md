@@ -525,6 +525,17 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 - `ideias.md`: SEG-009 marcado como ✅.
 - Build: ✅ sucesso.
 
+### Mudança: SEG-010 — PUT /api/users/user-active exige senha atual
+**Autor:** Vibecode
+**Arquivos:** `src/app/api/users/user-active/route.ts`, `ideias.md`
+**Data:** 17/06/2026
+**Descrição:**
+- Se email ou password forem enviados no formData, o campo `currentPassword` é obrigatório.
+- A senha atual é validada via `bcrypt.compare()` contra o hash no banco.
+- Se inválida, retorna 403 "Senha atual incorreta".
+- `ideias.md`: SEG-010 marcado como ✅.
+- Build: ✅ sucesso.
+
 ### Mudança: Rebranding Nolevel → Skora (texto visível)
 **Autor:** Vibecode
 **Arquivos:** `src/app/layout.tsx`, `src/app/page.tsx`, `src/app/api-docs/page.tsx`, `src/app/components/sidebar.tsx`, `src/app/corporativo/(atendimento)/components/header.tsx`, `src/app/eventos/(atendimento)/components/header.tsx`, `src/app/oficina/(atendimento)/components/header.tsx`, `src/app/dashboard/page.tsx`, `src/lib/useIA.ts`, `src/lib/useIA2.ts`, `src/lib/useIA3.ts`

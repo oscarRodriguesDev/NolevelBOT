@@ -78,13 +78,40 @@ export async function PUT(req: NextRequest) {
     const email = formData.get("email") as string | null
     const setor = formData.get("setor") as string | null
     const password = formData.get("password") as string | null
+    const currentPassword = formData.get("currentPassword") as string | null
 
     const file = formData.get("avatarFile") as File | null
 
-    console.log(file)
-    console.log(file?.size)
-
     const dataToUpdate: Prisma.UserUpdateInput = {}
+
+    if (email || password?.trim()) {
+      if (!currentPassword) {
+        return NextResponse.json(
+          { error: "Senha atual é obrigatória para alterar email ou senha" },
+          { status: 400 }
+        )
+      }
+
+      const userFromDb = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { password: true },
+      })
+
+      if (!userFromDb?.password) {
+        return NextResponse.json(
+          { error: "Usuário não encontrado" },
+          { status: 404 }
+        )
+      }
+
+      const senhaValida = await bcrypt.compare(currentPassword, userFromDb.password)
+      if (!senhaValida) {
+        return NextResponse.json(
+          { error: "Senha atual incorreta" },
+          { status: 403 }
+        )
+      }
+    }
 
     if (name) dataToUpdate.name = name
     if (email) dataToUpdate.email = email

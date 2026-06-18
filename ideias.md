@@ -107,12 +107,13 @@
 
 ---
 
-## 🟡 SEG-010: PUT `/api/users/user-active` altera email/senha sem confirmação
+## 🟡 SEG-010: PUT `/api/users/user-active` altera email/senha sem confirmação ✅
 
 **Severidade:** 🟡 ALTO  
 **Local:** `src/app/api/users/user-active/route.ts`  
 **Problema:** PUT aceita alterar email e senha sem verificar a senha atual do usuário.  
-**Sugestão:** Exigir confirmação da senha atual para alterar email ou senha.
+**Sugestão:** Exigir confirmação da senha atual para alterar email ou senha.  
+**Status:** ✅ Corrigido — se email ou senha forem enviados, `currentPassword` é obrigatório. Validado via `bcrypt.compare()` com a senha armazenada no banco.
 
 ---
 
@@ -378,7 +379,7 @@
 | SEG-007 | Rate limit ausente em 28 rotas | 🔴 Grande | ✅ |
 | SEG-008 | Zod não usado nas rotas | 🟡 Médio | ✅ |
 | SEG-009 | DELETE CPF vulnerável | 🟢 Pequeno | ✅ |
-| SEG-010 | PUT user-active sem confirmação | 🟢 Pequeno | ❌ |
+| SEG-010 | PUT user-active sem confirmação | 🟢 Pequeno | ✅ |
 | ARQ-001 | Duplicação entre módulos | 🔴 Grande | ❌ |
 | ARQ-002 | Chat duplicado 3x | 🟡 Médio | ❌ |
 | ARQ-003 | Webhook26/27 duplicados | 🟡 Médio | ❌ |

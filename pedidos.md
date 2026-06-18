@@ -1,5 +1,11 @@
 # Pedidos e Solicitações do Usuário
 
+## SEG-010: PUT /api/users/user-active altera email/senha sem confirmação
+**Data:** 17/06/2026
+**Status:** ✅ Concluído
+**Commit:** (próximo commit)
+**Descrição:** PUT aceitava alterar email e senha sem verificar senha atual. Agora exige `currentPassword` no formData, validado via `bcrypt.compare()` contra a senha armazenada.
+
 ## SEG-009: DELETE /api/cpfs pode deletar CPF de outra empresa
 **Data:** 17/06/2026
 **Status:** ✅ Concluído
