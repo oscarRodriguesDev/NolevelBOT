@@ -9,7 +9,7 @@
 ## UX: Mensagens de erro do validateOrError agora mostram qual campo falhou
 **Data:** 18/06/2026
 **Status:** ✅ Concluído
-**Commit:** `pendente`
+**Commit:** `d8ce065`
 **Descrição:** `validateOrError()` retornava `"Dados inválidos"` genérico sem indicar qual campo. Agora inclui o nome do campo e o motivo no toast (ex: `"Dados inválidos — setor: Setor é obrigatório"`), facilitando o debug.
 
 ## SEG-010: PUT /api/users/user-active altera email/senha sem confirmação
