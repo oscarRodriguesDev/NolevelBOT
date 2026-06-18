@@ -118,3 +118,20 @@
 - `src/lib/useIA3.ts` deletado (orphan, único consumer era webhook26)
 - `src/app/api-docs/page.tsx`: entrada do webhook26 removida
 - 620 linhas eliminadas.
+
+## ARQ-004: Extrair lógica compartilhada dos webhooks para core
+**Data:** 17/06/2026
+**Status:** ✅ Concluído
+**Commit:** `e6d4f30`
+**Descrição:**
+- Criado `src/lib/webhook-core.ts` com 7 funções compartilhadas:
+  - `parseWebhookMessage()` — parsing unificado de mensagens Evolution API
+  - `rateLimited()` — rate limit padronizado
+  - `getOrCreateSession()` — sessão TTLMap com fallback
+  - `handleExit()` — handler "sair/en cerrar/cancelar"
+  - `processWebhookMedia()` — download + upload de mídia
+  - `saveSession()` — persistência de sessão
+  - `webhookError()` — error handler padronizado
+- `webhook27/route.ts`: ~60 linhas de boilerplate substituídas pelo core
+- `webhook-oficina/route.ts`: ~50 linhas de boilerplate substituídas; extraída `montarResumo()` para eliminar string de resumo duplicada 5x
+- Fluxo específico de transporte público (matrícula, ônibus, defeito por JSON, confirmação) mantido intacto
