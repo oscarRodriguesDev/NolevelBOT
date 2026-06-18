@@ -55,6 +55,30 @@
 - Mesma proteção aplicada em `/api/testes/login`
 **Commit:** `5ab2b9c`
 
+## ARQ-001: Eliminar duplicação entre módulos Corporativo, Oficina e Eventos
+**Data:** 17/06/2026
+**Status:** ✅ Concluído
+**Descrição:** Layout, header e páginas duplicados nos 3 módulos. Unificados em componentes compartilhados parametrizáveis.
+- `module-layout.tsx`: layout único com autorização por módulo
+- `module-header.tsx`: header compartilhado (antes 3 cópias idênticas)
+- `shared-avisos.tsx`, `shared-gestao-usuarios.tsx`, `shared-usuarios.tsx`, `shared-cpfs.tsx`: páginas compartilhadas
+- Cada página nos módulos virou wrapper de ~3 linhas
+- ~2.400 linhas de código duplicado eliminadas
+**Commit:** `fa0882e`
+
+## SEG-016: console.log expõe senhas + sistema de erros estruturado
+**Data:** 17/06/2026
+**Status:** ✅ Concluído
+**Descrição:**
+- Removidos 6 `console.log` em `nextauth.ts` que expunham senhas e resultados de comparação
+- `console.error` em `usedata.ts` substituídos por `captureError()` com código identificador
+- Criado `error-store.ts`: armazenamento em memória com TTL de 24h e códigos ERR-XXXXX
+- Criado `app-error.ts`: classe `AppError` e função `captureError`
+- Criada rota `/api/errors` (protegida para GOD)
+- Criada página `/god/erros` para consultar erros por código
+- Link "Erros" adicionado na sidebar do GOD
+**Commit:** `2662b04`
+
 # # atenção sempre que adcionar os pedido preciso que aponte o docido do commit que foi realizado
 
 ## PED-021: Análise completa do sistema + página pública de ideias
