@@ -515,6 +515,16 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 - `ideias.md`: SEG-008 marcado como ✅.
 - Build: ✅ sucesso.
 
+### Mudança: SEG-009 — DELETE /api/cpfs seguro contra concorrência
+**Autor:** Vibecode
+**Arquivos:** `src/app/api/cpfs/route.ts`, `ideias.md`
+**Data:** 17/06/2026
+**Descrição:**
+- `prisma.cpfs.delete({ where: { cpf } })` substituído por `prisma.cpfs.deleteMany({ where: { cpf, empresaId } })`.
+- Em cenários de concorrência (TOCTOU entre a verificação e a exclusão), a exclusão agora só afeta registros da mesma empresa.
+- `ideias.md`: SEG-009 marcado como ✅.
+- Build: ✅ sucesso.
+
 ### Mudança: Rebranding Nolevel → Skora (texto visível)
 **Autor:** Vibecode
 **Arquivos:** `src/app/layout.tsx`, `src/app/page.tsx`, `src/app/api-docs/page.tsx`, `src/app/components/sidebar.tsx`, `src/app/corporativo/(atendimento)/components/header.tsx`, `src/app/eventos/(atendimento)/components/header.tsx`, `src/app/oficina/(atendimento)/components/header.tsx`, `src/app/dashboard/page.tsx`, `src/lib/useIA.ts`, `src/lib/useIA2.ts`, `src/lib/useIA3.ts`

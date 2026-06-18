@@ -189,7 +189,7 @@ export async function DELETE(req: NextRequest) {
       )
     }
 
-    await prisma.cpfs.delete({ where: { cpf: cleanCpf } })
+    await prisma.cpfs.deleteMany({ where: { cpf: cleanCpf, empresaId } })
 
     return NextResponse.json({ message: "CPF deletado com sucesso" })
   } catch (error) {

@@ -97,12 +97,13 @@
 
 ---
 
-## 🟡 SEG-009: DELETE `/api/cpfs` pode deletar CPF de outra empresa
+## 🟡 SEG-009: DELETE `/api/cpfs` pode deletar CPF de outra empresa ✅
 
 **Severidade:** 🟡 ALTO  
-**Local:** `src/app/api/cpfs/route.ts` (linha 185)  
+**Local:** `src/app/api/cpfs/route.ts` (linha 192)  
 **Problema:** O DELETE primeiro verifica se `empresaId` confere, mas depois executa `prisma.cpfs.delete({ where: { cpf } })` sem garantir que o CPF pertence à empresa. Em cenários de concorrência, pode deletar CPF de outra empresa.  
-**Sugestão:** Usar `deleteMany({ where: { cpf, empresaId } })` em vez de `delete({ where: { cpf } })`.
+**Sugestão:** Usar `deleteMany({ where: { cpf, empresaId } })` em vez de `delete({ where: { cpf } })`.  
+**Status:** ✅ Corrigido — `delete()` substituído por `deleteMany()` com filtro `{ cpf, empresaId }`.
 
 ---
 
@@ -376,7 +377,7 @@
 | SEG-006 | Sessões em memória sem cleanup | 🟡 Médio | ✅ |
 | SEG-007 | Rate limit ausente em 28 rotas | 🔴 Grande | ✅ |
 | SEG-008 | Zod não usado nas rotas | 🟡 Médio | ✅ |
-| SEG-009 | DELETE CPF vulnerável | 🟢 Pequeno | ❌ |
+| SEG-009 | DELETE CPF vulnerável | 🟢 Pequeno | ✅ |
 | SEG-010 | PUT user-active sem confirmação | 🟢 Pequeno | ❌ |
 | ARQ-001 | Duplicação entre módulos | 🔴 Grande | ❌ |
 | ARQ-002 | Chat duplicado 3x | 🟡 Médio | ❌ |

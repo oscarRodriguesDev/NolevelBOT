@@ -1,8 +1,14 @@
 # Pedidos e Solicitações do Usuário
 
+## SEG-009: DELETE /api/cpfs pode deletar CPF de outra empresa
+**Data:** 17/06/2026
+**Status:** ✅ Concluído
+**Descrição:** `prisma.cpfs.delete({ where: { cpf } })` sem filtro de `empresaId` — em concorrência podia deletar CPF de outra empresa. Substituído por `prisma.cpfs.deleteMany({ where: { cpf, empresaId } })`.
+
 ## SEG-008: Nenhuma rota usa validação Zod em produção
 **Data:** 17/06/2026
 **Status:** ✅ Concluído
+**Commit:** `762bae9`
 **Descrição:** Schemas Zod já definidos em `validation.ts` mas nunca usados. Criado helper `validateOrError()` e aplicado em 7 rotas de API.
 **Schemas criados:** `sendFormSchema`, `createAvisoSchema`, `updateAvisoSchema`, `updateUserSchema`
 **Rotas com Zod:**
