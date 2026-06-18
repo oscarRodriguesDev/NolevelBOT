@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { applyRateLimit } from "@/lib/rate-limit";
+import { TTLMap } from "@/lib/ttl-map";
 import { FlowState, detectFileIntent, botIA3 } from "@/lib/useIA3";
 import type { UserSession } from "@/lib/useIA3";
 import {
@@ -35,7 +36,7 @@ type Webhook26Session = UserSession & {
   empresaId?: string;
 };
 
-const sessions = new Map<string, Webhook26Session>();
+const sessions = new TTLMap<string, Webhook26Session>(10 * 60 * 1000);
 const link = `${process.env.NEXT_PUBLIC_BASE_URL_WP}/chamado`;  
 
 export async function POST(req: NextRequest) {
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
     const lowerInput = userInput.toLowerCase();
     let session = sessions.get(number);
 
-    if (!session || Date.now() - session.lastInteraction > 1000 * 60 * 60 * 2) {
+    if (!session) {
       session = { state: FlowState.INICIO, lastInteraction: Date.now() };
       sessions.set(number, session);
     }

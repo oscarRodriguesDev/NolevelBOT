@@ -493,6 +493,17 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 - `ideias.md` atualizado com status dos itens de segurança concluídos (tabelas com coluna Status).
 - Build: ✅ sucesso.
 
+### Mudança: SEG-006 — TTLMap com cleanup de 10 min para sessions em memória
+**Autor:** Vibecode
+**Arquivos:** `src/lib/ttl-map.ts` (novo), `src/app/api/webhook26/route.ts`, `src/app/api/webhook27/route.ts`, `src/app/api/webhook-oficina/route.ts`, `src/app/api/webhook-leads/route.ts`, `src/app/api/chat/route.ts`, `src/app/api/chat-corporativo/route.ts`, `src/app/api/chat-operacional/route.ts`, `ideias.md`
+**Data:** 17/06/2026
+**Descrição:**
+- Criado `TTLMap` em `src/lib/ttl-map.ts`: wrapper de Map com TTL configurável (10 min), cleanup automático a cada 30s com `setInterval().unref()`.
+- Substituídos `new Map()` → `new TTLMap(10 * 60 * 1000)` nos 7 arquivos.
+- Removida verificação manual `Date.now() - session.lastInteraction > 2h` (agora automática).
+- `ideias.md`: SEG-006 marcado como ✅.
+- Build: ✅ sucesso.
+
 ### Mudança: Rebranding Nolevel → Skora (texto visível)
 **Autor:** Vibecode
 **Arquivos:** `src/app/layout.tsx`, `src/app/page.tsx`, `src/app/api-docs/page.tsx`, `src/app/components/sidebar.tsx`, `src/app/corporativo/(atendimento)/components/header.tsx`, `src/app/eventos/(atendimento)/components/header.tsx`, `src/app/oficina/(atendimento)/components/header.tsx`, `src/app/dashboard/page.tsx`, `src/lib/useIA.ts`, `src/lib/useIA2.ts`, `src/lib/useIA3.ts`

@@ -1,5 +1,13 @@
 # Pedidos e Solicitações do Usuário
 
+## SEG-006: Sessões em memória sem cleanup em 6 webhooks
+**Data:** 17/06/2026
+**Status:** ✅ Concluído
+**Descrição:** Criado `TTLMap` em `src/lib/ttl-map.ts` — wrapper de Map com TTL configurável (10 min) e cleanup automático a cada 30s. Substituídos os `new Map()` em 7 arquivos:
+- `webhook26`, `webhook27`, `webhook-oficina`, `webhook-leads` (webhooks)
+- `chat`, `chat-corporativo`, `chat-operacional` (chats web)
+- Removida a verificação manual de expiração de 2h (agora automática pelo TTLMap)
+
 ## SEG-004: `/api/quadro-avisos/mostrar-avisos` pública expõe avisos de todas as empresas
 **Data:** 17/06/2026
 **Status:** ✅ Concluído
@@ -7,6 +15,7 @@
 - CPF agora é obrigatório (retorna 400 se ausente)
 - Se CPF não encontrar empresa, retorna 404
 - Remove risco de exposição de dados internos de todas as empresas
+**Commit:** `92ca73d`
 
 ## SEG-001: Rota `/api/testes` permitia RCE público
 **Data:** 17/06/2026

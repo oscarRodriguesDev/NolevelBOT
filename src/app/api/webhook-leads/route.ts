@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { applyRateLimit } from "@/lib/rate-limit"
+import { TTLMap } from "@/lib/ttl-map"
 import OpenAI from "openai"
 import { prisma } from "@/lib/prisma"
 import { sendEvolutionText, saudacao, getMemoria, saveMemoria } from "@/lib/usedata"
@@ -24,7 +25,7 @@ type UserSession = {
   ultimoResumo?: string
 }
 
-const sessions = new Map<string, UserSession>()
+const sessions = new TTLMap<string, UserSession>(10 * 60 * 1000)
 const ESTANDE_NOME = 'NoLevel na ESX 2026'
 
 async function gerarRespostaInteligente(pergunta: string, nome: string, baseDeConhecimento: string, historico?: string, botName?: string): Promise<string> {
@@ -95,7 +96,7 @@ export async function POST(req: NextRequest) {
     const lowerInput = userInput.toLowerCase()
 
     let session = sessions.get(number)
-    if (!session || Date.now() - session.lastInteraction > 1000 * 60 * 60 * 2) {
+    if (!session) {
       session = { state: FlowState.AGUARDANDO_CPF, lastInteraction: Date.now() }
       sessions.set(number, session)
     }

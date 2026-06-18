@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { applyRateLimit } from "@/lib/rate-limit"
+import { TTLMap } from "@/lib/ttl-map"
 import { getSetores } from "@/lib/setores"
 import { botIA4 as botIA, FlowState, UserSession, detectFileIntent } from "@/lib/useIA4" 
 import { validarCpf, StatusChamado, enviarChamado, buscarAvisos, buscarAvisosPorCpf, generateRandomTicket } from "@/lib/usedata"
@@ -18,7 +19,7 @@ const statusLabels: Record<string, string> = {
   FECHADO: "🔒 Fechado",
 }
 
-const sessions = new Map<string, UserSession & { pendingState?: string; setorAtual?: string; modulo?: string }>()
+const sessions = new TTLMap<string, UserSession & { pendingState?: string; setorAtual?: string; modulo?: string }>(10 * 60 * 1000)
 
 export async function POST(req: NextRequest) {
   const rateLimit = applyRateLimit(req, "chat-corporativo", 30, 60 * 1000)
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
     const lowerInput = userInput.toLowerCase()
 
     let session = sessions.get(sessionId)
-    if (!session || (Date.now() - session.lastInteraction > 1000 * 60 * 60 * 2)) {
+    if (!session) {
       session = { state: FlowState.INICIO, lastInteraction: Date.now(), modulo: moduloRequisitado || undefined }
       sessions.set(sessionId, session)
     }

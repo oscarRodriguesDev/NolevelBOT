@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { applyRateLimit } from "@/lib/rate-limit";
+import { TTLMap } from "@/lib/ttl-map";
 import { sendEvolutionText, downloadEvolutionMedia, checkEmpresaModule } from "@/lib/usedata";
 import { uploadBuffer } from "@/lib/upload";
 import { getSetores } from "@/lib/setores";
@@ -30,7 +31,7 @@ type Session = {
   lastInteraction: number;
 };
 
-const sessions = new Map<string, Session>();
+const sessions = new TTLMap<string, Session>(10 * 60 * 1000);
 
 async function buscarAvisosEspecificos(
   empresaId: string,
@@ -138,7 +139,7 @@ export async function POST(req: NextRequest) {
 
     let session = sessions.get(number);
 
-    if (!session || Date.now() - session.lastInteraction > 1000 * 60 * 60 * 2) {
+    if (!session) {
       session = { state: FlowState.INICIO, lastInteraction: Date.now() };
       sessions.set(number, session);
     }

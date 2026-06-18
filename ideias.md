@@ -67,12 +67,13 @@
 
 ---
 
-## 🟡 SEG-006: Sessões em memória sem cleanup em 6 webhooks
+## 🟡 SEG-006: Sessões em memória sem cleanup em 6 webhooks ✅
 
 **Severidade:** 🟡 ALTO  
 **Local:** `src/app/api/webhook26/route.ts`, `webhook27/route.ts`, `webhook-oficina/route.ts`, `webhook-leads/route.ts`, `chat/route.ts`, `chat-corporativo/route.ts`, `chat-operacional/route.ts`  
 **Problema:** Todas usam `Map<string, Session>` em memória para manter estado da conversa. Sem expiração forçada, sem limite de tamanho — vazamento de memória garantido com o tempo.  
-**Sugestão:** Implementar TTL (ex: 30min de inatividade), limite máximo de sessões, ou usar um store externo (Redis).
+**Sugestão:** Implementar TTL (ex: 30min de inatividade), limite máximo de sessões, ou usar um store externo (Redis).  
+**Status:** ✅ Corrigido — Criado `TTLMap` em `src/lib/ttl-map.ts` com TTL de 10 minutos e cleanup automático a cada 30s. Aplicado nos 7 arquivos.
 
 ---
 
@@ -371,7 +372,7 @@
 ### 🟡 CURTO PRAZO (melhoria significativa)
 | ID | Título | Esforço | Status |
 |----|--------|---------|--------|
-| SEG-006 | Sessões em memória sem cleanup | 🟡 Médio | ❌ |
+| SEG-006 | Sessões em memória sem cleanup | 🟡 Médio | ✅ |
 | SEG-007 | Rate limit ausente em 28 rotas | 🔴 Grande | ✅ |
 | SEG-008 | Zod não usado nas rotas | 🟡 Médio | ❌ |
 | SEG-009 | DELETE CPF vulnerável | 🟢 Pequeno | ❌ |
