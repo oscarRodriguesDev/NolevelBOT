@@ -1,5 +1,11 @@
 # Pedidos e Solicitações do Usuário
 
+## FIX: Criação de ADMIN quebrada — setor vazio rejeitado pelo Zod
+**Data:** 18/06/2026
+**Status:** ✅ Concluído
+**Commit:** `841b1a4`
+**Descrição:** Ao criar um usuário ADMIN via GOD, o frontend enviava `setor = ""` (ADMIN não tem setor específico). A validação Zod `z.string().min(1)` rejeitava o valor vazio, resultando em erro `400 "Dados inválidos"`. Corrigido na API: se `finalRole === "ADMIN"` e `setor` for vazio, define `setor = "all"` antes da validação, seguindo a convenção do sistema onde ADMIN sem setor exibe "all".
+
 ## SEG-010: PUT /api/users/user-active altera email/senha sem confirmação
 **Data:** 17/06/2026
 **Status:** ✅ Concluído

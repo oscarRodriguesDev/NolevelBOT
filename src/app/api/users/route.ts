@@ -84,8 +84,12 @@ export async function POST(req: NextRequest) {
     const email = formData.get("email") as string
     const cpf = limparCPF(formData.get("cpf") as string || "")
     const password = formData.get("password") as string
-    const setor = formData.get("setor") as string
+    let setor = formData.get("setor") as string
     const file = formData.get("avatar") as File | null
+
+    if (finalRole === "ADMIN" && !setor) {
+      setor = "all"
+    }
 
     const parsed = validateOrError({ name, email, cpf, password, setor, empresaId: empresaID, role: finalRole }, createUserSchema)
     if (parsed instanceof NextResponse) return parsed

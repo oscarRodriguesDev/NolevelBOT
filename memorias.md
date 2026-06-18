@@ -424,6 +424,16 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 - **A4:** Rate limit para `/` (60 req/min/IP) e `/dashboard` (120 req/min/IP) via `Map` em memória no proxy (best-effort, funciona para instância única)
 - **A5:** Tracking de brute force por IP em acessos não autenticados a páginas protegidas (20 tentativas a cada 15 min por IP)
 
+### Mudança: Fix criação de ADMIN — setor vazio convertido para "all"
+**Autor:** Vibecode
+**Arquivos:** `src/app/api/users/route.ts`
+**Data:** 18/06/2026
+**Descrição:**
+- Quando um GOD cria um usuário ADMIN, o frontend envia `setor = ""` (ADMIN não tem setor específico).
+- A validação Zod (`z.string().min(1)`) rejeitava string vazia, resultando em erro `400 "Dados inválidos"`.
+- Adicionado guard: se `finalRole === "ADMIN"` e `setor` for vazio, define `setor = "all"` antes da validação.
+- Segue a convenção existente no sistema onde ADMIN sem setor exibe "all" na interface.
+
 ### Mudança: Suite de testes expandida (+34 testes, 169 total)
 **Autor:** Vibecode
 **Arquivos:** `src/__tests__/rate-limit.test.ts` (novo), `src/__tests__/audit-log.test.ts` (novo), `src/__tests__/smartSearch.test.ts` (novo), `src/__tests__/usedata.test.ts` (novo)
