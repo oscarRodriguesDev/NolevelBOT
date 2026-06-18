@@ -192,6 +192,7 @@
 **Local:** `src/app/api/chat/route.ts`, `src/app/api/chat-corporativo/route.ts`, `src/app/api/chat-operacional/route.ts`  
 **Problema:** Código copiado 3x com mudanças mínimas. Manutenção cara e propensa a erros.  
 **Sugestão:** Unificar em um único endpoint `/api/chat` com parâmetro de módulo.
+**Status:** ✅ Concluído — `src/lib/chat-handler.ts`, commit `579227c`
 
 ---
 
@@ -201,6 +202,7 @@
 **Local:** `src/app/api/webhook26/route.ts`, `src/app/api/webhook27/route.ts`  
 **Problema:** webhook27 é uma evolução de webhook26, mas ambos existem e são mantidos. Mais de 80% de código duplicado.  
 **Sugestão:** Manter apenas a versão mais recente (webhook27) e remover webhook26, ou refatorar com funções compartilhadas.
+**Status:** ✅ Concluído — webhook26 removido, useIA3.ts deletado (orphan), commit `HEAD`
 
 ---
 
@@ -388,8 +390,8 @@
 | SEG-010 | PUT user-active sem confirmação | 🟢 Pequeno | ✅ |
 | ARQ-001 | Duplicação entre módulos | 🔴 Grande | ✅ |
 | SEG-016 | console.log expõe senhas | 🟡 Médio | ✅ |
-| ARQ-002 | Chat duplicado 3x | 🟡 Médio | ❌ |
-| ARQ-003 | Webhook26/27 duplicados | 🟡 Médio | ❌ |
+| ARQ-002 | Chat duplicado 3x | 🟡 Médio | ✅ |
+| ARQ-003 | Webhook26/27 duplicados | 🟡 Médio | ✅ |
 
 ### ⚠️ MÉDIO PRAZO (qualidade e performance)
 | ID | Título | Esforço |

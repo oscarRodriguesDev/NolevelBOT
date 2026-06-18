@@ -544,3 +544,20 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 - Substituídas todas as ocorrências de "Nolevel" por "Skora" no texto visível da aplicação (títulos, headers, sidebar, login, fallbacks de nome de empresa nos webhooks).
 - Mantidas intactas: nomenclaturas de rotas, arquivos, pacotes, variáveis de ambiente, CI/CD e schema do Prisma.
 - Build: ✅ sucesso
+
+### Mudança: ARQ-002 — Chat handler unificado com preservação de particularidades
+**Autor:** Vibecode
+**Arquivos:** `src/lib/chat-handler.ts` (novo), `src/app/api/chat/route.ts`, `src/app/api/chat-corporativo/route.ts`, `src/app/api/chat-operacional/route.ts`
+**Data:** 17/06/2026
+**Descrição:**
+- Os 3 arquivos de chat (~413 linhas cada) compartilhavam ~95% do código, mas com diferenças críticas:
+  - **chat** (web): começa com `FlowState.IDENTIFICACAO_CPF`, instrução de motivo simples
+  - **chat-corporativo**: começa com `FlowState.INICIO`, instrução de motivo detalhada (AVISO_RESOLVE/PROSSEGUIR_FLUXO)
+  - **chat-operacional**: idêntico ao corporativo exceto pela chave de rate limit
+- Criado `src/lib/chat-handler.ts` com `handleChatRequest(req, config)` onde `ChatConfig` recebe as 3 diferenças:
+  - `rateLimitKey`: string
+  - `hasInicioFlow`: boolean
+  - `coletarMotivoInstruction?`: string opcional
+- Cada `route.ts` virou thin wrapper de ~7 linhas importando o handler
+- ~1.235 linhas eliminadas
+- Build: ✅ sucesso. Commit: `579227c`

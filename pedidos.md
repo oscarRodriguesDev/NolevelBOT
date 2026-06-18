@@ -98,3 +98,13 @@
   - Cards expansíveis com detalhes completos
   - Tema claro/escuro via CSS variables
 - `proxy.ts` — `/ideias` adicionado às rotas públicas
+
+## ARQ-002: Unificar 3 chats mantendo particularidades
+**Data:** 17/06/2026
+**Status:** ✅ Concluído
+**Commit:** `579227c`
+**Descrição:** Os 3 arquivos de chat (~413 linhas cada) com código quase idêntico. Criado `src/lib/chat-handler.ts` com `handleChatRequest(req, config)` e 3 thin wrappers. Particularidades preservadas:
+- **chat** (web): rate limit `"chat"`, sem `FlowState.INICIO`, instrução de motivo simples
+- **chat-corporativo**: rate limit `"chat-corporativo"`, com `FlowState.INICIO`, instrução de motivo detalhada (códigos AVISO_RESOLVE/PROSSEGUIR_FLUXO)
+- **chat-operacional**: rate limit `"chat-operacional"`, com `FlowState.INICIO`, instrução de motivo detalhada (idêntica ao corporativo)
+~1.235 linhas eliminadas.
