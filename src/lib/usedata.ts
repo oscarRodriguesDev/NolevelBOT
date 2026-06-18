@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { captureError } from "./app-error";
 
 const baseUrl = process.env.BASE_URL_WP||process.env.NEXT_PUBLIC_BASE_URL_WP;
 
@@ -114,7 +115,7 @@ export async function saveMemoria(cpf: string, nome: string, resumo: string) {
       headers: { "Content-Type": "application/json", "x-api-key": process.env.BOT_API_KEY || "" },
       body: JSON.stringify({ cpf, nome, resumo }),
     });
-  } catch { console.error("Erro ao salvar memória"); }
+  } catch { captureError("Erro ao salvar memória", "saveMemoria"); }
 }
 
 
@@ -153,7 +154,7 @@ export async function StatusChamado(filtro: string, _req?: Request) {
 
     return chamados;
   } catch (error) {
-    console.error("Erro ao buscar status do chamado:", error);
+    captureError(error, "StatusChamado");
     return [];
   }
 }
@@ -345,7 +346,7 @@ export async function validarCpf(cpf: string) {
     }
     return { valido: false };
   } catch (err) {
-    console.error("Erro ao validar CPF:", err);
+    captureError(err, "validarCpf");
     return { valido: false };
   }
 }
@@ -390,7 +391,7 @@ export async function getNomeBot(cpf: string) {
 
     return cpfData?.Empresa?.botName?.trim() || "Hevelyn";
   } catch (err) {
-    console.error("Erro ao obter nome do bot:", err);
+    captureError(err, "getNomeBot");
     return "Hevelyn";
   }
 }

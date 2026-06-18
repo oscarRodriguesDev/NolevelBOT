@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { LuMenu, LuX, LuTickets, LuBell, LuUsers, LuHouse, LuSettings, LuBuilding2, LuWrench, LuChevronDown, LuChevronRight, LuHeadphones, LuTruck, LuGlobe } from 'react-icons/lu'
+import { LuMenu, LuX, LuTickets, LuBell, LuUsers, LuHouse, LuSettings, LuBuilding2, LuWrench, LuChevronDown, LuChevronRight, LuHeadphones, LuTruck, LuGlobe, LuBug } from 'react-icons/lu'
 import { useSession } from 'next-auth/react'
 import { ROLE } from '@prisma/client'
 import packageJson from '../../../package.json'
@@ -104,6 +104,7 @@ export function Sidebar() {
         { label: 'Empresas', href: '/corporativo/empresa', icon: LuBuilding2, show: true },
         { label: 'Usuários', href: '/god/usuarios', icon: LuUsers, show: true },
         { label: 'Admins', href: '/god/admins', icon: LuSettings, show: true },
+        { label: 'Erros', href: '/god/erros', icon: LuBug, show: true },
       ],
     })
   }

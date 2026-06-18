@@ -162,12 +162,18 @@
 
 ---
 
-## 🟡 SEG-016: Número excessivo de `console.log` em produção
+## ~~🟡 SEG-016: Número excessivo de `console.log` em produção~~ ✅
 
 **Severidade:** 🟡 ALTO  
-**Local:** `src/lib/nextauth.ts` (6 logs), `src/lib/usedata.ts` (múltiplos console.error)  
-**Problema:** Logs expõem dados de autenticação no console (senhas, resultados de comparação) e informações internas. `console.error` usado como logging padrão.  
-**Sugestão:** Remover `console.log` que expõem senhas. Usar sistema de logging estruturado (winston/pino).
+**Local:** `src/lib/nextauth.ts`, `src/lib/usedata.ts`  
+**Problema:** Logs expunham dados de autenticação (senhas, resultados de comparação) e informações internas.  
+**Solução:** 
+- Removidos `console.log` que expunham senhas de nextauth.ts (6 logs removidos)
+- `console.error` substituídos por `captureError()` que gera código `ERR-XXXXX` e armazena em memória com TTL de 24h
+- Criado `error-store.ts` com store em memória + cleanup automático
+- Criado `app-error.ts` com classe `AppError` e função `captureError`
+- Criada página `/god/erros` (acesso GOD) para listar/consultar erros por código
+- Adicionado link "Erros" na sidebar do GOD
 
 ---
 
@@ -381,6 +387,7 @@
 | SEG-009 | DELETE CPF vulnerável | 🟢 Pequeno | ✅ |
 | SEG-010 | PUT user-active sem confirmação | 🟢 Pequeno | ✅ |
 | ARQ-001 | Duplicação entre módulos | 🔴 Grande | ✅ |
+| SEG-016 | console.log expõe senhas | 🟡 Médio | ✅ |
 | ARQ-002 | Chat duplicado 3x | 🟡 Médio | ❌ |
 | ARQ-003 | Webhook26/27 duplicados | 🟡 Médio | ❌ |
 
