@@ -216,21 +216,13 @@
 
 ---
 
-## 🟡 ARQ-005: Zod schemas definidos mas não utilizados
-
-**Severidade:** 🟡 ALTO  
-**Local:** `src/lib/validation.ts`  
-**Problema:** Schemas completos para criação de usuário, ticket, empresa, lead existem mas nunca são importados por nenhuma rota.  
-**Sugestão:** Começar a usar os schemas nas rotas — é o caminho mais rápido para validar inputs consistentemente.
-
----
-
 ## ⚡ PERF-001: Dashboard carrega dados sem paginação
 
 **Severidade:** ⚠️ MÉDIO  
 **Local:** `src/app/api/dashboards/route.ts`  
 **Problema:** Todas as queries de dashboard fazem `findMany()` sem limit/pagination. Com crescimento, vai degradar performance.  
 **Sugestão:** Usar `take` + `skip` ou `cursor-based pagination`, e agregar no banco.
+**Status:** ✅ Concluído — Adicionado filtro de período no `where` do Prisma (evita carregar registros fora do período selecionado) e `take: 10000` como rede de segurança. `inPeriodo()` removido (agora é filtro no banco). Commit `HEAD`
 
 ---
 
@@ -240,6 +232,7 @@
 **Local:** `src/app/components/sidebar.tsx` (linha 36-42)  
 **Problema:** Toda vez que a sidebar monta (navegação), faz fetch dos módulos da empresa. Sem cache.  
 **Sugestão:** Cachear resultado em sessionStorage ou estado global (React Context/Zustand).
+**Status:** ✅ Concluído — Cache via `sessionStorage` com chave `empresa_modulos_{empresaId}`. Fetch só ocorre se não houver cache. Commit `HEAD`
 
 ---
 
@@ -396,11 +389,10 @@
 | ARQ-004 | webhook-oficina + core compartilhado | 🟡 Médio | ✅ |
 
 ### ⚠️ MÉDIO PRAZO (qualidade e performance)
-| ID | Título | Esforço |
-|----|--------|---------|
-| SEG-014 | Dashboard sem paginação | 🟡 Médio |
-| PERF-001 | Dashboard processa na memória | 🟡 Médio |
-| PERF-002 | Sidebar recarrega módulos | 🟢 Pequeno |
+| ID | Título | Esforço | Status |
+|----|--------|---------|--------|
+| PERF-001 | Dashboard processa na memória | 🟡 Médio | ✅ |
+| PERF-002 | Sidebar recarrega módulos | 🟢 Pequeno | ✅ |
 | PERF-003 | Dynamic imports para libs pesadas | 🟢 Pequeno |
 | INFRA-001 | PhoneMap em JSON | 🟡 Médio |
 | INFRA-002 | Rate limit em memória | 🔴 Grande |

@@ -35,9 +35,18 @@ export function Sidebar() {
 
   useEffect(() => {
     if (!session?.user?.empresaId || userRole === "GOD") return
+    const cacheKey = `empresa_modulos_${session.user.empresaId}`
+    const cached = sessionStorage.getItem(cacheKey)
+    if (cached) {
+      try { setEmpresaModulos(JSON.parse(cached)); return } catch {}
+    }
     fetch(`/api/empresa?id=${session.user.empresaId}`)
       .then(r => r.json())
-      .then(data => setEmpresaModulos(data.modulos || []))
+      .then(data => {
+        const mods = data.modulos || []
+        setEmpresaModulos(mods)
+        sessionStorage.setItem(cacheKey, JSON.stringify(mods))
+      })
       .catch(() => {})
   }, [session, userRole])
 

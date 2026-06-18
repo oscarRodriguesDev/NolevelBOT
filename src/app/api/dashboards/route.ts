@@ -41,25 +41,25 @@ export async function GET(req: Request) {
     // helpers de filtro por periodo
     const now = new Date()
 
-    function inPeriodo(data: Date, p: string): boolean {
-      if (p === "dia") return data.toISOString().slice(0, 10) === now.toISOString().slice(0, 10)
-      if (p === "semana") {
-        const d = new Date(now); d.setDate(d.getDate() - 7)
-        return data >= d
-      }
-      if (p === "mes") {
-        return data.getMonth() === now.getMonth() && data.getFullYear() === now.getFullYear()
-      }
-      if (p === "ano") return data.getFullYear() === now.getFullYear()
-      return true
-    }
-
     function getMonthKey(d: Date) { return `${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}` }
 
-    const where = getTicketWhereClause(userRole, userSetor, empresaId)
+    function getPeriodDateRange(p: string): Date | null {
+      if (p === "dia") { const d = new Date(now); d.setHours(0,0,0,0); return d }
+      if (p === "semana") { const d = new Date(now); d.setDate(d.getDate() - 7); return d }
+      if (p === "mes") { return new Date(now.getFullYear(), now.getMonth(), 1) }
+      if (p === "ano") { return new Date(now.getFullYear(), 0, 1) }
+      return null
+    }
+
+    const dateFrom = getPeriodDateRange(periodo)
+    const where = {
+      ...getTicketWhereClause(userRole, userSetor, empresaId) as Record<string, unknown>,
+      ...(dateFrom ? { createdAt: { gte: dateFrom } } : {}),
+    }
 
     const chamados = await prisma.chamado.findMany({
-      where: where as Record<string, unknown>,
+      where,
+      take: 10000,
       select: {
         id: true,
         setor: true,
@@ -195,12 +195,13 @@ export async function GET(req: Request) {
     let ticketsEvitadosData: { descricao: string; createdAt: Date }[] = []
     try {
       ticketsEvitadosData = await prisma.tickets_evitados.findMany({
-        where: { empresaId },
+        where: { empresaId, ...(dateFrom ? { createdAt: { gte: dateFrom } } : {}) },
+        take: 10000,
         select: { descricao: true, createdAt: true },
       }) as { descricao: string; createdAt: Date }[]
     } catch { ticketsEvitadosData = [] }
 
-    const evitadosPeriodo = ticketsEvitadosData.filter((t) => inPeriodo(t.createdAt, periodo))
+    const evitadosPeriodo = ticketsEvitadosData
     const totalEvitados = evitadosPeriodo.length
     const taxaAutomacao = (totalGeral + totalEvitados) > 0
       ? Math.round((totalEvitados / (totalGeral + totalEvitados)) * 100) : 0
