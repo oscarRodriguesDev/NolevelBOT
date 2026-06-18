@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { createPortal } from "react-dom"
 import { Camera, X, Lock, User as UserIcon, Mail, Loader2 } from "lucide-react"
-import { useSession } from "next-auth/react"
+import { useSession, signOut } from "next-auth/react"
 import toast from "react-hot-toast"
 
 interface User {
@@ -111,6 +111,7 @@ export function UserProfileModal({ open, onClose }: Props) {
 
       // Se mudou a senha ou a API exigiu logout
       if (isChangingPassword || data?.logout) {
+        signOut({ redirect: false })
         window.location.href = "/login"
         return
       }

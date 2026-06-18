@@ -20,6 +20,7 @@ export default function RootLayoutClient({ children }: { children: ReactNode }) 
               borderRadius: "12px",
               padding: "12px 16px",
               fontSize: "14px",
+              zIndex: 99999,
             },
           }}
         />

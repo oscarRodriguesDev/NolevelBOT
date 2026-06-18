@@ -124,7 +124,7 @@ export const authOptions: NextAuthOptions = {
   },
   
   pages: {
-    signIn: '/login', // Redireciona para sua página customizada se houver erro
+    signIn: '/', // Redireciona para sua página customizada se houver erro
   },
   
   secret: process.env.NEXTAUTH_SECRET,
