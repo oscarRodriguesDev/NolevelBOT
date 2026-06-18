@@ -9,11 +9,15 @@ const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "application/pdf"]
 const ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "pdf"]
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 
-function getExtension(filename: string): string {
+export const ALLOWED_EXTENSIONS_LIST = ALLOWED_EXTENSIONS
+export const ALLOWED_MIME_TYPES_LIST = ALLOWED_MIME_TYPES
+export const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE
+
+export function getExtension(filename: string): string {
   return (filename.split(".").pop() || "").toLowerCase()
 }
 
-function validarArquivo({
+export function validarArquivo({
   extension,
   mimeType,
   size,

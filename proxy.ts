@@ -14,6 +14,10 @@ const publicRoutes = [
 ]
 
 const rateStore = new Map<string, { count: number; resetAt: number }>()
+setInterval(() => {
+  const now = Date.now()
+  for (const [key, rec] of rateStore) if (now > rec.resetAt) rateStore.delete(key)
+}, 60_000).unref()
 
 function checkRateLimit(key: string, maxRequests: number, windowMs: number): boolean {
   const now = Date.now()

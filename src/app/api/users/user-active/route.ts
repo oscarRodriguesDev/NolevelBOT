@@ -60,7 +60,7 @@ export async function GET() {
 
 
 export async function PUT(req: NextRequest) {
-  const rateLimit = applyRateLimit(req, "user-active", 20, 60 * 1000)
+  const rateLimit = await applyRateLimit(req, "user-active", 20, 60 * 1000)
   if (rateLimit) return rateLimit
   const logado = await getServerSession(authOptions)
 

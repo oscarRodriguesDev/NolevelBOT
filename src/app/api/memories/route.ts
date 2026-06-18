@@ -27,7 +27,7 @@ async function upsertResumoPersona(cpf: string, nome: string, resumo: string) {
 
 // Endpoint
 export async function GET(req: NextRequest) {
-  const rateLimit = applyRateLimit(req, "memories", 20, 60 * 1000)
+  const rateLimit = await applyRateLimit(req, "memories", 20, 60 * 1000)
   if (rateLimit) return rateLimit
 
   if (!validarBotApiKey(req)) {
@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const rateLimit = applyRateLimit(req, "memories", 20, 60 * 1000)
+  const rateLimit = await applyRateLimit(req, "memories", 20, 60 * 1000)
   if (rateLimit) return rateLimit
 
   if (!validarBotApiKey(req)) {

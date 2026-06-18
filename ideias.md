@@ -117,7 +117,7 @@
 
 ---
 
-## 🟡 SEG-011: CPF enumeration via múltiplos endpoints públicos
+## 🟢 SEG-011: CPF enumeration via múltiplos endpoints públicos
 
 **Severidade:** 🟡 ALTO  
 **Local:** `/api/leads-network` (GET por CPF), `/api/oficina/tickets` (GET por matrícula), `/api/cpfs/general_cpf` (GET por X-API-Key)  
@@ -126,9 +126,9 @@
 
 ---
 
-## 🟡 SEG-012: Turnstile opcional — bypass de segurança
+## 🟢 SEG-012: Turnstile opcional — bypass de segurança
 
-**Severidade:** 🟡 ALTO  
+**Severidade:** 🟢 RESOLVIDO  
 **Local:** `src/lib/nextauth.ts`, `src/lib/rate-limit.ts`  
 **Problema:** `verifyTurnstileToken()` retorna `true` se `TURNSTILE_SECRET_KEY` não estiver definida. Se o captcha não for configurado, a proteção contra brute force fica comprometida.  
 **Sugestão:** Tornar Turnstile obrigatório em produção, ou pelo menos logar um aviso no startup.
@@ -145,9 +145,9 @@
 
 ---
 
-## 🟡 SEG-014: Dashboard processa todos chamados na memória
+## 🟢 SEG-014: Dashboard processa todos chamados na memória
 
-**Severidade:** 🟡 ALTO  
+**Severidade:** 🟢 RESOLVIDO  
 **Local:** `src/app/api/dashboards/route.ts`  
 **Problema:** Carrega todos os chamados da empresa no servidor e processa manualmente (filtros, agrupamentos, estatísticas). Sem paginação — pode travar com milhões de chamados.  
 **Sugestão:** Usar agregações do Prisma/PostgreSQL (`groupBy`, `aggregate`, `count` com where) em vez de processar na memória.
@@ -237,79 +237,85 @@
 
 ---
 
-## ⚡ PERF-003: Grandes bibliotecas sem dynamic import
+## 🟢 PERF-003: Grandes bibliotecas sem dynamic import
 
-**Severidade:** ⚠️ MÉDIO  
+**Severidade:** 🟢 RESOLVIDO  
 **Local:** Vários dashboards  
 **Problema:** `recharts`, `framer-motion`, `jspdf`, `xlsx` são importados estaticamente em páginas, aumentando o bundle inicial.  
 **Sugestão:** Usar `next/dynamic` com `ssr: false` para recharts, jspdf, xlsx nas páginas de dashboard.
 
 ---
 
-## ⚡ PERF-004: Sessões de webhook sem cleanup
+## 🟢 PERF-004: Sessões de webhook sem cleanup
 
-**Severidade:** ⚠️ MÉDIO  
+**Severidade:** 🟢 RESOLVIDO  
 **Local:** Webhooks e rotas de chat  
 **Problema:** `Map<string, Session>` nunca é limpo. Sessões inativas acumulam para sempre.  
 **Sugestão:** Implementar `setInterval` para limpar sessões com mais de 2h de inatividade, ou usar LRU cache com limite de tamanho.
 
 ---
 
-## 🎨 UX-001: Módulo Eventos não tem kanban/all-tickets
+## ✅ UX-001: Módulo Eventos não tem kanban/all-tickets
 
 **Severidade:** ⚠️ MÉDIO  
 **Local:** `src/app/eventos/(atendimento)/`  
 **Problema:** Eventos não possui página de listagem/kanban de chamados como Corporativo e Oficina têm.  
-**Sugestão:** Criar `/eventos/(atendimento)/all-tickets` seguindo o mesmo padrão, ou redirecionar para o kanban existente.
+**Solução:** Criada página `all-tickets/page.tsx` com paginação (`page`/`limit`/`totalPages`), seguindo o padrão Corporativo.  
+**Status:** ✅ Resolvido
 
 ---
 
-## 🎨 UX-002: Label "Motoristas" no módulo Eventos
+## ✅ UX-002: Label "Motoristas" no módulo Eventos
 
 **Severidade:** 🔵 BAIXO  
 **Local:** `src/app/components/sidebar.tsx` (linha 87)  
 **Problema:** No módulo Eventos, a sidebar mostra "Colaboradores/Motoristas", mas eventos trata de leads, não motoristas.  
-**Sugestão:** Alterar para "Leads" ou "Contatos" no módulo Eventos.
+**Solução:** Label alterada de "Motoristas" para "Leads" no módulo Eventos.  
+**Status:** ✅ Resolvido
 
 ---
 
-## 🎨 UX-003: Ícone "Eventos" na sidebar é uma chave inglesa
+## ✅ UX-003: Ícone "Eventos" na sidebar é uma chave inglesa
 
 **Severidade:** 🔵 BAIXO  
 **Local:** `src/app/components/sidebar.tsx` (linha 81)  
 **Problema:** O módulo Eventos usa `LuWrench` (chave inglesa) como ícone — é o mesmo ícone do módulo Oficina.  
-**Sugestão:** Usar `LuCalendar` ou `LuCalendarCheck` para Eventos.
+**Solução:** Ícone alterado de `LuWrench` para `LuCalendarCheck`.  
+**Status:** ✅ Resolvido
 
 ---
 
-## 🎨 UX-004: Estado vazio não tratado nos dashboards
+## ✅ UX-004: Estado vazio não tratado nos dashboards
 
 **Severidade:** 🔵 BAIXO  
 **Local:** `src/app/*/(atendimento)/dashboards/page.tsx`  
 **Problema:** Quando não há dados, os gráficos podem mostrar componentes vazios ou quebrados.  
-**Sugestão:** Adicionar estado de "Nenhum dado disponível" com ilustração/emoji e mensagem amigável.
+**Solução:** Adicionado fallback amigável com emoji e "Nenhum dado disponível" nos dashboards de Eventos e Oficina quando `statusStats.length === 0`.  
+**Status:** ✅ Resolvido
 
 ---
 
-## 🎨 UX-005: Modais sem gerenciamento de foco
+## ✅ UX-005: Modais sem gerenciamento de foco
 
 **Severidade:** 🔵 BAIXO  
-**Local:** `src/app/components/modal-edit-user.tsx` e similares  
+**Local:** `src/app/*/(atendimento)/components/modal_tandimento.tsx`  
 **Problema:** Modais não gerenciam foco (focus trap), não fecham com Escape, não têm aria-labels. Acessibilidade comprometida.  
-**Sugestão:** Adicionar focus trap, fechamento com Escape, aria-modal, aria-labelledby.
+**Solução:** Adicionado focus trap (auto-foca primeiro elemento ao abrir, restaura foco ao fechar) em todos os 3 módulos. Escape e aria-modal/aria-labelledby já existiam.  
+**Status:** ✅ Resolvido
 
 ---
 
-## 🎨 UX-006: Not-found trata carregamento com spinner separado
+## ✅ UX-006: Not-found trata carregamento com spinner separado
 
 **Severidade:** 🔵 BAIXO  
 **Local:** `src/app/not-found.tsx`  
 **Problema:** A página 404 usa `useSession()` que pode estar carregando, mostrando um spinner. Uma página 404 deveria ser instantânea.  
-**Sugestão:** Usar `getSession` do lado do servidor (server component) ou cookies para determinar se usuário está logado, sem estado de loading.
+**Solução:** Removido `"use client"` e `useSession()`. Transformado em server component. Ambos os links ("Ir para o Login" e "Selecionar Módulo") são exibidos simultaneamente sem estado de loading.  
+**Status:** ✅ Resolvido
 
 ---
 
-## 🛠️ INFRA-001: PhoneMap em arquivo JSON no disco
+## 🟢 INFRA-001: PhoneMap em arquivo JSON no disco
 
 **Severidade:** ⚠️ MÉDIO  
 **Local:** `src/lib/phoneMap.ts`  
@@ -318,7 +324,7 @@
 
 ---
 
-## 🛠️ INFRA-002: Rate limiter em memória não funciona com múltiplas instâncias
+## 🟢 INFRA-002: Rate limiter em memória não funciona com múltiplas instâncias
 
 **Severidade:** ⚠️ MÉDIO  
 **Local:** `src/lib/rate-limit.ts`, `proxy.ts`  
@@ -327,7 +333,7 @@
 
 ---
 
-## 🛠️ INFRA-003: Nenhum sistema de cache
+## 🟢 INFRA-003: Nenhum sistema de cache
 
 **Severidade:** ⚠️ MÉDIO  
 **Local:** Sistema inteiro  
@@ -345,21 +351,23 @@
 
 ---
 
-## 🧪 TEST-001: Cobertura de testes insuficiente para funcionalidades críticas
+## ✅ TEST-001: Cobertura de testes insuficiente para funcionalidades críticas
 
 **Severidade:** ⚠️ MÉDIO  
 **Local:** `src/__tests__/`  
 **Problema:** Testes existem para rate-limit, audit-log, smartSearch, usedata, rbac, security, validation e phoneMap. Mas não há testes para: webhooks (os maiores arquivos), rotas de API (integração), componentes de UI, fluxos de autenticação.  
-**Sugestão:** Adicionar testes de integração para webhooks (com mocks da Evolution API e OpenAI), e testes de componente para as páginas principais.
+**Solução:** Criados `webhook-core.test.ts` (18 testes — parseWebhookMessage, handleExit, getOrCreateSession, saveSession, webhookError) e `useIA4.test.ts` (9 testes — FlowState, detectFileIntent, botIA4 fallback). Rate-limit tests migrados para mock do Prisma.  
+**Status:** ✅ Resolvido
 
 ---
 
-## 🧪 TEST-002: Testes de segurança precisam de expansão
+## ✅ TEST-002: Testes de segurança precisam de expansão
 
 **Severidade:** ⚠️ MÉDIO  
 **Local:** `src/__tests__/security.test.ts`  
 **Problema:** Testes de segurança existem mas podem não cobrir cenários de boundary, injeção, e bypass.  
-**Sugestão:** Expandir testes de segurança para incluir SQL injection attempts, XSS via campos de texto, path traversal em upload.
+**Solução:** Expandidos com 63 testes: SQL injection em schemas de formato específico (CPF, email — rejeitados) + campos de texto livre (aceitos, validade na camada de query Prisma/escape de output) + XSS (validado que Zod não bloqueia, prevenção na renderização) + path traversal em upload (25 testes).  
+**Status:** ✅ Resolvido
 
 ---
 
@@ -396,19 +404,21 @@
 | PERF-001 | Dashboard processa na memória | 🟡 Médio | ✅ |
 | PERF-002 | Sidebar recarrega módulos | 🟢 Pequeno | ✅ |
 | PERF-003 | Dynamic imports para libs pesadas | 🟢 Pequeno |
-| INFRA-001 | PhoneMap em JSON | 🟡 Médio |
-| INFRA-002 | Rate limit em memória | 🔴 Grande |
-| TEST-001 | Cobertura de testes webhooks | 🔴 Grande |
+| INFRA-001 | PhoneMap em JSON | 🟢 Resolvido |
+| INFRA-002 | Rate limit em memória | 🟢 Resolvido |
+| TEST-001 | Cobertura de testes webhooks | 🔴 Grande | ✅ |
+| TEST-002 | Expansão testes de segurança | 🟡 Médio | ✅ |
 
 ### 🔵 FUTURO (UX e refinamentos)
 | ID | Título | Esforço |
 |----|--------|---------|
-| UX-001 | Kanban para Eventos | 🟡 Médio |
-| UX-002 | Label "Motoristas" em Eventos | 🟢 Pequeno |
-| UX-003 | Ícone Eventos = chave inglesa | 🟢 Pequeno |
-| UX-004 | Estado vazio nos dashboards | 🟢 Pequeno |
-| UX-005 | Acessibilidade em modais | 🟡 Médio |
-| INFRA-003 | Sistema de cache (Redis) | 🔴 Grande |
+| UX-001 | Kanban para Eventos | 🟢 Resolvido |
+| UX-002 | Label "Motoristas" em Eventos | 🟢 Resolvido |
+| UX-003 | Ícone Eventos = chave inglesa | 🟢 Resolvido |
+| UX-004 | Estado vazio nos dashboards | 🟢 Resolvido |
+| UX-005 | Acessibilidade em modais | 🟢 Resolvido |
+| UX-006 | Loading spinner no 404 | 🟢 Resolvido |
+| INFRA-003 | Sistema de cache (PostgreSQL) | 🟢 Resolvido |
 | INFRA-004 | Variáveis de ambiente | 🟢 Pequeno |
 
 ---

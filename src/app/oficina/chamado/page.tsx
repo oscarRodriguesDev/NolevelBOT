@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { LuCheck, LuWrench, LuTruck, LuClipboardList, LuLoader, LuArrowRight, LuMegaphone } from 'react-icons/lu'
 import { ThemeToggle } from '../../components/theme-toggle'
 import { FileUpload } from '../../components/fileInput'
@@ -8,15 +8,24 @@ import toast from 'react-hot-toast'
 type TipoRegistro = 'defeito' | 'socorro' | 'sem_defeito' | null
 
 export default function ManutencaoPage() {
-  const hoje = new Date().toISOString().split('T')[0]
+  const [mounted, setMounted] = useState(false)
 
   const [formData, setFormData] = useState({
     nome: '',
     matricula: '',
-    data: hoje,
+    data: '',
     veiculo: '',
     discriminacao: '',
   })
+
+  useEffect(() => { setMounted(true) }, [])
+
+  useEffect(() => {
+    if (mounted) {
+      const hoje = new Date().toISOString().split('T')[0]
+      setFormData(prev => ({ ...prev, data: hoje }))
+    }
+  }, [mounted])
 
   const [tipoRegistro, setTipoRegistro] = useState<TipoRegistro>(null)
   const [file, setFile] = useState<File | null>(null)

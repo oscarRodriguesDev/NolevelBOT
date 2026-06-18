@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma"
 import { getSessionOrFail } from "@/util/permission"
 
 export async function GET(req: NextRequest) {
-  const rateLimit = applyRateLimit(req, "leads-network", 30, 60 * 1000)
+  const rateLimit = await applyRateLimit(req, "leads-network", 30, 60 * 1000)
   if (rateLimit) return rateLimit
   try {
     const { searchParams } = new URL(req.url)
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const rateLimit = applyRateLimit(req, "leads-network", 30, 60 * 1000)
+  const rateLimit = await applyRateLimit(req, "leads-network", 30, 60 * 1000)
   if (rateLimit) return rateLimit
   try {
     const body = await req.json()

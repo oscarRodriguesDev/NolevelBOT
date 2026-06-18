@@ -38,7 +38,7 @@ type Session = {
   lastInteraction: number;
 };
 
-const sessions = new TTLMap<string, Session>(10 * 60 * 1000);
+const sessions = new TTLMap<string, Session>(120 * 60 * 1000);
 
 async function buscarAvisosEspecificos(
   empresaId: string,
@@ -121,7 +121,7 @@ async function buscarAvisosDoVeiculo(
 }
 
 export async function POST(req: NextRequest) {
-  const rateLimit = rateLimited(req, "webhook-oficina")
+  const rateLimit = await rateLimited(req, "webhook-oficina")
   if (rateLimit) return rateLimit
 
   try {

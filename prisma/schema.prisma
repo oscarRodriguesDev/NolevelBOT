@@ -99,6 +99,7 @@ model cpfs {
   cpf       String   @unique
   empresaId String
   Empresa   empresa  @relation(fields: [empresaId], references: [id])
+  telefone  String?
   nome      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -198,4 +199,10 @@ model tickets_evitados{
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+}
+
+model cache {
+  key       String   @id
+  value     String
+  expiresAt DateTime
 }

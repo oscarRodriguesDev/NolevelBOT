@@ -1,5 +1,7 @@
 # MEMÓRIAS DO PROJETO — NolevelBOT
 
+# nas melhorias mapeadas- quando fizer não esquecer de colocar concluido na pagina
+
 ## Fluxo de Trabalho Colaborativo
 
 ### Regra de Ouro

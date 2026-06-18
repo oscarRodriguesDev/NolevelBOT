@@ -18,7 +18,7 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null
 
-        if (needsCaptcha(credentials.email)) {
+        if (await needsCaptcha(credentials.email)) {
           if (!credentials.turnstileToken) return null
           const valid = await verifyTurnstileToken(credentials.turnstileToken)
           if (!valid) return null
@@ -32,17 +32,17 @@ export const authOptions: NextAuthOptions = {
         })
 
         if (!user || !user.password) {
-          trackFailedLogin(credentials.email)
+          await trackFailedLogin(credentials.email)
           return null
         }
 
         const isValid = await compare(credentials.password, user.password)
         if (!isValid) {
-          trackFailedLogin(credentials.email)
+          await trackFailedLogin(credentials.email)
           return null
         }
 
-        resetFailedLogin(credentials.email)
+        await resetFailedLogin(credentials.email)
 
         const empresa = await prisma.empresa.findUnique({
           where: { id: user.empresaId },

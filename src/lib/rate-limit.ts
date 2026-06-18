@@ -1,56 +1,83 @@
-const store = new Map<string, { count: number; resetAt: number }>()
+import { prisma } from "@/lib/prisma"
+
+if (!process.env.TURNSTILE_SECRET_KEY) {
+  console.warn("⚠️  TURNSTILE_SECRET_KEY não definida — captcha desativado em produção! Defina em .env")
+}
 
 const LOGIN_WINDOW_MS = 60 * 60 * 1000
 const LOGIN_MAX_ATTEMPTS = 3
 
-export function checkRateLimit(
+async function getOrInitRecord(key: string, windowMs: number) {
+  const now = Date.now()
+  const row = await prisma.cache.findUnique({ where: { key } })
+  if (row && row.expiresAt.getTime() > now) {
+    return JSON.parse(row.value) as { count: number }
+  }
+  return null
+}
+
+async function setRecord(key: string, count: number, windowMs: number) {
+  const now = Date.now()
+  await prisma.cache.upsert({
+    where: { key },
+    update: { value: JSON.stringify({ count }), expiresAt: new Date(now + windowMs) },
+    create: { key, value: JSON.stringify({ count }), expiresAt: new Date(now + windowMs) },
+  })
+}
+
+export async function checkRateLimit(
   key: string,
   maxRequests: number,
   windowMs: number
-): { allowed: boolean; remaining: number; resetIn: number } {
+): Promise<{ allowed: boolean; remaining: number; resetIn: number }> {
   const now = Date.now()
-  const record = store.get(key)
+  const record = await getOrInitRecord(key, windowMs)
 
-  if (!record || now > record.resetAt) {
-    store.set(key, { count: 1, resetAt: now + windowMs })
+  if (!record) {
+    await setRecord(key, 1, windowMs)
     return { allowed: true, remaining: maxRequests - 1, resetIn: windowMs }
   }
 
   if (record.count >= maxRequests) {
-    return { allowed: false, remaining: 0, resetIn: record.resetAt - now }
+    const row = await prisma.cache.findUnique({ where: { key } })
+    const resetIn = row ? row.expiresAt.getTime() - now : windowMs
+    return { allowed: false, remaining: 0, resetIn }
   }
 
   record.count++
-  return { allowed: true, remaining: maxRequests - record.count, resetIn: record.resetAt - now }
+  await setRecord(key, record.count, windowMs)
+  return { allowed: true, remaining: maxRequests - record.count, resetIn: windowMs }
 }
 
-export function trackFailedLogin(email: string): number {
+export async function trackFailedLogin(email: string): Promise<number> {
   const key = `login:${email.toLowerCase()}`
-  const now = Date.now()
-  const record = store.get(key)
-  if (!record || now > record.resetAt) {
-    store.set(key, { count: 1, resetAt: now + LOGIN_WINDOW_MS })
+  const record = await getOrInitRecord(key, LOGIN_WINDOW_MS)
+
+  if (!record) {
+    await setRecord(key, 1, LOGIN_WINDOW_MS)
     return 1
   }
+
   record.count++
+  await setRecord(key, record.count, LOGIN_WINDOW_MS)
   return record.count
 }
 
-export function resetFailedLogin(email: string) {
-  store.delete(`login:${email.toLowerCase()}`)
+export async function resetFailedLogin(email: string) {
+  const key = `login:${email.toLowerCase()}`
+  await prisma.cache.delete({ where: { key } }).catch(() => {})
 }
 
-export function needsCaptcha(email: string): boolean {
+export async function needsCaptcha(email: string): Promise<boolean> {
   const key = `login:${email.toLowerCase()}`
-  const now = Date.now()
-  const record = store.get(key)
-  if (!record || now > record.resetAt) return false
+  const record = await getOrInitRecord(key, LOGIN_WINDOW_MS)
+  if (!record) return false
   return record.count >= LOGIN_MAX_ATTEMPTS
 }
 
 export async function verifyTurnstileToken(token: string): Promise<boolean> {
   const secret = process.env.TURNSTILE_SECRET_KEY
-  if (!secret) return true
+  if (!secret) return false
   try {
     const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
       method: "POST",
@@ -66,15 +93,15 @@ export async function verifyTurnstileToken(token: string): Promise<boolean> {
 
 import { NextResponse } from "next/server"
 
-export function applyRateLimit(
+export async function applyRateLimit(
   req: Request | null | undefined,
   prefix: string,
   maxRequests = 30,
   windowMs = 60000
-): NextResponse | null {
+): Promise<NextResponse | null> {
   if (!req) return null
   const ip = getClientIp(req)
-  const result = checkRateLimit(`${prefix}:${ip}`, maxRequests, windowMs)
+  const result = await checkRateLimit(`${prefix}:${ip}`, maxRequests, windowMs)
   if (!result.allowed) {
     return NextResponse.json(
       { error: "Muitas requisições. Tente novamente em instantes." },

@@ -19,7 +19,7 @@ const statusLabels: Record<string, string> = {
   FECHADO: "🔒 Fechado",
 }
 
-const sessions = new TTLMap<string, UserSession & { pendingState?: string; setorAtual?: string; modulo?: string }>(10 * 60 * 1000)
+const sessions = new TTLMap<string, UserSession & { pendingState?: string; setorAtual?: string; modulo?: string }>(120 * 60 * 1000)
 
 export interface ChatConfig {
   rateLimitKey: string
@@ -35,7 +35,7 @@ const detailedColetarMotivoInstruction = `Analise o motivo relatado e os avisos 
 NÃO responda a pergunta do usuário. NÃO liste chamados. NÃO converse. Apenas retorne o código.`
 
 export async function handleChatRequest(req: NextRequest, config: ChatConfig) {
-  const rateLimit = applyRateLimit(req, config.rateLimitKey, 30, 60 * 1000)
+  const rateLimit = await applyRateLimit(req, config.rateLimitKey, 30, 60 * 1000)
   if (rateLimit) return rateLimit
 
   try {

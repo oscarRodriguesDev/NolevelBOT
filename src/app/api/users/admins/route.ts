@@ -40,7 +40,7 @@ export async function GET() {
 }
 
 export async function PUT(req: NextRequest) {
-  const rateLimit = applyRateLimit(req, "users-admins", 20, 60 * 1000)
+  const rateLimit = await applyRateLimit(req, "users-admins", 20, 60 * 1000)
   if (rateLimit) return rateLimit
   const session = await getSessionOrFail(["GOD"])
   if (!session) {
@@ -102,7 +102,7 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const rateLimit = applyRateLimit(req, "users-admins", 15, 60 * 1000)
+  const rateLimit = await applyRateLimit(req, "users-admins", 15, 60 * 1000)
   if (rateLimit) return rateLimit
   const session = await getSessionOrFail(["GOD"])
   if (!session) {

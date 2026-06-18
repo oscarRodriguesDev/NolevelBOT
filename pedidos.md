@@ -153,3 +153,12 @@
 **Descrição:**
 - Cache via `sessionStorage` com chave `empresa_modulos_{empresaId}`
 - Fetch só ocorre se cache não existir
+
+## SEG-013: validarBotApiKey retorna true se BOT_API_KEY não definida
+**Data:** 17/06/2026
+**Status:** ✅ Concluído
+**Commit:** `a162595`
+**Descrição:**
+- Criado `src/lib/bot-auth.ts` com `validarBotApiKey()` — `if (!botApiKey) return false` (fail closed)
+- Removida função duplicada de `general_cpf/route.ts` e `memories/route.ts` (agora importam de bot-auth)
+- Se `BOT_API_KEY` não estiver configurada, requisições sem chave são rejeitadas (antes aceitas)

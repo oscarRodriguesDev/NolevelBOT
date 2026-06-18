@@ -76,7 +76,7 @@ export async function GET(request: Request) {
 
     if (cpf) {
       const ip = getClientIp(request)
-      const rateCheck = checkRateLimit(`empresa:cpf:${ip}`, 30, 60 * 1000)
+      const rateCheck = await checkRateLimit(`empresa:cpf:${ip}`, 30, 60 * 1000)
       if (!rateCheck.allowed) {
         return NextResponse.json({ error: "Muitas requisições deste IP" }, { status: 429 })
       }

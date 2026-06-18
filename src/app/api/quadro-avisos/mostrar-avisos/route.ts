@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { getEmpresaIdByCpf } from "@/lib/searchEmpresa"
 
 export async function GET(req: Request) {
-  const rateLimit = applyRateLimit(req, "mostrar-avisos", 30, 60 * 1000)
+  const rateLimit = await applyRateLimit(req, "mostrar-avisos", 30, 60 * 1000)
   if (rateLimit) return rateLimit
   try {
     const { searchParams } = new URL(req.url)

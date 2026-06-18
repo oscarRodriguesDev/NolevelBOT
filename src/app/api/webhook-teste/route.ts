@@ -5,7 +5,7 @@ const EVOLUTION_URL = "https://evolution.nolevel.hiskra.com.br";
 const INSTANCE = "bot";
 
 export async function POST(req: Request) {
-  const rateLimit = applyRateLimit(req, "webhook-teste", 60, 60 * 1000)
+  const rateLimit = await applyRateLimit(req, "webhook-teste", 60, 60 * 1000)
   if (rateLimit) return rateLimit
 
   try {

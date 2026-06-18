@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { LuMenu, LuX, LuTickets, LuBell, LuUsers, LuHouse, LuSettings, LuBuilding2, LuWrench, LuChevronDown, LuChevronRight, LuHeadphones, LuTruck, LuGlobe, LuBug } from 'react-icons/lu'
+import { LuMenu, LuX, LuTickets, LuBell, LuUsers, LuHouse, LuSettings, LuBuilding2, LuWrench, LuCalendarCheck, LuChevronDown, LuChevronRight, LuHeadphones, LuTruck, LuGlobe, LuBug } from 'react-icons/lu'
 import { useSession } from 'next-auth/react'
 import { ROLE } from '@prisma/client'
 import packageJson from '../../../package.json'
@@ -87,13 +87,13 @@ export function Sidebar() {
     {
       key: 'Eventos',
       label: 'Eventos',
-      icon: LuWrench,
+      icon: LuCalendarCheck,
       modulos: ['EVENTOS'],
       items: [
         { label: 'Dashboard', href: '/eventos/dashboards', icon: LuHouse, show: userRole !== "ATENDENTE" },
         { label: 'Solicitações', href: '/eventos/all-tickets', icon: LuTickets, show: true },
         { label: 'Avisos', href: '/eventos/avisos', icon: LuBell, show: true },
-        { label: 'Motoristas', href: '/eventos/cpfs', icon: LuTruck, show: true },
+        { label: 'Leads', href: '/eventos/cpfs', icon: LuTruck, show: true },
         { label: 'Usuários', href: '/eventos/usuarios', icon: LuUsers, show: isAdmin },
         { label: 'Criar Usuário', href: '/eventos/gestao-de-usuarios', icon: LuSettings, show: userRole !== "GOD" && isAdmin },
        

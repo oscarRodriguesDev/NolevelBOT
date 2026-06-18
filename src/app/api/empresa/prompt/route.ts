@@ -9,7 +9,7 @@ function getOpenAI(): OpenAI {
 }
 
 export async function GET(req: NextRequest) {
-  const rateLimit = applyRateLimit(req, "empresa-prompt", 30, 60 * 1000)
+  const rateLimit = await applyRateLimit(req, "empresa-prompt", 30, 60 * 1000)
   if (rateLimit) return rateLimit
   const { session, error } = await getServerSessionRBAC(["GOD"]);
   if (error) return error;
@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const rateLimit = applyRateLimit(req, "empresa-prompt", 20, 60 * 1000)
+  const rateLimit = await applyRateLimit(req, "empresa-prompt", 20, 60 * 1000)
   if (rateLimit) return rateLimit
   const { session, error } = await getServerSessionRBAC(["GOD"]);
   if (error) return error;
@@ -144,7 +144,7 @@ Regras:
 }
 
 export async function PUT(req: NextRequest) {
-  const rateLimit = applyRateLimit(req, "empresa-prompt", 20, 60 * 1000)
+  const rateLimit = await applyRateLimit(req, "empresa-prompt", 20, 60 * 1000)
   if (rateLimit) return rateLimit
   const { session, error } = await getServerSessionRBAC(["GOD"]);
   if (error) return error;
@@ -185,7 +185,7 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const rateLimit = applyRateLimit(req, "empresa-prompt", 15, 60 * 1000)
+  const rateLimit = await applyRateLimit(req, "empresa-prompt", 15, 60 * 1000)
   if (rateLimit) return rateLimit
   const { session, error } = await getServerSessionRBAC(["GOD"]);
   if (error) return error;

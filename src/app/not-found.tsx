@@ -1,12 +1,7 @@
-"use client"
-
-import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { ThemeToggle } from "@/app/components/theme-toggle"
 
 export default function NotFound() {
-  const { data: session, status } = useSession()
-
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4 transition-colors duration-300"
@@ -36,31 +31,22 @@ export default function NotFound() {
           A rota que você tentou acessar não existe ou foi removida.
         </p>
 
-        {status === "loading" ? (
-          <div className="flex justify-center pt-4">
-            <div className="animate-spin w-6 h-6 border-2 border-(--primary) border-t-transparent rounded-full" />
-          </div>
-        ) : session ? (
-          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
-            <Link
-              href="/dashboard"
-              className="px-6 py-3 rounded-xl font-bold text-white transition-all hover:brightness-110 hover:shadow-lg active:scale-95"
-              style={{ backgroundColor: "var(--primary)" }}
-            >
-              Selecionar Módulo
-            </Link>
-          </div>
-        ) : (
-          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
-            <Link
-              href="/"
-              className="px-6 py-3 rounded-xl font-bold text-white transition-all hover:brightness-110 hover:shadow-lg active:scale-95"
-              style={{ backgroundColor: "var(--primary)" }}
-            >
-              Ir para o Login
-            </Link>
-          </div>
-        )}
+        <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
+          <Link
+            href="/"
+            className="px-6 py-3 rounded-xl font-bold text-white transition-all hover:brightness-110 hover:shadow-lg active:scale-95"
+            style={{ backgroundColor: "var(--primary)" }}
+          >
+            Ir para o Login
+          </Link>
+          <Link
+            href="/dashboard"
+            className="px-6 py-3 rounded-xl font-bold border-2 transition-all hover:brightness-110 hover:shadow-lg active:scale-95"
+            style={{ borderColor: "var(--primary)", color: "var(--primary)" }}
+          >
+            Selecionar Módulo
+          </Link>
+        </div>
       </div>
     </div>
   )

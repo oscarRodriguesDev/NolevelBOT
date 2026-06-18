@@ -41,8 +41,8 @@ export function parseWebhookMessage(body: any): WebhookMessage | null {
   }
 }
 
-export function rateLimited(req: NextRequest, key: string): NextResponse | null {
-  return applyRateLimit(req, key, 60, 60 * 1000)
+export async function rateLimited(req: NextRequest, key: string): Promise<NextResponse | null> {
+  return await applyRateLimit(req, key, 60, 60 * 1000)
 }
 
 export function getOrCreateSession<T extends { state: string; lastInteraction: number }>(
@@ -56,6 +56,7 @@ export function getOrCreateSession<T extends { state: string; lastInteraction: n
     sessions.set(key, session)
   }
   session.lastInteraction = Date.now()
+  sessions.set(key, session)
   return session
 }
 

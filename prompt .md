@@ -57,6 +57,8 @@ Ao receber minha confirmação para codificar, siga este processo:
 - No arquivo pedidos.md preciso que atualize sempre os pedidos e solicitações do usuario, para ficar registrado o que ele pediu que fosse feito
 e coloque a identificaão unica do commit para que seja possivel restaurar quando necessario
 
+- para cada pedido finalizado, verifique os testes e caso não cubra as novas implementações, implemente o teste para essa nova funcionalidade, se for o caso
+
 - para cada pedido registrado se necessario crie um topico no arquivo ideias.md, que pode ser sugestoes ou ideas para melhorar ainda mais o sistema, para ficar de facil identificação, gere um codigo para cada solicitação ou pedido do usuario e use o mesmo codigo para identificar sua ideia no arquivo ideias.md
 
 # ignore as anotações abaixo

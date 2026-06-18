@@ -2,22 +2,10 @@
 
 import { useEffect, useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  LineChart,
-  Line,
-  CartesianGrid,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts"
-import jsPDF from "jspdf"
+import dynamic from "next/dynamic"
 import { useHeader } from "../layout"
+
+const Charts = dynamic(() => import("./_charts").then((m) => m.Charts), { ssr: false })
 
 interface StatItem {
   setor?: string;
@@ -35,15 +23,6 @@ interface Lead {
   telefone: string;
   empresa?: string;
   createdAt: string;
-}
-
-const STATUS_CORES: Record<string, string> = {
-  NOVO: "var(--status-new)",
-  EM_ATENDIMENTO: "var(--status-in-progress)",
-  AGUARDANDO: "var(--status-waiting)",
-  CONCLUIDO: "var(--status-completed)",
-  CANCELADO: "var(--status-cancelled)",
-  FECHADO: "var(--status-completed)",
 }
 
 export default function Dashboard() {
@@ -193,7 +172,8 @@ export default function Dashboard() {
     URL.revokeObjectURL(url)
   }
 
-  function downloadPDF() {
+  async function downloadPDF() {
+    const jsPDF = (await import("jspdf")).default
     const pdf = new jsPDF()
     let y = 20
     const pageHeight = 280
@@ -376,62 +356,32 @@ export default function Dashboard() {
           />
         </div>
 
-        <div className="lg:col-span-4 bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
-          <h2 className="text-xs font-black uppercase tracking-[0.2em] mb-6 opacity-70">Status</h2>
-          <div className="h-[260px]">
-            {isLoading ? (
-              <div className="w-full h-full flex items-center justify-center opacity-20 font-black text-xs tracking-widest">
-                CARREGANDO...
-              </div>
-            ) : statusStats.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={statusStats.map((s) => ({ ...s, name: s.status }))}
-                    dataKey="total"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={55}
-                    outerRadius={90}
-                    paddingAngle={3}
-                  >
-                    {statusStats.map((s) => (
-                      <Cell
-                        key={s.status}
-                        fill={STATUS_CORES[s.status || ""] || "var(--primary)"}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "var(--surface)",
-                      border: "1px solid var(--border-subtle)",
-                      borderRadius: "12px",
-                      fontSize: "12px",
-                      fontWeight: "bold",
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="w-full h-full flex items-center justify-center opacity-30 font-bold uppercase text-xs tracking-widest">
-                Sem dados
-              </div>
-            )}
-          </div>
-          <div className="flex flex-wrap justify-center gap-3 mt-4">
-            {statusStats.map((s) => (
-              <div key={s.status} className="flex items-center gap-1.5 text-[10px] font-bold">
-                <div
-                  className="w-2.5 h-2.5 rounded-full"
-                  style={{ backgroundColor: STATUS_CORES[s.status || ""] || "var(--primary)" }}
-                />
-                {s.status}: {s.total}
+        {!isLoading && statusStats.length > 0 && (
+          <Charts
+            statusStats={statusStats}
+            chamadosPorSetor={chamadosPorSetor}
+            chamadosPeriodo={chamadosPeriodo}
+            leadsPorMes={leadsPorMes}
+          />
+        )}
+
+        {isLoading && (
+          <>
+            {[1,2,3,4].map((i) => (
+              <div key={i} className="lg:col-span-4 bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
+                <div className="w-full h-[260px] flex items-center justify-center opacity-20 font-black text-xs tracking-widest">CARREGANDO...</div>
               </div>
             ))}
+          </>
+        )}
+
+        {!isLoading && statusStats.length === 0 && (
+          <div className="lg:col-span-12 flex flex-col items-center justify-center py-20 space-y-4 bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] shadow-sm">
+            <div className="text-6xl">📊</div>
+            <p className="text-lg font-bold opacity-60">Nenhum dado disponível</p>
+            <p className="text-sm opacity-40">Não há registros no período selecionado para exibir nos gráficos.</p>
           </div>
-        </div>
+        )}
 
         <div className="lg:col-span-4 bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
           <div className="flex justify-between items-center mb-6">
@@ -450,140 +400,6 @@ export default function Dashboard() {
               <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "var(--status-completed)" }} />
               Baseado em chamados concluidos
             </div>
-          </div>
-        </div>
-
-        <div className="lg:col-span-4 bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xs font-black uppercase tracking-[0.2em] opacity-70">Leads no Periodo</h2>
-          </div>
-          <div className="h-[200px]">
-            {leadsLoading ? (
-              <div className="w-full h-full flex items-center justify-center opacity-20 font-black text-xs tracking-widest">
-                CARREGANDO...
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={leadsPorMes}>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    vertical={false}
-                    stroke="var(--border-subtle)"
-                    opacity={0.5}
-                  />
-                  <XAxis
-                    dataKey="periodo"
-                    axisLine={false}
-                    tickLine={false}
-                    fontSize={10}
-                    opacity={0.5}
-                  />
-                  <YAxis axisLine={false} tickLine={false} fontSize={10} opacity={0.5} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "var(--surface)",
-                      border: "1px solid var(--border-subtle)",
-                      borderRadius: "12px",
-                    }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="total"
-                    stroke="var(--primary)"
-                    strokeWidth={3}
-                    dot={{ r: 4, fill: "var(--primary)", strokeWidth: 2, stroke: "var(--surface)" }}
-                    activeDot={{ r: 6, strokeWidth: 0 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </div>
-
-        <div className="lg:col-span-6 bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
-          <h2 className="text-xs font-black uppercase tracking-[0.2em] mb-6 opacity-70">
-            Chamados por Setor
-          </h2>
-          <div className="h-[280px]">
-            {isLoading ? (
-              <div className="w-full h-full flex items-center justify-center opacity-20 font-black text-xs tracking-widest">
-                CARREGANDO...
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chamadosPorSetor}>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    vertical={false}
-                    stroke="var(--border-subtle)"
-                    opacity={0.5}
-                  />
-                  <XAxis
-                    dataKey="setor"
-                    axisLine={false}
-                    tickLine={false}
-                    fontSize={10}
-                    fontWeight="bold"
-                    opacity={0.5}
-                    dy={10}
-                  />
-                  <YAxis axisLine={false} tickLine={false} fontSize={10} opacity={0.5} />
-                  <Tooltip
-                    cursor={{ fill: "var(--background)", opacity: 0.4 }}
-                    contentStyle={{
-                      backgroundColor: "var(--surface)",
-                      border: "1px solid var(--border-subtle)",
-                      borderRadius: "12px",
-                      fontSize: "12px",
-                      fontWeight: "bold",
-                    }}
-                  />
-                  <Bar dataKey="total" fill="var(--primary)" radius={[6, 6, 0, 0]} barSize={32} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </div>
-
-        <div className="lg:col-span-6 bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
-          <h2 className="text-xs font-black uppercase tracking-[0.2em] mb-6 opacity-70">
-            Evolucao Temporal
-          </h2>
-          <div className="h-[280px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chamadosPeriodo}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  vertical={false}
-                  stroke="var(--border-subtle)"
-                  opacity={0.5}
-                />
-                <XAxis
-                  dataKey="periodo"
-                  axisLine={false}
-                  tickLine={false}
-                  fontSize={10}
-                  fontWeight="bold"
-                  opacity={0.5}
-                />
-                <YAxis axisLine={false} tickLine={false} fontSize={10} opacity={0.5} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "var(--surface)",
-                    border: "1px solid var(--border-subtle)",
-                    borderRadius: "12px",
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="total"
-                  stroke="var(--primary)"
-                  strokeWidth={4}
-                  dot={{ r: 4, fill: "var(--primary)", strokeWidth: 2, stroke: "var(--surface)" }}
-                  activeDot={{ r: 6, strokeWidth: 0 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
           </div>
         </div>
 

@@ -21,10 +21,15 @@ type Chamado = {
   atendente?: { name: string }
 }
 
+const LIMIT = 20
+
 export default function TicketsPage() {
   const [tickets, setTickets] = useState<Chamado[]>([])
   const [loading, setLoading] = useState(false)
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list')
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
 
   const [filters, setFilters] = useState({
     nome: "",
@@ -53,39 +58,44 @@ export default function TicketsPage() {
     fetchTickets(filters)
   }
 
-  // Função de busca principal
+  const updateFilter = (key: string, value: string) => {
+    setFilters(prev => ({ ...prev, [key]: value }))
+    if (page !== 1) setPage(1)
+  }
+
   const fetchTickets = useCallback(async (currentFilters: typeof filters) => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
-      
+
       Object.entries(currentFilters).forEach(([key, value]) => {
         if (value && value.trim() !== "") {
           params.append(key, key === 'status' ? value.trim() : value.trim().toLowerCase())
         }
       })
+      params.append("page", String(page))
+      params.append("limit", String(LIMIT))
 
       const response = await fetch(`/api/tickets?${params.toString()}`)
       if (!response.ok) throw new Error("Erro ao buscar chamados")
 
       const data = await response.json()
-      setTickets(data)
+      setTickets(data.result?.data || data.data || [])
+      setTotal(data.total || data.result?.total || 0)
+      setTotalPages(data.totalPages || data.result?.totalPages || 0)
     } catch (error) {
       console.error("Erro na busca:", error)
       setTickets([])
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [page])
 
-  // EFEITO DE ATUALIZAÇÃO AUTOMÁTICA COM DEBOUNCE
   useEffect(() => {
-    // Define um atraso de 500ms antes de disparar a busca
     const delayDebounceFn = setTimeout(() => {
       fetchTickets(filters)
     }, 500)
 
-    // Limpa o timeout se o usuário digitar algo antes dos 500ms acabarem
     return () => clearTimeout(delayDebounceFn)
   }, [filters, fetchTickets])
 
@@ -100,6 +110,7 @@ export default function TicketsPage() {
       startDate: "",
       endDate: ""
     })
+    if (page !== 1) setPage(1)
   }
 
   const abrirModal = (ticket: string) => {
@@ -116,8 +127,6 @@ export default function TicketsPage() {
   const handleConcluido = (ticket: string) => {
     setTickets(prev => prev.filter(t => t.ticket !== ticket))
   }
-
-
 
   return (
     <div className="py-10 px-4 transition-colors duration-300" style={{ backgroundColor: "var(--background)", color: "var(--foreground)" }}>
@@ -166,21 +175,21 @@ export default function TicketsPage() {
             <input
               placeholder="Filtrar por nome..."
               value={filters.nome}
-              onChange={e => setFilters({ ...filters, nome: e.target.value })}
+              onChange={e => updateFilter("nome", e.target.value)}
               className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
               style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
             />
             <input
               placeholder="Número do Ticket"
               value={filters.ticket}
-              onChange={e => setFilters({ ...filters, ticket: e.target.value })}
+              onChange={e => updateFilter("ticket", e.target.value)}
               className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
               style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
             />
             
             <select
               value={filters.prioridade}
-              onChange={e => setFilters({ ...filters, prioridade: e.target.value })}
+              onChange={e => updateFilter("prioridade", e.target.value)}
               className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)]"
               style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
             >
@@ -192,7 +201,7 @@ export default function TicketsPage() {
 
             <select
               value={filters.status}
-              onChange={e => setFilters({ ...filters, status: e.target.value })}
+              onChange={e => updateFilter("status", e.target.value)}
               className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)]"
               style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
             >
@@ -256,6 +265,33 @@ export default function TicketsPage() {
                 )}
               </tbody>
             </table>
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-4 py-3 border-t" style={{ borderColor: "var(--border-subtle)" }}>
+                <span className="text-xs opacity-50">
+                  {total} registro(s) — Página {page} de {totalPages}
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={page <= 1}
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    className="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all disabled:opacity-30 hover:bg-[var(--surface-elevated)]"
+                    style={{ color: "var(--foreground)" }}
+                  >
+                    Anterior
+                  </button>
+                  <button
+                    type="button"
+                    disabled={page >= totalPages}
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    className="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all disabled:opacity-30 hover:bg-[var(--surface-elevated)]"
+                    style={{ color: "var(--foreground)" }}
+                  >
+                    Próximo
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <KanbanBoard

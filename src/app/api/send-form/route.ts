@@ -4,7 +4,7 @@ import { validateOrError } from "@/lib/validate"
 import { sendFormSchema } from "@/lib/validation"
 
 export async function POST(req: NextRequest) {
-  const rateLimit = applyRateLimit(req, "send-form", 5, 60 * 1000)
+  const rateLimit = await applyRateLimit(req, "send-form", 5, 60 * 1000)
   if (rateLimit) return rateLimit
   try {
     const body = await req.json()

@@ -43,11 +43,11 @@ type Webhook27Session = UserSession & {
   pendingState?: string;
 };
 
-const sessions = new TTLMap<string, Webhook27Session>(10 * 60 * 1000);
+const sessions = new TTLMap<string, Webhook27Session>(120 * 60 * 1000);
 const link = `${process.env.NEXT_PUBLIC_BASE_URL_WP}/chamado`; 
 
 export async function POST(req: NextRequest) {
-  const rateLimit = rateLimited(req, "webhook27")
+  const rateLimit = await rateLimited(req, "webhook27")
   if (rateLimit) return rateLimit
 
   try {
@@ -141,6 +141,37 @@ export async function POST(req: NextRequest) {
           }
 
           registerPhone(cleanCPF, number, instance);
+
+          // Verificar vínculo de telefone
+          const { prisma } = await import("@/lib/prisma");
+          const cpfRecord = await prisma.cpfs.findUnique({
+            where: { cpf: cleanCPF },
+            select: { telefone: true },
+          });
+
+          const currentNumber = number.includes("@") ? number.split("@")[0].replace("+", "") : number.replace("+", "");
+          const currentTelefone = currentNumber.replace(/\D/g, "");
+
+          if (!cpfRecord?.telefone) {
+            await sendEvolutionText(
+              instance,
+              number,
+              `Olá, ${resCpf.nome}! Seu CPF foi validado com sucesso ✅\n\nDeseja vincular este número de WhatsApp (${number}) ao seu CPF para facilitar futuros contatos? Responda *SIM* ou *NÃO*.`
+            );
+            session.state = FlowState.VINCULAR_TELEFONE;
+            break;
+          }
+
+          if (cpfRecord.telefone !== currentTelefone) {
+            await sendEvolutionText(
+              instance,
+              number,
+              `Olá, ${resCpf.nome}! Seu CPF foi validado com sucesso ✅\n\nSeu número vinculado atual é ${cpfRecord.telefone}. Deseja substituir pelo novo número (${number})? Responda *SIM* ou *NÃO*.`
+            );
+            session.state = FlowState.VINCULAR_TELEFONE;
+            break;
+          }
+
           avisos = await buscarAvisosPorCpf(cleanCPF);
 
           if (avisos && !avisos.includes("Sem avisos")) {
@@ -163,6 +194,39 @@ export async function POST(req: NextRequest) {
           }
         } else {
           await sendEvolutionText(instance, number, "Esse CPF não está cadastrado no sistema. Pode verificar e tentar de novo?");
+        }
+        break;
+      }
+
+      case FlowState.VINCULAR_TELEFONE: {
+        if (lowerInput.includes("sim")) {
+          const { prisma } = await import("@/lib/prisma");
+          const currentNumber = number.includes("@") ? number.split("@")[0].replace("+", "") : number.replace("+", "");
+          const currentTelefone = currentNumber.replace(/\D/g, "");
+          await prisma.cpfs.update({
+            where: { cpf: session.cpf },
+            data: { telefone: currentTelefone },
+          });
+          await sendEvolutionText(instance, number, "✅ Número vinculado com sucesso ao seu CPF!");
+        } else {
+          await sendEvolutionText(instance, number, "Tudo bem, pode continuar normalmente!");
+        }
+
+        avisos = await buscarAvisosPorCpf(session.cpf || "");
+        if (avisos && !avisos.includes("Sem avisos")) {
+          const instrucaoAviso = session.nome
+            ? `CPF validado. Nome: ${session.nome}. Existe um aviso importante específico para você:\n${avisos}\n\nAção OBRIGATÓRIA: Apresente-se com SEU NOME e o NOME DA SUA EMPRESA. Em seguida, informe o aviso de forma HUMANIZADA e ACOLHEDORA. Depois, apresente as opções: ${menuString}. Tudo em uma única mensagem.`
+            : `CPF encontrado. Existe um aviso importante:\n${avisos}\n\nAção OBRIGATÓRIA: Apresente-se com SEU NOME e o NOME DA SUA EMPRESA. Em seguida, informe o aviso de forma HUMANIZADA e ACOLHEDORA. Depois, pergunte educadamente como o usuário gostaria de ser chamado. Tudo em uma única mensagem.`;
+          const apresentacao = await botIA(session, userInput, instrucaoAviso, avisos);
+          await sendEvolutionText(instance, number, apresentacao);
+          session.state = session.nome ? FlowState.MENU_PRINCIPAL : FlowState.IDENTIFICACAO_NOME;
+        } else {
+          const instrucao = session.nome
+            ? `CPF validado. O nome do usuário é ${session.nome}. OBRIGATÓRIO: Agora você deve se apresentar com o SEU NOME e o NOME DA SUA EMPRESA. Depois, saude o usuário e apresente as opções: ${menuString} Responda com o numero da sua opção`
+            : `CPF encontrado. OBRIGATÓRIO: Agora você deve se apresentar com o SEU NOME e o NOME DA SUA EMPRESA. Depois, pergunte como o usuário gostaria de ser chamado.`;
+          const resposta = await botIA(session, userInput, instrucao, avisos);
+          await sendEvolutionText(instance, number, resposta);
+          session.state = session.nome ? FlowState.MENU_PRINCIPAL : FlowState.IDENTIFICACAO_NOME;
         }
         break;
       }

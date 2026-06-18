@@ -70,7 +70,7 @@ function sanitizar(valor: string, maxLength = 500): string {
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req)
-    const rateCheck = checkRateLimit(`tickets:${ip}`, 3, 60 * 60 * 1000)
+    const rateCheck = await checkRateLimit(`tickets:${ip}`, 3, 60 * 60 * 1000)
     if (!rateCheck.allowed) {
       return NextResponse.json(
         { error: "Muitas solicitações deste IP. Aguarde antes de tentar novamente." },

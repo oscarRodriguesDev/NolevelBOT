@@ -34,7 +34,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const rateLimit = applyRateLimit(req, "userFacil", 20, 60 * 1000)
+  const rateLimit = await applyRateLimit(req, "userFacil", 20, 60 * 1000)
   if (rateLimit) return rateLimit
   const session = await getSessionOrFail(["GOD"])
   if (!session) {

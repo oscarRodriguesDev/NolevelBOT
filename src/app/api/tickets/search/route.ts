@@ -11,7 +11,7 @@ import { normalizarStatus } from '@/types/chamado'
 import { ROLE } from '@prisma/client'
 
 export async function POST(req: NextRequest) {
-  const rateLimit = applyRateLimit(req, "tickets-search", 10, 60 * 1000)
+  const rateLimit = await applyRateLimit(req, "tickets-search", 10, 60 * 1000)
   if (rateLimit) return rateLimit
   try {
     const formData = await req.formData()
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  const rateLimit = applyRateLimit(req, "tickets-search", 30, 60 * 1000)
+  const rateLimit = await applyRateLimit(req, "tickets-search", 30, 60 * 1000)
   if (rateLimit) return rateLimit
   try {
     const { searchParams } = new URL(req.url)
@@ -133,7 +133,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const rateLimit = applyRateLimit(req, "tickets-search", 20, 60 * 1000)
+  const rateLimit = await applyRateLimit(req, "tickets-search", 20, 60 * 1000)
   if (rateLimit) return rateLimit
   const session = await getSessionOrFail()
   if (!session) {
@@ -216,7 +216,7 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const rateLimit = applyRateLimit(req, "tickets-search", 15, 60 * 1000)
+  const rateLimit = await applyRateLimit(req, "tickets-search", 15, 60 * 1000)
   if (rateLimit) return rateLimit
   const session = await getSessionOrFail()
   if (!session) {

@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { uploadFile } from '@/lib/upload'
 
 export async function GET(req: NextRequest) {
-  const rateLimit = applyRateLimit(req, "oficina-tickets", 30, 60 * 1000)
+  const rateLimit = await applyRateLimit(req, "oficina-tickets", 30, 60 * 1000)
   if (rateLimit) return rateLimit
   try {
     const { searchParams } = new URL(req.url)
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const rateLimit = applyRateLimit(req, "oficina-tickets", 10, 60 * 1000)
+  const rateLimit = await applyRateLimit(req, "oficina-tickets", 10, 60 * 1000)
   if (rateLimit) return rateLimit
   try {
     const contentType = req.headers.get('content-type') || ''

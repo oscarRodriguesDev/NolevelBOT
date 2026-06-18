@@ -30,6 +30,16 @@ export function ModalChamado({
 
   const session = useSession()
 
+  useEffect(() => {
+    if (!open) return
+    const prevFocus = document.activeElement as HTMLElement | null
+    const modal = document.getElementById("modal-chamado")
+    if (modal) {
+      const first = modal.querySelector<HTMLElement>("button, input, select, textarea, [tabindex]:not([tabindex='-1'])")
+      first?.focus()
+    }
+    return () => prevFocus?.focus()
+  }, [open])
 
   useEffect(() => {
     if (!ticket || !open) return

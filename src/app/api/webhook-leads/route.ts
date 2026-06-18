@@ -25,7 +25,7 @@ type UserSession = {
   ultimoResumo?: string
 }
 
-const sessions = new TTLMap<string, UserSession>(10 * 60 * 1000)
+const sessions = new TTLMap<string, UserSession>(120 * 60 * 1000)
 const ESTANDE_NOME = 'NoLevel na ESX 2026'
 
 async function gerarRespostaInteligente(pergunta: string, nome: string, baseDeConhecimento: string, historico?: string, botName?: string): Promise<string> {
@@ -80,7 +80,7 @@ async function consultarLeadPorCpf(cpf: string) {
 const saudacoes = new Set(['oi', 'ola', 'olá', 'bom', 'boa', 'oie', 'opa', 'hey', 'alo', 'alô', 'salve'])
 
 export async function POST(req: NextRequest) {
-  const rateLimit = applyRateLimit(req, "webhook-leads", 60, 60 * 1000)
+  const rateLimit = await applyRateLimit(req, "webhook-leads", 60, 60 * 1000)
   if (rateLimit) return rateLimit
 
   try {

@@ -2,23 +2,10 @@
 
 import { useEffect, useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  LineChart,
-  Line,
-  CartesianGrid,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
-} from "recharts"
-import jsPDF from "jspdf"
+import dynamic from "next/dynamic"
 import { useHeader } from "../layout"
+
+const Charts = dynamic(() => import("./_charts").then((m) => m.Charts), { ssr: false })
 
 interface StatItem {
   setor?: string;
@@ -33,22 +20,6 @@ interface ComparativoItem {
   mes: string;
   avisos: number;
   evitados: number;
-}
-
-const STATUS_CORES: Record<string, string> = {
-  NOVO: "var(--status-new)",
-  EM_ATENDIMENTO: "var(--status-in-progress)",
-  AGUARDANDO: "var(--status-waiting)",
-  CONCLUIDO: "var(--status-completed)",
-  CANCELADO: "var(--status-cancelled)",
-  FECHADO: "var(--status-completed)",
-}
-
-const PRIORIDADE_CORES: Record<string, string> = {
-  baixa: "var(--status-completed)",
-  normal: "var(--primary)",
-  alta: "var(--status-waiting)",
-  critica: "var(--status-cancelled)",
 }
 
 export default function Dashboard() {
@@ -199,7 +170,8 @@ export default function Dashboard() {
     URL.revokeObjectURL(url)
   }
 
-  function downloadPDF() {
+  async function downloadPDF() {
+    const jsPDF = (await import("jspdf")).default
     const pdf = new jsPDF()
     let y = 20
     const pageHeight = 280
@@ -394,117 +366,35 @@ export default function Dashboard() {
           <KPICard label="Economia (horas)" value={isLoading ? "..." : economiaHoras} unit="horas economizadas" color="var(--status-in-progress)" />
         </div>
 
-        <div className="lg:col-span-4 bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
-          <h2 className="text-xs font-black uppercase tracking-[0.2em] mb-6 opacity-70">Status</h2>
-          <div className="h-[260px]">
-            {isLoading ? (
-              <div className="w-full h-full flex items-center justify-center opacity-20 font-black text-xs tracking-widest">
-                CARREGANDO...
-              </div>
-            ) : statusStats.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={statusStats.map((s) => ({ ...s, name: s.status }))}
-                    dataKey="total"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={55}
-                    outerRadius={90}
-                    paddingAngle={3}
-                  >
-                    {statusStats.map((s) => (
-                      <Cell
-                        key={s.status}
-                        fill={STATUS_CORES[s.status || ""] || "var(--primary)"}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "var(--surface)",
-                      border: "1px solid var(--border-subtle)",
-                      borderRadius: "12px",
-                      fontSize: "12px",
-                      fontWeight: "bold",
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="w-full h-full flex items-center justify-center opacity-30 font-bold uppercase text-xs tracking-widest">
-                Sem dados
-              </div>
-            )}
-          </div>
-          <div className="flex flex-wrap justify-center gap-3 mt-4">
-            {statusStats.map((s) => (
-              <div key={s.status} className="flex items-center gap-1.5 text-[10px] font-bold">
-                <div
-                  className="w-2.5 h-2.5 rounded-full"
-                  style={{ backgroundColor: STATUS_CORES[s.status || ""] || "var(--primary)" }}
-                />
-                {s.status}: {s.total}
+        {!isLoading && statusStats.length > 0 && (
+          <Charts
+            statusStats={statusStats}
+            prioridadeStats={prioridadeStats}
+            chamadosPorSetor={chamadosPorSetor}
+            chamadosPeriodo={chamadosPeriodo}
+            comparativoAvisos={comparativoAvisos}
+          />
+        )}
+
+        {isLoading && (
+          <>
+            {[1,2,3,4,5].map((i) => (
+              <div key={i} className="lg:col-span-4 bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
+                <div className="w-full h-[260px] flex items-center justify-center opacity-20 font-black text-xs tracking-widest">CARREGANDO...</div>
               </div>
             ))}
-          </div>
-        </div>
+          </>
+        )}
 
-        <div className="lg:col-span-4 bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
-          <h2 className="text-xs font-black uppercase tracking-[0.2em] mb-6 opacity-70">Prioridade</h2>
-          <div className="h-[260px]">
-            {isLoading ? (
-              <div className="w-full h-full flex items-center justify-center opacity-20 font-black text-xs tracking-widest">
-                CARREGANDO...
+        {!isLoading && statusStats.length === 0 && (
+          <>
+            {[1,2,3,4,5].map((i) => (
+              <div key={i} className="lg:col-span-4 bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
+                <div className="w-full h-[260px] flex items-center justify-center opacity-30 font-bold uppercase text-xs tracking-widest">Sem dados</div>
               </div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={prioridadeStats} layout="vertical">
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    horizontal={false}
-                    stroke="var(--border-subtle)"
-                    opacity={0.5}
-                  />
-                  <XAxis type="number" axisLine={false} tickLine={false} fontSize={10} opacity={0.5} />
-                  <YAxis
-                    type="category"
-                    dataKey="prioridade"
-                    axisLine={false}
-                    tickLine={false}
-                    fontSize={11}
-                    fontWeight="bold"
-                    opacity={0.7}
-                    width={70}
-                  />
-                  <Tooltip
-                    cursor={{ fill: "var(--background)", opacity: 0.4 }}
-                    contentStyle={{
-                      backgroundColor: "var(--surface)",
-                      border: "1px solid var(--border-subtle)",
-                      borderRadius: "12px",
-                      fontSize: "12px",
-                      fontWeight: "bold",
-                    }}
-                  />
-                  <Bar
-                    dataKey="total"
-                    radius={[0, 6, 6, 0]}
-                    barSize={28}
-                  >
-                    {prioridadeStats.map((p) => (
-                      <Cell
-                        key={p.prioridade}
-                        fill={PRIORIDADE_CORES[p.prioridade || ""] || "var(--primary)"}
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </div>
+            ))}
+          </>
+        )}
 
         <div className="lg:col-span-4 bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
           <div className="flex justify-between items-center mb-6">
@@ -534,117 +424,9 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="lg:col-span-6 bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xs font-black uppercase tracking-[0.2em] opacity-70">
-              Chamados por Setor
-            </h2>
-          </div>
-          <div className="h-[280px]">
-            {isLoading ? (
-              <div className="w-full h-full flex items-center justify-center opacity-20 font-black text-xs tracking-widest">
-                CARREGANDO...
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chamadosPorSetor}>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    vertical={false}
-                    stroke="var(--border-subtle)"
-                    opacity={0.5}
-                  />
-                  <XAxis
-                    dataKey="setor"
-                    axisLine={false}
-                    tickLine={false}
-                    fontSize={10}
-                    fontWeight="bold"
-                    stroke="var(--foreground)"
-                    opacity={0.5}
-                    dy={10}
-                  />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    fontSize={10}
-                    stroke="var(--foreground)"
-                    opacity={0.5}
-                  />
-                  <Tooltip
-                    cursor={{ fill: "var(--background)", opacity: 0.4 }}
-                    contentStyle={{
-                      backgroundColor: "var(--surface)",
-                      border: "1px solid var(--border-subtle)",
-                      borderRadius: "12px",
-                      fontSize: "12px",
-                      fontWeight: "bold",
-                    }}
-                  />
-                  <Bar
-                    dataKey="total"
-                    fill="var(--primary)"
-                    radius={[6, 6, 0, 0]}
-                    barSize={32}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </div>
-
-        <div className="lg:col-span-6 bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
-          <h2 className="text-xs font-black uppercase tracking-[0.2em] mb-6 opacity-70">
-            Evolucao Temporal
-          </h2>
-          <div className="h-[280px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chamadosPeriodo}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  vertical={false}
-                  stroke="var(--border-subtle)"
-                  opacity={0.5}
-                />
-                <XAxis
-                  dataKey="periodo"
-                  axisLine={false}
-                  tickLine={false}
-                  fontSize={10}
-                  fontWeight="bold"
-                  opacity={0.5}
-                />
-                <YAxis axisLine={false} tickLine={false} fontSize={10} opacity={0.5} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "var(--surface)",
-                    border: "1px solid var(--border-subtle)",
-                    borderRadius: "12px",
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="total"
-                  stroke="var(--primary)"
-                  strokeWidth={4}
-                  dot={{
-                    r: 4,
-                    fill: "var(--primary)",
-                    strokeWidth: 2,
-                    stroke: "var(--surface)",
-                  }}
-                  activeDot={{ r: 6, strokeWidth: 0 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
         <div className="lg:col-span-12 bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] shadow-sm overflow-hidden">
           <div className="p-5 border-b border-[var(--border-subtle)] bg-[var(--background)] bg-opacity-20 flex justify-between items-center">
-            <h2 className="text-xs font-black uppercase tracking-[0.2em] opacity-70">
-              Top Motivos
-            </h2>
+            <h2 className="text-xs font-black uppercase tracking-[0.2em] opacity-70">Top Motivos</h2>
             <span className="text-[10px] font-bold opacity-40">RANKING</span>
           </div>
           <div className="overflow-auto max-h-[300px]">
@@ -659,71 +441,23 @@ export default function Dashboard() {
               <tbody className="divide-y divide-[var(--border-subtle)]">
                 {motivosStats.length > 0 ? (
                   motivosStats.slice(0, 10).map((m, i) => (
-                    <tr
-                      key={i}
-                      className="hover:bg-[var(--background)] hover:bg-opacity-40 transition-colors group"
-                    >
+                    <tr key={i} className="hover:bg-[var(--background)] hover:bg-opacity-40 transition-colors group">
                       <td className="px-6 py-3 font-black opacity-30 w-10">{String(i + 1).padStart(2, "0")}</td>
-                      <td className="px-6 py-3 font-bold opacity-80 group-hover:opacity-100 max-w-[400px] truncate">
-                        {m.motivo}
-                      </td>
+                      <td className="px-6 py-3 font-bold opacity-80 group-hover:opacity-100 max-w-[400px] truncate">{m.motivo}</td>
                       <td className="px-6 py-3 text-right">
-                        <span
-                          className="bg-[var(--background)] px-3 py-1 rounded-lg font-black"
-                          style={{ color: "var(--primary)" }}
-                        >
-                          {m.total}
-                        </span>
+                        <span className="bg-[var(--background)] px-3 py-1 rounded-lg font-black" style={{ color: "var(--primary)" }}>{m.total}</span>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td
-                      colSpan={3}
-                      className="p-10 text-center opacity-30 font-bold uppercase tracking-widest"
-                    >
+                    <td colSpan={3} className="p-10 text-center opacity-30 font-bold uppercase tracking-widest">
                       {isLoading ? "Buscando dados..." : "Nenhum dado encontrado"}
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
-          </div>
-        </div>
-
-        {/* Comparativo Avisos vs Chamados Evitados */}
-        <div className="lg:col-span-12 bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xs font-black uppercase tracking-[0.2em] opacity-70">
-              Avisos vs Chamados Evitados
-            </h2>
-            <span className="text-[10px] font-bold opacity-40">CORRELACAO</span>
-          </div>
-          <div className="h-[300px]">
-            {isLoading ? (
-              <div className="w-full h-full flex items-center justify-center opacity-20 font-black text-xs tracking-widest">
-                CARREGANDO...
-              </div>
-            ) : comparativoAvisos.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={comparativoAvisos}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" opacity={0.5} />
-                  <XAxis dataKey="mes" axisLine={false} tickLine={false} fontSize={10} fontWeight="bold" opacity={0.5} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} fontSize={10} opacity={0.5} />
-                  <Tooltip cursor={{ fill: "var(--background)", opacity: 0.4 }}
-                    contentStyle={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-subtle)", borderRadius: "12px", fontSize: "12px", fontWeight: "bold" }}
-                  />
-                  <Bar dataKey="avisos" name="Avisos" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={24} />
-                  <Bar dataKey="evitados" name="Chamados Evitados" fill="var(--status-completed)" radius={[4, 4, 0, 0]} barSize={24} />
-                  <Legend wrapperStyle={{ fontSize: "11px", fontWeight: "bold", opacity: 0.7, paddingTop: "16px" }} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="w-full h-full flex items-center justify-center opacity-30 font-bold uppercase text-xs tracking-widest">
-                Sem dados
-              </div>
-            )}
           </div>
         </div>
 

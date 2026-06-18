@@ -16,7 +16,8 @@ export const FlowState = {
   COLETAR_SETOR: "coletar_setor",
   PERGUNTAR_ANEXO: "perguntar_anexo",
   COLETAR_MIDIA: "coletar_midia",
-  MOSTRAR_AVISO: "mostrar_aviso"
+  MOSTRAR_AVISO: "mostrar_aviso",
+  VINCULAR_TELEFONE: "vincular_telefone"
 } as const;
 
 type FlowStateValues = typeof FlowState[keyof typeof FlowState];

@@ -11,7 +11,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req)
-    const rate = checkRateLimit(`upload:${ip}`, 10, 60 * 1000)
+    const rate = await checkRateLimit(`upload:${ip}`, 10, 60 * 1000)
     if (!rate.allowed) {
       return NextResponse.json(
         { error: "Muitas requisições. Aguarde antes de enviar outro arquivo." },

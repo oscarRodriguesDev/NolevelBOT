@@ -10,7 +10,7 @@ import { validarBotApiKey } from "@/lib/bot-auth";
 //post salva os cpfs, se for multipart/form-data, importa do excel ou csv, se for json, cadastra manualmente
 //testar salvamento por planilha excel 
 export async function POST(req: NextRequest) {
-  const rateLimit = applyRateLimit(req, "general-cpf", 30, 60 * 1000)
+  const rateLimit = await applyRateLimit(req, "general-cpf", 30, 60 * 1000)
   if (rateLimit) return rateLimit
   const session = await getSessionOrFail(["GOD", "ADMIN", "GESTOR"])
   const empresaId = session?.user?.empresaId
@@ -136,11 +136,14 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    const telefone = body?.telefone?.replace(/\D/g, "") || undefined
+
     const novo = await prisma.cpfs.create({
       data: {
         nome,
         cpf,
         empresaId,
+        telefone,
       },
     })
 
@@ -159,7 +162,7 @@ export async function POST(req: NextRequest) {
 
 // Rota usada pelos bots — exige X-API-Key header
 export async function GET(req: NextRequest) {
-  const rateLimit = applyRateLimit(req, "general-cpf", 30, 60 * 1000)
+  const rateLimit = await applyRateLimit(req, "general-cpf", 30, 60 * 1000)
   if (rateLimit) return rateLimit
   if (!validarBotApiKey(req)) {
     return NextResponse.json({ error: "API key inválida" }, { status: 401 })
@@ -172,7 +175,7 @@ export async function GET(req: NextRequest) {
     if (cpfParaFiltrar) {
       const registro = await prisma.cpfs.findUnique({
         where: { cpf: cpfParaFiltrar },
-        select: { nome: true, cpf: true }
+        select: { nome: true, cpf: true, telefone: true }
       });
 
       if (!registro) {
@@ -189,7 +192,7 @@ export async function GET(req: NextRequest) {
     }
 
     const todosCPFs = await prisma.cpfs.findMany({
-      select: { nome: true, cpf: true }
+      select: { nome: true, cpf: true, telefone: true }
     });
 
     return NextResponse.json(todosCPFs);
@@ -204,7 +207,7 @@ export async function GET(req: NextRequest) {
 
 
 export async function DELETE(req: NextRequest) {
-  const rateLimit = applyRateLimit(req, "general-cpf", 20, 60 * 1000)
+  const rateLimit = await applyRateLimit(req, "general-cpf", 20, 60 * 1000)
   if (rateLimit) return rateLimit
   const session = await getSessionOrFail(["GESTOR", "ADMIN","GOD"])
   
