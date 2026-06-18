@@ -6,6 +6,12 @@
 **Commit:** `8830ab9`
 **Descrição:** Ao criar um usuário ADMIN via GOD, o frontend enviava `setor = ""` (ADMIN não tem setor específico). A validação Zod `z.string().min(1)` rejeitava o valor vazio, resultando em erro `400 "Dados inválidos"`. Corrigido na API: se `finalRole === "ADMIN"` e `setor` for vazio, define `setor = "all"` antes da validação, seguindo a convenção do sistema onde ADMIN sem setor exibe "all".
 
+## UX: Mensagens de erro do validateOrError agora mostram qual campo falhou
+**Data:** 18/06/2026
+**Status:** ✅ Concluído
+**Commit:** `pendente`
+**Descrição:** `validateOrError()` retornava `"Dados inválidos"` genérico sem indicar qual campo. Agora inclui o nome do campo e o motivo no toast (ex: `"Dados inválidos — setor: Setor é obrigatório"`), facilitando o debug.
+
 ## SEG-010: PUT /api/users/user-active altera email/senha sem confirmação
 **Data:** 17/06/2026
 **Status:** ✅ Concluído

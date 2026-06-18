@@ -434,6 +434,14 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 - Adicionado guard: se `finalRole === "ADMIN"` e `setor` for vazio, define `setor = "all"` antes da validação.
 - Segue a convenção existente no sistema onde ADMIN sem setor exibe "all" na interface.
 
+### Mudança: Melhoria nas mensagens de erro do validateOrError — mostra campo específico
+**Autor:** Vibecode
+**Arquivos:** `src/lib/validate.ts`
+**Data:** 18/06/2026
+**Descrição:**
+- `validateOrError()` retornava `"Dados inválidos"` genérico sem indicar qual campo falhou.
+- Agora extrai o primeiro campo com erro e inclui no toast (ex: `"Dados inválidos — setor: Setor é obrigatório"`), facilitando o debug.
+
 ### Mudança: Suite de testes expandida (+34 testes, 169 total)
 **Autor:** Vibecode
 **Arquivos:** `src/__tests__/rate-limit.test.ts` (novo), `src/__tests__/audit-log.test.ts` (novo), `src/__tests__/smartSearch.test.ts` (novo), `src/__tests__/usedata.test.ts` (novo)
