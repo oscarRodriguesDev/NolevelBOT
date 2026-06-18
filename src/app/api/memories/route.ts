@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
+import { validarBotApiKey } from "@/lib/bot-auth";
 
 // Funções de banco
 async function getResumoPersona(cpf: string) {
@@ -22,13 +23,6 @@ async function upsertResumoPersona(cpf: string, nome: string, resumo: string) {
   } catch (error) {
     console.error("Erro Prisma Upsert:", error);
   }
-}
-
-function validarBotApiKey(req: NextRequest): boolean {
-  const apiKey = req.headers.get("x-api-key")
-  const botApiKey = process.env.BOT_API_KEY
-  if (!botApiKey) return true
-  return apiKey === botApiKey
 }
 
 // Endpoint

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
 import { getSessionOrFail } from '@/util/permission';
 import { limparCPF } from "@/util/limparcpfs";
+import { validarBotApiKey } from "@/lib/bot-auth";
 
 
 //post salva os cpfs, se for multipart/form-data, importa do excel ou csv, se for json, cadastra manualmente
@@ -155,13 +156,6 @@ export async function POST(req: NextRequest) {
 
 
 
-
-function validarBotApiKey(req: NextRequest): boolean {
-  const apiKey = req.headers.get("x-api-key")
-  const botApiKey = process.env.BOT_API_KEY
-  if (!botApiKey) return true
-  return apiKey === botApiKey
-}
 
 // Rota usada pelos bots — exige X-API-Key header
 export async function GET(req: NextRequest) {

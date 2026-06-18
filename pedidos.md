@@ -135,3 +135,21 @@
 - `webhook27/route.ts`: ~60 linhas de boilerplate substituídas pelo core
 - `webhook-oficina/route.ts`: ~50 linhas de boilerplate substituídas; extraída `montarResumo()` para eliminar string de resumo duplicada 5x
 - Fluxo específico de transporte público (matrícula, ônibus, defeito por JSON, confirmação) mantido intacto
+
+## PERF-001: Dashboard sem paginação
+**Data:** 17/06/2026
+**Status:** ✅ Concluído
+**Commit:** `de3c7dc`
+**Descrição:**
+- `getPeriodDateRange()` converte período (dia/semana/mes/ano) em `Date` inicial
+- Filtro `createdAt: { gte: dateFrom }` adicionado ao `where` do chamado e tickets_evitados
+- `take: 10000` como safety net em ambas queries
+- `inPeriodo()` removido (filtragem agora no banco)
+
+## PERF-002: Sidebar faz fetch toda vez que monta
+**Data:** 17/06/2026
+**Status:** ✅ Concluído
+**Commit:** `de3c7dc`
+**Descrição:**
+- Cache via `sessionStorage` com chave `empresa_modulos_{empresaId}`
+- Fetch só ocorre se cache não existir

@@ -141,6 +141,7 @@
 **Local:** `src/app/api/cpfs/general_cpf/route.ts`  
 **Problema:** Se a env var `BOT_API_KEY` não estiver configurada, qualquer requisição é aceita sem chave.  
 **Sugestão:** Em produção, exigir que a chave esteja configurada ou negar acesso.
+**Status:** ✅ Concluído — `validarBotApiKey()` extraída para `src/lib/bot-auth.ts` com `if (!botApiKey) return false` (fail closed). Duplicação removida de `general_cpf/route.ts` e `memories/route.ts`. Commit `HEAD`
 
 ---
 
@@ -387,6 +388,7 @@
 | ARQ-002 | Chat duplicado 3x | 🟡 Médio | ✅ |
 | ARQ-003 | Webhook26/27 duplicados | 🟡 Médio | ✅ |
 | ARQ-004 | webhook-oficina + core compartilhado | 🟡 Médio | ✅ |
+| SEG-013 | validarBotApiKey fail open | 🟡 Médio | ✅ |
 
 ### ⚠️ MÉDIO PRAZO (qualidade e performance)
 | ID | Título | Esforço | Status |
