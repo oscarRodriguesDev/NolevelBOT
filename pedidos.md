@@ -108,3 +108,13 @@
 - **chat-corporativo**: rate limit `"chat-corporativo"`, com `FlowState.INICIO`, instrução de motivo detalhada (códigos AVISO_RESOLVE/PROSSEGUIR_FLUXO)
 - **chat-operacional**: rate limit `"chat-operacional"`, com `FlowState.INICIO`, instrução de motivo detalhada (idêntica ao corporativo)
 ~1.235 linhas eliminadas.
+
+## ARQ-003: Remover webhook26 duplicado
+**Data:** 17/06/2026
+**Status:** ✅ Concluído
+**Commit:** `f6c6ac1`
+**Descrição:**
+- `src/app/api/webhook26/route.ts` deletado (webhook27 é a versão atual)
+- `src/lib/useIA3.ts` deletado (orphan, único consumer era webhook26)
+- `src/app/api-docs/page.tsx`: entrada do webhook26 removida
+- 620 linhas eliminadas.

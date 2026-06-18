@@ -202,7 +202,7 @@
 **Local:** `src/app/api/webhook26/route.ts`, `src/app/api/webhook27/route.ts`  
 **Problema:** webhook27 é uma evolução de webhook26, mas ambos existem e são mantidos. Mais de 80% de código duplicado.  
 **Sugestão:** Manter apenas a versão mais recente (webhook27) e remover webhook26, ou refatorar com funções compartilhadas.
-**Status:** ✅ Concluído — webhook26 removido, useIA3.ts deletado (orphan), commit `HEAD`
+**Status:** ✅ Concluído — webhook26 removido, useIA3.ts deletado (orphan), commit `f6c6ac1`
 
 ---
 

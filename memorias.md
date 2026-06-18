@@ -561,3 +561,15 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 - Cada `route.ts` virou thin wrapper de ~7 linhas importando o handler
 - ~1.235 linhas eliminadas
 - Build: ✅ sucesso. Commit: `579227c`
+
+### Mudança: ARQ-003 — Remoção do webhook26 (duplicado do webhook27)
+**Autor:** Vibecode
+**Arquivos:** `src/app/api/webhook26/route.ts` (deletado), `src/lib/useIA3.ts` (deletado), `src/app/api-docs/page.tsx`
+**Data:** 17/06/2026
+**Descrição:**
+- webhook26 era versão anterior do webhook27, mantido por legado mas sem uso
+- `src/app/api/webhook26/route.ts` deletado (já estava unstaged)
+- `src/lib/useIA3.ts` deletado (único consumer era webhook26)
+- `src/app/api-docs/page.tsx`: entrada do webhook26 removida
+- 620 linhas eliminadas
+- Build: ✅ sucesso. Commit: `f6c6ac1`
