@@ -153,12 +153,12 @@
 
 ---
 
-## 🟡 SEG-015: GitHub Actions em arquivos `.txt` não executam
+## ~~🟡 SEG-015: GitHub Actions em arquivos `.txt` não executam~~ ✅
 
 **Severidade:** 🟡 ALTO  
 **Local:** `.github/workflows/deploy.yml.txt`, `.github/workflows/deploy-homologa.txt`, `.github/workflows/deploy-homologa2.txt`  
-**Problema:** Workflows estão nomeados com `.txt` em vez de `.yml`, então o GitHub Actions ignora. CI/CD não funciona.  
-**Sugestão:** Renomear para `.yml` ou `.yaml`.
+**Problema:** Workflows estavam nomeados com `.txt` em vez de `.yml`, GitHub Actions ignorava.  
+**Solução:** Removidos do tracking e adicionado `.github/workflows/` ao `.gitignore` — não usamos mais VPS.
 
 ---
 
@@ -370,7 +370,7 @@
 | SEG-003 | Memories público | 🟢 Pequeno | ✅ |
 | SEG-004 | Avisos público global | 🟢 Pequeno | ✅ |
 | SEG-005 | CPF validation desligada | 🟢 Pequeno | ❌ |
-| SEG-015 | Workflows .txt não executam | 🟢 Pequeno | ❌ |
+| SEG-015 | Workflows .txt não executam | 🟢 Pequeno | ✅ |
 
 ### 🟡 CURTO PRAZO (melhoria significativa)
 | ID | Título | Esforço | Status |
