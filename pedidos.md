@@ -3,6 +3,7 @@
 ## SEG-006: Sessões em memória sem cleanup em 6 webhooks
 **Data:** 17/06/2026
 **Status:** ✅ Concluído
+**Commit:** `cb2a69a`
 **Descrição:** Criado `TTLMap` em `src/lib/ttl-map.ts` — wrapper de Map com TTL configurável (10 min) e cleanup automático a cada 30s. Substituídos os `new Map()` em 7 arquivos:
 - `webhook26`, `webhook27`, `webhook-oficina`, `webhook-leads` (webhooks)
 - `chat`, `chat-corporativo`, `chat-operacional` (chats web)
