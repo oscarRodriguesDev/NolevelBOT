@@ -309,14 +309,25 @@ export async function DELETE(req: NextRequest) {
       }
     }
 
-    await prisma.user.delete({ where: { id } })
+    // Execução em transação para garantir que ambos sejam deletados
+    await prisma.$transaction(async (tx) => {
+      // Deleta o registro na tabela de CPFs se o campo CPF existir no usuário
+      if (targetUser.cpf) {
+        await tx.cpfs.deleteMany({
+          where: { cpf: targetUser.cpf },
+        })
+      }
 
-    return NextResponse.json({ message: "Usuário removido com sucesso" })
+      // Deleta o usuário
+      await tx.user.delete({ where: { id } })
+    })
+
+    return NextResponse.json({ message: "Usuário e registro de CPF removidos com sucesso" })
   } catch (error) {
+    console.error("Erro ao deletar usuário:", error)
     return NextResponse.json({ error: "Erro ao remover usuário" }, { status: 500 })
   }
 }
-
 export async function PUT(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "users", 20, 60 * 1000)
   if (rateLimit) return rateLimit

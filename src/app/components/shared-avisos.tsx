@@ -21,20 +21,18 @@ export default function SharedAvisosPage({ setHeader }: Props) {
   const { data: session } = useSession()
   const userRole = session?.user?.role as ROLE | undefined
   const userSetor = session?.user?.setor || ""
-  const podeEscolherSetor = userRole === "ADMIN" || userRole === "GOD"
-
+  const podeEscolherSetor = userRole === "ADMIN"
   const [avisos, setAvisos] = useState<Aviso[]>([])
   const [open, setOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-
   const [titulo, setTitulo] = useState("")
   const [conteudo, setConteudo] = useState("")
   const [setor, setSetor] = useState(podeEscolherSetor ? "" : userSetor)
   const [duracao, setDuracao] = useState("")
   const [setoresDisponiveis, setSetoresDisponiveis] = useState<string[]>([])
-  
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
 
   useEffect(() => {
     setHeader({
@@ -55,6 +53,7 @@ export default function SharedAvisosPage({ setHeader }: Props) {
   }, [podeEscolherSetor, session?.user?.empresaId])
 
   async function fetchAvisos() {
+
     try {
       const res = await fetch("/api/quadro-avisos")
       const data = await res.json()
@@ -133,10 +132,10 @@ export default function SharedAvisosPage({ setHeader }: Props) {
 
   async function handleDelete(id: string) {
     if (!confirm("Deseja realmente excluir este aviso?")) return
-    
+
     try {
       const response = await fetch(`/api/quadro-avisos?id=${id}`, { method: "DELETE" })
-      
+
       if (!response.ok) {
         if (response.status === 403 || response.status === 401) {
           alert("Você não tem permissão para excluir avisos.")
@@ -144,7 +143,7 @@ export default function SharedAvisosPage({ setHeader }: Props) {
         }
         throw new Error("Erro ao excluir o aviso.")
       }
-      
+
       await fetchAvisos()
     } catch (error) {
       console.error(error)
@@ -171,91 +170,88 @@ export default function SharedAvisosPage({ setHeader }: Props) {
           </button>
         </div>
 
+
+        {/* formulario de avisos */}
         {open && (
           <div
             className="mb-10 border rounded-2xl p-6 shadow-xl animate-in fade-in slide-in-from-top-4 duration-300"
             style={{ backgroundColor: "var(--surface)", borderColor: "var(--border-subtle)" }}
           >
-            {errorMessage && (
-              <div className="p-4 mb-6 text-sm font-semibold text-red-500 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3">
-                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                {errorMessage}
-              </div>
-            )}
-
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input
-                value={titulo}
-                onChange={e => setTitulo(e.target.value)}
-                placeholder="Título do comunicado"
-                className="md:col-span-2 w-full border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all"
-                style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
-              />
 
-              <textarea
-                value={conteudo}
-                onChange={e => setConteudo(e.target.value)}
-                placeholder="Escreva o conteúdo do aviso aqui..."
-                rows={4}
-                className="md:col-span-2 w-full border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all resize-none"
-                style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
-              />
-
-              {podeEscolherSetor ? (
-                <select
-                  value={setor}
-                  onChange={e => setSetor(e.target.value)}
-                  className="w-full border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all"
-                  style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
-                >
-                  <option value="">Todos os setores</option>
-                  {setoresDisponiveis.map(s => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              ) : (
+              {/* Campo Título */}
+              <div className="md:col-span-2 flex flex-col gap-1">
                 <input
-                  value={setor}
-                  readOnly
-                  disabled
-                  className="w-full border rounded-xl px-4 py-3 outline-none opacity-60 cursor-not-allowed"
-                  style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
+                  value={titulo}
+                  onChange={e => setTitulo(e.target.value)}
+                  placeholder="Título do comunicado"
+                  className="w-full border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all"
+                  style={{ backgroundColor: "var(--surface-elevated)", borderColor: titulo.length > 0 && titulo.length < 2 ? "red" : "var(--border-subtle)" }}
                 />
-              )}
+                {titulo.length > 0 && titulo.length < 2 && (
+                  <span className="text-[10px] text-red-500 font-medium">Título precisa ter no mínimo 2 caracteres</span>
+                )}
+              </div>
 
-              <input
-                type="number"
-                value={duracao}
-                onChange={e => setDuracao(e.target.value)}
-                placeholder="Duração (em dias)"
-                className="w-full border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all"
-                style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
-              />
+              {/* Campo Conteúdo */}
+              <div className="md:col-span-2 flex flex-col gap-1">
+                <textarea
+                  value={conteudo}
+                  onChange={e => setConteudo(e.target.value)}
+                  placeholder="Escreva o conteúdo do aviso aqui..."
+                  rows={4}
+                  className="w-full border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all resize-none"
+                  style={{ backgroundColor: "var(--surface-elevated)", borderColor: conteudo.length > 0 && conteudo.length < 10 ? "red" : "var(--border-subtle)" }}
+                />
+                {conteudo.length > 0 && conteudo.length < 10 && (
+                  <span className="text-[10px] text-red-500 font-medium">Conteúdo precisa ter no mínimo 10 caracteres</span>
+                )}
+              </div>
 
+              {/* Select Setor */}
+              <div className="flex flex-col gap-1">
+                {podeEscolherSetor ? (
+                  <select value={setor} onChange={e => setSetor(e.target.value)} className="w-full border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all" style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)" }}>
+                    <option value="">Todos os setores</option>
+                    {setoresDisponiveis.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                ) : (
+                  <input value={setor} readOnly disabled className="w-full border rounded-xl px-4 py-3 opacity-60 cursor-not-allowed" style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)" }} />
+                )}
+              </div>
+
+              {/* Duração */}
+              <div className="flex flex-col gap-1">
+                <input
+                  type="number"
+                  value={duracao}
+                  onChange={e => setDuracao(e.target.value)}
+                  placeholder="Duração (em dias)"
+                  className="w-full border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all"
+                  style={{ backgroundColor: "var(--surface-elevated)", borderColor: duracao && parseInt(duracao) < 1 ? "red" : "var(--border-subtle)" }}
+                />
+                {duracao && parseInt(duracao) < 1 && (
+                  <span className="text-[10px] text-red-500 font-medium">Duração mínima de 1 dia</span>
+                )}
+              </div>
+
+              {/* Botões */}
               <div className="md:col-span-2 flex gap-3 pt-2">
                 <button
                   type="submit"
-                  disabled={isSubmitting}
-                  className={`px-6 py-2.5 text-white rounded-xl font-bold shadow-lg transition-all ${isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:brightness-110'}`}
+                  disabled={isSubmitting || (titulo.length < 2 || conteudo.length < 10 || parseInt(duracao) < 1)}
+                  className={`px-6 py-2.5 text-white rounded-xl font-bold shadow-lg transition-all ${isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:brightness-110 disabled:opacity-50'}`}
                   style={{ backgroundColor: "var(--status-completed)" }}
                 >
                   {isSubmitting ? "Salvando..." : (editingId ? "Atualizar Aviso" : "Publicar Aviso")}
                 </button>
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  disabled={isSubmitting}
-                  className="px-6 py-2.5 rounded-xl font-bold border transition-all hover:bg-black/5 dark:hover:bg-white/5"
-                  style={{ borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
-                >
-                  Cancelar
-                </button>
+                {/* ... botão cancelar ... */}
               </div>
             </form>
           </div>
         )}
+
+        {/* fim do formulario de avisos */}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {avisos.length === 0 ? (
@@ -273,6 +269,8 @@ export default function SharedAvisosPage({ setHeader }: Props) {
                 }
               }
 
+
+              /* aqui é exibido os avisos que existem para a empresa */
               return (
                 <div
                   key={aviso.id}

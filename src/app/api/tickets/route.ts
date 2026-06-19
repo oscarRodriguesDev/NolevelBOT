@@ -317,7 +317,7 @@ export async function PUT(req: NextRequest) {
     const novoHistorico: HistoricoItem[] = [...historicoExistente, ...itensFiltrados]
 
     const chamadoAtualizado = await prisma.chamado.update({
-      where: { ticket: ticketNumber.trim() },
+      where: { id: chamadoExistente.id },
       data: {
         status: normalizarStatus(estagio),
         atendenteId: userId,
@@ -343,8 +343,9 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json(chamadoAtualizado, { status: 200 })
   } catch (error) {
-    console.error(error)
-    return NextResponse.json({ error: "Erro ao atualizar chamado" }, { status: 500 })
+    const mensagem = error instanceof Error ? error.message : "Erro ao atualizar chamado"
+    console.error("Erro ao atualizar chamado:", mensagem)
+    return NextResponse.json({ error: mensagem }, { status: 500 })
   }
 }
 
@@ -406,7 +407,8 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({ message: "Chamado movido para tickets fechados" }, { status: 200 })
   } catch (error) {
-    console.error(error)
-    return NextResponse.json({ error: "Erro ao mover chamado" }, { status: 500 })
+    const mensagem = error instanceof Error ? error.message : "Erro ao mover chamado"
+    console.error("Erro ao mover chamado:", mensagem)
+    return NextResponse.json({ error: mensagem }, { status: 500 })
   }
 }

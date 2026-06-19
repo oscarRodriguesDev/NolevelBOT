@@ -174,3 +174,13 @@
 - Criado `src/lib/bot-auth.ts` com `validarBotApiKey()` — `if (!botApiKey) return false` (fail closed)
 - Removida função duplicada de `general_cpf/route.ts` e `memories/route.ts` (agora importam de bot-auth)
 - Se `BOT_API_KEY` não estiver configurada, requisições sem chave são rejeitadas (antes aceitas)
+
+## PED-022: Fix atualização de chamados no Corporativo + feedback toast
+**Data:** 19/06/2026
+**Status:** ✅ Concluído
+**Commit:** `<pendente>`
+**Descrição:**
+- **PUT `/api/tickets`:** `prisma.chamado.update` agora usa `id` do chamado (`chamadoExistente.id`) em vez de `ticket` no where, eliminando risco de case-sensitivity. Mensagens de erro detalhadas no catch.
+- **modal_tandimento.tsx:** Adicionado `toast.success()` no sucesso e `toast.error()` com a mensagem real do servidor no erro, tanto no `atualizarChamado` quanto no `concluirChamado`.
+- **kanban-board.tsx:** Adicionado `toast.success()`/`toast.error()` no `handleDrop` (drag-and-drop via Kanban).
+- Build: ✅ sucesso.

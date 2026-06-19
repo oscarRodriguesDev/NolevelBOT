@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import Image from "next/image"
+import toast from "react-hot-toast"
 import type { HistoricoItem, Chamado } from "@/types/chamado"
 import {
   LuX,
@@ -74,53 +75,81 @@ export function ModalChamado({
     fetchChamado()
   }, [ticket, open])
 
-  async function atualizarChamado() {
-    if (!ticket || !novoStatus) return
-    setLoading(true)
 
-    const novoHistoricoItem: HistoricoItem = {
-      data: new Date().toISOString(),
-      acao: novoStatus,
-      observacao,
-    }
+async function atualizarChamado() {
+  if (!ticket || !novoStatus) return;
+  setLoading(true);
 
-    const historicoAtualizado = [...historico, novoHistoricoItem]
-    setHistorico(historicoAtualizado)
+  // 1. Prepara os dados
+  const novoHistoricoItem: HistoricoItem = {
+    data: new Date().toISOString(),
+    acao: novoStatus,
+    observacao,
+  };
 
-    const descricaoAtualizada = descricao ? `${descricao}\n${observacao}` : observacao
-    setDescricao(descricaoAtualizada)
+  const historicoAtualizado = [...historico, novoHistoricoItem];
+  
+  // Define a variável aqui, garantindo que ela existe no escopo da função
+  const descricaoAtualizada = descricao ? `${descricao}\n${observacao}` : observacao;
 
-    await fetch(`/api/tickets?atendimento=${ticket}&estagio=${novoStatus}`, {
+  // 2. Faz o PUT e captura o retorno direto do servidor
+  try {
+    const res = await fetch(`/api/tickets?atendimento=${ticket}&estagio=${novoStatus}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        descricao: descricaoAtualizada,
+        descricao: descricaoAtualizada, // Agora a variável existe aqui
         historico: JSON.stringify(historicoAtualizado),
         userId: session.data?.user?.id,
       }),
-    })
+    });
 
-    const res = await fetch(`/api/tickets?ticket=${ticket}`)
-    const data = await res.json()
-    const atualizado = data[0]
+    if (!res.ok) {
+      const errData = await res.json().catch(() => null)
+      throw new Error(errData?.error || "Falha ao atualizar")
+    }
 
-    setChamado(atualizado)
-    setNovoStatus(atualizado.status)
-    setObservacao("")
-    setLoading(false)
+    // O servidor retorna o objeto atualizado
+    const chamadoAtualizado = await res.json();
+
+    // 3. Atualiza os estados com segurança
+    setChamado(chamadoAtualizado);
+    setHistorico(historicoAtualizado);
+    setDescricao(descricaoAtualizada);
+    setNovoStatus(chamadoAtualizado.status);
+    setObservacao("");
+    toast.success("Chamado atualizado com sucesso!")
+
+  } catch (error) {
+    const mensagem = error instanceof Error ? error.message : "Erro ao atualizar chamado"
+    console.error("Erro na atualização:", mensagem)
+    toast.error(mensagem)
+  } finally {
+    setLoading(false);
   }
-
+}
   async function concluirChamado() {
     const confirmacao = window.confirm("Tem certeza que deseja fechar este chamado? Ele será removido da lista de atendimento.")
     if (!confirmacao) return
     if (!ticket) return
 
-    await fetch(`/api/tickets?atendimento=${ticket}`, {
-      method: "DELETE",
-    })
+    try {
+      const res = await fetch(`/api/tickets?atendimento=${ticket}`, {
+        method: "DELETE",
+      })
 
-    onConcluido(ticket)
-    onClose()
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null)
+        throw new Error(errData?.error || "Erro ao fechar chamado")
+      }
+
+      toast.success("Chamado fechado com sucesso!")
+      onConcluido(ticket)
+      onClose()
+    } catch (error) {
+      const mensagem = error instanceof Error ? error.message : "Erro ao fechar chamado"
+      toast.error(mensagem)
+    }
   }
 
   // Função auxiliar para cores de status (fallback seguro com tailwind)

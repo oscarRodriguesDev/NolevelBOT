@@ -535,6 +535,19 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 - `ideias.md`: SEG-008 marcado como ✅.
 - Build: ✅ sucesso.
 
+### Mudança: Validação de formulário de avisos + remoção userFacil + refactor modal atendimento
+**Autor:** Usuário
+**Arquivos:** `src/app/components/shared-avisos.tsx`, `src/app/corporativo/userFacil/page.tsx` (deletado), `src/app/corporativo/(atendimento)/components/modal_tandimento.tsx`, `src/app/oficina/chamado/page.tsx`, `src/app/api/users/route.ts`, `next.config.ts`, `.gitignore`
+**Data:** 19/06/2026
+**Descrição:**
+- **shared-avisos.tsx:** GOD removido de `podeEscolherSetor` (agora só ADMIN pode escolher setor). Adicionada validação visual no formulário: título (mín 2 caracteres), conteúdo (mín 10 caracteres), duração (mín 1 dia). Botão submit desabilitado se validações falharem. Removido bloco de erro message e botão cancelar.
+- **userFacil/page.tsx:** Página de criação rápida de usuário deletada.
+- **modal_tandimento.tsx:** `atualizarChamado` refatorado: agora usa o retorno do PUT para atualizar estados, sem fazer segunda requisição GET. Adicionado try/catch e escopo corrigido da variável `descricaoAtualizada`.
+- **oficina/chamado/page.tsx:** Adicionado loading state (`searching`) durante validação de matrícula. Tipagem corrigida (`any` → `Chamado`/`avisos`). Mensagem "Matrícula inválida" exibida quando inválida. Overlay de busca com spinner. Botão "Concluído" muda para "Concluir" e faz reload. CSS variables corrigidas (`var(--primary)` → `var(--primary)`).
+- **api/users/route.ts:** DELETE agora executa em transação: deleta CPF associado antes de deletar o usuário. Mensagem de sucesso atualizada.
+- **next.config.ts:** Uma das URLs do Supabase comentada.
+- **.gitignore:** `/app/ideias` adicionado.
+
 ### Mudança: SEG-009 — DELETE /api/cpfs seguro contra concorrência
 **Autor:** Vibecode
 **Arquivos:** `src/app/api/cpfs/route.ts`, `ideias.md`
