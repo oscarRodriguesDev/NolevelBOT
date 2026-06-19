@@ -5,13 +5,10 @@ import { useRouter } from "next/navigation"
 import { ThemeToggle } from "../../components/theme-toggle"
 
 type Solicitacao = {
-  createdAt: string | number | Date
-  descricao: string
   ticket: string
   status: string
   setor: string
-  categoria: string
-  motivo: string
+  veiculo: string
   abertura: string
 }
 
@@ -32,14 +29,23 @@ export default function ConsultaSolicitacoes() {
       const res = await fetch(`/api/tickets/search?cpf=${matricula}`)
       const data = await res.json()
 
-      const items: Solicitacao[] = data.map((c: Solicitacao) => ({
-        ticket: c.ticket,
-        status: c.status,
-        setor: c.setor,
-        categoria: c.categoria,
-        motivo: c.descricao,
-        abertura: new Date(c.createdAt).toLocaleDateString()
-      }))
+      const items: Solicitacao[] = data.map((c: Record<string, unknown>) => {
+        let veiculo = ''
+        if (c.descricao) {
+          try {
+            const parsed = JSON.parse(c.descricao as string)
+            veiculo = parsed.numeroOnibus || ''
+          } catch {}
+        }
+
+        return {
+          ticket: c.ticket as string,
+          status: c.status as string,
+          setor: c.setor as string || '',
+          veiculo: veiculo || c.veiculo as string || '',
+          abertura: new Date(c.createdAt as string).toLocaleDateString(),
+        }
+      })
 
       setSolicitacoes(items)
     } catch (err) {
@@ -48,15 +54,6 @@ export default function ConsultaSolicitacoes() {
     } finally {
       setLoading(false)
     }
-  }
-
-  const tipoLabel = (tipo: string) => {
-    const labels: Record<string, string> = {
-      defeito: "Defeito",
-      socorro: "Socorro de Rua",
-      sem_defeito: "Sem Defeito",
-    }
-    return labels[tipo?.toLowerCase()] || tipo || "—"
   }
 
   return (
@@ -141,7 +138,8 @@ export default function ConsultaSolicitacoes() {
                 >
                   <tr>
                     <th className="px-4 sm:px-6 py-3 text-left font-semibold">Solicitação</th>
-                    <th className="px-4 sm:px-6 py-3 text-left font-semibold">Tipo</th>
+                    <th className="px-4 sm:px-6 py-3 text-left font-semibold">Veículo</th>
+                    <th className="px-4 sm:px-6 py-3 text-left font-semibold">Setor</th>
                     <th className="px-4 sm:px-6 py-3 text-left font-semibold">Status</th>
                   </tr>
                 </thead>
@@ -160,7 +158,8 @@ export default function ConsultaSolicitacoes() {
                       <td className="px-4 sm:px-6 py-4 font-mono font-semibold" style={{ color: "var(--primary)" }}>
                         {t.ticket}
                       </td>
-                      <td className="px-4 sm:px-6 py-4">{tipoLabel(t.categoria)}</td>
+                      <td className="px-4 sm:px-6 py-4">{t.veiculo || "—"}</td>
+                      <td className="px-4 sm:px-6 py-4">{t.setor || "—"}</td>
                       <td className="px-4 sm:px-6 py-4">
                         <span
                           className="inline-block px-3 py-1 rounded-lg text-xs font-semibold"
