@@ -212,8 +212,11 @@ export default function MobileChat() {
         <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-5">
           {messages.map((msg) => {
             const renderContent = (text: string) => {
-              const lines = text.split('\n').map((line, i) => {
-                const urlRegex = /(https?:\/\/[^\s]+)/g
+              const urlRegex = /(https?:\/\/[^\s]+)/g
+              const boldRegex = /\*(.*?)\*/g
+              const lines = text.split('\n')
+
+              const elements = lines.map((line, i) => {
                 const parts = line.split(urlRegex)
                 return (
                   <span key={i}>
@@ -233,7 +236,6 @@ export default function MobileChat() {
                         )
                       }
 
-                      const boldRegex = /\*(.*?)\*/g
                       const boldParts: (string | React.ReactNode)[] = []
                       let lastIndex = 0
                       let match: RegExpExecArray | null
@@ -257,7 +259,7 @@ export default function MobileChat() {
                 )
               })
 
-              return <>{lines}</>
+              return <>{elements}</>
             }
 
             return (
