@@ -178,7 +178,7 @@
 ## PED-022: Fix atualização de chamados no Corporativo + feedback toast
 **Data:** 19/06/2026
 **Status:** ✅ Concluído
-**Commit:** `<pendente>`
+**Commit:** `c364f6f`
 **Descrição:**
 - **PUT `/api/tickets`:** `prisma.chamado.update` agora usa `id` do chamado (`chamadoExistente.id`) em vez de `ticket` no where, eliminando risco de case-sensitivity. Mensagens de erro detalhadas no catch.
 - **modal_tandimento.tsx:** Adicionado `toast.success()` no sucesso e `toast.error()` com a mensagem real do servidor no erro, tanto no `atualizarChamado` quanto no `concluirChamado`.
