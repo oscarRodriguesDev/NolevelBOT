@@ -300,10 +300,23 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    const historicoExistente: HistoricoItem[] = chamadoExistente.historico
-      ? JSON.parse(chamadoExistente.historico) : []
+    let historicoExistente: HistoricoItem[] = []
+    if (chamadoExistente.historico) {
+      try {
+        historicoExistente = JSON.parse(chamadoExistente.historico)
+      } catch {
+        historicoExistente = []
+      }
+    }
 
-    const novosItens: HistoricoItem[] = historico ? JSON.parse(historico) : []
+    let novosItens: HistoricoItem[] = []
+    if (historico) {
+      try {
+        novosItens = JSON.parse(historico)
+      } catch {
+        novosItens = []
+      }
+    }
 
     const itensFiltrados = novosItens.filter((novo) =>
       !historicoExistente.some(

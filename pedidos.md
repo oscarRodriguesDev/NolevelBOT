@@ -184,3 +184,12 @@
 - **modal_tandimento.tsx:** Adicionado `toast.success()` no sucesso e `toast.error()` com a mensagem real do servidor no erro, tanto no `atualizarChamado` quanto no `concluirChamado`.
 - **kanban-board.tsx:** Adicionado `toast.success()`/`toast.error()` no `handleDrop` (drag-and-drop via Kanban).
 - Build: ✅ sucesso.
+
+## PED-023: Fix JSON.parse quebrando quando historico não é JSON válido
+**Data:** 19/06/2026
+**Status:** ✅ Concluído
+**Commit:** `<pendente>`
+**Descrição:**
+- **PUT `/api/tickets`:** `JSON.parse(chamadoExistente.historico)` estourava 500 quando o campo `historico` no banco continha texto puro (ex: "Chamado criado em...") em vez de JSON array. Envolvido em try/catch com fallback para array vazio. Mesmo tratamento para `JSON.parse(historico)` do body da requisição.
+- Causa raiz: chamados criados por fluxos que armazenavam historico como texto livre em vez de JSON.stringify.
+- Build: ✅ sucesso.
