@@ -77,55 +77,48 @@ export function ModalChamado({
 
 
 async function atualizarChamado() {
-  if (!ticket || !novoStatus) return;
-  setLoading(true);
-
-  // 1. Prepara os dados
-  const novoHistoricoItem: HistoricoItem = {
-    data: new Date().toISOString(),
-    acao: novoStatus,
-    observacao,
-  };
-
-  const historicoAtualizado = [...historico, novoHistoricoItem];
-  
-  // Define a variável aqui, garantindo que ela existe no escopo da função
-  const descricaoAtualizada = descricao ? `${descricao}\n${observacao}` : observacao;
-
-  // 2. Faz o PUT e captura o retorno direto do servidor
+  if (!ticket || !novoStatus) return
   try {
+    setLoading(true)
+
+    const novoHistoricoItem: HistoricoItem = {
+      data: new Date().toISOString(),
+      acao: novoStatus,
+      observacao,
+    }
+
+    const historicoAtualizado = [...historico, novoHistoricoItem]
+    const descricaoAtualizada = descricao ? `${descricao}\n${observacao}` : observacao
+
     const res = await fetch(`/api/tickets?atendimento=${ticket}&estagio=${novoStatus}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        descricao: descricaoAtualizada, // Agora a variável existe aqui
+        descricao: descricaoAtualizada,
         historico: JSON.stringify(historicoAtualizado),
         userId: session.data?.user?.id,
       }),
-    });
+    })
 
     if (!res.ok) {
       const errData = await res.json().catch(() => null)
       throw new Error(errData?.error || "Falha ao atualizar")
     }
 
-    // O servidor retorna o objeto atualizado
-    const chamadoAtualizado = await res.json();
+    const chamadoAtualizado = await res.json()
 
-    // 3. Atualiza os estados com segurança
-    setChamado(chamadoAtualizado);
-    setHistorico(historicoAtualizado);
-    setDescricao(descricaoAtualizada);
-    setNovoStatus(chamadoAtualizado.status);
-    setObservacao("");
+    setChamado(chamadoAtualizado)
+    setHistorico(historicoAtualizado)
+    setDescricao(descricaoAtualizada)
+    setNovoStatus(chamadoAtualizado.status)
+    setObservacao("")
     toast.success("Chamado atualizado com sucesso!")
-
   } catch (error) {
     const mensagem = error instanceof Error ? error.message : "Erro ao atualizar chamado"
     console.error("Erro na atualização:", mensagem)
     toast.error(mensagem)
   } finally {
-    setLoading(false);
+    setLoading(false)
   }
 }
   async function concluirChamado() {
