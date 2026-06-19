@@ -193,3 +193,28 @@
 - **PUT `/api/tickets`:** `JSON.parse(chamadoExistente.historico)` estourava 500 quando o campo `historico` no banco continha texto puro (ex: "Chamado criado em...") em vez de JSON array. Envolvido em try/catch com fallback para array vazio. Mesmo tratamento para `JSON.parse(historico)` do body da requisição.
 - Causa raiz: chamados criados por fluxos que armazenavam historico como texto livre em vez de JSON.stringify.
 - Build: ✅ sucesso.
+
+## PED-024: webhook-oficina encerra sessao apos criar chamado
+**Data:** 19/06/2026
+**Status:** ✅ Concluído
+**Commit:** `28774a2`
+**Descrição:**
+- Após criar chamado com sucesso: `sessions.delete(number)` + `return` imediato, impedindo `saveSession` de recriar a sessão.
+- Mesmo comportamento no `catch` (falha no registro).
+- Build: ✅ sucesso.
+
+## PED-025: Criar webhook-corporativo (sem IA)
+**Data:** 19/06/2026
+**Status:** ✅ Concluído
+**Commit:** `<pendente>`
+**Descrição:**
+- Criado `/api/webhook-corporativo` — fluxo similar ao webhook-oficina, adaptado para o módulo Corporativo:
+  - Identificação por CPF (11 dígitos)
+  - Validação do módulo CORPORATIVO na empresa
+  - Coleta de descrição do motivo
+  - Anexo opcional (foto/documento)
+  - Confirmação e seleção de setor
+  - Criação do chamado na tabela `chamado`
+  - Encerramento da sessão após conclusão
+- **Sem IA** — apenas fluxo estruturado.
+- Build: ✅ sucesso.
