@@ -220,7 +220,7 @@ export async function POST(req: NextRequest) {
 
       case FlowState.COLETAR_FUNCAO: {
         session.funcao = userInput;
-        await sendEvolutionText(instance, number, "Qual o *número do ônibus*?");
+        await sendEvolutionText(instance, number, "Qual a identificação do veiculo?");
         session.state = FlowState.COLETAR_ONIBUS;
         break;
       }
@@ -386,8 +386,10 @@ export async function POST(req: NextRequest) {
               msg += `\n📎 A foto foi anexada automaticamente.`;
             }
             msg += `\n\nNossa equipe vai analisar o mais breve possível.\n\nObrigado pelo relato! 🚌`;
-
+          
             await sendEvolutionText(instance, number, msg);
+            sessions.delete(number);
+            return NextResponse.json({ ok: true });
           } catch {
             const fallback = `TKT-FB-${Date.now()}`;
             await sendEvolutionText(
@@ -395,9 +397,9 @@ export async function POST(req: NextRequest) {
               number,
               `Ops, tive um problema ao registrar. Mas anote o protocolo: *${fallback}*. Nossa equipe foi notificada.`
             );
+            sessions.delete(number);
+            return NextResponse.json({ ok: true });
           }
-
-          sessions.delete(number);
         } else {
           await sendEvolutionText(
             instance,

@@ -32,7 +32,7 @@ export default function SharedAvisosPage({ setHeader }: Props) {
   const [setoresDisponiveis, setSetoresDisponiveis] = useState<string[]>([])
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-
+  const [iscreator, setIsCreator] = useState(false)
 
   useEffect(() => {
     setHeader({
@@ -158,6 +158,8 @@ export default function SharedAvisosPage({ setHeader }: Props) {
     >
       <div className="max-w-5xl mx-auto">
         <div className="flex justify-between items-center mb-8 sm:mb-10">
+         {userRole !== 'ATENDENTE' && (
+
           <button
             onClick={() => {
               if (open) resetForm()
@@ -168,6 +170,7 @@ export default function SharedAvisosPage({ setHeader }: Props) {
           >
             {open ? "Fechar Formulário" : "Novo Aviso"}
           </button>
+         )}
         </div>
 
 
