@@ -206,7 +206,7 @@
 ## PED-025: Criar webhook-corporativo (sem IA)
 **Data:** 19/06/2026
 **Status:** ✅ Concluído
-**Commit:** `<pendente>`
+**Commit:** `29911a3`
 **Descrição:**
 - Criado `/api/webhook-corporativo` — fluxo similar ao webhook-oficina, adaptado para o módulo Corporativo:
   - Identificação por CPF (11 dígitos)
