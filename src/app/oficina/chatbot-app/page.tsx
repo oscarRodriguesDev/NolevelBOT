@@ -20,13 +20,12 @@ type Aviso = {
 
 export default function MobileChat() {
   const [messages, setMessages] = useState<Message[]>([])
-
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [typing, setTyping] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [avisos, setAvisos] = useState<Aviso[]>([])
   const [showAvisos, setShowAvisos] = useState(false)
+  const [sessionId] = useState(() => crypto.randomUUID())
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -34,6 +33,12 @@ export default function MobileChat() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
+
+  useEffect(() => {
+    if (messages.length === 0 && !loading) {
+      sendToBot('')
+    }
+  }, [])
 
   async function uploadFile(file: File): Promise<string | null> {
     setUploading(true)
@@ -53,6 +58,36 @@ export default function MobileChat() {
     }
   }
 
+  async function sendToBot(text: string, fileUrl?: string) {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/chat-oficina', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, sessionId, fileUrl }),
+      })
+
+      const data = await res.json()
+
+      const botMessage: Message = {
+        id: Date.now(),
+        role: 'assistant',
+        content: data.reply || 'Não consegui responder.',
+      }
+
+      setMessages(prev => [...prev, botMessage])
+    } catch {
+      const botMessage: Message = {
+        id: Date.now(),
+        role: 'assistant',
+        content: 'Erro ao enviar mensagem. Tente novamente.',
+      }
+      setMessages(prev => [...prev, botMessage])
+    } finally {
+      setLoading(false)
+    }
+  }
+
   async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -62,7 +97,7 @@ export default function MobileChat() {
       setMessages(prev => [...prev, {
         id: Date.now(),
         role: 'assistant',
-        content: 'Erro ao enviar imagem. Tente novamente.'
+        content: 'Erro ao enviar imagem. Tente novamente.',
       }])
       return
     }
@@ -71,38 +106,12 @@ export default function MobileChat() {
       id: Date.now(),
       role: 'user',
       content: file.type.startsWith('image/') ? '[Enviou uma imagem]' : `[Enviou: ${file.name}]`,
-      imageUrl: url
+      imageUrl: url,
     }
 
     setMessages(prev => [...prev, userMessage])
-    setLoading(true)
+    await sendToBot('', url)
 
-    try {
-      const res = await fetch('/api/chat-operacional', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: `Enviei um arquivo: ${url}`, module: 'OFICINA' })
-      })
-
-      const data = await res.json()
-
-      const botMessage: Message = {
-        id: Date.now() + 1,
-        role: 'assistant',
-        content: data.reply || 'Não consegui responder.'
-      }
-
-      setMessages(prev => [...prev, botMessage])
-    } catch {
-      const botMessage: Message = {
-        id: Date.now() + 1,
-        role: 'assistant',
-        content: 'Erro ao enviar arquivo. Tente novamente.'
-      }
-      setMessages(prev => [...prev, botMessage])
-    }
-
-    setLoading(false)
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
@@ -125,40 +134,13 @@ export default function MobileChat() {
     const userMessage: Message = {
       id: Date.now(),
       role: 'user',
-      content: text
+      content: text,
     }
 
     setMessages(prev => [...prev, userMessage])
     setInput('')
-    setLoading(true)
 
-    try {
-      const res = await fetch('/api/chat-operacional', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, module: 'OFICINA' })
-      })
-
-      const data = await res.json()
-
-      const botMessage: Message = {
-        id: Date.now() + 1,
-        role: 'assistant',
-        content: data.reply || 'Não consegui responder.'
-      }
-
-      setMessages(prev => [...prev, botMessage])
-    } catch {
-      const botMessage: Message = {
-        id: Date.now() + 1,
-        role: 'assistant',
-        content: 'Erro ao enviar mensagem. Tente novamente.'
-      }
-
-      setMessages(prev => [...prev, botMessage])
-    }
-
-    setLoading(false)
+    await sendToBot(text)
   }
 
   return (
@@ -230,26 +212,52 @@ export default function MobileChat() {
         <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-5">
           {messages.map((msg) => {
             const renderContent = (text: string) => {
-              const urlRegex = /(https?:\/\/[^\s]+)/g
-              const parts = text.split(urlRegex)
+              const lines = text.split('\n').map((line, i) => {
+                const urlRegex = /(https?:\/\/[^\s]+)/g
+                const parts = line.split(urlRegex)
+                return (
+                  <span key={i}>
+                    {parts.map((part, j) => {
+                      if (part.match(urlRegex)) {
+                        return (
+                          <a
+                            key={j}
+                            href={part}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="underline"
+                            style={{ color: "var(--primary)" }}
+                          >
+                            {part}
+                          </a>
+                        )
+                      }
 
-              return parts.map((part, index) => {
-                if (part.match(urlRegex)) {
-                  return (
-                    <a
-                      key={index}
-                      href={part}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline"
-                      style={{ color: "var(--primary)" }}
-                    >
-                      {part}
-                    </a>
-                  )
-                }
-                return <span key={index}>{part}</span>
+                      const boldRegex = /\*(.*?)\*/g
+                      const boldParts: (string | React.ReactNode)[] = []
+                      let lastIndex = 0
+                      let match: RegExpExecArray | null
+
+                      const re = RegExp(boldRegex)
+                      while ((match = re.exec(part)) !== null) {
+                        if (match.index > lastIndex) {
+                          boldParts.push(part.slice(lastIndex, match.index))
+                        }
+                        boldParts.push(<strong key={`b-${j}-${match.index}`}>{match[1]}</strong>)
+                        lastIndex = match.index + match[0].length
+                      }
+                      if (lastIndex < part.length) {
+                        boldParts.push(part.slice(lastIndex))
+                      }
+
+                      return <span key={j}>{boldParts.length ? boldParts : part}</span>
+                    })}
+                    {i < lines.length - 1 && <br />}
+                  </span>
+                )
               })
+
+              return <>{lines}</>
             }
 
             return (
@@ -258,7 +266,7 @@ export default function MobileChat() {
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className="max-w-xs sm:max-w-md md:max-w-lg px-4 sm:px-5 py-3 rounded-2xl text-base sm:text-lg leading-relaxed shadow-md transition-colors duration-300"
+                  className="max-w-xs sm:max-w-md md:max-w-lg px-4 sm:px-5 py-3 rounded-2xl text-base sm:text-lg leading-relaxed shadow-md transition-colors duration-300 whitespace-pre-wrap"
                   style={{
                     backgroundColor:
                       msg.role === 'user' ? 'var(--primary)' : 'var(--surface)',
@@ -305,8 +313,7 @@ export default function MobileChat() {
         </main>
 
         <footer
-          className={`px-4 sm:px-6 py-3 sm:py-4 flex gap-2 sm:gap-3 border-t shrink-0 transition-all duration-300 ${typing ? 'mb-[35vh] sm:mb-[30vh]' : 'mb-0'
-            }`}
+          className="px-4 sm:px-6 py-3 sm:py-4 flex gap-2 sm:gap-3 border-t shrink-0 transition-all duration-300"
           style={{
             backgroundColor: "var(--surface)",
             borderColor: "var(--border-subtle)",
@@ -340,8 +347,6 @@ export default function MobileChat() {
             } as never}
             placeholder="Digite sua mensagem..."
             value={input}
-            onFocus={() => setTyping(true)}
-            onBlur={() => setTyping(false)}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') sendMessage()
