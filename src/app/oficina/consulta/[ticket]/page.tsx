@@ -53,11 +53,19 @@ export default function SolicitacaoDetalhePage() {
           throw new Error("Erro ao buscar solicitação");
         }
 
-        const data: Solicitacao[] = await res.json();
-        if (data.length === 0) {
+        const raw: Solicitacao[] = await res.json();
+        if (raw.length === 0) {
           setSolicitacao(null);
         } else {
-          setSolicitacao(data[0]);
+          const item = raw[0]
+          let veiculo = ''
+          if (item.descricao) {
+            try {
+              const parsed = JSON.parse(item.descricao)
+              veiculo = parsed.numeroOnibus || ''
+            } catch {}
+          }
+          setSolicitacao({ ...item, veiculo: veiculo || item.veiculo || '' })
         }
       } catch (err) {
         if (err instanceof Error) {
@@ -74,15 +82,6 @@ export default function SolicitacaoDetalhePage() {
       fetchSolicitacao();
     }
   }, [ticket]);
-
-  const tipoLabel = (tipo: string) => {
-    const labels: Record<string, string> = {
-      defeito: "Defeito",
-      socorro: "Socorro de Rua",
-      sem_defeito: "Sem Defeito",
-    }
-    return labels[tipo?.toLowerCase()] || tipo || "—"
-  }
 
   if (loading) {
     return (
@@ -203,7 +202,7 @@ export default function SolicitacaoDetalhePage() {
 
           <div className="flex items-center gap-2">
             <FaWrench style={{ opacity: 0.6 }} />
-            <span>Tipo: {tipoLabel(solicitacao.categoria)}</span>
+            <span>Setor: {solicitacao.setor || "—"}</span>
           </div>
 
           <div className="flex items-center gap-2">
