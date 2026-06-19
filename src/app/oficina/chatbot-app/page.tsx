@@ -25,7 +25,8 @@ export default function MobileChat() {
   const [uploading, setUploading] = useState(false)
   const [avisos, setAvisos] = useState<Aviso[]>([])
   const [showAvisos, setShowAvisos] = useState(false)
-  const [sessionId] = useState(() => crypto.randomUUID())
+  const [sessionId, setSessionId] = useState(() => crypto.randomUUID())
+  const startedRef = useRef(false)
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -35,10 +36,11 @@ export default function MobileChat() {
   }, [messages, loading])
 
   useEffect(() => {
-    if (messages.length === 0 && !loading) {
+    if (!startedRef.current) {
+      startedRef.current = true
       sendToBot('')
     }
-  }, [])
+  }, [sessionId])
 
   async function uploadFile(file: File): Promise<string | null> {
     setUploading(true)
@@ -68,6 +70,13 @@ export default function MobileChat() {
       })
 
       const data = await res.json()
+
+      if (data.done) {
+        setMessages([])
+        startedRef.current = false
+        setSessionId(crypto.randomUUID())
+        return
+      }
 
       const botMessage: Message = {
         id: Date.now(),

@@ -326,10 +326,10 @@ export async function POST(req: NextRequest) {
             msg += `\n\nNossa equipe vai analisar o mais breve possível.\n\nObrigado pelo relato! 🚌`
 
             sessions.delete(sid)
-            return reply(msg)
+            return NextResponse.json({ reply: msg, sessionId: sid, done: true })
           } catch {
             sessions.delete(sid)
-            return reply("Ops, tive um problema ao registrar. Nossa equipe foi notificada. Tente novamente mais tarde.")
+            return NextResponse.json({ reply: "Ops, tive um problema ao registrar. Nossa equipe foi notificada. Tente novamente mais tarde.", sessionId: sid, done: true })
           }
         }
 
