@@ -13,7 +13,7 @@ type Solicitacao = {
   nome: string
   matricula: string
   veiculo: string
-  tipo: string
+  setor: string
   discriminacao: string
   createdAt: string
   status: string
@@ -33,7 +33,7 @@ export default function SolicitacoesPage() {
   const [filters, setFilters] = useState({
     nome: "",
     matricula: "",
-    tipo: "",
+    setor: "",
     ticket: "",
     status: "",
     startDate: "",
@@ -75,18 +75,28 @@ export default function SolicitacoesPage() {
 
       const result = await response.json()
       const raw = result.data || []
-      const mapped: Solicitacao[] = raw.map((item: Record<string, unknown>) => ({
-        id: item.id as string,
-        ticket: item.ticket as string,
-        nome: item.nome as string,
-        matricula: item.matricula as string || item.cpf as string || '',
-        veiculo: item.veiculo as string || item.setor as string || '',
-        tipo: item.tipo as string || item.categoria as string || '',
-        discriminacao: item.discriminacao as string || item.descricao as string || '',
-        createdAt: item.createdAt as string,
-        status: item.status as string,
-        atendente: item.atendente ? { name: (item.atendente as { name: string }).name } : undefined,
-      }))
+      const mapped: Solicitacao[] = raw.map((item: Record<string, unknown>) => {
+        let numeroOnibus = ''
+        if (item.descricao) {
+          try {
+            const parsed = JSON.parse(item.descricao as string)
+            numeroOnibus = parsed.numeroOnibus || ''
+          } catch {}
+        }
+
+        return {
+          id: item.id as string,
+          ticket: item.ticket as string,
+          nome: item.nome as string,
+          matricula: item.matricula as string || item.cpf as string || '',
+          veiculo: numeroOnibus || item.veiculo as string || '',
+          setor: item.setor as string || '',
+          discriminacao: item.discriminacao as string || item.descricao as string || '',
+          createdAt: item.createdAt as string,
+          status: item.status as string,
+          atendente: item.atendente ? { name: (item.atendente as { name: string }).name } : undefined,
+        }
+      })
       setSolicitacoes(mapped)
       setTotal(result.total || 0)
       setTotalPages(result.totalPages || 0)
@@ -124,7 +134,7 @@ export default function SolicitacoesPage() {
     setFilters({
       nome: "",
       matricula: "",
-      tipo: "",
+      setor: "",
       ticket: "",
       status: "",
       startDate: "",
@@ -150,24 +160,6 @@ export default function SolicitacoesPage() {
 
   const handleConcluido = (ticket: string) => {
     setSolicitacoes(prev => prev.filter(t => t.ticket !== ticket))
-  }
-
-  const tipoLabel = (tipo: string) => {
-    const labels: Record<string, string> = {
-      defeito: "Defeito",
-      socorro: "Socorro de Rua",
-      sem_defeito: "Sem Defeito",
-    }
-    return labels[tipo?.toLowerCase()] || tipo || "—"
-  }
-
-  const tipoColor = (tipo: string) => {
-    const colors: Record<string, string> = {
-      defeito: "var(--status-in-progress)",
-      socorro: "var(--status-cancelled)",
-      sem_defeito: "var(--status-completed)",
-    }
-    return colors[tipo?.toLowerCase()] || "var(--status-new)"
   }
 
   return (
@@ -229,17 +221,13 @@ export default function SolicitacoesPage() {
               style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
             />
 
-            <select
-              value={filters.tipo}
-              onChange={e => updateFilter("tipo", e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)]"
+            <input
+              placeholder="Filtrar por setor..."
+              value={filters.setor}
+              onChange={e => updateFilter("setor", e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
               style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
-            >
-              <option value="">Tipo (Todos)</option>
-              <option value="defeito">Defeito</option>
-              <option value="socorro">Socorro de Rua</option>
-              <option value="sem_defeito">Sem Defeito</option>
-            </select>
+            />
 
             <select
               value={filters.status}
@@ -266,7 +254,7 @@ export default function SolicitacoesPage() {
                   <th className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider">Motorista</th>
                   <th className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider">Matrícula</th>
                   <th className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider">Veículo</th>
-                  <th className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider">Tipo</th>
+                  <th className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider">Setor</th>
                   <th className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider">Status</th>
                   <th className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider">Data</th>
                 </tr>
@@ -289,11 +277,7 @@ export default function SolicitacoesPage() {
                       <td className="py-3.5 px-4">{item.nome}</td>
                       <td className="py-3.5 px-4">{item.matricula || "—"}</td>
                       <td className="py-3.5 px-4">{item.veiculo || "—"}</td>
-                      <td className="py-3.5 px-4">
-                        <span className="inline-block px-3 py-1 rounded-full text-[10px] font-bold text-white uppercase" style={{ backgroundColor: tipoColor(item.tipo) }}>
-                          {tipoLabel(item.tipo)}
-                        </span>
-                      </td>
+                      <td className="py-3.5 px-4">{item.setor || "—"}</td>
                       <td className="py-3.5 px-4">
                         <span className="inline-block px-3 py-1 rounded-full text-[10px] font-bold text-white uppercase" style={{ backgroundColor: getStatusColor(item.status) }}>
                           {item.status?.replace(/_/g, ' ')}

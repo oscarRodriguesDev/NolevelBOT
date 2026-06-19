@@ -10,7 +10,6 @@ type Chamado = {
   nome: string
   cpf: string
   setor: string
-  categoria: string
   prioridade: string
   descricao: string
   createdAt: string
@@ -40,24 +39,6 @@ function normalizeStatus(status: string): string {
   if (s.includes("CONCLUIDO") || s.includes("FINALIZADO")) return "CONCLUIDO"
   if (s.includes("CANCELADO")) return "CANCELADO"
   return "NOVO"
-}
-
-const tipoLabel = (tipo: string) => {
-  const labels: Record<string, string> = {
-    defeito: "Defeito",
-    socorro: "Socorro",
-    sem_defeito: "OK",
-  }
-  return labels[tipo?.toLowerCase()] || tipo || "—"
-}
-
-const tipoColor = (tipo: string) => {
-  const colors: Record<string, string> = {
-    defeito: "var(--status-in-progress)",
-    socorro: "var(--status-cancelled)",
-    sem_defeito: "var(--status-completed)",
-  }
-  return colors[tipo?.toLowerCase()] || "var(--status-new)"
 }
 
 export default function KanbanBoard({ tickets, loading, onRefresh }: KanbanBoardProps) {
@@ -201,10 +182,14 @@ export default function KanbanBoard({ tickets, loading, onRefresh }: KanbanBoard
                       {ticket.ticket}
                     </span>
                     <span
-                      className="text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white uppercase whitespace-nowrap ml-1 shrink-0"
-                      style={{ backgroundColor: tipoColor(ticket.categoria) }}
+                      className="text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap ml-1 shrink-0"
+                      style={{
+                        backgroundColor: "var(--surface)",
+                        color: "var(--foreground)",
+                        border: "1px solid var(--border-subtle)",
+                      }}
                     >
-                      {tipoLabel(ticket.categoria)}
+                      {ticket.setor || "—"}
                     </span>
                   </div>
                   <p className="text-xs font-medium truncate">{ticket.nome}</p>
