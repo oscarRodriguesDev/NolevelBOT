@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/app/components/theme-toggle";
 import { LuMail, LuLock } from "react-icons/lu";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import Link from "next/link";
 
 
@@ -89,7 +89,12 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/dashboard");
+      const session = await getSession()
+      if (session?.user?.role === "GOD") {
+        router.push("/god/dashboard")
+      } else {
+        router.push("/dashboard")
+      }
     } catch {
       setError("Erro ao fazer login");
     } finally {

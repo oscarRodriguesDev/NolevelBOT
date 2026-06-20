@@ -58,6 +58,7 @@ export function ModuleLayout({ module, children }: Props) {
           setAutorizado(false)
           router.replace('/dashboard')
         }
+        
       } catch {
         setAutorizado(false)
         router.replace('/dashboard')

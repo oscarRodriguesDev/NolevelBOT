@@ -104,7 +104,7 @@ export function Sidebar() {
         { label: 'Empresas', href: '/corporativo/empresa', icon: LuBuilding2, show: true },
         { label: 'Usuários', href: '/god/usuarios', icon: LuUsers, show: true },
         { label: 'Admins', href: '/god/admins', icon: LuSettings, show: true },
-        { label: 'Erros', href: '/god/erros', icon: LuBug, show: true },
+        { label: 'Erros', href: '/god/erros', icon: LuBug, show:false },
       ],
     })
   }

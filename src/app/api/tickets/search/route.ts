@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(chamados)
     }
 
-    if (cpf && !session) {
+    if (cpf) {
       const chamados = await prisma.chamado.findMany({
         where: { cpf },
         orderBy: { createdAt: "desc" },
@@ -111,10 +111,6 @@ export async function GET(req: NextRequest) {
     const empresaId = session?.user?.empresaId || ""
 
     const where: Prisma.ChamadoWhereInput = getTicketWhereClause(userRole || "ATENDENTE", userSetor, empresaId)
-
-    if (cpf) {
-      where.cpf = cpf
-    }
 
     const chamados = await prisma.chamado.findMany({
       where,
