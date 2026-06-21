@@ -243,6 +243,18 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 **Data:** 12/06/2026
 **Descrição:** Quando um usuário ADMIN tem setor vazio (pois herda todos os setores), a coluna "Setor" agora exibe "all" em vez de ficar em branco ou mostrar "—".
 
+### Mudança: Removidos arquivos query.js e query.sql
+**Autor:** Usuário
+**Arquivos:** `query.js` (deletado), `query.sql` (deletado)
+**Data:** 20/06/2026
+**Descrição:** Arquivos de consulta direta ao banco (Prisma + SQL) removidos do repositório. Eram usados para debug/teste manual e não fazem parte do código de produção.
+
+### Mudança: Criado manual da plataforma (data/regras.md)
+**Autor:** Vibecode
+**Arquivos:** `data/regras.md` (novo)
+**Data:** 20/06/2026
+**Descrição:** Criado arquivo `data/regras.md` com todas as regras da plataforma: visão geral, regras de cadastro baseadas nas validações Zod (email, senha, CPF, CNPJ), regras de acesso RBAC (papéis, hierarquia, permissões, escopo de dados), sistema de módulos, status de chamados, prioridades, canais de atendimento, segurança e temas. Funciona como manual de uso completo da plataforma.
+
 ## Registro de Autoria
 
 ### Mudança: Botão "Concluído" no chamado corporativo faz reload em vez de fechar janela
