@@ -44,6 +44,8 @@ export default function UserCard(props: Props) {
     signOut({ callbackUrl: "/" })
   }
 
+  
+
   if (status === "loading") {
     return (
       <div className="p-4 text-sm opacity-60 animate-pulse">

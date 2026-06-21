@@ -245,6 +245,12 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 
 ## Registro de Autoria
 
+### Mudança: Botão "Concluído" no chamado corporativo faz reload em vez de fechar janela
+**Autor:** Usuário
+**Arquivos:** `src/app/corporativo/chamado/page.tsx`
+**Data:** 20/06/2026
+**Descrição:** O botão na tela de sucesso após criar chamado usava `window.close()` (que não funciona em abas abertas por navegação direta). Alterado para `window.location.reload()`, permitindo que o usuário faça novo chamado sem precisar navegar manualmente.
+
 ### Mudança: Login movido para a raiz (/)
 **Autor:** Usuário
 **Arquivos:** `src/app/page.tsx`, `src/app/login/page.tsx` (deletado)
