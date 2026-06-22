@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { ThemeToggle } from '../../components/theme-toggle'
 import { LuPaperclip, LuMegaphone, LuX } from 'react-icons/lu'
+import { uploadFileDirect } from '@/lib/upload-client'
 
 type Message = {
   id: number
@@ -45,16 +46,7 @@ export default function MobileChat() {
   async function uploadFile(file: File): Promise<string | null> {
     setUploading(true)
     try {
-      const form = new FormData()
-      form.append('file', file)
-      form.append('bucket', 'anexo')
-      form.append('folder', 'chatbot')
-
-      const res = await fetch('/api/upload', { method: 'POST', body: form })
-      const data = await res.json()
-      return data.url || null
-    } catch {
-      return null
+      return await uploadFileDirect(file, "anexo", "chatbot")
     } finally {
       setUploading(false)
     }

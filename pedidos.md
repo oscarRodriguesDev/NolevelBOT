@@ -224,3 +224,13 @@
   - Encerramento da sessão após conclusão
 - **Sem IA** — apenas fluxo estruturado.
 - Build: ✅ sucesso.
+
+## PED-027: /api/upload retornando 413 na Vercel (Payload Too Large)
+**Data:** 22/06/2026
+**Status:** ✅ Concluído
+**Commit:** (pendente)
+**Descrição:** O endpoint `/api/upload` retornava 413 na Vercel porque o plano Hobby limita o corpo da requisição em 4.5MB. Implementado upload direto ao Supabase via signed URL:
+- Criado `/api/upload-signed`: valida metadados e gera signed URL (`supabase.storage.createSignedUploadUrl()`)
+- Criado `src/lib/upload-client.ts` com `uploadFileDirect()`: client-side helper que faz upload direto ao Supabase
+- Atualizados 4 callers (chatbots + empresa pages) para usar o novo fluxo
+- `/api/upload` mantido para compatibilidade

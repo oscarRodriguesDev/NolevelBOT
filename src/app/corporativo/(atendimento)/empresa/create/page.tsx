@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { ArrowLeft, Building2, CheckCircle2, Loader2, Upload, Sparkles, Image, Wrench, Headphones, CalendarCheck } from 'lucide-react'
 import { useHeader } from '../../layout'
 import toast from 'react-hot-toast'
+import { uploadFileDirect } from '@/lib/upload-client'
 
 export default function CreateEmpresa() {
   const { data: session, status } = useSession()
@@ -134,18 +135,11 @@ Máximo 400 caracteres. Seja objetivo.`
     try {
       let finalLogoUrl = logoUrl
       if (logoFile) {
-        const formData = new FormData()
-        formData.append('file', logoFile)
-        formData.append('bucket', 'logo')
-        formData.append('folder', 'empresas')
-
-        const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData })
-        if (uploadRes.ok) {
-          const uploadData = await uploadRes.json()
-          finalLogoUrl = uploadData.url || ''
+        const url = await uploadFileDirect(logoFile, "logo", "empresas")
+        if (url) {
+          finalLogoUrl = url
         } else {
-          const errData = await uploadRes.json().catch(() => ({}))
-          toast.error(errData.error || 'Erro ao fazer upload da logo')
+          toast.error('Erro ao fazer upload da logo')
         }
       }
 

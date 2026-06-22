@@ -624,3 +624,15 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 - `src/app/api-docs/page.tsx`: entrada do webhook26 removida
 - 620 linhas eliminadas
 - Build: ✅ sucesso. Commit: `f6c6ac1`
+
+### Mudança: Upload direto ao Supabase via signed URL (bypass 413 Vercel)
+**Autor:** Vibecode
+**Arquivos:** `src/app/api/upload-signed/route.ts` (novo), `src/lib/upload-client.ts` (novo), `src/app/oficina/chatbot-app/page.tsx`, `src/app/corporativo/chatbot-app/page.tsx`, `src/app/corporativo/(atendimento)/empresa/page.tsx`, `src/app/corporativo/(atendimento)/empresa/create/page.tsx`
+**Data:** 22/06/2026
+**Descrição:**
+- `/api/upload` retornava 413 na Vercel (limite de 4.5MB do hobby plan) porque o upload passava pelo servidor Next.js.
+- Criado `/api/upload-signed`: endpoint que valida metadados (bucket, folder, extensão, MIME, tamanho) e gera uma signed URL via `supabase.storage.createSignedUploadUrl()`. O upload do arquivo vai diretamente do cliente para o Supabase, sem passar pelo servidor Next.js, eliminando o limite de tamanho da Vercel.
+- Criado `src/lib/upload-client.ts` com `uploadFileDirect()`: helper client-side que obtém a signed URL e faz o PUT direto para o Supabase, retornando a URL pública.
+- Atualizados 4 callers: chatbots (oficina + corporativo) e páginas de empresa (edit + create) para usar `uploadFileDirect()` em vez de `/api/upload`.
+- `/api/upload` mantido para compatibilidade com possíveis callers não mapeados.
+- Build: ✅ sucesso.
