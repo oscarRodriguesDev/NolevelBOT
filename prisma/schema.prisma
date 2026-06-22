@@ -83,6 +83,7 @@ model cpfs {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   empresaId String
+  telefone  String?
   Empresa   empresa  @relation(fields: [empresaId], references: [id])
 
   @@index([empresaId])
@@ -161,6 +162,26 @@ model logs_de_acesso {
   @@index([cpf])
   @@index([empresa])
   @@index([modulo])
+}
+
+model cache {
+  key       String   @id
+  value     String
+  expiresAt DateTime
+}
+
+model tickets_evitados {
+  id         String   @id
+  nome       String
+  empresaId  String
+  cpf        String
+  setor      String
+  descricao  String
+  prioridade String
+  anexoUrl   String?
+  atendente  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
 }
 
 enum ROLE {
