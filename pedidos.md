@@ -91,6 +91,12 @@
 - Link "Erros" adicionado na sidebar do GOD
 **Commit:** `2662b04`
 
+## PED-026: Criar manual da plataforma (data/regras.md)
+**Data:** 20/06/2026
+**Status:** ✅ Concluído
+**Commit:** `259d1fe`
+**Descrição:** Criado arquivo `data/regras.md` com todas as regras da plataforma: visão geral, regras de cadastro baseadas nas validações Zod (email, senha, CPF, CNPJ), regras de acesso RBAC (papéis, hierarquia, permissões, escopo de dados), sistema de módulos (Corporativo, Oficina, Eventos), status de chamados, prioridades, canais de atendimento, segurança e temas. Funciona como manual de uso completo da plataforma.
+
 # # atenção sempre que adcionar os pedido preciso que aponte o docido do commit que foi realizado
 
 ## PED-021: Análise completa do sistema + página pública de ideias
