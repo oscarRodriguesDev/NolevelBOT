@@ -8,6 +8,8 @@ const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "application/pdf"]
 const ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "pdf"]
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 
+//export const runtime = 'edge';
+export const runtime = 'nodejs';
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req)
@@ -54,7 +56,7 @@ export async function POST(req: NextRequest) {
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
         { error: `Arquivo muito grande. Máximo permitido: ${MAX_FILE_SIZE / 1024 / 1024}MB.` },
-        { status: 400 }
+        { status: 413 }
       )
     }
 
