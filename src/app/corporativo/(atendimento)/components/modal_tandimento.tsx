@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import Image from "next/image"
+import toast from "react-hot-toast"
 import type { HistoricoItem, Chamado } from "@/types/chamado"
 import {
   LuX,
@@ -35,8 +36,18 @@ export function ModalChamado({
   const [descricao, setDescricao] = useState("")
   const [historico, setHistorico] = useState<HistoricoItem[]>([])
   const [loading, setLoading] = useState(false)
-
   const session = useSession()
+
+  useEffect(() => {
+    if (!open) return
+    const prevFocus = document.activeElement as HTMLElement | null
+    const modal = document.getElementById("modal-chamado")
+    if (modal) {
+      const first = modal.querySelector<HTMLElement>("button, input, select, textarea, [tabindex]:not([tabindex='-1'])")
+      first?.focus()
+    }
+    return () => prevFocus?.focus()
+  }, [open])
 
   useEffect(() => {
     if (!ticket || !open) return
@@ -64,8 +75,10 @@ export function ModalChamado({
     fetchChamado()
   }, [ticket, open])
 
-  async function atualizarChamado() {
-    if (!ticket || !novoStatus) return
+
+async function atualizarChamado() {
+  if (!ticket || !novoStatus) return
+  try {
     setLoading(true)
 
     const novoHistoricoItem: HistoricoItem = {
@@ -75,12 +88,9 @@ export function ModalChamado({
     }
 
     const historicoAtualizado = [...historico, novoHistoricoItem]
-    setHistorico(historicoAtualizado)
-
     const descricaoAtualizada = descricao ? `${descricao}\n${observacao}` : observacao
-    setDescricao(descricaoAtualizada)
 
-    await fetch(`/api/tickets?atendimento=${ticket}&estagio=${novoStatus}`, {
+    const res = await fetch(`/api/tickets?atendimento=${ticket}&estagio=${novoStatus}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -90,27 +100,49 @@ export function ModalChamado({
       }),
     })
 
-    const res = await fetch(`/api/tickets?ticket=${ticket}`)
-    const data = await res.json()
-    const atualizado = data[0]
+    if (!res.ok) {
+      const errData = await res.json().catch(() => null)
+      throw new Error(errData?.error || "Falha ao atualizar")
+    }
 
-    setChamado(atualizado)
-    setNovoStatus(atualizado.status)
+    const chamadoAtualizado = await res.json()
+
+    setChamado(chamadoAtualizado)
+    setHistorico(historicoAtualizado)
+    setDescricao(descricaoAtualizada)
+    setNovoStatus(chamadoAtualizado.status)
     setObservacao("")
+    toast.success("Chamado atualizado com sucesso!")
+  } catch (error) {
+    const mensagem = error instanceof Error ? error.message : "Erro ao atualizar chamado"
+    console.error("Erro na atualização:", mensagem)
+    toast.error(mensagem)
+  } finally {
     setLoading(false)
   }
-
+}
   async function concluirChamado() {
     const confirmacao = window.confirm("Tem certeza que deseja fechar este chamado? Ele será removido da lista de atendimento.")
     if (!confirmacao) return
     if (!ticket) return
 
-    await fetch(`/api/tickets?atendimento=${ticket}`, {
-      method: "DELETE",
-    })
+    try {
+      const res = await fetch(`/api/tickets?atendimento=${ticket}`, {
+        method: "DELETE",
+      })
 
-    onConcluido(ticket)
-    onClose()
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null)
+        throw new Error(errData?.error || "Erro ao fechar chamado")
+      }
+
+      toast.success("Chamado fechado com sucesso!")
+      onConcluido(ticket)
+      onClose()
+    } catch (error) {
+      const mensagem = error instanceof Error ? error.message : "Erro ao fechar chamado"
+      toast.error(mensagem)
+    }
   }
 
   // Função auxiliar para cores de status (fallback seguro com tailwind)

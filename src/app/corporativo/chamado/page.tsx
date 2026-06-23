@@ -178,7 +178,7 @@ export default function ChamadoPage() {
             Sua solicitação foi registrada com sucesso e direcionada ao setor responsável.
           </p>
           <button
-            onClick={() => window.close()}
+            onClick={() => window.location.reload()}
             className="w-full py-4 rounded-xl font-bold transition-all duration-300 text-white hover:scale-105 active:scale-95"
             style={{ backgroundColor: 'var(--primary)' }}
             onMouseEnter={e => {

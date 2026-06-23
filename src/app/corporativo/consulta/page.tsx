@@ -1,25 +1,40 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { ThemeToggle } from "../../components/theme-toggle"
+import {
+  FaTicketAlt,
+  FaUser,
+  FaIdCard,
+  FaBuilding,
+  FaCalendarAlt,
+  FaInfoCircle,
+  FaFlag,
+  FaUserTie,
+  FaTimes,
+  FaArrowLeft,
+} from "react-icons/fa"
 
-type Chamado = {
-  createdAt: string | number | Date
-  descricao: string
+type ChamadoData = {
   ticket: string
   status: string
   setor: string
-  motivo: string
-  abertura: string
+  nome: string
+  cpf: string
+  descricao: string
+  prioridade: string
+  historico: string | null
+  createdAt: string
+  anexoUrl: string | null
+  atendente: { id: string; name: string; email: string; avatarUrl: string } | null
 }
 
 export default function ConsultaTickets() {
   const [cpf, setCpf] = useState("")
-  const [tickets, setTickets] = useState<Chamado[]>([])
-  // const [selecionado, setSelecionado] = useState<Chamado | null>(null)
+  const [tickets, setTickets] = useState<ChamadoData[]>([])
   const [loading, setLoading] = useState(false)
-  const route = useRouter()
+  const [searched, setSearched] = useState(false)
+  const [selected, setSelected] = useState<ChamadoData | null>(null)
 
   function formatCPF(value: string): string {
     const digits = value.replace(/\D/g, "").slice(0, 11)
@@ -34,29 +49,55 @@ export default function ConsultaTickets() {
 
   async function buscarTickets() {
     if (!cpfValido) return
-
+    setSearched(true)
     setLoading(true)
 
     try {
       const res = await fetch(`/api/tickets/search?cpf=${cpfDigits}`)
-      const data = await res.json()
 
-      const chamados: Chamado[] = data.map((c: Chamado) => ({
-        ticket: c.ticket,
-        status: c.status,
-        setor: c.setor,
-        motivo: c.descricao,
-        abertura: new Date(c.createdAt).toLocaleDateString()
+      if (!res.ok) {
+        setTickets([])
+        return
+      }
+
+      const json = await res.json()
+      const data = Array.isArray(json) ? json : json?.data
+
+      if (!Array.isArray(data)) {
+        setTickets([])
+        return
+      }
+
+      const chamados: ChamadoData[] = data.map((c: Record<string, unknown>) => ({
+        ticket: c.ticket as string,
+        status: c.status as string,
+        setor: (c.setor as string) || "",
+        nome: (c.nome as string) || "",
+        cpf: (c.cpf as string) || "",
+        descricao: (c.descricao as string) || "",
+        prioridade: (c.prioridade as string) || "normal",
+        historico: (c.historico as string) || null,
+        createdAt: c.createdAt as string,
+        anexoUrl: (c.anexoUrl as string) || null,
+        atendente: (c.atendente as Record<string, unknown> | null) as { id: string; name: string; email: string; avatarUrl: string } | null,
       }))
 
       setTickets(chamados)
-
     } catch (err) {
-      console.error(err)
+      console.error("Erro na busca:", err)
       setTickets([])
     } finally {
       setLoading(false)
     }
+  }
+
+  function getStatusColor(status: string): string {
+    const map: Record<string, string> = {
+      CONCLUIDO: "var(--status-completed)",
+      ABERTO: "var(--status-new)",
+      EM_ANDAMENTO: "var(--status-in-progress)",
+    }
+    return map[status] || "var(--status-waiting)"
   }
 
   return (
@@ -71,7 +112,6 @@ export default function ConsultaTickets() {
         <ThemeToggle />
       </div>
       <div className="max-w-2xl mx-auto space-y-8">
-        {/* Header */}
         <div className="space-y-2">
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold" style={{ color: "var(--primary)" }}>
             Consultar Chamados
@@ -79,7 +119,6 @@ export default function ConsultaTickets() {
           <p className="text-sm opacity-70">Busque seus chamados pelo CPF para visualizar o status</p>
         </div>
 
-        {/* Formulário de Busca */}
         <div
           className="p-6 sm:p-8 rounded-2xl border shadow-lg space-y-4 transition-colors duration-300"
           style={{
@@ -124,7 +163,6 @@ export default function ConsultaTickets() {
           </button>
         </div>
 
-        {/* Resultados */}
         {tickets.length > 0 && (
           <div
             className="rounded-2xl border shadow-lg overflow-hidden transition-colors duration-300"
@@ -157,7 +195,7 @@ export default function ConsultaTickets() {
                         borderBottom: "1px solid var(--border-subtle)",
                         backgroundColor: idx % 2 === 0 ? "transparent" : "var(--surface-elevated)",
                       }}
-                      onClick={() => route.push(`consulta/${t.ticket}`)}
+                      onClick={() => setSelected(t)}
                     >
                       <td className="px-4 sm:px-6 py-4 font-mono font-semibold" style={{ color: "var(--primary)" }}>
                         {t.ticket}
@@ -167,11 +205,7 @@ export default function ConsultaTickets() {
                         <span
                           className="inline-block px-3 py-1 rounded-lg text-xs font-semibold"
                           style={{
-                            backgroundColor:
-                              t.status === "CONCLUIDO" ? "var(--status-completed)"
-                                : t.status === "ABERTO" ? "var(--status-new)"
-                                  : t.status === "EM_ANDAMENTO" ? "var(--status-in-progress)"
-                                    : "var(--status-waiting)",
+                            backgroundColor: getStatusColor(t.status),
                             color: "#fff",
                           }}
                         >
@@ -186,7 +220,7 @@ export default function ConsultaTickets() {
           </div>
         )}
 
-        {!loading && tickets.length === 0 && cpf && (
+        {!loading && tickets.length === 0 && searched && (
           <div
             className="p-8 rounded-2xl border text-center transition-colors duration-300"
             style={{
@@ -198,6 +232,114 @@ export default function ConsultaTickets() {
           </div>
         )}
       </div>
+
+      {selected && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          onClick={() => setSelected(null)}
+        >
+          <div
+            className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border shadow-2xl p-6 sm:p-8 space-y-5 transition-colors duration-300"
+            style={{
+              backgroundColor: "var(--surface)",
+              borderColor: "var(--border-subtle)",
+              color: "var(--foreground)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setSelected(null)}
+              className="absolute right-4 top-4 p-2 rounded-full transition-colors hover:opacity-70"
+              style={{ color: "var(--foreground)" }}
+            >
+              <FaTimes size={18} />
+            </button>
+
+            <div
+              className="flex items-center gap-3 border-b pb-4"
+              style={{ borderColor: "var(--border-subtle)" }}
+            >
+              <FaTicketAlt style={{ color: "var(--primary)", fontSize: "1.25rem" }} />
+              <h2 className="text-xl font-semibold">Detalhes do Chamado</h2>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm" style={{ opacity: 0.7 }}>
+                <FaTicketAlt />
+                <span>{selected.ticket}</span>
+              </div>
+              <span
+                className="px-3 py-1 rounded-full text-xs font-semibold text-white"
+                style={{ backgroundColor: getStatusColor(selected.status) }}
+              >
+                {selected.status}
+              </span>
+            </div>
+
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center gap-2">
+                <FaUser style={{ opacity: 0.6 }} />
+                <span>{selected.nome}</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <FaIdCard style={{ opacity: 0.6 }} />
+                <span>{selected.cpf}</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <FaBuilding style={{ opacity: 0.6 }} />
+                <span>{selected.setor}</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <FaCalendarAlt style={{ opacity: 0.6 }} />
+                <span>{new Date(selected.createdAt).toLocaleString("pt-BR")}</span>
+              </div>
+
+              <div className="flex items-start gap-2">
+                <FaInfoCircle style={{ opacity: 0.6, marginTop: "0.25rem" }} />
+                <span>{selected.descricao}</span>
+              </div>
+
+              {selected.historico && (
+                <div className="flex items-start gap-2">
+                  <FaInfoCircle style={{ opacity: 0.6, marginTop: "0.25rem" }} />
+                  <span>{selected.historico}</span>
+                </div>
+              )}
+
+              <div className="flex items-center gap-2">
+                <FaFlag style={{ opacity: 0.6 }} />
+                <span>Prioridade: {selected.prioridade}</span>
+              </div>
+
+              {selected.atendente && (
+                <div className="flex items-center gap-2">
+                  <FaUserTie style={{ opacity: 0.6 }} />
+                  <span>Atendente: {selected.atendente.name}</span>
+                </div>
+              )}
+
+              {selected.anexoUrl && (
+                <div className="flex items-center gap-2">
+                  <FaInfoCircle style={{ opacity: 0.6 }} />
+                  <a
+                    href={selected.anexoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: "var(--primary)" }}
+                    className="underline"
+                  >
+                    Ver anexo
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

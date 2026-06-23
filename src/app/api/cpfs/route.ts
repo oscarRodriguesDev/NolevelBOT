@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { applyRateLimit } from "@/lib/rate-limit"
 import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
 import { getSessionOrFail } from '@/util/permission'
@@ -6,6 +7,8 @@ import { limparCPF } from "@/util/limparcpfs"
 import { CAN_BATCH_CPF } from "@/lib/rbac"
 
 export async function POST(req: NextRequest) {
+  const rateLimit = await applyRateLimit(req, "cpfs", 30, 60 * 1000)
+  if (rateLimit) return rateLimit
   const session = await getSessionOrFail(["GOD", "ADMIN", "GESTOR"])
   const empresaId = session?.user?.empresaId
 
@@ -98,8 +101,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "CPF já cadastrado nesta empresa" }, { status: 400 })
     }
 
+    const telefone = body?.telefone?.replace(/\D/g, "") || undefined
+
     const novo = await prisma.cpfs.create({
-      data: { nome, cpf, empresaId },
+      data: { nome, cpf, empresaId, telefone },
     })
 
     return NextResponse.json(novo)
@@ -109,6 +114,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  const rateLimit = await applyRateLimit(req, "cpfs", 60, 60 * 1000)
+  if (rateLimit) return rateLimit
   try {
     const session = await getSessionOrFail()
     const empresaId = session?.user?.empresaId
@@ -123,7 +130,7 @@ export async function GET(req: NextRequest) {
     if (cpfParaFiltrar) {
       const registro = await prisma.cpfs.findFirst({
         where: { cpf: cpfParaFiltrar, empresaId },
-        select: { nome: true, cpf: true },
+        select: { nome: true, cpf: true, telefone: true },
       })
 
       if (!registro) {
@@ -135,7 +142,7 @@ export async function GET(req: NextRequest) {
 
     const todosCPFs = await prisma.cpfs.findMany({
       where: { empresaId },
-      select: { nome: true, cpf: true },
+      select: { nome: true, cpf: true, telefone: true },
     })
 
     return NextResponse.json(todosCPFs)
@@ -145,6 +152,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const rateLimit = await applyRateLimit(req, "cpfs", 20, 60 * 1000)
+  if (rateLimit) return rateLimit
   const session = await getSessionOrFail(["GOD", "ADMIN", "GESTOR"])
   if (!session) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
@@ -182,7 +191,7 @@ export async function DELETE(req: NextRequest) {
       )
     }
 
-    await prisma.cpfs.delete({ where: { cpf: cleanCpf } })
+    await prisma.cpfs.deleteMany({ where: { cpf: cleanCpf, empresaId } })
 
     return NextResponse.json({ message: "CPF deletado com sucesso" })
   } catch (error) {

@@ -1,24 +1,33 @@
 import { NextResponse } from "next/server"
+import { applyRateLimit } from "@/lib/rate-limit"
 import { prisma } from "@/lib/prisma"
 import { getEmpresaIdByCpf } from "@/lib/searchEmpresa"
 
 export async function GET(req: Request) {
+  const rateLimit = await applyRateLimit(req, "mostrar-avisos", 30, 60 * 1000)
+  if (rateLimit) return rateLimit
   try {
     const { searchParams } = new URL(req.url)
     const cpf = searchParams.get("cpf")
 
-    let empresaId: string | null = null
+    if (!cpf) {
+      return NextResponse.json(
+        { error: "CPF é obrigatório para consultar avisos" },
+        { status: 400 }
+      )
+    }
 
-    if (cpf) {
-      empresaId = await getEmpresaIdByCpf(cpf)
+    const empresaId = await getEmpresaIdByCpf(cpf)
+
+    if (!empresaId) {
+      return NextResponse.json(
+        { error: "Nenhuma empresa encontrada para este CPF" },
+        { status: 404 }
+      )
     }
 
     const avisos = await prisma.avisos.findMany({
-      where: empresaId
-        ? {
-            empresaId,
-          }
-        : undefined,
+      where: { empresaId },
       orderBy: { createdAt: "desc" },
     })
 

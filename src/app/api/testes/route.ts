@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server'
 import { exec } from 'child_process'
 import { promisify } from 'util'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/nextauth'
+import * as path from 'path'
+import { promises as fs } from 'fs'
 
 const execAsync = promisify(exec)
 
@@ -95,8 +99,26 @@ function buildReport(vitestData: VitestReport) {
 
 export async function GET() {
   try {
-    const { stdout, stderr } = await execAsync(
-      'npx vitest run --reporter=json --reporter=verbose 2>&1',
+    if (process.env.ENABLE_TESTES !== 'true') {
+      return NextResponse.json(
+        { error: 'Testes desabilitados' },
+        { status: 404 }
+      )
+    }
+
+    const session = await getServerSession(authOptions)
+
+    if (!session?.user || session.user.role !== 'GOD') {
+      return NextResponse.json(
+        { error: 'Acesso restrito a GOD' },
+        { status: 403 }
+      )
+    }
+
+    const reportFile = 'vitest-report.json'
+
+    await execAsync(
+      `npx vitest run --reporter=json --outputFile=${reportFile}`,
       {
         cwd: process.cwd(),
         timeout: 180000,
@@ -104,34 +126,35 @@ export async function GET() {
       }
     )
 
-    const jsonMatch = stdout.match(/\{[\s\S]*"numTotalTestSuites"[\s\S]*\}/)
+    const reportPath = path.join(process.cwd(), reportFile)
+    const reportContent = await fs.readFile(reportPath, 'utf8')
 
-    if (!jsonMatch) {
-      return NextResponse.json({
-        error: 'Nao foi possivel extrair resultados JSON do vitest',
-        raw: stdout.substring(0, 2000),
-        stderr: stderr?.substring(0, 2000),
-      }, { status: 500 })
-    }
-
-    const vitestData: VitestReport = JSON.parse(jsonMatch[0])
+    const vitestData: VitestReport = JSON.parse(reportContent)
     const report = buildReport(vitestData)
+
+    await fs.unlink(reportPath).catch(() => {})
+
     return NextResponse.json(report)
   } catch (error: any) {
-    if (error.stdout) {
-      const jsonMatch = error.stdout.match(/\{[\s\S]*"numTotalTestSuites"[\s\S]*\}/)
-      if (jsonMatch) {
-        try {
-          const vitestData: VitestReport = JSON.parse(jsonMatch[0])
-          const report = buildReport(vitestData)
-          return NextResponse.json(report)
-        } catch { }
-      }
-    }
+    try {
+      const reportPath = path.join(process.cwd(), 'vitest-report.json')
+      const reportContent = await fs.readFile(reportPath, 'utf8')
 
-    return NextResponse.json({
-      error: error.message || 'Erro ao executar testes',
-      stderr: error.stderr?.substring(0, 2000),
-    }, { status: 500 })
+      const vitestData: VitestReport = JSON.parse(reportContent)
+      const report = buildReport(vitestData)
+
+      await fs.unlink(reportPath).catch(() => {})
+
+      return NextResponse.json(report)
+    } catch {}
+
+    return NextResponse.json(
+      {
+        error: error?.message || 'Erro ao executar testes',
+        stdout: error?.stdout?.substring(0, 3000),
+        stderr: error?.stderr?.substring(0, 3000),
+      },
+      { status: 500 }
+    )
   }
 }

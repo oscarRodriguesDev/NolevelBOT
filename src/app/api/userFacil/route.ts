@@ -1,4 +1,5 @@
 import { uploadFile } from "@/lib/upload"
+import { applyRateLimit } from "@/lib/rate-limit"
 import { prisma } from "@/lib/prisma"
 import { ROLE } from "@prisma/client"
 import { hash } from "bcryptjs"
@@ -33,6 +34,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const rateLimit = await applyRateLimit(req, "userFacil", 20, 60 * 1000)
+  if (rateLimit) return rateLimit
   const session = await getSessionOrFail(["GOD"])
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

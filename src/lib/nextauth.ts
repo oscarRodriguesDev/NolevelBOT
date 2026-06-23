@@ -18,15 +18,12 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null
 
-         console.log("Tentativa de login para:", credentials.email)
-
-        if (needsCaptcha(credentials.email)) {
+        if (await needsCaptcha(credentials.email)) {
           if (!credentials.turnstileToken) return null
           const valid = await verifyTurnstileToken(credentials.turnstileToken)
           if (!valid) return null
         }
-       
-        console.log("Verificando usuário no banco de dados para:", credentials.email)
+
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
           include: {
@@ -34,23 +31,18 @@ export const authOptions: NextAuthOptions = {
           },
         })
 
-        console.log("Usuário encontrado:", user)
-
         if (!user || !user.password) {
-          trackFailedLogin(credentials.email)
+          await trackFailedLogin(credentials.email)
           return null
         }
-
-        console.log("Comparando senhas para:", credentials.email)
 
         const isValid = await compare(credentials.password, user.password)
-        console.log(credentials.password, user.password, "Resultado da comparação:", isValid)
         if (!isValid) {
-          trackFailedLogin(credentials.email)
+          await trackFailedLogin(credentials.email)
           return null
         }
 
-        resetFailedLogin(credentials.email)
+        await resetFailedLogin(credentials.email)
 
         const empresa = await prisma.empresa.findUnique({
           where: { id: user.empresaId },
@@ -124,7 +116,7 @@ export const authOptions: NextAuthOptions = {
   },
   
   pages: {
-    signIn: '/login', // Redireciona para sua página customizada se houver erro
+    signIn: '/', // Redireciona para sua página customizada se houver erro
   },
   
   secret: process.env.NEXTAUTH_SECRET,

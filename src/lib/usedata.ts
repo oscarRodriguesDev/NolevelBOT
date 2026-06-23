@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { captureError } from "./app-error";
 
 const baseUrl = process.env.BASE_URL_WP||process.env.NEXT_PUBLIC_BASE_URL_WP;
 
@@ -31,23 +32,24 @@ export async function buscarAvisos(cpf?: string, _req?: Request) {
   try {
     const { prisma } = await import("@/lib/prisma");
     const { getEmpresaIdByCpf } = await import("@/lib/searchEmpresa");
+    const { cacheGetOrSet } = await import("@/lib/db-cache");
 
-    let empresaId: string | null = null;
+    const empresaId = cpf ? await getEmpresaIdByCpf(cpf) : null;
 
-    if (cpf) {
-      empresaId = await getEmpresaIdByCpf(cpf);
-    }
+    const cacheKey = cpf ? `avisos:empresa:${empresaId || "none"}` : "avisos:geral";
 
-    const avisos = await prisma.avisos.findMany({
-      where: empresaId ? { empresaId } : undefined,
-      orderBy: { createdAt: "desc" },
-    });
+    return await cacheGetOrSet(cacheKey, async () => {
+      const avisos = await prisma.avisos.findMany({
+        where: empresaId ? { empresaId } : undefined,
+        orderBy: { createdAt: "desc" },
+      });
 
-    const validos = await filtrarAvisosValidos(avisos);
+      const validos = await filtrarAvisosValidos(avisos);
 
-    if (validos.length === 0) return "Sem avisos.";
+      if (validos.length === 0) return "Sem avisos.";
 
-    return validos.map(a => `📢 *${a.titulo}*: ${a.conteudo}`).join("\n");
+      return validos.map(a => `📢 *${a.titulo}*: ${a.conteudo}`).join("\n");
+    }, 120); // 2min
   } catch {
     return "Sem avisos no momento.";
   }
@@ -57,25 +59,28 @@ export async function buscarAvisosPorCpf(cpf: string) {
   try {
     const { prisma } = await import("@/lib/prisma");
     const { getEmpresaIdByCpf } = await import("@/lib/searchEmpresa");
+    const { cacheGetOrSet } = await import("@/lib/db-cache");
 
     const empresaId = await getEmpresaIdByCpf(cpf);
     if (!empresaId) return "Sem avisos.";
 
-    const avisos = await prisma.avisos.findMany({
-      where: { empresaId },
-      orderBy: { createdAt: "desc" },
-    });
+    return await cacheGetOrSet(`avisos:personal:${cpf}`, async () => {
+      const avisos = await prisma.avisos.findMany({
+        where: { empresaId },
+        orderBy: { createdAt: "desc" },
+      });
 
-    const validos = await filtrarAvisosValidos(avisos);
+      const validos = await filtrarAvisosValidos(avisos);
 
-    const cpfNumbers = cpf.replace(/\D/g, "");
-    const especificos = validos.filter(a =>
-      a.titulo.includes(cpfNumbers) || a.conteudo.includes(cpfNumbers)
-    );
+      const cpfNumbers = cpf.replace(/\D/g, "");
+      const especificos = validos.filter(a =>
+        a.titulo.includes(cpfNumbers) || a.conteudo.includes(cpfNumbers)
+      );
 
-    if (especificos.length === 0) return "Sem avisos.";
+      if (especificos.length === 0) return "Sem avisos.";
 
-    return especificos.map(a => `📢 *${a.titulo}*: ${a.conteudo}`).join("\n");
+      return especificos.map(a => `📢 *${a.titulo}*: ${a.conteudo}`).join("\n");
+    }, 120); // 2min
   } catch {
     return "Sem avisos no momento.";
   }
@@ -99,8 +104,8 @@ export function generateRandomTicket() {
 //buscar memoria do bot
 export async function getMemoria(cpf: string) {
   try {
-    
-    const res = await fetch(`${baseUrl}/api/memories?cpf=${cpf}`, { cache: 'no-store' });
+    const headers: Record<string, string> = { "x-api-key": process.env.BOT_API_KEY || "" }
+    const res = await fetch(`${baseUrl}/api/memories?cpf=${cpf}`, { cache: 'no-store', headers });
     return res.ok ? (await res.json())?.resumo : null;
   } catch { return null; }
 }
@@ -109,13 +114,12 @@ export async function getMemoria(cpf: string) {
 //salvar memoria do bot
 export async function saveMemoria(cpf: string, nome: string, resumo: string) {
   try {
-   
     await fetch(`${baseUrl}/api/memories`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-api-key": process.env.BOT_API_KEY || "" },
       body: JSON.stringify({ cpf, nome, resumo }),
     });
-  } catch { console.error("Erro ao salvar memória"); }
+  } catch { captureError("Erro ao salvar memória", "saveMemoria"); }
 }
 
 
@@ -154,7 +158,7 @@ export async function StatusChamado(filtro: string, _req?: Request) {
 
     return chamados;
   } catch (error) {
-    console.error("Erro ao buscar status do chamado:", error);
+    captureError(error, "StatusChamado");
     return [];
   }
 }
@@ -346,7 +350,7 @@ export async function validarCpf(cpf: string) {
     }
     return { valido: false };
   } catch (err) {
-    console.error("Erro ao validar CPF:", err);
+    captureError(err, "validarCpf");
     return { valido: false };
   }
 }
@@ -359,16 +363,20 @@ export async function checkEmpresaModule(
 ): Promise<{ hasModule: boolean; activeModules: string[] }> {
   try {
     const { prisma } = await import("@/lib/prisma");
-    const empresa = await prisma.empresa.findUnique({
-      where: { id: empresaId },
-      select: { modulos: true },
-    });
-    if (!empresa) return { hasModule: false, activeModules: [] };
-    const modulos = empresa.modulos as string[];
-    return {
-      hasModule: modulos.includes(modulo),
-      activeModules: modulos,
-    };
+    const { cacheGetOrSet } = await import("@/lib/db-cache");
+
+    return await cacheGetOrSet(`empresa:modulos:${empresaId}`, async () => {
+      const empresa = await prisma.empresa.findUnique({
+        where: { id: empresaId },
+        select: { modulos: true },
+      });
+      if (!empresa) return { hasModule: false, activeModules: [] };
+      const modulos = empresa.modulos as string[];
+      return {
+        hasModule: modulos.includes(modulo),
+        activeModules: modulos,
+      };
+    }, 1800); // 30min
   } catch {
     return { hasModule: false, activeModules: [] };
   }
@@ -391,7 +399,7 @@ export async function getNomeBot(cpf: string) {
 
     return cpfData?.Empresa?.botName?.trim() || "Hevelyn";
   } catch (err) {
-    console.error("Erro ao obter nome do bot:", err);
+    captureError(err, "getNomeBot");
     return "Hevelyn";
   }
 }

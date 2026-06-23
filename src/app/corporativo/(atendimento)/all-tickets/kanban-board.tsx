@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react"
 import { useSession } from "next-auth/react"
+import toast from "react-hot-toast"
 import { ModalChamado } from "../components/modal_tandimento"
 import { getPriorityColor } from "@/types/chamado"
 
@@ -108,10 +109,16 @@ export default function KanbanBoard({ tickets, loading, onRefresh }: KanbanBoard
         }),
       })
 
-      if (!response.ok) throw new Error("Erro ao atualizar status")
+      if (!response.ok) {
+        const errData = await response.json().catch(() => null)
+        throw new Error(errData?.error || "Erro ao atualizar status")
+      }
+      toast.success("Status atualizado!")
       onRefresh()
     } catch (error) {
-      console.error("Erro ao mover chamado:", error)
+      const mensagem = error instanceof Error ? error.message : "Erro ao mover chamado"
+      console.error("Erro ao mover chamado:", mensagem)
+      toast.error(mensagem)
     }
   }, [tickets, session, onRefresh])
 

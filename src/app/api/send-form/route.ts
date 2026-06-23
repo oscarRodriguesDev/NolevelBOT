@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from "next/server"
+import { applyRateLimit } from "@/lib/rate-limit"
+import { validateOrError } from "@/lib/validate"
+import { sendFormSchema } from "@/lib/validation"
 
 export async function POST(req: NextRequest) {
+  const rateLimit = await applyRateLimit(req, "send-form", 5, 60 * 1000)
+  if (rateLimit) return rateLimit
   try {
     const body = await req.json()
-    const { nome, email, empresa, telefone, mensagem } = body
+    const parsed = validateOrError(body, sendFormSchema)
+    if (parsed instanceof NextResponse) return parsed
 
-    if (!nome || !email || !empresa || !telefone || !mensagem) {
-      return NextResponse.json({ error: "Dados incompletos" }, { status: 400 })
-    }
-  console.log(nome, email, empresa, telefone, mensagem)
+    const { nome, email, empresa, telefone, mensagem } = parsed
     const data = new URLSearchParams()
   data.append("entry.1191434689", nome)
   data.append("entry.2001611283", email)

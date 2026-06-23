@@ -1,19 +1,23 @@
 'use client'
-import { useState } from 'react'
-import { LuCheck, LuWrench, LuTruck, LuClipboardList, LuLoader, LuArrowRight, LuMegaphone } from 'react-icons/lu'
+import { useState, useEffect } from 'react'
+import { LuCheck, LuWrench, LuTruck, LuClipboardList, LuLoader, LuMegaphone } from 'react-icons/lu'
 import { ThemeToggle } from '../../components/theme-toggle'
 import { FileUpload } from '../../components/fileInput'
 import toast from 'react-hot-toast'
+import { Chamado } from '@/types/chamado'
+import { avisos } from '@prisma/client'
+
+
 
 type TipoRegistro = 'defeito' | 'socorro' | 'sem_defeito' | null
 
 export default function ManutencaoPage() {
-  const hoje = new Date().toISOString().split('T')[0]
 
+  const [mounted, setMounted] = useState(false)
   const [formData, setFormData] = useState({
     nome: '',
     matricula: '',
-    data: hoje,
+    data: '',
     veiculo: '',
     discriminacao: '',
   })
@@ -21,13 +25,28 @@ export default function ManutencaoPage() {
   const [tipoRegistro, setTipoRegistro] = useState<TipoRegistro>(null)
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
+  const [searching, setSearching] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [setoresDisponiveis, setSetoresDisponiveis] = useState<string[]>([])
   const [setorSelecionado, setSetorSelecionado] = useState('')
-  const [avisos, setAvisos] = useState<any[]>([])
+  const [avisos, setAvisos] = useState<avisos[]>([])
   const [showAvisos, setShowAvisos] = useState(false)
   const [matriculaValida, setMatriculaValida] = useState(false)
 
+
+
+  useEffect(() => { setMounted(true) }, [])
+
+  useEffect(() => {
+    if (mounted) {
+      const hoje = new Date().toISOString().split('T')[0]
+      setFormData(prev => ({ ...prev, data: hoje }))
+    }
+  }, [mounted])
+
+
+
+  //função genérica para atualizar os campos do formulário, com tratamento específico para matrícula para aceitar apenas números e limitar a 6 dígitos
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -40,17 +59,23 @@ export default function ManutencaoPage() {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
+
+  //pego a imagem do input file e salvo no state para enviar depois
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0])
     }
   }
 
+
+  /* valida a matricula, implementar para quando perder o foco tambem */
   async function validarMatricula(matricula: string) {
+    setSearching(true)
     if (matricula.length < 3) return
     try {
       const res = await fetch(`/api/oficina/tickets?matricula=${matricula}`)
       if (res.ok) {
+
         const data = await res.json()
         setFormData(prev => ({ ...prev, nome: data.nome || prev.nome }))
         setSetoresDisponiveis(data.setores || [])
@@ -63,14 +88,19 @@ export default function ManutencaoPage() {
     } catch {
       setMatriculaValida(false)
     }
+    finally {
+      setSearching(false)
+    }
   }
 
+
+  /* busca os avisos especificos para a matricula */
   async function fetchAvisos(matricula: string) {
     try {
       const res = await fetch(`/api/quadro-avisos/mostrar-avisos?cpf=${matricula}`)
       if (res.ok) {
         const data = await res.json()
-        const filtrados = data.filter((a: any) =>
+        const filtrados = data.filter((a: Chamado) =>
           !a.setor || a.setor === setorSelecionado || a.setor === ''
         )
         setAvisos(filtrados)
@@ -79,6 +109,7 @@ export default function ManutencaoPage() {
     } catch { }
   }
 
+  //função para enviar o formulário
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -127,7 +158,7 @@ export default function ManutencaoPage() {
       setLoading(false)
       setSubmitted(true)
       toast.success('Solicitação registrada com sucesso')
-    } catch (error: any) {
+    } catch (error: any)/* eslint-disable-line */ {
       console.error('Erro ao registrar:', error)
       toast.error(error?.message || 'Erro ao processar. Tente novamente.')
       setLoading(false)
@@ -135,6 +166,7 @@ export default function ManutencaoPage() {
   }
 
   if (submitted) {
+    /* caso o formulário seja enviado, exibe uma mensagem de sucesso: aqui preciso corrigir o problema da tela sem sentido */
     return (
       <div
         className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 transition-colors duration-300"
@@ -160,7 +192,7 @@ export default function ManutencaoPage() {
               : 'Solicitação de manutenção registrada com sucesso.'}
           </p>
           <button
-            onClick={() => window.close()}
+            onClick={() => window.location.reload()}
             className="w-full py-4 rounded-xl font-bold transition-all duration-300 text-white hover:scale-105 active:scale-95"
             style={{ backgroundColor: 'var(--primary)' }}
             onMouseEnter={e => {
@@ -174,13 +206,15 @@ export default function ManutencaoPage() {
               }
             }}
           >
-            Concluído
+            Concluir
+
           </button>
         </div>
       </div>
     )
   }
 
+  /* caso o formulário não seja enviado, continua exibindo o formulário */
   return (
     <div
       className="min-h-screen px-4 sm:px-6 lg:px-8 py-6 sm:py-8 transition-colors duration-300"
@@ -189,6 +223,18 @@ export default function ManutencaoPage() {
         color: 'var(--foreground)',
       }}
     >
+      {(searching && !matriculaValida) && (
+        <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-3">
+          {/* Ícone */}
+          <LuLoader className="animate-spin h-7 w-7 text-blue-600" />
+
+          {/* Texto abaixo */}
+          <span className="text-sm font-medium text-gray-700">
+            Buscando usuário...
+          </span>
+        </div>
+      )}
+
       <div className="absolute right-4 top-4 z-50">
         <ThemeToggle />
       </div>
@@ -253,6 +299,11 @@ export default function ManutencaoPage() {
                   } as never}
                   placeholder="000000"
                 />
+                {!matriculaValida && (
+                  <span className="text-xs text-red-600 font-medium">
+                    Matrícula inválida
+                  </span>
+                )}
               </div>
             </div>
 
@@ -306,18 +357,17 @@ export default function ManutencaoPage() {
                 <button
                   type="button"
                   onClick={() => setTipoRegistro('defeito')}
-                  className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-300 ${
-                    tipoRegistro === 'defeito'
-                      ? 'border-[var(--primary)] bg-[var(--primary)]/10'
-                      : 'border-[var(--border-subtle)] hover:border-[var(--primary)]/50'
-                  }`}
+                  className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-300 ${tipoRegistro === 'defeito'
+                    ? 'border-(--primary) bg-(--primary)/10'
+                    : 'border-(--border-subtle) hover:border-(--primary)/50'
+                    }`}
                   style={{
                     backgroundColor: tipoRegistro === 'defeito' ? 'color-mix(in srgb, var(--primary) 10%, transparent)' : 'var(--surface-elevated)',
                   }}
                 >
-                  <LuWrench className={`h-6 w-6 ${tipoRegistro === 'defeito' ? 'text-[var(--primary)]' : 'opacity-60'}`} />
+                  <LuWrench className={`h-6 w-6 ${tipoRegistro === 'defeito' ? 'text-(--primary)' : 'opacity-60'}`} />
                   <div className="text-left">
-                    <span className={`block text-sm font-semibold ${tipoRegistro === 'defeito' ? 'text-[var(--primary)]' : ''}`}>
+                    <span className={`block text-sm font-semibold ${tipoRegistro === 'defeito' ? 'text-(--primary)' : ''}`}>
                       Defeito
                     </span>
                     <span className="text-xs opacity-60">Problema mecânico/técnico</span>
@@ -327,18 +377,17 @@ export default function ManutencaoPage() {
                 <button
                   type="button"
                   onClick={() => setTipoRegistro('socorro')}
-                  className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-300 ${
-                    tipoRegistro === 'socorro'
-                      ? 'border-[var(--primary)] bg-[var(--primary)]/10'
-                      : 'border-[var(--border-subtle)] hover:border-[var(--primary)]/50'
-                  }`}
+                  className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-300 ${tipoRegistro === 'socorro'
+                    ? 'border-(--primary) bg-(--primary)/10'
+                    : 'border-(--border-subtle) hover:border-(--primary)/50'
+                    }`}
                   style={{
                     backgroundColor: tipoRegistro === 'socorro' ? 'color-mix(in srgb, var(--primary) 10%, transparent)' : 'var(--surface-elevated)',
                   }}
                 >
-                  <LuTruck className={`h-6 w-6 ${tipoRegistro === 'socorro' ? 'text-[var(--primary)]' : 'opacity-60'}`} />
+                  <LuTruck className={`h-6 w-6 ${tipoRegistro === 'socorro' ? 'text-(--primary)' : 'opacity-60'}`} />
                   <div className="text-left">
-                    <span className={`block text-sm font-semibold ${tipoRegistro === 'socorro' ? 'text-[var(--primary)]' : ''}`}>
+                    <span className={`block text-sm font-semibold ${tipoRegistro === 'socorro' ? 'text-(--primary)' : ''}`}>
                       Socorro de Rua
                     </span>
                     <span className="text-xs opacity-60">Veículo quebrado em circulação</span>
@@ -348,18 +397,17 @@ export default function ManutencaoPage() {
                 <button
                   type="button"
                   onClick={() => setTipoRegistro('sem_defeito')}
-                  className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-300 ${
-                    tipoRegistro === 'sem_defeito'
-                      ? 'border-[var(--primary)] bg-[var(--primary)]/10'
-                      : 'border-[var(--border-subtle)] hover:border-[var(--primary)]/50'
-                  }`}
+                  className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-300 ${tipoRegistro === 'sem_defeito'
+                    ? 'border-(--primary) bg-(--primary)/10'
+                    : 'border-(--border-subtle) hover:border-(--primary)/50'
+                    }`}
                   style={{
                     backgroundColor: tipoRegistro === 'sem_defeito' ? 'color-mix(in srgb, var(--primary) 10%, transparent)' : 'var(--surface-elevated)',
                   }}
                 >
-                  <LuCheck className={`h-6 w-6 ${tipoRegistro === 'sem_defeito' ? 'text-[var(--primary)]' : 'opacity-60'}`} />
+                  <LuCheck className={`h-6 w-6 ${tipoRegistro === 'sem_defeito' ? 'text-(--primary)' : 'opacity-60'}`} />
                   <div className="text-left">
-                    <span className={`block text-sm font-semibold ${tipoRegistro === 'sem_defeito' ? 'text-[var(--primary)]' : ''}`}>
+                    <span className={`block text-sm font-semibold ${tipoRegistro === 'sem_defeito' ? 'text-(--primary)' : ''}`}>
                       Sem Defeito
                     </span>
                     <span className="text-xs opacity-60">Veículo OK ao final do turno</span>
@@ -480,7 +528,7 @@ export default function ManutencaoPage() {
                 <LuMegaphone className="h-4 w-4" style={{ color: 'var(--primary)' }} />
                 <span className="text-xs font-bold uppercase tracking-wider opacity-70">Avisos</span>
               </div>
-              {avisos.map((aviso: any) => (
+              {avisos.map((aviso: avisos) => (
                 <div
                   key={aviso.id}
                   className="p-4 rounded-xl border text-sm transition-colors duration-300"
@@ -536,4 +584,5 @@ export default function ManutencaoPage() {
       </div>
     </div>
   )
+
 }

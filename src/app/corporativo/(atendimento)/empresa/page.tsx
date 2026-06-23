@@ -8,6 +8,7 @@ import { useSession } from 'next-auth/react'
 import { ROLE } from '@prisma/client'
 import { useHeader } from '../layout'
 import toast from 'react-hot-toast'
+import { uploadFileDirect } from '@/lib/upload-client'
 
 interface Empresa {
   id: string
@@ -119,18 +120,11 @@ export default function EmpresaPage() {
       let finalLogoUrl = editLogoPreview
 
       if (editLogoFile) {
-        const formData = new FormData()
-        formData.append('file', editLogoFile)
-        formData.append('bucket', 'logo')
-        formData.append('folder', 'empresas')
-
-        const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData })
-        if (uploadRes.ok) {
-          const uploadData = await uploadRes.json()
-          finalLogoUrl = uploadData.url || editLogoPreview
+        const url = await uploadFileDirect(editLogoFile, "logo", "empresas")
+        if (url) {
+          finalLogoUrl = url
         } else {
-          const errData = await uploadRes.json().catch(() => ({}))
-          toast.error(errData.error || 'Erro ao fazer upload da logo')
+          toast.error('Erro ao fazer upload da logo')
           return
         }
       }

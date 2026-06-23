@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
+import { applyRateLimit } from "@/lib/rate-limit"
+import { validateOrError } from "@/lib/validate"
+import { createUserSchema, updateUserSchema } from "@/lib/validation"
 import { prisma } from "@/lib/prisma"
 import { hash } from "bcryptjs"
 import { ROLE } from "@prisma/client"
@@ -16,6 +19,8 @@ const roleMap: Record<string, ROLE> = {
 }
 
 export async function POST(req: NextRequest) {
+  const rateLimit = await applyRateLimit(req, "users", 20, 60 * 1000)
+  if (rateLimit) return rateLimit
   const { session, error } = await getServerSessionRBAC(["GOD", "ADMIN", "GESTOR"])
   if (error) return error
 
@@ -79,16 +84,15 @@ export async function POST(req: NextRequest) {
     const email = formData.get("email") as string
     const cpf = limparCPF(formData.get("cpf") as string || "")
     const password = formData.get("password") as string
-    const setor = formData.get("setor") as string
+    let setor = formData.get("setor") as string
     const file = formData.get("avatar") as File | null
 
-    if (!name?.trim()) return NextResponse.json({ error: "Nome é obrigatório" }, { status: 400 })
-    if (!email?.trim()) return NextResponse.json({ error: "Email é obrigatório" }, { status: 400 })
-    if (!cpf) return NextResponse.json({ error: "CPF é obrigatório" }, { status: 400 })
-    if (!password?.trim()) return NextResponse.json({ error: "Senha é obrigatória" }, { status: 400 })
-    if (finalRole !== "ADMIN" && !setor?.trim()) {
-      return NextResponse.json({ error: "Setor é obrigatório" }, { status: 400 })
+    if (finalRole === "ADMIN" && !setor) {
+      setor = "all"
     }
+
+    const parsed = validateOrError({ name, email, cpf, password, setor, empresaId: empresaID, role: finalRole }, createUserSchema)
+    if (parsed instanceof NextResponse) return parsed
 
     if (userRole === "GESTOR") {
       if (setor !== session!.setor) {
@@ -165,6 +169,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  const rateLimit = await applyRateLimit(req, "users", 60, 60 * 1000)
+  if (rateLimit) return rateLimit
   const { session, error } = await getServerSessionRBAC(["GOD", "ADMIN", "GESTOR"])
   if (error) return error
 
@@ -217,6 +223,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const rateLimit = await applyRateLimit(req, "users", 20, 60 * 1000)
+  if (rateLimit) return rateLimit
   const { session, error } = await getServerSessionRBAC(["GOD", "ADMIN", "GESTOR"])
   if (error) return error
 
@@ -301,25 +309,38 @@ export async function DELETE(req: NextRequest) {
       }
     }
 
-    await prisma.user.delete({ where: { id } })
+    // Execução em transação para garantir que ambos sejam deletados
+    await prisma.$transaction(async (tx) => {
+      // Deleta o registro na tabela de CPFs se o campo CPF existir no usuário
+      if (targetUser.cpf) {
+        await tx.cpfs.deleteMany({
+          where: { cpf: targetUser.cpf },
+        })
+      }
 
-    return NextResponse.json({ message: "Usuário removido com sucesso" })
+      // Deleta o usuário
+      await tx.user.delete({ where: { id } })
+    })
+
+    return NextResponse.json({ message: "Usuário e registro de CPF removidos com sucesso" })
   } catch (error) {
+    console.error("Erro ao deletar usuário:", error)
     return NextResponse.json({ error: "Erro ao remover usuário" }, { status: 500 })
   }
 }
-
 export async function PUT(req: NextRequest) {
+  const rateLimit = await applyRateLimit(req, "users", 20, 60 * 1000)
+  if (rateLimit) return rateLimit
   const { session, error } = await getServerSessionRBAC(["GOD", "ADMIN", "GESTOR"])
   if (error) return error
 
   try {
     const body = await req.json()
-    const { id, name, email, cpf, setor, empresaId, role } = body
 
-    if (!id) {
-      return NextResponse.json({ error: "ID é obrigatório" }, { status: 400 })
-    }
+    const parsed = validateOrError(body, updateUserSchema)
+    if (parsed instanceof NextResponse) return parsed
+
+    const { id, name, email, cpf, setor, empresaId, role } = parsed
 
     const targetUser = await prisma.user.findUnique({
       where: { id },

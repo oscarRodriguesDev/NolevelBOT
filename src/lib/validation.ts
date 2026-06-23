@@ -60,3 +60,36 @@ export const createLeadSchema = z.object({
   telefone: z.string().min(8, "Telefone inválido"),
   empresa: z.string().optional(),
 })
+
+export const sendFormSchema = z.object({
+  nome: z.string().min(2, "Nome deve ter no mínimo 2 caracteres"),
+  email: emailSchema,
+  empresa: z.string().min(1, "Empresa é obrigatória"),
+  telefone: z.string().min(8, "Telefone inválido"),
+  mensagem: z.string().min(5, "Mensagem deve ter no mínimo 5 caracteres"),
+})
+
+export const createAvisoSchema = z.object({
+  titulo: z.string().min(2, "Título deve ter no mínimo 2 caracteres"),
+  conteudo: z.string().min(5, "Conteúdo deve ter no mínimo 5 caracteres"),
+  setor: z.string().min(1, "Setor é obrigatório"),
+  duracao: z.string().optional(),
+})
+
+export const updateAvisoSchema = z.object({
+  id: z.string().min(1, "ID é obrigatório"),
+  titulo: z.string().min(2).optional(),
+  conteudo: z.string().min(5).optional(),
+  setor: z.string().min(1).optional(),
+  duracao: z.string().optional(),
+})
+
+export const updateUserSchema = z.object({
+  id: z.string().min(1, "ID é obrigatório"),
+  name: z.string().min(2).optional(),
+  email: emailSchema.optional(),
+  cpf: cpfSchema.optional(),
+  setor: z.string().min(1).optional(),
+  empresaId: z.string().uuid().optional(),
+  role: z.string().optional(),
+})

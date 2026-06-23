@@ -5,6 +5,39 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "application/pdf"]
+const ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "pdf"]
+const MAX_FILE_SIZE = 10 * 1024 * 1024
+
+export const ALLOWED_EXTENSIONS_LIST = ALLOWED_EXTENSIONS
+export const ALLOWED_MIME_TYPES_LIST = ALLOWED_MIME_TYPES
+export const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE
+
+export function getExtension(filename: string): string {
+  return (filename.split(".").pop() || "").toLowerCase()
+}
+
+export function validarArquivo({
+  extension,
+  mimeType,
+  size,
+}: {
+  extension: string
+  mimeType: string
+  size: number
+}): string | null {
+  if (!ALLOWED_EXTENSIONS.includes(extension)) {
+    return "Tipo de arquivo não permitido. Apenas JPG, PNG e PDF."
+  }
+  if (!ALLOWED_MIME_TYPES.includes(mimeType)) {
+    return "Tipo MIME não permitido. Apenas image/jpeg, image/png e application/pdf."
+  }
+  if (size > MAX_FILE_SIZE) {
+    return `Arquivo muito grande. Máximo permitido: ${MAX_FILE_SIZE / 1024 / 1024}MB.`
+  }
+  return null
+}
+
 const createdBuckets = new Set<string>()
 
 async function ensureBucket(bucket: string) {
@@ -49,10 +82,20 @@ export async function uploadFile({
 }: UploadOptions): Promise<string | null> {
   if (!file) return defaultUrl
 
+  const extension = getExtension(file.name)
+  const erro = validarArquivo({
+    extension,
+    mimeType: file.type,
+    size: file.size,
+  })
+  if (erro) {
+    console.error("UPLOAD VALIDATION ERROR:", erro)
+    return null
+  }
+
   await ensureBucket(bucket)
 
-  const fileExt = file.name.split(".").pop()
-  const fileName = `${crypto.randomUUID()}.${fileExt}`
+  const fileName = `${crypto.randomUUID()}.${extension}`
   const filePath = folder ? `${folder}/${fileName}` : fileName
 
   const { error } = await supabase.storage
@@ -88,6 +131,17 @@ export async function uploadBuffer({
   bucket?: string
   folder?: string
 }): Promise<string | null> {
+  const extension = getExtension(fileName)
+  const erro = validarArquivo({
+    extension,
+    mimeType,
+    size: buffer.length,
+  })
+  if (erro) {
+    console.error("UPLOAD BUFFER VALIDATION ERROR:", erro)
+    return null
+  }
+
   await ensureBucket(bucket)
 
   const filePath = folder ? `${folder}/${fileName}` : fileName

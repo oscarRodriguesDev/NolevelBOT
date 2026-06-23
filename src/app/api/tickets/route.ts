@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import type { Prisma } from '@prisma/client'
 export const dynamic = 'force-dynamic'
 import { uploadFile } from '@/lib/upload'
+import { validateOrError } from '@/lib/validate'
+import { createTicketSchema, isValidCPF } from '@/lib/validation'
 import { getSessionOrFail } from '@/util/permission'
 import { getPhoneByCpf, registerPhone } from '@/lib/phoneMap'
 import { sendEvolutionText } from '@/lib/usedata'
@@ -11,7 +13,6 @@ import { normalizarStatus } from '@/types/chamado'
 import { getTicketWhereClause } from '@/lib/rbac'
 import { ROLE } from '@prisma/client'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
-import { isValidCPF } from '@/lib/validation'
 
 type ContatoTelefone = { telefone: string; instance: string } | null
 
@@ -69,7 +70,7 @@ function sanitizar(valor: string, maxLength = 500): string {
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req)
-    const rateCheck = checkRateLimit(`tickets:${ip}`, 3, 60 * 60 * 1000)
+    const rateCheck = await checkRateLimit(`tickets:${ip}`, 3, 60 * 60 * 1000)
     if (!rateCheck.allowed) {
       return NextResponse.json(
         { error: "Muitas solicitações deste IP. Aguarde antes de tentar novamente." },
@@ -103,19 +104,8 @@ export async function POST(req: NextRequest) {
     const telefone = (formData.get("telefone") as string || "").replace(/\D/g, "").slice(0, 15) || null
     const file = formData.get("anexo") as File | null
 
-    const camposFaltando: string[] = []
-    if (!nome) camposFaltando.push("nome")
-    if (!cpfRaw) camposFaltando.push("cpf")
-    if (!setor) camposFaltando.push("setor")
-    if (!descricao) camposFaltando.push("descricao")
-    if (camposFaltando.length > 0) {
-      console.error("Campos obrigatórios faltando:", camposFaltando, { nome, cpf: cpfRaw, setor, descricao: descricao?.substring(0, 50) })
-      return NextResponse.json({ error: `Campos obrigatórios: ${camposFaltando.join(", ")}` }, { status: 400 })
-    }
-
-    if (!isValidCPF(cpfRaw)) {
-      return NextResponse.json({ error: "CPF inválido" }, { status: 400 })
-    }
+    const parsed = validateOrError({ nome, cpf: cpfRaw, setor, descricao, prioridade }, createTicketSchema)
+    if (parsed instanceof NextResponse) return parsed
 
     const cpfRecord = await prisma.cpfs.findFirst({ where: { cpf: cpfRaw } })
     if (!cpfRecord) {
@@ -310,10 +300,23 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    const historicoExistente: HistoricoItem[] = chamadoExistente.historico
-      ? JSON.parse(chamadoExistente.historico) : []
+    let historicoExistente: HistoricoItem[] = []
+    if (chamadoExistente.historico) {
+      try {
+        historicoExistente = JSON.parse(chamadoExistente.historico)
+      } catch {
+        historicoExistente = []
+      }
+    }
 
-    const novosItens: HistoricoItem[] = historico ? JSON.parse(historico) : []
+    let novosItens: HistoricoItem[] = []
+    if (historico) {
+      try {
+        novosItens = JSON.parse(historico)
+      } catch {
+        novosItens = []
+      }
+    }
 
     const itensFiltrados = novosItens.filter((novo) =>
       !historicoExistente.some(
@@ -327,7 +330,7 @@ export async function PUT(req: NextRequest) {
     const novoHistorico: HistoricoItem[] = [...historicoExistente, ...itensFiltrados]
 
     const chamadoAtualizado = await prisma.chamado.update({
-      where: { ticket: ticketNumber.trim() },
+      where: { id: chamadoExistente.id },
       data: {
         status: normalizarStatus(estagio),
         atendenteId: userId,
@@ -353,8 +356,9 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json(chamadoAtualizado, { status: 200 })
   } catch (error) {
-    console.error(error)
-    return NextResponse.json({ error: "Erro ao atualizar chamado" }, { status: 500 })
+    const mensagem = error instanceof Error ? error.message : "Erro ao atualizar chamado"
+    console.error("Erro ao atualizar chamado:", mensagem)
+    return NextResponse.json({ error: mensagem }, { status: 500 })
   }
 }
 
@@ -416,7 +420,8 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({ message: "Chamado movido para tickets fechados" }, { status: 200 })
   } catch (error) {
-    console.error(error)
-    return NextResponse.json({ error: "Erro ao mover chamado" }, { status: 500 })
+    const mensagem = error instanceof Error ? error.message : "Erro ao mover chamado"
+    console.error("Erro ao mover chamado:", mensagem)
+    return NextResponse.json({ error: mensagem }, { status: 500 })
   }
 }

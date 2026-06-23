@@ -1,5 +1,7 @@
 # MEMÓRIAS DO PROJETO — NolevelBOT
 
+# nas melhorias mapeadas- quando fizer não esquecer de colocar concluido na pagina
+
 ## Fluxo de Trabalho Colaborativo
 
 ### Regra de Ouro
@@ -241,13 +243,70 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 **Data:** 12/06/2026
 **Descrição:** Quando um usuário ADMIN tem setor vazio (pois herda todos os setores), a coluna "Setor" agora exibe "all" em vez de ficar em branco ou mostrar "—".
 
+### Mudança: Removidos arquivos query.js e query.sql
+**Autor:** Usuário
+**Arquivos:** `query.js` (deletado), `query.sql` (deletado)
+**Data:** 20/06/2026
+**Descrição:** Arquivos de consulta direta ao banco (Prisma + SQL) removidos do repositório. Eram usados para debug/teste manual e não fazem parte do código de produção.
+
+### Mudança: Criado manual da plataforma (data/regras.md)
+**Autor:** Vibecode
+**Arquivos:** `data/regras.md` (novo)
+**Data:** 20/06/2026
+**Descrição:** Criado arquivo `data/regras.md` com todas as regras da plataforma: visão geral, regras de cadastro baseadas nas validações Zod (email, senha, CPF, CNPJ), regras de acesso RBAC (papéis, hierarquia, permissões, escopo de dados), sistema de módulos, status de chamados, prioridades, canais de atendimento, segurança e temas. Funciona como manual de uso completo da plataforma.
+
 ## Registro de Autoria
+
+### Mudança: Botão "Concluído" no chamado corporativo faz reload em vez de fechar janela
+**Autor:** Usuário
+**Arquivos:** `src/app/corporativo/chamado/page.tsx`
+**Data:** 20/06/2026
+**Descrição:** O botão na tela de sucesso após criar chamado usava `window.close()` (que não funciona em abas abertas por navegação direta). Alterado para `window.location.reload()`, permitindo que o usuário faça novo chamado sem precisar navegar manualmente.
 
 ### Mudança: Login movido para a raiz (/)
 **Autor:** Usuário
 **Arquivos:** `src/app/page.tsx`, `src/app/login/page.tsx` (deletado)
 **Data:** 12/06/2026
 **Descrição:** A página de login foi movida de `/login` para `/` (raiz). O arquivo `src/app/login/page.tsx` foi deletado e seu conteúdo copiado para `src/app/page.tsx`, substituindo a landing page original.
+
+### Mudança: Dashboard oficina enriquecido (melhores veiculos, correlacao, reincidencia, sazonalidade, tempo por defeito)
+**Autor:** Vibecode
+**Arquivos:** `src/app/api/dashboards/route.ts`, `src/app/oficina/(atendimento)/dashboards/page.tsx`
+**Data:** 15/06/2026
+**Descrição:**
+- **API (`/api/dashboards`):**
+  - Adicionado `melhoresVeiculos` (veículos com menos ocorrências, ordem crescente).
+  - Adicionado `correlacaoDefeitoVeiculo` (cruzamento: para cada defeito, lista veículos afetados).
+  - Adicionado `tempoMedioPorDefeito` (média de horas para resolver cada tipo de defeito).
+  - Adicionado `reincidenciaStats` (mesmo veículo + mesmo defeito em até 15 dias, com contagem de ocorrências e intervalo).
+  - Adicionado `sazonalidadeDefeitos` (defeitos agrupados por mês para identificar padrões sazonais).
+- **Frontend (`oficina/dashboards/page.tsx`):**
+  - Novo card "Tempo Médio por Defeito" (gráfico de barras horizontal).
+  - Novo card "Melhores Veículos" (gráfico de barras com veículos de menor incidência).
+  - Novo card "Reincidência (<=15dias)" (tabela com veículo, defeito, ocorrências e intervalo).
+  - Nova seção "Sazonalidade de Defeitos" (tabela multi-mês com top 5 defeitos por mês).
+  - Novo grid "Correlação Defeito x Veículo" (cards dinâmicos mostrando quais veículos sofrem cada defeito).
+  - CSV e PDF atualizados com todos os novos indicadores.
+
+### Mudança: Indicadores do dashboard corporativo enriquecidos (tickets_evitados, tempo médio detalhado, comparativo avisos vs evitados)
+**Autor:** Vibecode
+**Arquivos:** `src/app/api/dashboards/route.ts`, `src/app/corporativo/(atendimento)/dashboards/page.tsx`
+**Data:** 15/06/2026
+**Descrição:**
+- **API (`/api/dashboards`):**
+  - Adicionada query a `tickets_evitados` (filtrada por `empresaId` e `periodo`) com try-catch para não quebrar se a tabela não existir.
+  - Adicionados `tempoMedioDiario` (resolvidos em <= 1 dia), `tempoMedioSemanal` (<= 7 dias), `tempoMedioMensal` (<= 30 dias).
+  - Adicionados `totalEvitados`, `totalAvisos`, `taxaAutomacao` (evitados / (evitados + chamados) * 100), `economiaHoras` (evitados * tempoMedio).
+  - Adicionado `evitadosPorMotivo` (top motivos que o bot resolveu).
+  - Adicionado `comparativoAvisos` (agrupamento mensal de avisos criados vs chamados evitados para correlação).
+  - Helpers `inPeriodo()` e `getMonthKey()` para filtrar/agrupar por período de forma consistente.
+- **Frontend (`dashboards/page.tsx`):**
+  - 8 KPIs na primeira linha (4 originais + 4 novos: Chamados Evitados, Avisos Ativos, Taxa de Automação, Economia).
+  - Card de Tempo Médio reformulado: exibe média geral + breakdown diário/semanal/mensal.
+  - Novo gráfico "Avisos vs Chamados Evitados" (barras agrupadas, recharts com Legend).
+  - Nova tabela "Top Motivos Evitados".
+  - Card explicativo da relação entre avisos e chamados evitados.
+  - CSV e PDF atualizados com todas as novas métricas.
 
 ### Mudança: Instruções de colaboração atualizadas
 **Autor:** Usuário
@@ -306,6 +365,22 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 - `src/app/api/dashboards/route.ts`: adicionado query param `modulo`, parse de descricao JSON para detectar tickets de oficina, métricas expandidas (statusStats, defeitosStats, funcoesStats, veiculosStats, taxaConclusao).
 - `src/app/oficina/(atendimento)/all-tickets/page.tsx`: paginação adicionada (controles anterior/próximo, botões de página), filtros resetam página para 1, `updateFilter` helper, estado `page`/`total`/`totalPages`.
 - Dashboards refinados com KPIs, pizza de status, gráficos por módulo.
+
+### Mudança: Limpeza de arquivos obsoletos
+**Autor:** Usuário
+**Arquivos:** `.github/workflows/deploy-homologa.yml` (deletado), `apresentação.md` (deletado), `checkpoint.md` (deletado), `control` (deletado), `landing.json` (deletado), `next.config.ts.txt` (deletado), `recomendações.md` (deletado), `pedidos.md` (esvaziado), `ideias.md` (esvaziado)
+**Data:** 17/06/2026
+**Descrição:** Limpeza geral de arquivos não utilizados e obsoletos. Inclui workflow de CI/CD antigo, apresentação, checkpoint, landing page JSON, config backup, recomendações, e esvaziamento dos registros de pedidos e ideias.
+
+### Mudança: Remove src/proxy.ts obsoleto (duplicata)
+**Autor:** Vibecode
+**Arquivos:** `src/proxy.ts` (deletado)
+**Data:** 17/06/2026
+**Descrição:**
+- Havia dois arquivos `proxy.ts`: um na raiz (`proxy.ts`, 118 linhas, ativo) e outro em `src/proxy.ts` (43 linhas, obsoleto).
+- O root `proxy.ts` é o middleware real do Next.js 16 (rate limiting, proteção `/api-docs`, guard ENABLE_TESTES, brute force).
+- O `src/proxy.ts` era uma versão antiga, não importada por nada, sem as features de segurança recentes.
+- Deletado `src/proxy.ts`. Build: ✅ sucesso.
 
 ### Mudança: Model logs_de_acesso e migration
 **Autor:** Usuário
@@ -367,6 +442,24 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 - **A4:** Rate limit para `/` (60 req/min/IP) e `/dashboard` (120 req/min/IP) via `Map` em memória no proxy (best-effort, funciona para instância única)
 - **A5:** Tracking de brute force por IP em acessos não autenticados a páginas protegidas (20 tentativas a cada 15 min por IP)
 
+### Mudança: Fix criação de ADMIN — setor vazio convertido para "all"
+**Autor:** Vibecode
+**Arquivos:** `src/app/api/users/route.ts`
+**Data:** 18/06/2026
+**Descrição:**
+- Quando um GOD cria um usuário ADMIN, o frontend envia `setor = ""` (ADMIN não tem setor específico).
+- A validação Zod (`z.string().min(1)`) rejeitava string vazia, resultando em erro `400 "Dados inválidos"`.
+- Adicionado guard: se `finalRole === "ADMIN"` e `setor` for vazio, define `setor = "all"` antes da validação.
+- Segue a convenção existente no sistema onde ADMIN sem setor exibe "all" na interface.
+
+### Mudança: Melhoria nas mensagens de erro do validateOrError — mostra campo específico
+**Autor:** Vibecode
+**Arquivos:** `src/lib/validate.ts`
+**Data:** 18/06/2026
+**Descrição:**
+- `validateOrError()` retornava `"Dados inválidos"` genérico sem indicar qual campo falhou.
+- Agora extrai o primeiro campo com erro e inclui no toast (ex: `"Dados inválidos — setor: Setor é obrigatório"`), facilitando o debug.
+
 ### Mudança: Suite de testes expandida (+34 testes, 169 total)
 **Autor:** Vibecode
 **Arquivos:** `src/__tests__/rate-limit.test.ts` (novo), `src/__tests__/audit-log.test.ts` (novo), `src/__tests__/smartSearch.test.ts` (novo), `src/__tests__/usedata.test.ts` (novo)
@@ -378,51 +471,168 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 - **usedata.test.ts:** 10 testes para generateRandomTicket (formato e unicidade), saudacao (4 períodos do dia), checkEmpresaModule (mock de Prisma: módulo presente/ausente/erro).
 - Total: 169 testes passando em 8 arquivos (antes 135 em 4 arquivos).
 
-# Informação super importante pra vc não errar mais isso: font documentação Nextjs
+### Mudança: Fix loop no webhook27 — COLETAR_MOTIVO sem avisos ia para MENU_PRINCIPAL
+**Autor:** Vibecode
+**Arquivos:** `src/app/api/webhook27/route.ts`
+**Data:** 15/06/2026
+**Descrição:**
+- No estado `COLETAR_MOTIVO`, quando não há avisos cadastrados, `buscarAvisos` + `buscarAvisosPorCpf` retornam "Sem avisos." ou "Sem avisos no momento.".
+- A função `botIA4()` em `useIA4.ts` pula o bloco `instrucaoAvisos` quando o texto é exatamente "Sem avisos." ou "Sem avisos no momento." (linha 162-174), então a IA não recebe as instruções sobre `PROSSEGUIR_FLUXO` e `AVISO_RESOLVE`.
+- Sem essas instruções, a IA segue a `reconducao` (que manda reconduzir para o menu) e apresenta as opções novamente.
+- O `else` no webhook27 envia a resposta da IA e seta `MENU_PRINCIPAL`, criando um loop infinito.
+- **Fix:** Quando não há avisos, o fluxo agora pula a análise da IA e vai direto para `PERGUNTAR_ANEXO` (perguntar sobre anexos), eliminando o loop.
 
-Proxy
-Última atualização: 20 de dezembro de 2025
-Proxy
-É bom saber : a partir do Next.js 16, o Middleware passou a se chamar Proxy para melhor refletir sua finalidade. A funcionalidade permanece a mesma.
+### Mudança: Análise completa do sistema e página pública de ideias
+**Autor:** Vibecode
+**Arquivos:** `ideias.md` (reescrito), `src/lib/ideias-data.ts` (novo), `src/app/ideias/page.tsx` (reescrito), `src/app/ideias/ideias-client.tsx` (novo), `proxy.ts`
+**Data:** 17/06/2026
+**Descrição:**
+- Análise minuciosa do sistema identificando 30+ oportunidades de melhoria em 6 categorias (Segurança, Arquitetura, Performance, UX, Infraestrutura, Testes).
+- `ideias.md` reescrito com 32 itens detalhados, organizados por severidade (🔴 CRÍTICO a 🔵 BAIXO) com sugestões de solução e estimativa de esforço.
+- `src/lib/ideias-data.ts`: parser do markdown para dados estruturados (severidade, local, problema, sugestão, esforço).
+- `src/app/ideias/page.tsx`: server component que lê e parseia `ideias.md`.
+- `src/app/ideias/ideias-client.tsx`: componente cliente interativo com:
+  - Filtros por severidade (CRÍTICO/ALTO/MÉDIO/BAIXO) e esforço (Pequeno/Médio/Grande)
+  - Busca textual por ID, título, local, problema ou sugestão
+  - Ordenação por severidade ou esforço
+  - Cards expansíveis com detalhes completos
+  - Tema claro/escuro via CSS variables do sistema
+- `proxy.ts`: `/ideias` adicionado às rotas públicas e ao matcher.
+- Build: ✅ sucesso.
 
-O proxy permite executar código antes que uma solicitação seja concluída. Em seguida, com base na solicitação recebida, você pode modificar a resposta reescrevendo-a, redirecionando-a, modificando os cabeçalhos da solicitação ou da resposta ou respondendo diretamente.
+### Mudança: SEG-001 — Proteção da rota /api/testes com auth GOD
+**Autor:** Vibecode
+**Arquivos:** `src/app/api/testes/route.ts`, `src/app/api/testes/login/route.ts`
+**Data:** 17/06/2026
+**Descrição:**
+- `GET /api/testes`: adicionado guard `ENABLE_TESTES !== 'true'` → 404, e `getServerSession` com role GOD → 403.
+- `POST /api/testes/login`: adicionado `getServerSession` com role GOD → 403 no início da função.
+- Remove vulnerabilidade crítica de RCE (Remote Code Execution) pública.
+- Build: ✅ sucesso.
 
-Casos de uso
-Alguns cenários comuns em que o Proxy é eficaz incluem:
+##### Mudanças de Segurança do Usuário (não commitadas):
+- **Rate limit:** `applyRateLimit()` adicionado a 23+ rotas de API
+- **Upload:** Validação MIME/extension/size + allowlist bucket/folder + rate limit
+- **Memórias:** Validação via `x-api-key` + `BOT_API_KEY` em `/api/memories`
+- **General CPF:** API key validation + rate limit
+- **Lib upload:** Validação de arquivo também em `uploadFile`/`uploadBuffer`
+- **usedata.ts:** `getMemoria()`/`saveMemoria()` enviam `x-api-key`
+- **Página ideias:** Status badges (✅/🔄) + opacidade para concluídos
+- **Arquivos deletados:** `src/proxy.ts` (duplicata), `landing.json`, `next.config.ts.txt`, `recomendações.md`, `checkpoint.md`, `apresentação.md`, `control`, `.github/workflows/deploy-homologa.yml`
 
-Modificar cabeçalhos para todas as páginas ou para um subconjunto delas.
-Reescrever para páginas diferentes com base em testes A/B ou experimentos
-Redirecionamentos programáticos baseados nas propriedades da solicitação recebida.
-Para redirecionamentos simples, considere usar a redirectsconfiguração next.config.tspadrão. O proxy deve ser usado quando você precisar acessar os dados da requisição ou uma lógica mais complexa.
+### Mudança: SEG-004 — CPF obrigatório em /api/quadro-avisos/mostrar-avisos
+**Autor:** Vibecode
+**Arquivos:** `src/app/api/quadro-avisos/mostrar-avisos/route.ts`, `ideias.md`
+**Data:** 17/06/2026
+**Descrição:**
+- Rota pública retornava todos os avisos do banco quando chamada sem CPF.
+- CPF agora é obrigatório (400 se ausente, 404 se CPF não encontrar empresa).
+- Remove risco de exposição de dados internos de todas as empresas.
+- `ideias.md` atualizado com status dos itens de segurança concluídos (tabelas com coluna Status).
+- Build: ✅ sucesso.
 
-O Proxy não foi projetado para busca lenta de dados. Embora o Proxy possa ser útil para verificações otimistas, como redirecionamentos baseados em permissões, ele não deve ser usado como uma solução completa de gerenciamento de sessão ou autorização.
+### Mudança: SEG-006 — TTLMap com cleanup de 10 min para sessions em memória
+**Autor:** Vibecode
+**Arquivos:** `src/lib/ttl-map.ts` (novo), `src/app/api/webhook26/route.ts`, `src/app/api/webhook27/route.ts`, `src/app/api/webhook-oficina/route.ts`, `src/app/api/webhook-leads/route.ts`, `src/app/api/chat/route.ts`, `src/app/api/chat-corporativo/route.ts`, `src/app/api/chat-operacional/route.ts`, `ideias.md`
+**Data:** 17/06/2026
+**Descrição:**
+- Criado `TTLMap` em `src/lib/ttl-map.ts`: wrapper de Map com TTL configurável (10 min), cleanup automático a cada 30s com `setInterval().unref()`.
+- Substituídos `new Map()` → `new TTLMap(10 * 60 * 1000)` nos 7 arquivos.
+- Removida verificação manual `Date.now() - session.lastInteraction > 2h` (agora automática).
+- `ideias.md`: SEG-006 marcado como ✅.
+- Build: ✅ sucesso.
 
-Usar `fetch` com options.cache`, options.next.revalidate` ou options.next.tags`,` não tem efeito no Proxy.
+### Mudança: SEG-008 — Validação Zod integrada nas rotas de API
+**Autor:** Vibecode
+**Arquivos:** `src/lib/validate.ts` (novo), `src/lib/validation.ts`, `src/app/api/users/route.ts`, `src/app/api/tickets/route.ts`, `src/app/api/empresa/route.ts`, `src/app/api/leads-network/route.ts`, `src/app/api/send-form/route.ts`, `src/app/api/quadro-avisos/route.ts`, `ideias.md`
+**Data:** 17/06/2026
+**Descrição:**
+- Criado helper `validateOrError(data, schema)` em `src/lib/validate.ts`: usa `safeParse()` do Zod e retorna `NextResponse` com erros padronizados se falhar.
+- Adicionados schemas: `sendFormSchema`, `createAvisoSchema`, `updateAvisoSchema`, `updateUserSchema`.
+- Aplicado em 7 rotas que recebem input do usuário (POST/PUT), substituindo validações manuais frágeis.
+- `ideias.md`: SEG-008 marcado como ✅.
+- Build: ✅ sucesso.
 
-Convenção
-Crie um arquivo proxy.ts(ou .js) na raiz do projeto, ou dentro dele srcse aplicável, para que ele esteja localizado no mesmo nível que pagesou app.
+### Mudança: Validação de formulário de avisos + remoção userFacil + refactor modal atendimento
+**Autor:** Usuário
+**Arquivos:** `src/app/components/shared-avisos.tsx`, `src/app/corporativo/userFacil/page.tsx` (deletado), `src/app/corporativo/(atendimento)/components/modal_tandimento.tsx`, `src/app/oficina/chamado/page.tsx`, `src/app/api/users/route.ts`, `next.config.ts`, `.gitignore`
+**Data:** 19/06/2026
+**Descrição:**
+- **shared-avisos.tsx:** GOD removido de `podeEscolherSetor` (agora só ADMIN pode escolher setor). Adicionada validação visual no formulário: título (mín 2 caracteres), conteúdo (mín 10 caracteres), duração (mín 1 dia). Botão submit desabilitado se validações falharem. Removido bloco de erro message e botão cancelar.
+- **userFacil/page.tsx:** Página de criação rápida de usuário deletada.
+- **modal_tandimento.tsx:** `atualizarChamado` refatorado: agora usa o retorno do PUT para atualizar estados, sem fazer segunda requisição GET. Adicionado try/catch e escopo corrigido da variável `descricaoAtualizada`.
+- **oficina/chamado/page.tsx:** Adicionado loading state (`searching`) durante validação de matrícula. Tipagem corrigida (`any` → `Chamado`/`avisos`). Mensagem "Matrícula inválida" exibida quando inválida. Overlay de busca com spinner. Botão "Concluído" muda para "Concluir" e faz reload. CSS variables corrigidas (`var(--primary)` → `var(--primary)`).
+- **api/users/route.ts:** DELETE agora executa em transação: deleta CPF associado antes de deletar o usuário. Mensagem de sucesso atualizada.
+- **next.config.ts:** Uma das URLs do Supabase comentada.
+- **.gitignore:** `/app/ideias` adicionado.
 
-Observação : Embora apenas um proxy.tsarquivo seja suportado por projeto, você ainda pode organizar sua lógica de proxy em módulos. Separe as funcionalidades de proxy em arquivos separados .tse .jsimporte-os para o seu proxy.tsarquivo principal. Isso permite um gerenciamento mais organizado do proxy específico de cada rota, agregando-o para um proxy.tscontrole centralizado. Ao impor um único arquivo de proxy, você simplifica a configuração, evita possíveis conflitos e otimiza o desempenho, evitando múltiplas camadas de proxy.
+### Mudança: SEG-009 — DELETE /api/cpfs seguro contra concorrência
+**Autor:** Vibecode
+**Arquivos:** `src/app/api/cpfs/route.ts`, `ideias.md`
+**Data:** 17/06/2026
+**Descrição:**
+- `prisma.cpfs.delete({ where: { cpf } })` substituído por `prisma.cpfs.deleteMany({ where: { cpf, empresaId } })`.
+- Em cenários de concorrência (TOCTOU entre a verificação e a exclusão), a exclusão agora só afeta registros da mesma empresa.
+- `ideias.md`: SEG-009 marcado como ✅.
+- Build: ✅ sucesso.
 
-Exemplo
-Você pode exportar sua função proxy como uma exportação padrão ou como uma proxyexportação nomeada:
+### Mudança: SEG-010 — PUT /api/users/user-active exige senha atual
+**Autor:** Vibecode
+**Arquivos:** `src/app/api/users/user-active/route.ts`, `ideias.md`
+**Data:** 17/06/2026
+**Descrição:**
+- Se email ou password forem enviados no formData, o campo `currentPassword` é obrigatório.
+- A senha atual é validada via `bcrypt.compare()` contra o hash no banco.
+- Se inválida, retorna 403 "Senha atual incorreta".
+- `ideias.md`: SEG-010 marcado como ✅.
+- Build: ✅ sucesso.
 
-proxy.ts
-TypeScript
+### Mudança: Rebranding Nolevel → Skora (texto visível)
+**Autor:** Vibecode
+**Arquivos:** `src/app/layout.tsx`, `src/app/page.tsx`, `src/app/api-docs/page.tsx`, `src/app/components/sidebar.tsx`, `src/app/corporativo/(atendimento)/components/header.tsx`, `src/app/eventos/(atendimento)/components/header.tsx`, `src/app/oficina/(atendimento)/components/header.tsx`, `src/app/dashboard/page.tsx`, `src/lib/useIA.ts`, `src/lib/useIA2.ts`, `src/lib/useIA3.ts`
+**Data:** 16/06/2026
+**Descrição:**
+- Substituídas todas as ocorrências de "Nolevel" por "Skora" no texto visível da aplicação (títulos, headers, sidebar, login, fallbacks de nome de empresa nos webhooks).
+- Mantidas intactas: nomenclaturas de rotas, arquivos, pacotes, variáveis de ambiente, CI/CD e schema do Prisma.
+- Build: ✅ sucesso
 
-TypeScript
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
- 
-// This function can be marked `async` if using `await` inside
-export function proxy(request: NextRequest) {
-  return NextResponse.redirect(new URL('/home', request.url))
-}
- 
-// Alternatively, you can use a default export:
-// export default function proxy(request: NextRequest) { ... }
- 
-export const config = {
-  matcher: '/about/:path*',
-}
-A matcherconfiguração permite filtrar o Proxy para ser executado em caminhos específicos. Consulte a documentação do Matcher para obter mais detalhes sobre a correspondência de caminhos.
+### Mudança: ARQ-002 — Chat handler unificado com preservação de particularidades
+**Autor:** Vibecode
+**Arquivos:** `src/lib/chat-handler.ts` (novo), `src/app/api/chat/route.ts`, `src/app/api/chat-corporativo/route.ts`, `src/app/api/chat-operacional/route.ts`
+**Data:** 17/06/2026
+**Descrição:**
+- Os 3 arquivos de chat (~413 linhas cada) compartilhavam ~95% do código, mas com diferenças críticas:
+  - **chat** (web): começa com `FlowState.IDENTIFICACAO_CPF`, instrução de motivo simples
+  - **chat-corporativo**: começa com `FlowState.INICIO`, instrução de motivo detalhada (AVISO_RESOLVE/PROSSEGUIR_FLUXO)
+  - **chat-operacional**: idêntico ao corporativo exceto pela chave de rate limit
+- Criado `src/lib/chat-handler.ts` com `handleChatRequest(req, config)` onde `ChatConfig` recebe as 3 diferenças:
+  - `rateLimitKey`: string
+  - `hasInicioFlow`: boolean
+  - `coletarMotivoInstruction?`: string opcional
+- Cada `route.ts` virou thin wrapper de ~7 linhas importando o handler
+- ~1.235 linhas eliminadas
+- Build: ✅ sucesso. Commit: `579227c`
+
+### Mudança: ARQ-003 — Remoção do webhook26 (duplicado do webhook27)
+**Autor:** Vibecode
+**Arquivos:** `src/app/api/webhook26/route.ts` (deletado), `src/lib/useIA3.ts` (deletado), `src/app/api-docs/page.tsx`
+**Data:** 17/06/2026
+**Descrição:**
+- webhook26 era versão anterior do webhook27, mantido por legado mas sem uso
+- `src/app/api/webhook26/route.ts` deletado (já estava unstaged)
+- `src/lib/useIA3.ts` deletado (único consumer era webhook26)
+- `src/app/api-docs/page.tsx`: entrada do webhook26 removida
+- 620 linhas eliminadas
+- Build: ✅ sucesso. Commit: `f6c6ac1`
+
+### Mudança: Upload direto ao Supabase via signed URL (bypass 413 Vercel)
+**Autor:** Vibecode
+**Arquivos:** `src/app/api/upload-signed/route.ts` (novo), `src/lib/upload-client.ts` (novo), `src/app/oficina/chatbot-app/page.tsx`, `src/app/corporativo/chatbot-app/page.tsx`, `src/app/corporativo/(atendimento)/empresa/page.tsx`, `src/app/corporativo/(atendimento)/empresa/create/page.tsx`
+**Data:** 22/06/2026
+**Descrição:**
+- `/api/upload` retornava 413 na Vercel (limite de 4.5MB do hobby plan) porque o upload passava pelo servidor Next.js.
+- Criado `/api/upload-signed`: endpoint que valida metadados (bucket, folder, extensão, MIME, tamanho) e gera uma signed URL via `supabase.storage.createSignedUploadUrl()`. O upload do arquivo vai diretamente do cliente para o Supabase, sem passar pelo servidor Next.js, eliminando o limite de tamanho da Vercel.
+- Criado `src/lib/upload-client.ts` com `uploadFileDirect()`: helper client-side que obtém a signed URL e faz o PUT direto para o Supabase, retornando a URL pública.
+- Atualizados 4 callers: chatbots (oficina + corporativo) e páginas de empresa (edit + create) para usar `uploadFileDirect()` em vez de `/api/upload`.
+- `/api/upload` mantido para compatibilidade com possíveis callers não mapeados.
+- Build: ✅ sucesso.

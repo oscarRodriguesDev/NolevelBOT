@@ -1,20 +1,19 @@
 # Checkpoints do Projeto
 
-## Sessão: 15/06/2026
+## Sessão: 22/06/2026
 
 ### Estado Inicial
-- **Branch:** `testes`
-- **Último commit:** `34f231b` "atualizaão de branch"
-- **Status:** Working tree limpo
+- **Branch:** `vibecode`
+- **Working tree:** Limpo
+- **Último commit antes da sessão:** `20fd864 testes`
 
-### Últimas Tarefas Concluídas
-- PED-013: Suite de testes expandida (15/06/2026)
-  - `rate-limit.test.ts` — 15 testes (checkRateLimit, trackFailedLogin, resetFailedLogin, needsCaptcha, getClientIp)
-  - `audit-log.test.ts` — 3 testes (logAcesso com mock de prisma)
-  - `smartSearch.test.ts` — 6 testes (obterBaseDeConhecimento com mock de prisma)
-  - `usedata.test.ts` — 10 testes (generateRandomTicket, saudacao, checkEmpresaModule)
-  - Total: 169 testes passando em 8 arquivos ✅
-  - Build: ✅ `npm test` — 169 passed, 0 failed
+### Tarefas Concluídas
+- PED-027: /api/upload retornando 413 na Vercel (22/06/2026)
+  - Criado `/api/upload-signed` — gera signed URL do Supabase, bypassando Vercel
+  - Criado `src/lib/upload-client.ts` — helper client-side `uploadFileDirect()`
+  - Atualizados 4 callers (2 chatbots + 2 empresa pages)
+  - `/api/upload` mantido para compatibilidade
+  - Build: ✅ sucesso
 
 ### Próximos Passos
 - Aguardando instruções do usuário

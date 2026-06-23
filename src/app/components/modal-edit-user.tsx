@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react"
 import { createPortal } from "react-dom"
 import { Camera, X, Lock, User as UserIcon, Mail, Loader2 } from "lucide-react"
-import { useSession } from "next-auth/react"
-import toast from "react-hot-toast"
+import { useSession, signOut } from "next-auth/react"
 
 interface User {
   id: string
@@ -25,11 +24,13 @@ export function UserProfileModal({ open, onClose }: Props) {
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [currentPassword, setCurrentPassword] = useState("")
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   
   const [loading, setLoading] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [isDark, setIsDark] = useState(false)
+  const [formMessage, setFormMessage] = useState<{ type: "error" | "success"; text: string } | null>(null)
 
   // 1. Lógica de Montagem e Tema
   useEffect(() => {
@@ -82,6 +83,7 @@ export function UserProfileModal({ open, onClose }: Props) {
       return
     }
 
+    setFormMessage(null)
     setLoading(true)
 
     try {
@@ -91,6 +93,10 @@ export function UserProfileModal({ open, onClose }: Props) {
       if (isEmailChanged) formData.append("email", email.trim())
       if (isChangingPassword) formData.append("password", password)
       if (isAvatarChanged) formData.append("avatarFile", avatarFile)
+
+      if (isEmailChanged || isChangingPassword) {
+        formData.append("currentPassword", currentPassword)
+      }
 
       const res = await fetch("/api/users/user-active", {
         method: "PUT",
@@ -106,7 +112,11 @@ export function UserProfileModal({ open, onClose }: Props) {
 
       // Se mudou a senha ou a API exigiu logout
       if (isChangingPassword || data?.logout) {
-        window.location.href = "/login"
+        setFormMessage({ type: "success", text: "Senha alterada! Redirecionando para o login..." })
+        setTimeout(() => {
+          signOut({ redirect: false })
+          window.location.href = "/login"
+        }, 1500)
         return
       }
 
@@ -121,13 +131,13 @@ export function UserProfileModal({ open, onClose }: Props) {
         })
       }
 
-      toast.success("Perfil atualizado com sucesso!")
-      setPassword("")
-      setAvatarFile(null)
-      onClose()
+      setFormMessage({ type: "success", text: "Perfil atualizado com sucesso!" })
+      setTimeout(() => {
+        onClose()
+      }, 800)
       
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Falha ao atualizar perfil")
+      setFormMessage({ type: "error", text: error instanceof Error ? error.message : "Falha ao atualizar perfil" })
     } finally {
       setLoading(false)
     }
@@ -268,9 +278,42 @@ export function UserProfileModal({ open, onClose }: Props) {
                   />
                 </div>
               </div>
+
+              {(email !== user?.email || password.trim().length > 0) && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold uppercase tracking-wider ml-1 opacity-70 text-[var(--foreground)]">
+                    Confirme sua senha atual
+                  </label>
+                  <div className="relative">
+                    <Lock
+                      className="absolute left-4 top-1/2 -translate-y-1/2 opacity-50 text-[var(--foreground)]"
+                      size={18}
+                    />
+                    <input
+                      type="password"
+                      placeholder="Senha atual para confirmar alteração"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      className="w-full pl-11 pr-4 py-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--background)] text-[var(--foreground)] text-sm outline-none transition-all focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="flex items-center gap-3 mt-8">
+            {formMessage && (
+              <div
+                className={`mt-6 px-4 py-3 rounded-xl text-sm font-medium text-center ${
+                  formMessage.type === "error"
+                    ? "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800"
+                    : "bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-800"
+                }`}
+              >
+                {formMessage.text}
+              </div>
+            )}
+
+            <div className="flex items-center gap-3 mt-6">
               <button
                 onClick={onClose}
                 className="flex-1 px-4 py-3 text-sm font-semibold rounded-xl border border-transparent hover:bg-black/5 dark:hover:bg-white/10 text-[var(--foreground)] transition-colors"

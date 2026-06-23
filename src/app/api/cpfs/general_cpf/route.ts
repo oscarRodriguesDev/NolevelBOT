@@ -1,14 +1,17 @@
-// app/api/cpfs/route.ts
 import { NextRequest, NextResponse } from "next/server"
+import { applyRateLimit } from "@/lib/rate-limit"
 import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
 import { getSessionOrFail } from '@/util/permission';
 import { limparCPF } from "@/util/limparcpfs";
+import { validarBotApiKey } from "@/lib/bot-auth";
 
 
 //post salva os cpfs, se for multipart/form-data, importa do excel ou csv, se for json, cadastra manualmente
 //testar salvamento por planilha excel 
 export async function POST(req: NextRequest) {
+  const rateLimit = await applyRateLimit(req, "general-cpf", 30, 60 * 1000)
+  if (rateLimit) return rateLimit
   const session = await getSessionOrFail(["GOD", "ADMIN", "GESTOR"])
   const empresaId = session?.user?.empresaId
 
@@ -133,11 +136,14 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    const telefone = body?.telefone?.replace(/\D/g, "") || undefined
+
     const novo = await prisma.cpfs.create({
       data: {
         nome,
         cpf,
         empresaId,
+        telefone,
       },
     })
 
@@ -154,15 +160,10 @@ export async function POST(req: NextRequest) {
 
 
 
-function validarBotApiKey(req: NextRequest): boolean {
-  const apiKey = req.headers.get("x-api-key")
-  const botApiKey = process.env.BOT_API_KEY
-  if (!botApiKey) return true
-  return apiKey === botApiKey
-}
-
 // Rota usada pelos bots — exige X-API-Key header
 export async function GET(req: NextRequest) {
+  const rateLimit = await applyRateLimit(req, "general-cpf", 30, 60 * 1000)
+  if (rateLimit) return rateLimit
   if (!validarBotApiKey(req)) {
     return NextResponse.json({ error: "API key inválida" }, { status: 401 })
   }
@@ -174,7 +175,7 @@ export async function GET(req: NextRequest) {
     if (cpfParaFiltrar) {
       const registro = await prisma.cpfs.findUnique({
         where: { cpf: cpfParaFiltrar },
-        select: { nome: true, cpf: true }
+        select: { nome: true, cpf: true, telefone: true }
       });
 
       if (!registro) {
@@ -191,7 +192,7 @@ export async function GET(req: NextRequest) {
     }
 
     const todosCPFs = await prisma.cpfs.findMany({
-      select: { nome: true, cpf: true }
+      select: { nome: true, cpf: true, telefone: true }
     });
 
     return NextResponse.json(todosCPFs);
@@ -206,6 +207,8 @@ export async function GET(req: NextRequest) {
 
 
 export async function DELETE(req: NextRequest) {
+  const rateLimit = await applyRateLimit(req, "general-cpf", 20, 60 * 1000)
+  if (rateLimit) return rateLimit
   const session = await getSessionOrFail(["GESTOR", "ADMIN","GOD"])
   
   if (!session ) {  

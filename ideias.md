@@ -1,28 +1,426 @@
-# Ideias e Melhorias
+# Ideias e Melhorias — Skora
 
-## REL-001: Central de auditoria de acesso (relacionado ao PED-001)
-**Ideia:** Criar um log centralizado de acessos a rotas administrativas (quem acessou o que, quando) para auditoria de segurança. Poderia ser uma tabela `access_log` no banco ou simplesmente logs estruturados no servidor. 
-**resposta:** boa ideia vou gerar o model no prisma, depois vc pode criar as rotas para gerar os logs no banco vou chamar o model de logs_de_acesso, porem somente o god podera acessar esses logs
+> **Data da análise:** 17/06/2026
+> **Propósito:** Mapeamento completo de oportunidades de melhoria identificadas após auditoria minuciosa do sistema.
 
+---
 
-## REL-001: Middleware global de RBAC (relacionado ao PED-001)
-**Ideia:** Em vez de proteger rota por rota individualmente, criar um middleware global que leia a role do usuário e o pathname e aplique as regras de forma centralizada. Isso reduziria duplicação e risco de esquecer uma rota. 
-**resposta:** agora o antigo middleware se chama proxy e quando pesquisei descobri que a melhor forma de proteger é individualmente, porque o proxy  não protege
+## 🏆 Categorias
 
-## REL-002: Logs de acesso com fallback (relacionado ao PED-002)
-**Ideia:** A tabela logs_de_acesso pode não existir no banco (sem migration). A rota do dashboard GOD agora trata isso com try-catch para não crashar.
-**Status:** Implementado 
-**resposta** a tabela ja existe no banco de dados!
+| Código | Categoria |
+|--------|-----------|
+| 🔴 **SEG** | Segurança (Crítico/Alto) |
+| 🟡 **ARQ** | Arquitetura e Qualidade de Código |
+| ⚡ **PERF** | Performance |
+| 🎨 **UX** | Experiência do Usuário |
+| 🛠️ **INFRA** | Infraestrutura e DevOps |
+| 🧪 **TEST** | Testes |
 
-## REL-003: Badge visual "all" para ADMIN sem setor (relacionado ao PED-007)
-**Ideia:** Em vez de apenas texto "all", usar um badge visual (tag estilizada) para destacar que o administrador tem acesso a todos os setores, similar ao "Todos os setores" usado na página de criação de usuários.
+---
 
-## REL-004: Preview ampliado de imagem no chatbot (relacionado ao PED-008)
-**Ideia:** Ao clicar na imagem preview no chat, abrir um modal/lightbox com a foto em tamanho original para melhor visualização do problema/documentação.
+## 🔴 SEG-001: Rota `/api/testes` permite RCE (Remote Code Execution) ✅
 
-## REL-005: Mesmo padrão de loop pode existir em outros webhooks (relacionado ao PED-017)
-**Ideia:** Webhook26 e webhook-oficina podem ter o mesmo problema no COLETAR_MOTIVO quando não há avisos, pois compartilham a mesma lógica de fallback para MENU_PRINCIPAL. Se ocorrer loop semelhante, aplicar o mesmo fix.
+**Severidade:** 🔴 CRÍTICO  
+**Local:** `src/app/api/testes/route.ts`  
+**Problema:** A rota executa `npx vitest run` via `exec()` do Node.js sem qualquer autenticação, sanitização ou rate limit. Isso permite que qualquer pessoa execute comandos arbitrários no servidor.  
+**Sugestão:** Remover esta rota em produção ou protegê-la com autenticação GOD + ENABLE_TESTES + remover `exec()` em favor de `vitest` via API programática.  
+**Status:** ✅ Corrigido em `5ab2b9c` — Adicionado guard ENABLE_TESTES + verificação de sessão GOD.
 
-## REL-006: Testes para upload.ts e validarCpf (relacionado ao PED-013)
-**Ideia:** Adicionar testes para `upload.ts` (uploadFile, uploadBuffer com mock do Supabase) e para `validarCpf` em `usedata.ts`. Ambos dependem de serviços externos (Supabase/Prisma) e podem ser testados com mocks. Também considerar tests de integração para webhooks com Evolution API mockada.
+---
 
+## 🔴 SEG-002: Rota `/api/upload` permite upload arbitrário sem validação ✅
+
+**Severidade:** 🔴 CRÍTICO  
+**Local:** `src/app/api/upload/route.ts`  
+**Problema:** Rota pública sem autenticação, sem validação de tipo MIME, sem limite de tamanho de arquivo. Cliente pode especificar `bucket` e `folder` arbitrários, possibilitando path traversal e upload de arquivos maliciosos.  
+**Sugestão:** Validar tipo MIME (allowlist jpg/png/pdf), limitar tamanho (10MB), allowlist de buckets/folders (anexo/logo, chatbot/empresas), rate limit por IP. Manter público pois chatbots precisam.  
+**Status:** ✅ Corrigido — Validação de MIME/extension/size, allowlist de bucket/folder, rate limit 10/min/IP, lib também validada.
+
+---
+
+## 🔴 SEG-003: Rota `/api/memories` completamente pública ✅
+
+**Severidade:** 🔴 CRÍTICO  
+**Local:** `src/app/api/memories/route.ts`  
+**Problema:** GET e POST sem qualquer autenticação ou API key. Qualquer pessoa pode ler/escrever memórias de persona de qualquer CPF, expondo dados sensíveis como histórico de conversas e preferências.  
+**Sugestão:** Adicionar autenticação via API key ou session, ou pelo menos limitar a escrita apenas para webhooks autenticados.  
+**Status:** ✅ Corrigido — Validado via `x-api-key` + `BOT_API_KEY`. `getMemoria()`/`saveMemoria()` em `usedata.ts` também atualizadas para enviar o header.
+
+---
+
+## 🔴 SEG-004: `/api/quadro-avisos/mostrar-avisos` pública expõe avisos de todas as empresas ✅
+
+**Severidade:** 🔴 CRÍTICO  
+**Local:** `src/app/api/quadro-avisos/mostrar-avisos/route.ts`  
+**Problema:** GET sem CPF retorna `findMany()` sem filtro — todos os avisos do banco. Avisos podem conter informações internas e sensíveis.  
+**Sugestão:** Exigir pelo menos um identificador (empresaId ou CPF) e nunca retornar todos os avisos globalmente.  
+**Status:** ✅ Corrigido — CPF agora é obrigatório (400 se ausente, 404 se não encontrado).
+
+---
+
+## 🔴 SEG-005: Validação de CPF desabilitada
+
+**Severidade:** 🔴 CRÍTICO  
+**Local:** `src/lib/validation.ts`  
+**Problema:** `isValidCPF()` está commented out e sempre retorna `true`. Qualquer CPF inválido é aceito no sistema.  
+**Sugestão:** Reativar a validação de dígitos verificadores do CPF. O código já existe, só está comentado.
+
+---
+
+## 🟡 SEG-006: Sessões em memória sem cleanup em 6 webhooks ✅
+
+**Severidade:** 🟡 ALTO  
+**Local:** `src/app/api/webhook26/route.ts`, `webhook27/route.ts`, `webhook-oficina/route.ts`, `webhook-leads/route.ts`, `chat/route.ts`, `chat-corporativo/route.ts`, `chat-operacional/route.ts`  
+**Problema:** Todas usam `Map<string, Session>` em memória para manter estado da conversa. Sem expiração forçada, sem limite de tamanho — vazamento de memória garantido com o tempo.  
+**Sugestão:** Implementar TTL (ex: 30min de inatividade), limite máximo de sessões, ou usar um store externo (Redis).  
+**Status:** ✅ Corrigido — Criado `TTLMap` em `src/lib/ttl-map.ts` com TTL de 10 minutos e cleanup automático a cada 30s. Aplicado nos 7 arquivos.
+
+---
+
+## 🟡 SEG-007: Rate limit ausente em 28 de 30 rotas de API ✅
+
+**Severidade:** 🟡 ALTO  
+**Local:** Todas as rotas, exceto `tickets/route.ts` (POST) e `empresa/route.ts` (GET por CPF)  
+**Problema:** Sem rate limiting, atacantes podem fazer scraping, brute force, spam de chamados, DoS, etc.  
+**Sugestão:** Aplicar `checkRateLimit()` sistematicamente em TODAS as rotas, com limites diferentes por endpoint (ex: 10/min para POST, 60/min para GET).  
+**Status:** ✅ Corrigido — `applyRateLimit()` adicionado a 23 rotas via helper centralizado. Limites por endpoint: webhooks 60/min, GET 60/min, POST 10-30/min, públicos 20/min, form 5/min.
+
+---
+
+## 🟡 SEG-008: Nenhuma rota usa validação Zod em produção ✅
+
+**Severidade:** 🟡 ALTO  
+**Local:** Todas as rotas de API  
+**Problema:** Schemas Zod definidos em `validation.ts` mas NUNCA importados/usados nas rotas. Toda validação é manual (undefined checks, typeof) — frágil e inconsistente.  
+**Sugestão:** Integrar Zod em todas as rotas de escrita (POST/PUT), usando `safeParse()` com mensagens de erro padronizadas.  
+**Status:** ✅ Corrigido — Criado helper `validateOrError()` em `src/lib/validate.ts`. Aplicado em 7 rotas: POST /api/users, PUT /api/users, POST /api/tickets, POST /api/empresa, POST /api/leads-network, POST /api/send-form, POST/PUT /api/quadro-avisos.
+
+---
+
+## 🟡 SEG-009: DELETE `/api/cpfs` pode deletar CPF de outra empresa ✅
+
+**Severidade:** 🟡 ALTO  
+**Local:** `src/app/api/cpfs/route.ts` (linha 192)  
+**Problema:** O DELETE primeiro verifica se `empresaId` confere, mas depois executa `prisma.cpfs.delete({ where: { cpf } })` sem garantir que o CPF pertence à empresa. Em cenários de concorrência, pode deletar CPF de outra empresa.  
+**Sugestão:** Usar `deleteMany({ where: { cpf, empresaId } })` em vez de `delete({ where: { cpf } })`.  
+**Status:** ✅ Corrigido — `delete()` substituído por `deleteMany()` com filtro `{ cpf, empresaId }`.
+
+---
+
+## 🟡 SEG-010: PUT `/api/users/user-active` altera email/senha sem confirmação ✅
+
+**Severidade:** 🟡 ALTO  
+**Local:** `src/app/api/users/user-active/route.ts`  
+**Problema:** PUT aceita alterar email e senha sem verificar a senha atual do usuário.  
+**Sugestão:** Exigir confirmação da senha atual para alterar email ou senha.  
+**Status:** ✅ Corrigido — se email ou senha forem enviados, `currentPassword` é obrigatório. Validado via `bcrypt.compare()` com a senha armazenada no banco.
+
+---
+
+## 🟢 SEG-011: CPF enumeration via múltiplos endpoints públicos
+
+**Severidade:** 🟡 ALTO  
+**Local:** `/api/leads-network` (GET por CPF), `/api/oficina/tickets` (GET por matrícula), `/api/cpfs/general_cpf` (GET por X-API-Key)  
+**Problema:** É possível verificar se um CPF/matrícula existe no sistema, permitindo enumeração.  
+**Sugestão:** Adicionar rate limit mais restritivo para consultas por CPF, ou exigir autenticação.
+
+---
+
+## 🟢 SEG-012: Turnstile opcional — bypass de segurança
+
+**Severidade:** 🟢 RESOLVIDO  
+**Local:** `src/lib/nextauth.ts`, `src/lib/rate-limit.ts`  
+**Problema:** `verifyTurnstileToken()` retorna `true` se `TURNSTILE_SECRET_KEY` não estiver definida. Se o captcha não for configurado, a proteção contra brute force fica comprometida.  
+**Sugestão:** Tornar Turnstile obrigatório em produção, ou pelo menos logar um aviso no startup.
+
+---
+
+## 🟡 SEG-013: `validarBotApiKey` retorna `true` se `BOT_API_KEY` não definida
+
+**Severidade:** 🟡 ALTO  
+**Local:** `src/app/api/cpfs/general_cpf/route.ts`  
+**Problema:** Se a env var `BOT_API_KEY` não estiver configurada, qualquer requisição é aceita sem chave.  
+**Sugestão:** Em produção, exigir que a chave esteja configurada ou negar acesso.
+**Status:** ✅ Concluído — `validarBotApiKey()` extraída para `src/lib/bot-auth.ts` com `if (!botApiKey) return false` (fail closed). Duplicação removida de `general_cpf/route.ts` e `memories/route.ts`. Commit `HEAD`
+
+---
+
+## 🟢 SEG-014: Dashboard processa todos chamados na memória
+
+**Severidade:** 🟢 RESOLVIDO  
+**Local:** `src/app/api/dashboards/route.ts`  
+**Problema:** Carrega todos os chamados da empresa no servidor e processa manualmente (filtros, agrupamentos, estatísticas). Sem paginação — pode travar com milhões de chamados.  
+**Sugestão:** Usar agregações do Prisma/PostgreSQL (`groupBy`, `aggregate`, `count` com where) em vez de processar na memória.
+
+---
+
+## ~~🟡 SEG-015: GitHub Actions em arquivos `.txt` não executam~~ ✅
+
+**Severidade:** 🟡 ALTO  
+**Local:** `.github/workflows/deploy.yml.txt`, `.github/workflows/deploy-homologa.txt`, `.github/workflows/deploy-homologa2.txt`  
+**Problema:** Workflows estavam nomeados com `.txt` em vez de `.yml`, GitHub Actions ignorava.  
+**Solução:** Removidos do tracking e adicionado `.github/workflows/` ao `.gitignore` — não usamos mais VPS.
+
+---
+
+## ~~🟡 SEG-016: Número excessivo de `console.log` em produção~~ ✅
+
+**Severidade:** 🟡 ALTO  
+**Local:** `src/lib/nextauth.ts`, `src/lib/usedata.ts`  
+**Problema:** Logs expunham dados de autenticação (senhas, resultados de comparação) e informações internas.  
+**Solução:** 
+- Removidos `console.log` que expunham senhas de nextauth.ts (6 logs removidos)
+- `console.error` substituídos por `captureError()` que gera código `ERR-XXXXX` e armazena em memória com TTL de 24h
+- Criado `error-store.ts` com store em memória + cleanup automático
+- Criado `app-error.ts` com classe `AppError` e função `captureError`
+- Criada página `/god/erros` (acesso GOD) para listar/consultar erros por código
+- Adicionado link "Erros" na sidebar do GOD
+
+---
+
+## ~~🟡 ARQ-001: Duplicação massiva entre módulos Corporativo, Oficina e Eventos~~ ✅
+
+**Severidade:** 🟡 ALTO  
+**Local:** Múltiplos arquivos nos 3 módulos  
+**Problema:** Headers, layouts, páginas de avisos, CPFs, usuários, gestão de usuários eram praticamente idênticos entre os 3 módulos.  
+**Solução:** Layout unificado (`module-layout.tsx`), header compartilhado (`module-header.tsx`), páginas movidas para `components/shared-*.tsx` com prop `setHeader`. Cada página nos módulos virou wrapper de ~3 linhas.
+
+---
+
+## 🟡 ARQ-002: 3 arquivos de chat web quase idênticos
+
+**Severidade:** 🟡 ALTO  
+**Local:** `src/app/api/chat/route.ts`, `src/app/api/chat-corporativo/route.ts`, `src/app/api/chat-operacional/route.ts`  
+**Problema:** Código copiado 3x com mudanças mínimas. Manutenção cara e propensa a erros.  
+**Sugestão:** Unificar em um único endpoint `/api/chat` com parâmetro de módulo.
+**Status:** ✅ Concluído — `src/lib/chat-handler.ts`, commit `579227c`
+
+---
+
+## 🟡 ARQ-003: webhook26 e webhook27 duplicados (400+ linhas cada)
+
+**Severidade:** 🟡 ALTO  
+**Local:** `src/app/api/webhook26/route.ts`, `src/app/api/webhook27/route.ts`  
+**Problema:** webhook27 é uma evolução de webhook26, mas ambos existem e são mantidos. Mais de 80% de código duplicado.  
+**Sugestão:** Manter apenas a versão mais recente (webhook27) e remover webhook26, ou refatorar com funções compartilhadas.
+**Status:** ✅ Concluído — webhook26 removido, useIA3.ts deletado (orphan), commit `f6c6ac1`
+
+---
+
+## 🟡 ARQ-004: webhook-oficina com 498 linhas e código duplicado dos webhooks corporativos
+
+**Severidade:** 🟡 ALTO  
+**Local:** `src/app/api/webhook-oficina/route.ts`  
+**Problema:** Grande parte da lógica de state machine, IA e envio de mensagens é idêntica aos webhooks corporativos.  
+**Sugestão:** Extrair lógica compartilhada para libs (ex: `src/lib/webhook-core.ts`) com funções reutilizáveis.
+**Status:** ✅ Concluído — Criado `src/lib/webhook-core.ts` com 7 funções compartilhadas (parsing, rate limit, sessão, mídia, sair, erro). webhook27 e webhook-oficina refatorados para usar o core. Fluxo específico de transporte público (matrícula, ônibus, defeito, confirmação) mantido intacto. ~110 linhas de boilerplate eliminadas. Commit `HEAD`
+
+---
+
+## ⚡ PERF-001: Dashboard carrega dados sem paginação
+
+**Severidade:** ⚠️ MÉDIO  
+**Local:** `src/app/api/dashboards/route.ts`  
+**Problema:** Todas as queries de dashboard fazem `findMany()` sem limit/pagination. Com crescimento, vai degradar performance.  
+**Sugestão:** Usar `take` + `skip` ou `cursor-based pagination`, e agregar no banco.
+**Status:** ✅ Concluído — Adicionado filtro de período no `where` do Prisma (evita carregar registros fora do período selecionado) e `take: 10000` como rede de segurança. `inPeriodo()` removido (agora é filtro no banco). Commit `HEAD`
+
+---
+
+## ⚡ PERF-002: Sidebar faz fetch toda vez que monta
+
+**Severidade:** ⚠️ MÉDIO  
+**Local:** `src/app/components/sidebar.tsx` (linha 36-42)  
+**Problema:** Toda vez que a sidebar monta (navegação), faz fetch dos módulos da empresa. Sem cache.  
+**Sugestão:** Cachear resultado em sessionStorage ou estado global (React Context/Zustand).
+**Status:** ✅ Concluído — Cache via `sessionStorage` com chave `empresa_modulos_{empresaId}`. Fetch só ocorre se não houver cache. Commit `HEAD`
+
+---
+
+## 🟢 PERF-003: Grandes bibliotecas sem dynamic import
+
+**Severidade:** 🟢 RESOLVIDO  
+**Local:** Vários dashboards  
+**Problema:** `recharts`, `framer-motion`, `jspdf`, `xlsx` são importados estaticamente em páginas, aumentando o bundle inicial.  
+**Sugestão:** Usar `next/dynamic` com `ssr: false` para recharts, jspdf, xlsx nas páginas de dashboard.
+
+---
+
+## 🟢 PERF-004: Sessões de webhook sem cleanup
+
+**Severidade:** 🟢 RESOLVIDO  
+**Local:** Webhooks e rotas de chat  
+**Problema:** `Map<string, Session>` nunca é limpo. Sessões inativas acumulam para sempre.  
+**Sugestão:** Implementar `setInterval` para limpar sessões com mais de 2h de inatividade, ou usar LRU cache com limite de tamanho.
+
+---
+
+## ✅ UX-001: Módulo Eventos não tem kanban/all-tickets
+
+**Severidade:** ⚠️ MÉDIO  
+**Local:** `src/app/eventos/(atendimento)/`  
+**Problema:** Eventos não possui página de listagem/kanban de chamados como Corporativo e Oficina têm.  
+**Solução:** Criada página `all-tickets/page.tsx` com paginação (`page`/`limit`/`totalPages`), seguindo o padrão Corporativo.  
+**Status:** ✅ Resolvido
+
+---
+
+## ✅ UX-002: Label "Motoristas" no módulo Eventos
+
+**Severidade:** 🔵 BAIXO  
+**Local:** `src/app/components/sidebar.tsx` (linha 87)  
+**Problema:** No módulo Eventos, a sidebar mostra "Colaboradores/Motoristas", mas eventos trata de leads, não motoristas.  
+**Solução:** Label alterada de "Motoristas" para "Leads" no módulo Eventos.  
+**Status:** ✅ Resolvido
+
+---
+
+## ✅ UX-003: Ícone "Eventos" na sidebar é uma chave inglesa
+
+**Severidade:** 🔵 BAIXO  
+**Local:** `src/app/components/sidebar.tsx` (linha 81)  
+**Problema:** O módulo Eventos usa `LuWrench` (chave inglesa) como ícone — é o mesmo ícone do módulo Oficina.  
+**Solução:** Ícone alterado de `LuWrench` para `LuCalendarCheck`.  
+**Status:** ✅ Resolvido
+
+---
+
+## ✅ UX-004: Estado vazio não tratado nos dashboards
+
+**Severidade:** 🔵 BAIXO  
+**Local:** `src/app/*/(atendimento)/dashboards/page.tsx`  
+**Problema:** Quando não há dados, os gráficos podem mostrar componentes vazios ou quebrados.  
+**Solução:** Adicionado fallback amigável com emoji e "Nenhum dado disponível" nos dashboards de Eventos e Oficina quando `statusStats.length === 0`.  
+**Status:** ✅ Resolvido
+
+---
+
+## ✅ UX-005: Modais sem gerenciamento de foco
+
+**Severidade:** 🔵 BAIXO  
+**Local:** `src/app/*/(atendimento)/components/modal_tandimento.tsx`  
+**Problema:** Modais não gerenciam foco (focus trap), não fecham com Escape, não têm aria-labels. Acessibilidade comprometida.  
+**Solução:** Adicionado focus trap (auto-foca primeiro elemento ao abrir, restaura foco ao fechar) em todos os 3 módulos. Escape e aria-modal/aria-labelledby já existiam.  
+**Status:** ✅ Resolvido
+
+---
+
+## ✅ UX-006: Not-found trata carregamento com spinner separado
+
+**Severidade:** 🔵 BAIXO  
+**Local:** `src/app/not-found.tsx`  
+**Problema:** A página 404 usa `useSession()` que pode estar carregando, mostrando um spinner. Uma página 404 deveria ser instantânea.  
+**Solução:** Removido `"use client"` e `useSession()`. Transformado em server component. Ambos os links ("Ir para o Login" e "Selecionar Módulo") são exibidos simultaneamente sem estado de loading.  
+**Status:** ✅ Resolvido
+
+---
+
+## 🟢 INFRA-001: PhoneMap em arquivo JSON no disco
+
+**Severidade:** ⚠️ MÉDIO  
+**Local:** `src/lib/phoneMap.ts`  
+**Problema:** Mapeamento CPF → telefone é armazenado em arquivo JSON em `/app/data/phoneMap.json`. Não escala, não é replicável, não tem backup.  
+**Sugestão:** Migrar para uma tabela no banco PostgreSQL (ex: `phone_map` ou adicionar campo `telefone` no model `cpfs`).
+
+---
+
+## 🟢 INFRA-002: Rate limiter em memória não funciona com múltiplas instâncias
+
+**Severidade:** ⚠️ MÉDIO  
+**Local:** `src/lib/rate-limit.ts`, `proxy.ts`  
+**Problema:** `Map` em memória é por instância do servidor. Com múltiplas réplicas (Docker swarm, k8s), o rate limit é facilmente burlado.  
+**Sugestão:** Usar Redis ou banco de dados para rate limit compartilhado (ex: `node-rate-limiter-flexible` com Redis).
+
+---
+
+## 🟢 INFRA-003: Nenhum sistema de cache
+
+**Severidade:** ⚠️ MÉDIO  
+**Local:** Sistema inteiro  
+**Problema:** Nenhum cache implementado. Consultas repetitivas ao banco (avisos, empresas, chamados) são feitas toda vez.  
+**Sugestão:** Implementar Redis para cache de queries frequentes (avisos, configurações de empresa, prompts de IA).
+
+---
+
+## 🛠️ INFRA-004: Variáveis de ambiente misturadas entre dev/prod
+
+**Severidade:** 🔵 BAIXO  
+**Local:** `.env`, `.env.example`, proxy.ts  
+**Problema:** `.env` contém URLs de produção (177.153.33.179) mas `ENABLE_TESTES=false`. Pode causar confusão entre ambientes.  
+**Sugestão:** Separar claramente `.env.dev`, `.env.prod`, e documentar quais variáveis são obrigatórias.
+
+---
+
+## ✅ TEST-001: Cobertura de testes insuficiente para funcionalidades críticas
+
+**Severidade:** ⚠️ MÉDIO  
+**Local:** `src/__tests__/`  
+**Problema:** Testes existem para rate-limit, audit-log, smartSearch, usedata, rbac, security, validation e phoneMap. Mas não há testes para: webhooks (os maiores arquivos), rotas de API (integração), componentes de UI, fluxos de autenticação.  
+**Solução:** Criados `webhook-core.test.ts` (18 testes — parseWebhookMessage, handleExit, getOrCreateSession, saveSession, webhookError) e `useIA4.test.ts` (9 testes — FlowState, detectFileIntent, botIA4 fallback). Rate-limit tests migrados para mock do Prisma.  
+**Status:** ✅ Resolvido
+
+---
+
+## ✅ TEST-002: Testes de segurança precisam de expansão
+
+**Severidade:** ⚠️ MÉDIO  
+**Local:** `src/__tests__/security.test.ts`  
+**Problema:** Testes de segurança existem mas podem não cobrir cenários de boundary, injeção, e bypass.  
+**Solução:** Expandidos com 63 testes: SQL injection em schemas de formato específico (CPF, email — rejeitados) + campos de texto livre (aceitos, validade na camada de query Prisma/escape de output) + XSS (validado que Zod não bloqueia, prevenção na renderização) + path traversal em upload (25 testes).  
+**Status:** ✅ Resolvido
+
+---
+
+## 📋 Resumo por Prioridade
+
+### 🔴 IMEDIATO (risco de segurança grave)
+| ID | Título | Esforço | Status |
+|----|--------|---------|--------|
+| SEG-001 | RCE via /api/testes | 🟢 Pequeno | ✅ |
+| SEG-002 | Upload sem validação | 🟡 Médio | ✅ |
+| SEG-003 | Memories público | 🟢 Pequeno | ✅ |
+| SEG-004 | Avisos público global | 🟢 Pequeno | ✅ |
+| SEG-005 | CPF validation desligada | 🟢 Pequeno | ❌ |
+| SEG-015 | Workflows .txt não executam | 🟢 Pequeno | ✅ |
+
+### 🟡 CURTO PRAZO (melhoria significativa)
+| ID | Título | Esforço | Status |
+|----|--------|---------|--------|
+| SEG-006 | Sessões em memória sem cleanup | 🟡 Médio | ✅ |
+| SEG-007 | Rate limit ausente em 28 rotas | 🔴 Grande | ✅ |
+| SEG-008 | Zod não usado nas rotas | 🟡 Médio | ✅ |
+| SEG-009 | DELETE CPF vulnerável | 🟢 Pequeno | ✅ |
+| SEG-010 | PUT user-active sem confirmação | 🟢 Pequeno | ✅ |
+| ARQ-001 | Duplicação entre módulos | 🔴 Grande | ✅ |
+| SEG-016 | console.log expõe senhas | 🟡 Médio | ✅ |
+| ARQ-002 | Chat duplicado 3x | 🟡 Médio | ✅ |
+| ARQ-003 | Webhook26/27 duplicados | 🟡 Médio | ✅ |
+| ARQ-004 | webhook-oficina + core compartilhado | 🟡 Médio | ✅ |
+| SEG-013 | validarBotApiKey fail open | 🟡 Médio | ✅ |
+
+### ⚠️ MÉDIO PRAZO (qualidade e performance)
+| ID | Título | Esforço | Status |
+|----|--------|---------|--------|
+| PERF-001 | Dashboard processa na memória | 🟡 Médio | ✅ |
+| PERF-002 | Sidebar recarrega módulos | 🟢 Pequeno | ✅ |
+| PERF-003 | Dynamic imports para libs pesadas | 🟢 Pequeno |
+| INFRA-001 | PhoneMap em JSON | 🟢 Resolvido |
+| INFRA-002 | Rate limit em memória | 🟢 Resolvido |
+| TEST-001 | Cobertura de testes webhooks | 🔴 Grande | ✅ |
+| TEST-002 | Expansão testes de segurança | 🟡 Médio | ✅ |
+
+### 🔵 FUTURO (UX e refinamentos)
+| ID | Título | Esforço |
+|----|--------|---------|
+| UX-001 | Kanban para Eventos | 🟢 Resolvido |
+| UX-002 | Label "Motoristas" em Eventos | 🟢 Resolvido |
+| UX-003 | Ícone Eventos = chave inglesa | 🟢 Resolvido |
+| UX-004 | Estado vazio nos dashboards | 🟢 Resolvido |
+| UX-005 | Acessibilidade em modais | 🟢 Resolvido |
+| UX-006 | Loading spinner no 404 | 🟢 Resolvido |
+| INFRA-003 | Sistema de cache (PostgreSQL) | 🟢 Resolvido |
+| INFRA-004 | Variáveis de ambiente | 🟢 Pequeno |
+
+---
+
+> **Legenda de Esforço:** 🟢 Pequeno (horas) | 🟡 Médio (dias) | 🔴 Grande (semanas)

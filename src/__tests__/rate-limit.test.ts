@@ -1,4 +1,28 @@
 import { describe, it, expect, beforeEach, vi } from "vitest"
+
+const mockCache = new Map<string, { value: string; expiresAt: Date }>()
+
+vi.mock("@/lib/prisma", () => ({
+  prisma: {
+    cache: {
+      findUnique: vi.fn(({ where }: { where: { key: string } }) => {
+        return Promise.resolve(mockCache.get(where.key) || null)
+      }),
+      upsert: vi.fn(({ where, update, create }: any) => {
+        mockCache.set(where.key, {
+          value: update?.value || create.value,
+          expiresAt: update?.expiresAt || create.expiresAt,
+        })
+        return Promise.resolve({})
+      }),
+      delete: vi.fn(({ where }: { where: { key: string } }) => {
+        mockCache.delete(where.key)
+        return Promise.resolve({})
+      }),
+    },
+  },
+}))
+
 import {
   checkRateLimit,
   trackFailedLogin,
@@ -9,37 +33,38 @@ import {
 
 beforeEach(() => {
   vi.restoreAllMocks()
+  mockCache.clear()
 })
 
 describe("checkRateLimit", () => {
-  it("permite requisicao quando nao ha registro previo", () => {
-    const result = checkRateLimit("ip:test", 5, 60000)
+  it("permite requisicao quando nao ha registro previo", async () => {
+    const result = await checkRateLimit("ip:test", 5, 60000)
     expect(result.allowed).toBe(true)
     expect(result.remaining).toBe(4)
     expect(result.resetIn).toBeGreaterThan(0)
   })
 
-  it("decrementa remaining a cada requisicao", () => {
-    checkRateLimit("ip:test2", 3, 60000)
-    const r2 = checkRateLimit("ip:test2", 3, 60000)
+  it("decrementa remaining a cada requisicao", async () => {
+    await checkRateLimit("ip:test2", 3, 60000)
+    const r2 = await checkRateLimit("ip:test2", 3, 60000)
     expect(r2.allowed).toBe(true)
     expect(r2.remaining).toBe(1)
   })
 
-  it("bloqueia quando excede maxRequests", () => {
-    checkRateLimit("ip:test3", 2, 60000)
-    checkRateLimit("ip:test3", 2, 60000)
-    const r3 = checkRateLimit("ip:test3", 2, 60000)
+  it("bloqueia quando excede maxRequests", async () => {
+    await checkRateLimit("ip:test3", 2, 60000)
+    await checkRateLimit("ip:test3", 2, 60000)
+    const r3 = await checkRateLimit("ip:test3", 2, 60000)
     expect(r3.allowed).toBe(false)
     expect(r3.remaining).toBe(0)
   })
 
-  it("reset apos janela expirar", () => {
+  it("reset apos janela expirar", async () => {
     const key = "ip:test4"
     vi.useFakeTimers()
-    checkRateLimit(key, 1, 60000)
+    await checkRateLimit(key, 1, 60000)
     vi.advanceTimersByTime(60001)
-    const r = checkRateLimit(key, 1, 60000)
+    const r = await checkRateLimit(key, 1, 60000)
     expect(r.allowed).toBe(true)
     expect(r.remaining).toBe(0)
     vi.useRealTimers()
@@ -47,57 +72,57 @@ describe("checkRateLimit", () => {
 })
 
 describe("trackFailedLogin", () => {
-  it("retorna 1 na primeira tentativa", () => {
-    expect(trackFailedLogin("primeiro@test.com")).toBe(1)
+  it("retorna 1 na primeira tentativa", async () => {
+    expect(await trackFailedLogin("primeiro@test.com")).toBe(1)
   })
 
-  it("incrementa a cada tentativa falha", () => {
-    trackFailedLogin("incrementa@test.com")
-    trackFailedLogin("incrementa@test.com")
-    expect(trackFailedLogin("incrementa@test.com")).toBe(3)
+  it("incrementa a cada tentativa falha", async () => {
+    await trackFailedLogin("incrementa@test.com")
+    await trackFailedLogin("incrementa@test.com")
+    expect(await trackFailedLogin("incrementa@test.com")).toBe(3)
   })
 
-  it("mantem contagens separadas por email", () => {
-    trackFailedLogin("separa_a@test.com")
-    trackFailedLogin("separa_a@test.com")
-    trackFailedLogin("separa_b@test.com")
-    expect(trackFailedLogin("separa_a@test.com")).toBe(3)
-    expect(trackFailedLogin("separa_b@test.com")).toBe(2)
+  it("mantem contagens separadas por email", async () => {
+    await trackFailedLogin("separa_a@test.com")
+    await trackFailedLogin("separa_a@test.com")
+    await trackFailedLogin("separa_b@test.com")
+    expect(await trackFailedLogin("separa_a@test.com")).toBe(3)
+    expect(await trackFailedLogin("separa_b@test.com")).toBe(2)
   })
 
-  it("normaliza email para lowercase", () => {
-    expect(trackFailedLogin("LowerCase@Test.com")).toBe(1)
-    expect(trackFailedLogin("lowercase@test.com")).toBe(2)
+  it("normaliza email para lowercase", async () => {
+    expect(await trackFailedLogin("LowerCase@Test.com")).toBe(1)
+    expect(await trackFailedLogin("lowercase@test.com")).toBe(2)
   })
 })
 
 describe("resetFailedLogin", () => {
-  it("remove registro de tentativas", () => {
-    trackFailedLogin("reset@test.com")
-    trackFailedLogin("reset@test.com")
-    resetFailedLogin("reset@test.com")
-    expect(trackFailedLogin("reset@test.com")).toBe(1)
+  it("remove registro de tentativas", async () => {
+    await trackFailedLogin("reset@test.com")
+    await trackFailedLogin("reset@test.com")
+    await resetFailedLogin("reset@test.com")
+    expect(await trackFailedLogin("reset@test.com")).toBe(1)
   })
 })
 
 describe("needsCaptcha", () => {
-  it("retorna false quando nao ha tentativas", () => {
-    expect(needsCaptcha("noattempt@test.com")).toBe(false)
+  it("retorna false quando nao ha tentativas", async () => {
+    expect(await needsCaptcha("noattempt@test.com")).toBe(false)
   })
 
-  it("retorna true apos 3 tentativas", () => {
-    trackFailedLogin("captcha@test.com")
-    trackFailedLogin("captcha@test.com")
-    trackFailedLogin("captcha@test.com")
-    expect(needsCaptcha("captcha@test.com")).toBe(true)
+  it("retorna true apos 3 tentativas", async () => {
+    await trackFailedLogin("captcha@test.com")
+    await trackFailedLogin("captcha@test.com")
+    await trackFailedLogin("captcha@test.com")
+    expect(await needsCaptcha("captcha@test.com")).toBe(true)
   })
 
-  it("retorna false apos reset", () => {
-    trackFailedLogin("captcha2@test.com")
-    trackFailedLogin("captcha2@test.com")
-    trackFailedLogin("captcha2@test.com")
-    resetFailedLogin("captcha2@test.com")
-    expect(needsCaptcha("captcha2@test.com")).toBe(false)
+  it("retorna false apos reset", async () => {
+    await trackFailedLogin("captcha2@test.com")
+    await trackFailedLogin("captcha2@test.com")
+    await trackFailedLogin("captcha2@test.com")
+    await resetFailedLogin("captcha2@test.com")
+    expect(await needsCaptcha("captcha2@test.com")).toBe(false)
   })
 })
 

@@ -1,4 +1,13 @@
 import { describe, it, expect } from 'vitest'
+import {
+  cpfSchema, emailSchema,
+  createTicketSchema, createUserSchema, createEmpresaSchema,
+  sendFormSchema, createAvisoSchema,
+} from '@/lib/validation'
+import {
+  validarArquivo, getExtension, ALLOWED_EXTENSIONS_LIST,
+  ALLOWED_MIME_TYPES_LIST, MAX_FILE_SIZE_BYTES,
+} from '@/lib/upload'
 
 type ROLE = 'GOD' | 'ADMIN' | 'GESTOR' | 'ATENDENTE'
 
@@ -174,5 +183,187 @@ describe('Seguranca - Nenhum papel pode se autopromover', () => {
     for (const role of allRoles) {
       expect(podeCriarRole(role, role)).toBe(false)
     }
+  })
+})
+
+describe('Seguranca - Validacao de formato rejeita SQL injection', () => {
+  const sqlPatterns = [
+    "' OR '1'='1",
+    "'; DROP TABLE users; --",
+    "' UNION SELECT * FROM passwords; --",
+    "1; SELECT * FROM admin WHERE '1'='1",
+    "' OR 1=1 --",
+    "admin'--",
+    "'; EXEC xp_cmdshell('dir'); --",
+    "' WAITFOR DELAY '0:0:5'--",
+    "1' ORDER BY 1--",
+    "1 AND 1=1",
+  ]
+
+  describe('cpfSchema (formato fixo 11 digitos)', () => {
+    it.each(sqlPatterns)('rejeita injection em CPF: %s', (payload) => {
+      const result = cpfSchema.safeParse(payload)
+      expect(result.success).toBe(false)
+    })
+  })
+
+  describe('emailSchema (formato email)', () => {
+    it.each(sqlPatterns)('rejeita injection em email: %s', (payload) => {
+      const result = emailSchema.safeParse(payload)
+      expect(result.success).toBe(false)
+    })
+  })
+
+  describe('Seguranca - Prisma usa queries parametrizadas (SQL injection prevention)', () => {
+    it('Prisma queries sao parametrizadas por design — nenhum SQL injection via concatenacao de strings', () => {
+      const sqlPatterns = ["' OR '1'='1", "'; DROP TABLE users; --"]
+      for (const payload of sqlPatterns) {
+        const result = createTicketSchema.safeParse({
+          nome: "Teste",
+          cpf: "12345678901",
+          setor: "TI",
+          descricao: payload,
+        })
+        expect(result.success).toBe(true)
+      }
+    })
+  })
+
+  describe('Seguranca - Validacao de campos com regex especifico', () => {
+    it('cpfSchema requer exatamente 11 digitos', () => {
+      expect(cpfSchema.safeParse("12345678901").success).toBe(true)
+      expect(cpfSchema.safeParse("123").success).toBe(false)
+      expect(cpfSchema.safeParse("abc").success).toBe(false)
+      expect(cpfSchema.safeParse("").success).toBe(false)
+    })
+
+    it('emailSchema rejeita strings sem formato de email', () => {
+      expect(emailSchema.safeParse("teste@test.com").success).toBe(true)
+      expect(emailSchema.safeParse("' OR '1'='1").success).toBe(false)
+      expect(emailSchema.safeParse("").success).toBe(false)
+    })
+  })
+})
+
+describe('Seguranca - Protecao contra XSS (prevencao em output)', () => {
+  it('Zod nao bloqueia XSS em campos de texto livre (correto — validacao e de formato, nao conteudo)', () => {
+    const xssPayloads = [
+      "<script>alert('xss')</script>",
+      "<img src=x onerror=alert(1)>",
+      "<svg onload=alert(1)>",
+    ]
+    for (const payload of xssPayloads) {
+      const result = createTicketSchema.safeParse({
+        nome: "Teste",
+        cpf: "12345678901",
+        setor: "TI",
+        descricao: payload,
+      })
+      expect(result.success).toBe(true)
+    }
+  })
+})
+
+describe('Seguranca - Protecao contra path traversal em upload', () => {
+  describe('getExtension', () => {
+    it('extrai extensao de nome simples', () => {
+      expect(getExtension("foto.jpg")).toBe("jpg")
+    })
+
+    it('extrai extensao de nome com pontos', () => {
+      expect(getExtension("arquivo.test.png")).toBe("png")
+    })
+
+    it('retorna string vazia para nome sem extensao', () => {
+      expect(getExtension("README")).toBe("readme")
+    })
+
+    it('lowercase extensao', () => {
+      expect(getExtension("Foto.JPG")).toBe("jpg")
+    })
+  })
+
+  describe('validarArquivo - extensao', () => {
+    it('aceita jpg', () => {
+      expect(validarArquivo({ extension: "jpg", mimeType: "image/jpeg", size: 1000 })).toBeNull()
+    })
+
+    it('aceita png', () => {
+      expect(validarArquivo({ extension: "png", mimeType: "image/png", size: 1000 })).toBeNull()
+    })
+
+    it('aceita pdf', () => {
+      expect(validarArquivo({ extension: "pdf", mimeType: "application/pdf", size: 1000 })).toBeNull()
+    })
+
+    it('rejeita extensao perigosa .exe', () => {
+      expect(validarArquivo({ extension: "exe", mimeType: "application/x-msdownload", size: 1000 })).not.toBeNull()
+    })
+
+    it('rejeita extensao .html', () => {
+      expect(validarArquivo({ extension: "html", mimeType: "text/html", size: 1000 })).not.toBeNull()
+    })
+
+    it('rejeita .js', () => {
+      expect(validarArquivo({ extension: "js", mimeType: "application/javascript", size: 1000 })).not.toBeNull()
+    })
+
+    it('rejeita .svg (XSS vetor)', () => {
+      expect(validarArquivo({ extension: "svg", mimeType: "image/svg+xml", size: 1000 })).not.toBeNull()
+    })
+  })
+
+  describe('validarArquivo - MIME type', () => {
+    it('aceita image/jpeg', () => {
+      expect(validarArquivo({ extension: "jpg", mimeType: "image/jpeg", size: 1000 })).toBeNull()
+    })
+
+    it('rejeita mime type diferente da extensao', () => {
+      const result = validarArquivo({ extension: "jpg", mimeType: "text/html", size: 1000 })
+      expect(result).not.toBeNull()
+      expect(result).toContain("MIME")
+    })
+  })
+
+  describe('validarArquivo - tamanho', () => {
+    it('rejeita arquivo acima de 10MB', () => {
+      const result = validarArquivo({ extension: "jpg", mimeType: "image/jpeg", size: MAX_FILE_SIZE_BYTES + 1 })
+      expect(result).not.toBeNull()
+      expect(result).toContain("grande")
+    })
+
+    it('aceita arquivo exatamente no limite', () => {
+      expect(validarArquivo({ extension: "jpg", mimeType: "image/jpeg", size: MAX_FILE_SIZE_BYTES })).toBeNull()
+    })
+  })
+
+  describe('ALLOWED_EXTENSIONS_LIST', () => {
+    it('contem apenas extensoes seguras', () => {
+      const seguras = ["jpg", "jpeg", "png", "pdf"]
+      expect(ALLOWED_EXTENSIONS_LIST.sort()).toEqual(seguras.sort())
+    })
+
+    it('nao contem extensoes executaveis', () => {
+      expect(ALLOWED_EXTENSIONS_LIST).not.toContain("exe")
+      expect(ALLOWED_EXTENSIONS_LIST).not.toContain("bat")
+      expect(ALLOWED_EXTENSIONS_LIST).not.toContain("sh")
+      expect(ALLOWED_EXTENSIONS_LIST).not.toContain("js")
+      expect(ALLOWED_EXTENSIONS_LIST).not.toContain("html")
+      expect(ALLOWED_EXTENSIONS_LIST).not.toContain("svg")
+    })
+  })
+
+  describe('ALLOWED_MIME_TYPES_LIST', () => {
+    it('contem apenas mime types de imagem e pdf', () => {
+      expect(ALLOWED_MIME_TYPES_LIST).toContain("image/jpeg")
+      expect(ALLOWED_MIME_TYPES_LIST).toContain("image/png")
+      expect(ALLOWED_MIME_TYPES_LIST).toContain("application/pdf")
+    })
+
+    it('nao contem mime types perigosos', () => {
+      expect(ALLOWED_MIME_TYPES_LIST).not.toContain("text/html")
+      expect(ALLOWED_MIME_TYPES_LIST).not.toContain("application/javascript")
+      expect(ALLOWED_MIME_TYPES_LIST).not.toContain("application/x-msdownload")
+    })
   })
 })

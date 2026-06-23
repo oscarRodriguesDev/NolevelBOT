@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { TTLMap } from "@/lib/ttl-map";
 import { FlowState, detectFileIntent, botIA4 as botIA, type UserSession } from "@/lib/useIA4";
 import {
   validarCpf,
@@ -8,12 +9,19 @@ import {
   generateRandomTicket,
   buscarAvisos,
   buscarAvisosPorCpf,
-  downloadEvolutionMedia,
   checkEmpresaModule,
 } from "@/lib/usedata";
-import { uploadBuffer } from "@/lib/upload";
 import { registerPhone } from "@/lib/phoneMap";
 import { getSetores } from "@/lib/setores";
+import {
+  parseWebhookMessage,
+  rateLimited,
+  getOrCreateSession,
+  handleExit,
+  processWebhookMedia,
+  saveSession,
+  webhookError,
+} from "@/lib/webhook-core";
 
 const menuString = "1. Abrir Chamado, 2. Consultar Chamado, 3. Sair";
 
@@ -35,74 +43,37 @@ type Webhook27Session = UserSession & {
   pendingState?: string;
 };
 
-const sessions = new Map<string, Webhook27Session>();
+const sessions = new TTLMap<string, Webhook27Session>(120 * 60 * 1000);
 const link = `${process.env.NEXT_PUBLIC_BASE_URL_WP}/chamado`; 
 
 export async function POST(req: NextRequest) {
+  const rateLimit = await rateLimited(req, "webhook27")
+  if (rateLimit) return rateLimit
+
   try {
     const body = await req.json();
-    if (body.event !== "messages.upsert") return NextResponse.json({ ok: true });
+    const msg = parseWebhookMessage(body);
+    if (!msg) return NextResponse.json({ ok: true });
 
+    const { number, instance, userInput, lowerInput, hasImage, hasDocument, hasMedia } = msg;
     const data = body.data;
-    if (!data?.message || data.key?.fromMe) return NextResponse.json({ ok: true });
 
-    const number = data.key.remoteJid;
-    const instance = body.instance;
-    const hasImage = !!data.message.imageMessage;
-    const hasDocument = !!data.message.documentMessage;
-    const hasMedia = hasImage || hasDocument;
-    const caption = data.message.imageMessage?.caption || data.message.documentMessage?.caption || "";
-    const userInput = (data.message.conversation || data.message.extendedTextMessage?.text || caption || "").trim();
-    const lowerInput = userInput.toLowerCase();
-    
-    let session = sessions.get(number);
+    const session = getOrCreateSession(sessions, number, {
+      state: FlowState.INICIO,
+      lastInteraction: Date.now(),
+    });
 
-    if (!session || Date.now() - session.lastInteraction > 1000 * 60 * 60 * 2) {
-      session = { state: FlowState.INICIO, lastInteraction: Date.now() };
-      sessions.set(number, session);
-    }
-
-    session.lastInteraction = Date.now();
+    const exit = await handleExit(userInput, instance, number, sessions, number);
+    if (exit) return exit;
 
     let avisos = "Sem avisos no momento.";
     if (session.cpf) {
       avisos = await buscarAvisos(session.cpf, req);
     }
 
-    if (["sair", "encerrar", "cancelar"].includes(lowerInput)) {
-      await sendEvolutionText(instance, number, "Tudo bem, atendimento encerrado. Quando precisar é só me chamar de volta!");
-      sessions.delete(number);
-      return NextResponse.json({ ok: true });
-    }
-
-    async function processMediaAndAdvance(
-      data: any, instance: string, number: string, session: Webhook27Session, hasImage: boolean
-    ) {
-      const mediaMsg = data.message.imageMessage || data.message.documentMessage;
-      const mimeType = mediaMsg.mimetype || "application/octet-stream";
-      const ext = (mimeType.split("/").pop() || "bin").replace(/[^a-z0-9]/g, "");
-      const nomeArquivo = data.message.documentMessage?.fileName || `anexo_${Date.now()}.${ext}`;
-
-      const buffer = await downloadEvolutionMedia(instance, data.key, data.message?.base64, mediaMsg);
-
-      if (buffer) {
-        const url = await uploadBuffer({
-          buffer,
-          fileName: nomeArquivo,
-          mimeType,
-          folder: session.cpf || "unknown",
-        });
-
-        if (url) {
-          session.anexoUrl = url;
-          const tipo = hasImage ? "foto" : "documento";
-          await sendEvolutionText(instance, number, `Recebi seu ${tipo}! ✅ Já vou anexar ao chamado.`);
-        } else {
-          await sendEvolutionText(instance, number, "Ops, tive um problema ao salvar o arquivo. Mas vou seguir com seu chamado mesmo assim.");
-        }
-      } else {
-        await sendEvolutionText(instance, number, `Parece que não consegui processar seu arquivo, se for mesmo necessario envia-lo acesse: ${link}`);
-      }
+    async function processMediaAndAdvance() {
+      const url = await processWebhookMedia(data, instance, number, hasImage, hasDocument, session.cpf || "unknown");
+      if (url) session.anexoUrl = url;
 
       const setores = await getSetores(session.cpf || "");
       await sendEvolutionText(
@@ -128,7 +99,6 @@ export async function POST(req: NextRequest) {
 
     switch (session.state) {
       case FlowState.INICIO: {
-        // Apenas acolhe o usuário e pede o CPF. Sem revelar nomes.
         const resp = await botIA(
           session,
           userInput,
@@ -152,7 +122,6 @@ export async function POST(req: NextRequest) {
         const resCpf = await validarCpf(cleanCPF);
 
         if (resCpf && resCpf.valido) {
-          // Salvando o CPF na sessão. A partir daqui a função botIA4 sabe qual empresa buscar no banco.
           session.cpf = cleanCPF;
           session.nome = resCpf.nome;
           session.empresaId = await getEmpresaIdFromCpf(cleanCPF);
@@ -172,9 +141,39 @@ export async function POST(req: NextRequest) {
           }
 
           registerPhone(cleanCPF, number, instance);
+
+          // Verificar vínculo de telefone
+          const { prisma } = await import("@/lib/prisma");
+          const cpfRecord = await prisma.cpfs.findUnique({
+            where: { cpf: cleanCPF },
+            select: { telefone: true },
+          });
+
+          const currentNumber = number.includes("@") ? number.split("@")[0].replace("+", "") : number.replace("+", "");
+          const currentTelefone = currentNumber.replace(/\D/g, "");
+
+          if (!cpfRecord?.telefone) {
+            await sendEvolutionText(
+              instance,
+              number,
+              `Olá, ${resCpf.nome}! Seu CPF foi validado com sucesso ✅\n\nDeseja vincular este número de WhatsApp (${number}) ao seu CPF para facilitar futuros contatos? Responda *SIM* ou *NÃO*.`
+            );
+            session.state = FlowState.VINCULAR_TELEFONE;
+            break;
+          }
+
+          if (cpfRecord.telefone !== currentTelefone) {
+            await sendEvolutionText(
+              instance,
+              number,
+              `Olá, ${resCpf.nome}! Seu CPF foi validado com sucesso ✅\n\nSeu número vinculado atual é ${cpfRecord.telefone}. Deseja substituir pelo novo número (${number})? Responda *SIM* ou *NÃO*.`
+            );
+            session.state = FlowState.VINCULAR_TELEFONE;
+            break;
+          }
+
           avisos = await buscarAvisosPorCpf(cleanCPF);
 
-          // Se houver aviso específico para este CPF (no título ou conteúdo), já apresenta tudo de uma vez
           if (avisos && !avisos.includes("Sem avisos")) {
             const instrucaoAviso = session.nome
               ? `CPF ${cleanCPF} validado. Nome: ${session.nome}. Existe um aviso importante específico para você:\n${avisos}\n\nAção OBRIGATÓRIA: Apresente-se com SEU NOME e o NOME DA SUA EMPRESA. Em seguida, informe o aviso de forma HUMANIZADA e ACOLHEDORA. Depois, apresente as opções: ${menuString}. Tudo em uma única mensagem.`
@@ -195,6 +194,39 @@ export async function POST(req: NextRequest) {
           }
         } else {
           await sendEvolutionText(instance, number, "Esse CPF não está cadastrado no sistema. Pode verificar e tentar de novo?");
+        }
+        break;
+      }
+
+      case FlowState.VINCULAR_TELEFONE: {
+        if (lowerInput.includes("sim")) {
+          const { prisma } = await import("@/lib/prisma");
+          const currentNumber = number.includes("@") ? number.split("@")[0].replace("+", "") : number.replace("+", "");
+          const currentTelefone = currentNumber.replace(/\D/g, "");
+          await prisma.cpfs.update({
+            where: { cpf: session.cpf },
+            data: { telefone: currentTelefone },
+          });
+          await sendEvolutionText(instance, number, "✅ Número vinculado com sucesso ao seu CPF!");
+        } else {
+          await sendEvolutionText(instance, number, "Tudo bem, pode continuar normalmente!");
+        }
+
+        avisos = await buscarAvisosPorCpf(session.cpf || "");
+        if (avisos && !avisos.includes("Sem avisos")) {
+          const instrucaoAviso = session.nome
+            ? `CPF validado. Nome: ${session.nome}. Existe um aviso importante específico para você:\n${avisos}\n\nAção OBRIGATÓRIA: Apresente-se com SEU NOME e o NOME DA SUA EMPRESA. Em seguida, informe o aviso de forma HUMANIZADA e ACOLHEDORA. Depois, apresente as opções: ${menuString}. Tudo em uma única mensagem.`
+            : `CPF encontrado. Existe um aviso importante:\n${avisos}\n\nAção OBRIGATÓRIA: Apresente-se com SEU NOME e o NOME DA SUA EMPRESA. Em seguida, informe o aviso de forma HUMANIZADA e ACOLHEDORA. Depois, pergunte educadamente como o usuário gostaria de ser chamado. Tudo em uma única mensagem.`;
+          const apresentacao = await botIA(session, userInput, instrucaoAviso, avisos);
+          await sendEvolutionText(instance, number, apresentacao);
+          session.state = session.nome ? FlowState.MENU_PRINCIPAL : FlowState.IDENTIFICACAO_NOME;
+        } else {
+          const instrucao = session.nome
+            ? `CPF validado. O nome do usuário é ${session.nome}. OBRIGATÓRIO: Agora você deve se apresentar com o SEU NOME e o NOME DA SUA EMPRESA. Depois, saude o usuário e apresente as opções: ${menuString} Responda com o numero da sua opção`
+            : `CPF encontrado. OBRIGATÓRIO: Agora você deve se apresentar com o SEU NOME e o NOME DA SUA EMPRESA. Depois, pergunte como o usuário gostaria de ser chamado.`;
+          const resposta = await botIA(session, userInput, instrucao, avisos);
+          await sendEvolutionText(instance, number, resposta);
+          session.state = session.nome ? FlowState.MENU_PRINCIPAL : FlowState.IDENTIFICACAO_NOME;
         }
         break;
       }
@@ -375,7 +407,7 @@ export async function POST(req: NextRequest) {
 
       case FlowState.PERGUNTAR_ANEXO: {
         if (hasMedia) {
-          await processMediaAndAdvance(data, instance, number, session, hasImage);
+          await processMediaAndAdvance();
           break;
         }
         const intent = detectFileIntent(userInput);
@@ -396,7 +428,7 @@ export async function POST(req: NextRequest) {
 
       case FlowState.COLETAR_MIDIA: {
         if (hasMedia) {
-          await processMediaAndAdvance(data, instance, number, session, hasImage);
+          await processMediaAndAdvance();
         } else if (detectFileIntent(userInput) === "no_file") {
           const setores = await getSetores(session.cpf || "");
           await sendEvolutionText(
@@ -470,13 +502,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (session) {
-      sessions.set(number, session);
-    }
-    
+    saveSession(sessions, number, session);
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error("Erro crítico no webhook27:", error);
-    return NextResponse.json({ ok: true });
+    return webhookError("webhook27")(error)
   }
 }

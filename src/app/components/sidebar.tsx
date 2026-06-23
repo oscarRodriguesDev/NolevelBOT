@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { LuMenu, LuX, LuTickets, LuBell, LuUsers, LuHouse, LuSettings, LuBuilding2, LuWrench, LuChevronDown, LuChevronRight, LuHeadphones, LuTruck, LuGlobe } from 'react-icons/lu'
+import { LuMenu, LuX, LuTickets, LuBell, LuUsers, LuHouse, LuSettings, LuBuilding2, LuWrench, LuCalendarCheck, LuChevronDown, LuChevronRight, LuHeadphones, LuTruck, LuGlobe, LuBug } from 'react-icons/lu'
 import { useSession } from 'next-auth/react'
 import { ROLE } from '@prisma/client'
 import packageJson from '../../../package.json'
@@ -35,9 +35,23 @@ export function Sidebar() {
 
   useEffect(() => {
     if (!session?.user?.empresaId || userRole === "GOD") return
+    const cacheKey = `empresa_modulos_${session.user.empresaId}`
+    const cached = sessionStorage.getItem(cacheKey)
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached)
+        // Defer state update to avoid synchronous setState inside effect
+        Promise.resolve().then(() => setEmpresaModulos(parsed))
+        return
+      } catch {}
+    }
     fetch(`/api/empresa?id=${session.user.empresaId}`)
       .then(r => r.json())
-      .then(data => setEmpresaModulos(data.modulos || []))
+      .then(data => {
+        const mods = data.modulos || []
+        setEmpresaModulos(mods)
+        sessionStorage.setItem(cacheKey, JSON.stringify(mods))
+      })
       .catch(() => {})
   }, [session, userRole])
 
@@ -54,7 +68,7 @@ export function Sidebar() {
       items: [
         { label: 'Dashboard', href: '/corporativo/dashboards', icon: LuHouse, show: userRole !== "ATENDENTE" },
         { label: 'Chamados', href: '/corporativo/all-tickets', icon: LuTickets, show: true },
-        { label: 'Avisos', href: '/corporativo/avisos', icon: LuBell, show: true },
+        { label: 'Avisos', href: '/corporativo/avisos', icon: LuBell, show: true},
         { label: 'CPFs Autorizados', href: '/corporativo/cpfs', icon: LuUsers, show: true },
         { label: 'Usuários', href: '/corporativo/usuarios', icon: LuUsers, show: isAdmin },
         { label: 'Criar Usuário', href: '/corporativo/gestao-de-usuarios', icon: LuSettings, show: isAdmin },
@@ -68,28 +82,14 @@ export function Sidebar() {
       items: [
         { label: 'Dashboard', href: '/oficina/dashboards', icon: LuHouse, show: userRole !== "ATENDENTE" },
         { label: 'Solicitações', href: '/oficina/all-tickets', icon: LuTickets, show: true },
-        { label: 'Avisos', href: '/oficina/avisos', icon: LuBell, show: true },
+        { label: 'Avisos', href: '/oficina/avisos', icon: LuBell, show:true},
         { label: 'Colaboradores', href: '/oficina/cpfs', icon: LuTruck, show: true },
         { label: 'Usuários', href: '/oficina/usuarios', icon: LuUsers, show: isAdmin },
         { label: 'Criar Usuário', href: '/oficina/gestao-de-usuarios', icon: LuSettings, show: userRole !== "GOD" && isAdmin },
        
       ],
     },
-    {
-      key: 'Eventos',
-      label: 'Eventos',
-      icon: LuWrench,
-      modulos: ['EVENTOS'],
-      items: [
-        { label: 'Dashboard', href: '/eventos/dashboards', icon: LuHouse, show: userRole !== "ATENDENTE" },
-        { label: 'Solicitações', href: '/eventos/all-tickets', icon: LuTickets, show: true },
-        { label: 'Avisos', href: '/eventos/avisos', icon: LuBell, show: true },
-        { label: 'Motoristas', href: '/eventos/cpfs', icon: LuTruck, show: true },
-        { label: 'Usuários', href: '/eventos/usuarios', icon: LuUsers, show: isAdmin },
-        { label: 'Criar Usuário', href: '/eventos/gestao-de-usuarios', icon: LuSettings, show: userRole !== "GOD" && isAdmin },
-       
-      ],
-    },
+
   ]
 
   if (userRole === "GOD") {
@@ -104,6 +104,7 @@ export function Sidebar() {
         { label: 'Empresas', href: '/corporativo/empresa', icon: LuBuilding2, show: true },
         { label: 'Usuários', href: '/god/usuarios', icon: LuUsers, show: true },
         { label: 'Admins', href: '/god/admins', icon: LuSettings, show: true },
+        { label: 'Erros', href: '/god/erros', icon: LuBug, show:false },
       ],
     })
   }
@@ -120,19 +121,23 @@ export function Sidebar() {
   })
 
   useEffect(() => {
-    setModulosAbertos(prev => {
-      const modKeys = modulosDisponiveis.map(m => m.key)
-      const hasMatch = prev.some(k => {
-        if (pathname.startsWith('/' + k + '/')) return true
-        const secao = modulosDisponiveis.find(m => m.key === k)
-        return secao?.items.some(item => item.show && pathname.includes(item.href))
+    // Defer state update to avoid synchronous setState inside effect
+    Promise.resolve().then(() => {
+      setModulosAbertos(prev => {
+        const hasMatch = prev.some(k => {
+          if (pathname.startsWith('/' + k + '/')) return true
+          const secao = modulosDisponiveis.find(m => m.key === k)
+          return secao?.items.some(item => item.show && pathname.includes(item.href))
+        })
+        if (hasMatch) return prev
+        const found = modulosDisponiveis.find(m => m.items.some(item => item.show && pathname.includes(item.href)))
+        if (found && !prev.includes(found.key)) {
+          return [...prev, found.key]
+        }
+        return prev
       })
-      if (hasMatch) return prev
-      const found = modulosDisponiveis.find(m => m.items.some(item => item.show && pathname.includes(item.href)))
-      if (found && !prev.includes(found.key)) return [...prev, found.key]
-      return prev
     })
-  }, [pathname])
+  }, [pathname, modulosDisponiveis])
 
   const toggleModulo = (key: string) => {
     setModulosAbertos(prev =>

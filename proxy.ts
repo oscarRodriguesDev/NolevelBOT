@@ -10,9 +10,14 @@ const publicRoutes = [
   '/oficina/chatbot-app',
   '/oficina/consulta',
   '/contact',
+  '/ideias',
 ]
 
 const rateStore = new Map<string, { count: number; resetAt: number }>()
+setInterval(() => {
+  const now = Date.now()
+  for (const [key, rec] of rateStore) if (now > rec.resetAt) rateStore.delete(key)
+}, 60_000).unref()
 
 function checkRateLimit(key: string, maxRequests: number, windowMs: number): boolean {
   const now = Date.now()
@@ -114,5 +119,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/corporativo/:path*", "/oficina/:path*", "/eventos/:path*", "/god/:path*", "/dashboard/:path*", "/testes/:path*", "/api/testes/:path*", "/api-docs/:path*"],
+  matcher: ["/", "/corporativo/:path*", "/oficina/:path*", "/eventos/:path*", "/god/:path*", "/dashboard/:path*", "/testes/:path*", "/api/testes/:path*", "/api-docs/:path*", "/ideias/:path*"],
 }

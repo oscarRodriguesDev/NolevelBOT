@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { applyRateLimit } from "@/lib/rate-limit"
 import { prisma } from "@/lib/prisma"
 import { getSessionOrFail } from "@/util/permission"
 import { limparCPF } from "@/util/limparcpfs"
@@ -39,6 +40,8 @@ export async function GET() {
 }
 
 export async function PUT(req: NextRequest) {
+  const rateLimit = await applyRateLimit(req, "users-admins", 20, 60 * 1000)
+  if (rateLimit) return rateLimit
   const session = await getSessionOrFail(["GOD"])
   if (!session) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
@@ -99,6 +102,8 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const rateLimit = await applyRateLimit(req, "users-admins", 15, 60 * 1000)
+  if (rateLimit) return rateLimit
   const session = await getSessionOrFail(["GOD"])
   if (!session) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 })

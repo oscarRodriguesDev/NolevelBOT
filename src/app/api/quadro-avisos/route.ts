@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server"
+import { applyRateLimit } from "@/lib/rate-limit"
+import { validateOrError } from "@/lib/validate"
+import { createAvisoSchema, updateAvisoSchema } from "@/lib/validation"
 import { prisma } from "@/lib/prisma"
 import { getSessionOrFail } from "@/util/permission"
 import { ROLE } from "@prisma/client"
@@ -75,6 +78,8 @@ export async function GET() {
 
 // POST - Criar novo aviso
 export async function POST(request: Request) {
+  const rateLimit = await applyRateLimit(request, "quadro-avisos", 20, 60 * 1000)
+  if (rateLimit) return rateLimit
     const session = await getSessionOrFail(["ADMIN", "GESTOR", "GOD"])
     const empresaId = session?.user.empresaId
     if (!session) {
@@ -82,16 +87,13 @@ export async function POST(request: Request) {
     }
   try {
     const body = await request.json()
-    let { titulo, conteudo, setor, duracao } = body
+
+    const parsed = validateOrError(body, createAvisoSchema)
+    if (parsed instanceof NextResponse) return parsed
+
+    let { titulo, conteudo, setor, duracao } = parsed
     const userRole = session.user.role as ROLE
     const userSetor = session.user.setor || ""
-
-    if (!titulo || !conteudo) {
-      return NextResponse.json(
-        { error: "Título e conteúdo são obrigatórios" },
-        { status: 400 }
-      )
-    }
 
     if (userRole !== "ADMIN" && userRole !== "GOD") {
       setor = userSetor
@@ -134,6 +136,8 @@ export async function POST(request: Request) {
 
 // PUT - Editar aviso
 export async function PUT(request: Request) {
+  const rateLimit = await applyRateLimit(request, "quadro-avisos", 20, 60 * 1000)
+  if (rateLimit) return rateLimit
    const session = await getSessionOrFail(["ADMIN", "GESTOR", "GOD"])
   
   if (!session) {
@@ -141,16 +145,14 @@ export async function PUT(request: Request) {
   }
   try {
     const body = await request.json()
-    let { id, titulo, conteudo, setor, duracao, expiresAt } = body
+
+    const parsed = validateOrError(body, updateAvisoSchema)
+    if (parsed instanceof NextResponse) return parsed
+
+    let { id, titulo, conteudo, setor, duracao } = parsed
+    let { expiresAt } = body
     const userRole = session.user.role as ROLE
     const userSetor = session.user.setor || ""
-
-    if (!id) {
-      return NextResponse.json(
-        { error: "ID é obrigatório" },
-        { status: 400 }
-      )
-    }
 
     if (userRole !== "ADMIN" && userRole !== "GOD") {
       setor = userSetor
@@ -187,6 +189,8 @@ export async function PUT(request: Request) {
 
 // DELETE - Deletar aviso
 export async function DELETE(request: Request) {
+  const rateLimit = await applyRateLimit(request, "quadro-avisos", 15, 60 * 1000)
+  if (rateLimit) return rateLimit
   const session = await getSessionOrFail(["ADMIN", "GESTOR", "GOD"])// Apenas usuários autenticados podem deletar avisos
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/app/components/theme-toggle";
 import { LuMail, LuLock } from "react-icons/lu";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import Link from "next/link";
 
 
@@ -89,7 +89,12 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/dashboard");
+      const session = await getSession()
+      if (session?.user?.role === "GOD") {
+        router.push("/god/dashboard")
+      } else {
+        router.push("/dashboard")
+      }
     } catch {
       setError("Erro ao fazer login");
     } finally {
@@ -133,7 +138,7 @@ export default function LoginPage() {
 
             <div className="relative z-10 p-12 text-center">
               <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center">
-                <span className="text-4xl font-black text-white">N</span>
+                <span className="text-4xl font-black text-white">S</span>
               </div>
 
               <h2 className="text-3xl font-bold text-white mb-3">
@@ -154,7 +159,7 @@ export default function LoginPage() {
               className="text-4xl sm:text-5xl font-black tracking-tight"
               style={{ color: "var(--primary)" }}
             >
-              NoleSkoravel
+              Skora
             </h1>
 
             <p className="text-sm opacity-50 font-medium">
