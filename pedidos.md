@@ -244,7 +244,7 @@
 ## PED-028: Webhook corporativo com IA inteligente + memórias do usuário (resumoPersona)
 **Data:** 24/06/2026
 **Status:** ✅ Concluído
-**Commit:** `<PENDENTE>`
+**Commit:** `a895a7c`
 **Descrição:**
 - Criada `src/lib/useIA-corporativa.ts` — lib de IA corporativa otimizada para economia de tokens:
   - Prompt enxuto (~50% menos tokens que useIA4)
