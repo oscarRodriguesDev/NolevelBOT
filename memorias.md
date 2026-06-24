@@ -637,6 +637,17 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 - `/api/upload` mantido para compatibilidade com possíveis callers não mapeados.
 - Build: ✅ sucesso.
 
+### Mudança: Bloqueio de chamados repetitivos no webhook-corporativo
+**Autor:** Vibecode
+**Arquivos:** `src/app/api/webhook-corporativo/route.ts`
+**Data:** 24/06/2026
+**Descrição:**
+- Adicionada função `verificarChamadosAbertos(cpf)` que consulta os últimos 5 chamados do CPF.
+- **Bloqueio 1:** Se houver chamado com status aberto (NOVO/aberto/em_atendimento/aguardando/EM_ANDAMENTO), o bot exibe os detalhes do chamado e encerra o fluxo — não permite abertura de novo chamado.
+- **Bloqueio 2:** Se o último chamado foi fechado há menos de 3 dias, o bot informa o usuário para aguardar o prazo.
+- A verificação ocorre no estado `MENU_PRINCIPAL` antes de migrar para `COLETAR_MOTIVO`, economizando tokens do usuário.
+- Build: ✅ sucesso.
+
 ### Mudança: Comentários descritivos em todas as funções do código
 **Autor:** Vibecode
 **Arquivos:** ~141 arquivos .ts/.tsx em src/

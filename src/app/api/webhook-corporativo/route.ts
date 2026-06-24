@@ -73,6 +73,46 @@ export async function POST(req: NextRequest) {
       session.state = FlowState.COLETAR_SETOR;
     }
 
+    const STATUS_ABERTO = ["NOVO", "aberto", "em_atendimento", "aguardando", "EM_ANDAMENTO"];
+
+    async function verificarChamadosAbertos(cpf: string): Promise<{ bloqueado: boolean; mensagem: string }> {
+      const chamados = await prisma.chamado.findMany({
+        where: { cpf },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        include: { atendente: { select: { name: true } } },
+      });
+
+      const abertos = chamados.filter(c => STATUS_ABERTO.includes(c.status));
+      if (abertos.length > 0) {
+        const lista = abertos.map((t: any) => {
+          const label = statusLabels[t.status] || t.status;
+          const dataCriacao = new Date(t.createdAt).toLocaleDateString("pt-BR");
+          return [
+            `🎫 *${t.ticket}* — ${label}`,
+            `📅 Abertura: ${dataCriacao}`,
+            `📍 Setor: ${t.setor}`,
+            t.atendente?.name ? `🧑‍💻 Atendente: ${t.atendente.name}` : "",
+            t.descricao ? `📄 ${t.descricao.substring(0, 100)}` : "",
+          ].filter(Boolean).join("\n");
+        }).join("\n\n━━━━━━━━━━━━━━━━\n\n");
+        return { bloqueado: true, mensagem: `Voce ja possui chamados em aberto:\n\n${lista}\n\nAcompanhe o status pelo numero do ticket. Caso necessario, aguarde o fechamento para abrir um novo.` };
+      }
+
+      const fechados = chamados.filter(c => !STATUS_ABERTO.includes(c.status));
+      if (fechados.length > 0) {
+        const ultimo = fechados[0];
+        const dataFechamento = new Date(ultimo.updatedAt);
+        const tresDias = 3 * 24 * 60 * 60 * 1000;
+        if (Date.now() - dataFechamento.getTime() < tresDias) {
+          const dataCriacao = new Date(ultimo.createdAt).toLocaleDateString("pt-BR");
+          return { bloqueado: true, mensagem: `Seu ultimo chamado *${ultimo.ticket}* foi registrado em ${dataCriacao} e esta muito recente. Por favor, aguarde 3 dias para abrir um novo chamado. Se for urgente, entre em contato com a administracao.` };
+        }
+      }
+
+      return { bloqueado: false, mensagem: "" };
+    }
+
     async function criarChamado(setor: string): Promise<string | null> {
       const ticket = `TKT-${Date.now()}`;
       try {
@@ -157,6 +197,14 @@ export async function POST(req: NextRequest) {
 
       case FlowState.MENU_PRINCIPAL: {
         if (["1", "abrir", "chamado"].some(v => lowerInput.includes(v))) {
+          if (session.cpf) {
+            const { bloqueado, mensagem } = await verificarChamadosAbertos(session.cpf);
+            if (bloqueado) {
+              await sendEvolutionText(instance, number, mensagem);
+              sessions.delete(number);
+              return NextResponse.json({ ok: true });
+            }
+          }
           await sendEvolutionText(instance, number, "Claro! Me conta o que esta acontecendo? Descreva com detalhes.");
           session.state = FlowState.COLETAR_MOTIVO;
         } else if (["2", "status", "consultar", "ver"].some(v => lowerInput.includes(v))) {

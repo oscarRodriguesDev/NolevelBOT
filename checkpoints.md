@@ -16,6 +16,10 @@
   - Build: ✅ sucesso · Testes: 245 passando (11 arquivos)
   - Commit: `a895a7c`
   - Push: ✅
+- PED-029: Bloqueio de chamados repetitivos no webhook-corporativo (24/06/2026)
+  - Adicionada função `verificarChamadosAbertos(cpf)` que verifica chamados abertos ou fechados < 3 dias
+  - Bloqueio ativado no MENU_PRINCIPAL antes de COLETAR_MOTIVO
+  - Build: ✅ sucesso
 
 ### Próximos Passos
 - Aguardando instruções do usuário
