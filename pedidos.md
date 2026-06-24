@@ -238,5 +238,24 @@
 ## DOC: Comentários descritivos em todas as funções do código
 **Data:** 24/06/2026
 **Status:** ✅ Concluído
-**Commit:** `<PENDENTE>`
+**Commit:** `cd2df22`
 **Descrição:** Adicionados comentários de linha única em português (`// descricao`) antes de funções nomeadas, componentes React e funções exportadas em todo o código fonte. ~360 comentários distribuídos em ~141 arquivos. Ignorados: arrow functions anônimas, tipos, testes, node_modules, .next e arquivos de controle colaborativo. Build: ✅ sucesso.
+
+## PED-028: Webhook corporativo com IA inteligente + memórias do usuário (resumoPersona)
+**Data:** 24/06/2026
+**Status:** ✅ Concluído
+**Commit:** `<PENDENTE>`
+**Descrição:**
+- Criada `src/lib/useIA-corporativa.ts` — lib de IA corporativa otimizada para economia de tokens:
+  - Prompt enxuto (~50% menos tokens que useIA4)
+  - `max_tokens: 140` (vs 180 do useIA4)
+  - Integração com `resumoPersona` via `getMemoria()`/`saveMemoria()`
+  - `detectFileIntent()` próprio
+- Refatorado `/api/webhook-corporativo`: fluxo sequencial substituído por IA natural:
+  - Identificação por CPF com carregamento de memória da persona
+  - Menu principal com IA interpretando opções
+  - Coleta de motivo com análise inteligente de avisos (AVISO_RESOLVE)
+  - Anexo opcional, confirmação e seleção de setor
+  - Geração automática de resumo da persona via OpenAI após chamado
+- Criado `gerar-memoria.ts`: gera resumo de 1-2 frases via `gpt-4o-mini` e salva em `resumoPersona`
+- Build: ✅ sucesso.

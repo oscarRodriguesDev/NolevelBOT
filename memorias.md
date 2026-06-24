@@ -636,3 +636,24 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 - Atualizados 4 callers: chatbots (oficina + corporativo) e páginas de empresa (edit + create) para usar `uploadFileDirect()` em vez de `/api/upload`.
 - `/api/upload` mantido para compatibilidade com possíveis callers não mapeados.
 - Build: ✅ sucesso.
+
+### Mudança: Comentários descritivos em todas as funções do código
+**Autor:** Vibecode
+**Arquivos:** ~141 arquivos .ts/.tsx em src/
+**Data:** 24/06/2026
+**Descrição:**
+- Adicionados ~360 comentários de linha única em português (`// descricao`) antes de funções nomeadas, componentes React e funções exportadas.
+- Ignorados: arrow functions anônimas, tipos, testes, node_modules, .next e arquivos de controle colaborativo.
+- useIA.ts e useIA2.ts removidos (órfãos, zero imports).
+- Build: ✅ sucesso. Commit: `cd2df22`
+
+### Mudança: IA corporativa no webhook-corporativo + lib useIA-corporativa
+**Autor:** Vibecode
+**Arquivos:** `src/lib/useIA-corporativa.ts` (novo), `src/app/api/webhook-corporativo/route.ts` (refatorado), `src/app/api/webhook-corporativo/gerar-memoria.ts` (novo)
+**Data:** 24/06/2026
+**Descrição:**
+- Criada `src/lib/useIA-corporativa.ts`: lib de IA corporativa com prompt enxuto (~50% menos tokens que useIA4), `max_tokens: 140`, suporte a `resumoPersona` (memórias do usuário via getMemoria/saveMemoria), e `detectFileIntent` próprio.
+- Refatorado `/api/webhook-corporativo`: agora usa IA (`botIA()`) para interações naturais em vez de respostas fixas. Fluxo completo: identificação por CPF, menu principal, coleta de motivo com análise de avisos (AVISO_RESOLVE), anexo opcional, confirmação e setor. Integrado `getMemoria()` para carregar persona ao validar CPF.
+- Criado `gerar-memoria.ts`: gera resumo de 1-2 frases sobre o usuário via OpenAI após criar chamado, salvo em `resumoPersona` via `saveMemoria()`.
+- Economia de tokens: prompt mais curto, sem repetição de instruções, `temperature: 0.7` e `max_tokens: 140` (vs 180 do useIA4). Recondução mais agressiva para evitar off-topic.
+- Build: ✅ sucesso.
