@@ -4,6 +4,7 @@ import { applyRateLimit } from "@/lib/rate-limit";
 const EVOLUTION_URL = "https://evolution.nolevel.hiskra.com.br";
 const INSTANCE = "bot";
 
+// Webhook de teste que ecoa mensagem de volta para o remetente
 export async function POST(req: Request) {
   const rateLimit = await applyRateLimit(req, "webhook-teste", 60, 60 * 1000)
   if (rateLimit) return rateLimit

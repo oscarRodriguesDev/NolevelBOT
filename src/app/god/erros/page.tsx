@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import type { StoredError } from "@/lib/error-store"
 
+// Pagina de consulta de erros do sistema
 export default function GodErrosPage() {
   const { data: session, status } = useSession()
   const [errors, setErrors] = useState<StoredError[]>([])
@@ -13,6 +14,7 @@ export default function GodErrosPage() {
 
   const isGod = session?.user?.role === "GOD"
 
+  // Busca erros da API com filtro opcional de codigo
   async function fetchErrors(code?: string) {
     setLoading(true)
     try {
@@ -51,10 +53,12 @@ export default function GodErrosPage() {
     )
   }
 
+  // Formata timestamp para data local brasileira
   function formatTime(ts: number) {
     return new Date(ts).toLocaleString("pt-BR")
   }
 
+  // Copia texto para area de transferencia
   function copyToClipboard(text: string) {
     navigator.clipboard.writeText(text)
   }

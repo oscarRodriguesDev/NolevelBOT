@@ -5,6 +5,7 @@ interface PriorityBadgeProps {
   prioridade: string
 }
 
+// Badge de prioridade colorido
 export function PriorityBadge({ prioridade }: PriorityBadgeProps) {
   return (
     <span

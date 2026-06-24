@@ -34,6 +34,7 @@ const detailedColetarMotivoInstruction = `Analise o motivo relatado e os avisos 
 - Em QUALQUER OUTRO caso (inclusive se não houver avisos ou se não corresponder): retorne APENAS a palavra "PROSSEGUIR_FLUXO".
 NÃO responda a pergunta do usuário. NÃO liste chamados. NÃO converse. Apenas retorne o código.`
 
+// Processa requisicao de chat com controle de fluxo baseado em estado
 export async function handleChatRequest(req: NextRequest, config: ChatConfig) {
   const rateLimit = await applyRateLimit(req, config.rateLimitKey, 30, 60 * 1000)
   if (rateLimit) return rateLimit

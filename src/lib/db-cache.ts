@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 
+// Retorna valor do cache ou busca e armazena com TTL
 export async function cacheGetOrSet<T>(
   key: string,
   fetch: () => Promise<T>,

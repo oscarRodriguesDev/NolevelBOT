@@ -11,6 +11,7 @@ import { avisos } from '@prisma/client'
 
 type TipoRegistro = 'defeito' | 'socorro' | 'sem_defeito' | null
 
+// pagina de registro de manutencao com tipo defeito/socorro/sem defeito
 export default function ManutencaoPage() {
 
   const [mounted, setMounted] = useState(false)
@@ -69,6 +70,7 @@ export default function ManutencaoPage() {
 
 
   /* valida a matricula, implementar para quando perder o foco tambem */
+  // valida a matricula consultando a API e preenche dados do colaborador
   async function validarMatricula(matricula: string) {
     setSearching(true)
     if (matricula.length < 3) return
@@ -95,6 +97,7 @@ export default function ManutencaoPage() {
 
 
   /* busca os avisos especificos para a matricula */
+  // busca avisos especificos para a matricula informada
   async function fetchAvisos(matricula: string) {
     try {
       const res = await fetch(`/api/quadro-avisos/mostrar-avisos?cpf=${matricula}`)

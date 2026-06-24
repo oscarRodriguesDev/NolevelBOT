@@ -5,6 +5,7 @@ interface StatusBadgeProps {
   status: string
 }
 
+// Badge de status colorido
 export function StatusBadge({ status }: StatusBadgeProps) {
   return (
     <span

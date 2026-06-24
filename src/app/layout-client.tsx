@@ -5,6 +5,7 @@ import { Toaster } from "react-hot-toast";
 import { ThemeProvider } from "./providers";
 import { SessionProvider } from "next-auth/react"
 
+// Layout cliente com providers de tema e sessao
 export default function RootLayoutClient({ children }: { children: ReactNode }) {
   return (
     <>

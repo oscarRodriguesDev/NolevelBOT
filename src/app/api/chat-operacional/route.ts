@@ -6,6 +6,7 @@ const operacionalColetarMotivoInstruction = `Analise o motivo relatado e os avis
 - Em QUALQUER OUTRO caso (inclusive se não houver avisos ou se não corresponder): retorne APENAS a palavra "PROSSEGUIR_FLUXO".
 NÃO responda a pergunta do usuário. NÃO liste chamados. NÃO converse. Apenas retorne o código.`
 
+// Manipula requisicoes POST de chat operacional
 export async function POST(req: NextRequest) {
   return handleChatRequest(req, {
     rateLimitKey: "chat-operacional",

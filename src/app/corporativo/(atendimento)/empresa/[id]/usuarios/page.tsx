@@ -20,6 +20,7 @@ interface UserItem {
   avatarUrl: string | null
 }
 
+// Pagina de usuarios vinculados a uma empresa especifica
 export default function EmpresaUsuariosPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -52,6 +53,7 @@ export default function EmpresaUsuariosPage() {
     })
   }, [setHeader])
 
+  // Carrega dados da empresa e lista de usuarios
   async function fetchData() {
     setLoading(true)
     try {
@@ -82,16 +84,19 @@ export default function EmpresaUsuariosPage() {
     if (empresaId) fetchData()
   }, [empresaId])
 
+  // Inicia modo edicao inline de um usuario
   function startEdit(user: UserItem) {
     setEditingId(user.id)
     setEditForm({ name: user.name, email: user.email, cpf: user.cpf, setor: user.setor })
   }
 
+  // Cancela edicao inline e limpa formulario
   function cancelEdit() {
     setEditingId(null)
     setEditForm({ name: '', email: '', cpf: '', setor: '' })
   }
 
+  // Salva alteracoes do usuario editado
   async function saveEdit(id: string) {
     try {
       const res = await fetch(`/api/users?id=${id}`, {
@@ -114,6 +119,7 @@ export default function EmpresaUsuariosPage() {
     }
   }
 
+  // Remove usuario com confirmacao
   async function handleDelete(id: string, name: string) {
     if (!confirm(`Remover "${name}"?`)) return
     try {

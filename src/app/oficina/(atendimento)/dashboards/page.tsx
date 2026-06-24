@@ -49,6 +49,7 @@ const STATUS_CORES: Record<string, string> = {
   FECHADO: "var(--status-completed)",
 }
 
+// pagina principal do dashboard com metricas e graficos de manutencao
 export default function Dashboard() {
   const router = useRouter()
   const [periodo, setPeriodo] = useState<"dia" | "semana" | "mes" | "ano">("mes")
@@ -83,6 +84,7 @@ export default function Dashboard() {
   useEffect(() => {
     let isMounted = true
 
+    // busca os dados do dashboard na API conforme o periodo selecionado
     async function fetchDashboardData() {
       if (!isLoading) setIsLoading(true)
 
@@ -141,6 +143,7 @@ export default function Dashboard() {
     }
   }, [hasPermission, router])
 
+  // exporta os dados do dashboard em formato CSV
   function downloadCSV() {
     const linhas: string[] = []
     linhas.push(`Relatorio de Manutencao - Oficina - Periodo: ${periodo}`)
@@ -197,6 +200,7 @@ export default function Dashboard() {
     URL.revokeObjectURL(url)
   }
 
+  // exporta os dados do dashboard em formato PDF
   async function downloadPDF() {
     const jsPDF = (await import("jspdf")).default
     const pdf = new jsPDF()
@@ -595,6 +599,7 @@ export default function Dashboard() {
   )
 }
 
+// cartao de indicador KPI com label, valor e cor personalizada
 function KPICard({
   label,
   value,

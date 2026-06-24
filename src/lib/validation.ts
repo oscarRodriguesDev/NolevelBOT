@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-//ativar a validação do cpf pos produção
+//valida formato do CPF (atualmente sempre retorna true)
 export function isValidCPF(cpf: string): boolean {
 /*   const digits = cpf.replace(/\D/g, "")
   if (digits.length !== 11) return false

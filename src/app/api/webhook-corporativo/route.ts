@@ -35,6 +35,7 @@ type Session = {
 
 const sessions = new TTLMap<string, Session>(120 * 60 * 1000);
 
+// Processa mensagens do webhook corporativo para abertura de chamados
 export async function POST(req: NextRequest) {
   const rateLimit = await rateLimited(req, "webhook-corporativo")
   if (rateLimit) return rateLimit
@@ -56,6 +57,7 @@ export async function POST(req: NextRequest) {
     if (exit) return exit;
 
     const sess = session;
+    // Processa midia recebida e armazena URL no anexo da sessao
     async function processMedia(): Promise<string | undefined> {
       const url = await processWebhookMedia(data, instance, number, hasImage, hasDocument, sess.cpf || "corporativo");
       if (url) sess.anexoUrl = url;
@@ -285,6 +287,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// Monta o resumo formatado do chamado para confirmacao do usuario
 function montarResumo(session: Session): string {
   return (
     `*Resumo do Registro:*\n\n` +

@@ -24,6 +24,7 @@ interface ModalChamadoProps {
   onConcluido: (ticket: string) => void
 }
 
+// modal de detalhes e atualizacao de um chamado especifico
 export function ModalChamado({
   ticket,
   open,
@@ -52,7 +53,8 @@ export function ModalChamado({
   useEffect(() => {
     if (!ticket || !open) return
 
-    async function fetchChamado() {
+    // busca os dados do chamado atual na API
+      async function fetchChamado() {
       const res = await fetch(`/api/tickets?ticket=${ticket}`)
       const json = await res.json()
       const chamadoData = json.data?.[0]
@@ -75,6 +77,7 @@ export function ModalChamado({
     fetchChamado()
   }, [ticket, open])
 
+  // atualiza o status e adiciona historico ao chamado
   async function atualizarChamado() {
     if (!ticket || !novoStatus) return
     try {
@@ -121,6 +124,7 @@ export function ModalChamado({
     }
   }
 
+  // fecha definitivamente o chamado (exclui da lista de atendimento)
   async function concluirChamado() {
     const confirmacao = window.confirm("Tem certeza que deseja fechar este chamado? Ele será removido da lista de atendimento.")
     if (!confirmacao) return

@@ -52,6 +52,7 @@ const categoryMeta: Record<string, { icon: string; label: string; color: string 
   security: { icon: '🛡️', label: 'Segurança e Privacidade', color: 'var(--status-completed)' },
 }
 
+// Pagina central de testes unitarios e de acesso
 export default function TestesPage() {
   const [loading, setLoading] = useState(false)
   const [report, setReport] = useState<TestReport | null>(null)
@@ -353,6 +354,7 @@ export default function TestesPage() {
   )
 }
 
+// Cartao de estatistica com label, valor e cor
 function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
   return <div className="p-4 rounded-xl text-center" style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)' }}>
     <div className="text-2xl font-bold mb-1" style={{ color }}>{value}</div>

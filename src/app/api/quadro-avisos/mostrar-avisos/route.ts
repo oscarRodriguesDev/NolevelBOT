@@ -3,6 +3,7 @@ import { applyRateLimit } from "@/lib/rate-limit"
 import { prisma } from "@/lib/prisma"
 import { getEmpresaIdByCpf } from "@/lib/searchEmpresa"
 
+// Retorna avisos validos para um CPF, removendo automaticamente os vencidos
 export async function GET(req: Request) {
   const rateLimit = await applyRateLimit(req, "mostrar-avisos", 30, 60 * 1000)
   if (rateLimit) return rateLimit

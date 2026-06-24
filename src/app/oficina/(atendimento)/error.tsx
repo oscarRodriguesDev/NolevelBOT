@@ -2,6 +2,7 @@
 
 import { useEffect } from "react"
 
+// pagina de erro da area de atendimento com botao para tentar novamente
 export default function AtendimentoError({
   error,
   reset,

@@ -35,6 +35,7 @@ interface Chamado {
   createdAt: string;
 }
 
+// Pagina de consulta de chamado individual por ticket
 export default function TicketPage() {
   const [chamado, setChamado] = useState<Chamado | null>(null);
   const [loading, setLoading] = useState(true);

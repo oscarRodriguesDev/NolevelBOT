@@ -10,6 +10,7 @@ import { authOptions } from "@/lib/nextauth"
 import { getServerSession } from "next-auth"
 
 
+// Retorna os dados do usuario logado com seus chamados
 export async function GET() {
   const session = await getSessionOrFail()
   if(!session) {
@@ -59,6 +60,7 @@ export async function GET() {
 }
 
 
+// Atualiza perfil, senha ou avatar do usuario logado
 export async function PUT(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "user-active", 20, 60 * 1000)
   if (rateLimit) return rateLimit

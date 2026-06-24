@@ -17,6 +17,7 @@ interface Props {
   onClose: () => void
 }
 
+// Modal de edicao de perfil do usuario
 export function UserProfileModal({ open, onClose }: Props) {
   const session = useSession()
 

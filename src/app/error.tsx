@@ -2,6 +2,7 @@
 
 import { useEffect } from "react"
 
+// Pagina global de erro inesperado
 export default function GlobalError({
   error,
   reset,

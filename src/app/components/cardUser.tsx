@@ -27,6 +27,7 @@ type Props = {
   avatarUrl?: string
 }
 
+// Cartao de usuario com avatar, nome, email e acoes
 export default function UserCard(props: Props) {
   const { data: session, status } = useSession()
   const sessionUser = session?.user as User | undefined

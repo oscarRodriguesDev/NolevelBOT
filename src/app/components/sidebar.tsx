@@ -26,6 +26,7 @@ type ModuloSection = {
   items: MenuItem[]
 }
 
+// Barra lateral de navegacao com modulos
 export function Sidebar() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)

@@ -70,6 +70,7 @@ const STATUS_CORES: Record<string, string> = {
   CONCLUIDO: "var(--status-completed)", CANCELADO: "var(--status-cancelled)", FECHADO: "var(--status-completed)",
 }
 
+// Dashboard principal do modulo God com metricas globais
 export default function GodDashboard() {
   const { data: session, status: sessionStatus } = useSession()
   const userRole = session?.user?.role as ROLE | undefined
@@ -314,6 +315,7 @@ export default function GodDashboard() {
   )
 }
 
+// Cartao de indicador chave (KPI) com cor e valor
 function KPICard({
   label,
   value,

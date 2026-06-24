@@ -23,6 +23,8 @@ type Chamado = {
 
 const LIMIT = 20
 
+// Pagina principal de gerenciamento de chamados com lista e kanban
+// Pagina principal de gerenciamento de chamados com lista e kanban
 export default function TicketsPage() {
   const [tickets, setTickets] = useState<Chamado[]>([])
   const [loading, setLoading] = useState(false)
@@ -54,10 +56,13 @@ export default function TicketsPage() {
     })
   }, [setHeader])
 
+  // Recarrega a lista de chamados com filtros atuais
+  // Recarrega a lista de chamados com filtros atuais
   function refreshTickets() {
     fetchTickets(filters, page)
   }
 
+  // Busca chamados da API com paginacao e filtros
   const fetchTickets = useCallback(async (currentFilters: typeof filters, currentPage: number) => {
     setLoading(true)
     try {
@@ -138,6 +143,7 @@ export default function TicketsPage() {
     setTickets(prev => prev.filter(t => t.ticket !== ticket))
   }
 
+  // Navega para pagina especifica da paginacao
   function goToPage(p: number) {
     if (p >= 1 && p <= totalPages) setPage(p)
   }

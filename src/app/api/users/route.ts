@@ -18,6 +18,7 @@ const roleMap: Record<string, ROLE> = {
   "X11": "ATENDENTE",
 }
 
+// Cria um novo usuario com role, empresa e validacoes RBAC
 export async function POST(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "users", 20, 60 * 1000)
   if (rateLimit) return rateLimit
@@ -168,6 +169,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// Lista usuarios com filtros por role, empresa e setor (RBAC)
 export async function GET(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "users", 60, 60 * 1000)
   if (rateLimit) return rateLimit
@@ -222,6 +224,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// Exclui um usuario com verificacao de substituto e permissoes RBAC
 export async function DELETE(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "users", 20, 60 * 1000)
   if (rateLimit) return rateLimit
@@ -328,6 +331,7 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "Erro ao remover usuário" }, { status: 500 })
   }
 }
+// Atualiza dados de um usuario com validacao RBAC e CPF/email duplicados
 export async function PUT(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "users", 20, 60 * 1000)
   if (rateLimit) return rateLimit

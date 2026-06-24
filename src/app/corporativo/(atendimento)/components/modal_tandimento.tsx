@@ -24,6 +24,7 @@ interface ModalChamadoProps {
   onConcluido: (ticket: string) => void
 }
 
+// Modal de detalhes e atualizacao de chamado
 export function ModalChamado({
   ticket,
   open,
@@ -52,6 +53,7 @@ export function ModalChamado({
   useEffect(() => {
     if (!ticket || !open) return
 
+    // Busca dados do chamado na API
     async function fetchChamado() {
       const res = await fetch(`/api/tickets?ticket=${ticket}`)
       const json = await res.json()
@@ -76,6 +78,7 @@ export function ModalChamado({
   }, [ticket, open])
 
 
+// Atualiza status e historico do chamado na API
 async function atualizarChamado() {
   if (!ticket || !novoStatus) return
   try {
@@ -121,6 +124,7 @@ async function atualizarChamado() {
     setLoading(false)
   }
 }
+  // Fecha definitivamente o chamado com confirmacao
   async function concluirChamado() {
     const confirmacao = window.confirm("Tem certeza que deseja fechar este chamado? Ele será removido da lista de atendimento.")
     if (!confirmacao) return
@@ -145,7 +149,7 @@ async function atualizarChamado() {
     }
   }
 
-  // Função auxiliar para cores de status (fallback seguro com tailwind)
+  // Funcao auxiliar para cores de status (fallback seguro com tailwind)
   const getStatusBadge = (status: string) => {
     const badges: Record<string, string> = {
       NOVO: "bg-blue-100 text-blue-700 border-blue-200",

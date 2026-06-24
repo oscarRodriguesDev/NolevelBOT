@@ -26,6 +26,7 @@ type Session = {
 
 const sessions = new TTLMap<string, Session>(120 * 60 * 1000)
 
+// Monta o resumo formatado do chamado para confirmacao
 function montarResumo(session: Session): string {
   let resumo =
     `*Resumo do Registro:*\n\n` +
@@ -41,6 +42,7 @@ function montarResumo(session: Session): string {
   return resumo
 }
 
+// Manipula o fluxo de atendimento corporativo
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -62,6 +64,7 @@ export async function POST(req: NextRequest) {
 
     const hasMedia = !!fileUrl
 
+    // Envia resposta e atualiza a sessao
     async function reply(text: string) {
       sessions.set(sid, session!)
       return NextResponse.json({ reply: text, sessionId: sid })

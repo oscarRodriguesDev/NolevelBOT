@@ -7,6 +7,7 @@ const STATUS_CORES: Record<string, string> = {
   CONCLUIDO: "var(--status-completed)", CANCELADO: "var(--status-cancelled)", FECHADO: "var(--status-completed)",
 }
 
+// componente de graficos do dashboard usando recharts
 export function Charts({ statusStats, funcoesStats, veiculosStats, tempoMedioPorDefeito, melhoresVeiculos, defeitosStats, chamadosPeriodo }: {
   statusStats: StatItem[]; funcoesStats: StatItem[]; veiculosStats: StatItem[]; tempoMedioPorDefeito: StatItem[];
   melhoresVeiculos: StatItem[]; defeitosStats: StatItem[]; chamadosPeriodo: StatItem[];

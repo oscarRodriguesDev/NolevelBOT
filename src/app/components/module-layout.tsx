@@ -16,6 +16,7 @@ type HeaderContextType = {
 
 export const HeaderContext = createContext<HeaderContextType | null>(null)
 
+// Hook para acessar dados do cabecalho do contexto
 export function useHeader() {
   const ctx = useContext(HeaderContext)
   if (!ctx) throw new Error('useHeader must be used within provider')
@@ -27,6 +28,7 @@ interface Props {
   children: ReactNode
 }
 
+// Layout protegido do modulo com sidebar e cabecalho
 export function ModuleLayout({ module, children }: Props) {
   const { data: session, status } = useSession()
   const userRole = session?.user?.role as ROLE | undefined
@@ -36,6 +38,7 @@ export function ModuleLayout({ module, children }: Props) {
   useEffect(() => {
     if (status === 'loading') return
 
+    // Verifica se o usuario tem acesso ao modulo
     async function checkAuthorization() {
       if (userRole === 'GOD') {
         setAutorizado(true)
@@ -71,6 +74,7 @@ export function ModuleLayout({ module, children }: Props) {
   const [titulo, setTitulo] = useState(module.moduleLabel)
   const [descricao, setDescricao] = useState(module.description)
 
+  // Atualiza titulo e descricao do cabecalho
   function setHeader(data: { titulo: string; descricao: string }) {
     setTitulo(data.titulo)
     setDescricao(data.descricao)

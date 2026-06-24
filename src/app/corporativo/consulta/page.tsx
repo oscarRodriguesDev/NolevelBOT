@@ -29,6 +29,7 @@ type ChamadoData = {
   atendente: { id: string; name: string; email: string; avatarUrl: string } | null
 }
 
+// Pagina de consulta de chamados por CPF com lista e detalhes
 export default function ConsultaTickets() {
   const [cpf, setCpf] = useState("")
   const [tickets, setTickets] = useState<ChamadoData[]>([])
@@ -36,6 +37,7 @@ export default function ConsultaTickets() {
   const [searched, setSearched] = useState(false)
   const [selected, setSelected] = useState<ChamadoData | null>(null)
 
+  // Formata CPF com mascara de digitacao
   function formatCPF(value: string): string {
     const digits = value.replace(/\D/g, "").slice(0, 11)
     return digits
@@ -47,6 +49,7 @@ export default function ConsultaTickets() {
   const cpfDigits = cpf.replace(/\D/g, "")
   const cpfValido = cpfDigits.length === 11
 
+  // Busca chamados na API filtrando por CPF
   async function buscarTickets() {
     if (!cpfValido) return
     setSearched(true)
@@ -91,6 +94,7 @@ export default function ConsultaTickets() {
     }
   }
 
+  // Retorna cor CSS para cada status de chamado
   function getStatusColor(status: string): string {
     const map: Record<string, string> = {
       CONCLUIDO: "var(--status-completed)",

@@ -12,6 +12,7 @@ type Solicitacao = {
   abertura: string
 }
 
+// pagina de consulta de solicitacoes por matricula
 export default function ConsultaSolicitacoes() {
   const [matricula, setMatricula] = useState("")
   const [solicitacoes, setSolicitacoes] = useState<Solicitacao[]>([])
@@ -20,6 +21,7 @@ export default function ConsultaSolicitacoes() {
 
   const matriculaValida = matricula.length >= 4 && matricula.length <= 8
 
+  // busca as solicitacoes do usuario pela matricula na API
   async function buscarSolicitacoes() {
     if (!matriculaValida) return
 

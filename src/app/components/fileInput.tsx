@@ -9,6 +9,7 @@ interface FileUploadProps {
   handleFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
+// Componente de upload de arquivos com preview
 export function FileUpload({ file, setFile, handleFileChange }: FileUploadProps) {
   
   const removeFile = () => setFile(null);

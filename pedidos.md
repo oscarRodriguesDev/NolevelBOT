@@ -234,3 +234,9 @@
 - Criado `src/lib/upload-client.ts` com `uploadFileDirect()`: client-side helper que faz upload direto ao Supabase
 - Atualizados 4 callers (chatbots + empresa pages) para usar o novo fluxo
 - `/api/upload` mantido para compatibilidade
+
+## DOC: Comentários descritivos em todas as funções do código
+**Data:** 24/06/2026
+**Status:** ✅ Concluído
+**Commit:** `<PENDENTE>`
+**Descrição:** Adicionados comentários de linha única em português (`// descricao`) antes de funções nomeadas, componentes React e funções exportadas em todo o código fonte. ~360 comentários distribuídos em ~141 arquivos. Ignorados: arrow functions anônimas, tipos, testes, node_modules, .next e arquivos de controle colaborativo. Build: ✅ sucesso.

@@ -13,10 +13,12 @@ export const ALLOWED_EXTENSIONS_LIST = ALLOWED_EXTENSIONS
 export const ALLOWED_MIME_TYPES_LIST = ALLOWED_MIME_TYPES
 export const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE
 
+// Extrai a extensao em minusculo do nome do arquivo
 export function getExtension(filename: string): string {
   return (filename.split(".").pop() || "").toLowerCase()
 }
 
+// Valida extensao, MIME type e tamanho do arquivo; retorna mensagem de erro ou null
 export function validarArquivo({
   extension,
   mimeType,
@@ -40,6 +42,7 @@ export function validarArquivo({
 
 const createdBuckets = new Set<string>()
 
+// Garante que o bucket existe no Supabase Storage, criando-o se necessario
 async function ensureBucket(bucket: string) {
   if (createdBuckets.has(bucket)) return
 
@@ -73,6 +76,7 @@ type UploadOptions = {
   upsert?: boolean
 }
 
+// Faz upload de um arquivo File para o Supabase Storage e retorna a URL publica
 export async function uploadFile({
   bucket,
   folder = "",
@@ -118,6 +122,7 @@ export async function uploadFile({
   return data.publicUrl
 }
 
+// Faz upload de um buffer binario para o Supabase Storage e retorna a URL publica
 export async function uploadBuffer({
   buffer,
   fileName,

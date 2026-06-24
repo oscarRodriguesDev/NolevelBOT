@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 
+// Parseia conteudo markdown em secoes tipadas
 function parseMarkdown(md: string) {
   const sections: { type: string; content: string }[] = []
   const lines = md.split('\n')
@@ -34,6 +35,7 @@ function parseMarkdown(md: string) {
   return sections
 }
 
+// Pagina de exibicao de ideias e melhorias do sistema
 export default function IdeiasPage() {
   const mdPath = path.join(process.cwd(), 'ideias.md')
   let mdContent = ''

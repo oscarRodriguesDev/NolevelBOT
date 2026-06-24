@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 
+// Obtem a base de conhecimento (avisos) de uma empresa a partir do CPF do lead
 export async function obterBaseDeConhecimento(cpf: string): Promise<string> {
   try {
     const usuario = await prisma.cpfsLeads.findUnique({

@@ -15,6 +15,7 @@ import toast from 'react-hot-toast'
 
 type Prioridade = 'baixa' | 'normal' | 'alta' | null
 
+// Pagina principal de abertura de chamado com prioridade e avisos
 export default function ChamadoPage() {
   const [formData, setFormData] = useState({
     nome: '',
@@ -33,6 +34,7 @@ export default function ChamadoPage() {
   const [showAvisos, setShowAvisos] = useState(false)
   const [cpfValido, setCpfValido] = useState(false)
 
+  // Formata CPF com mascara de digitacao
   function formatCPF(value: string): string {
     const digits = value.replace(/\D/g, '').slice(0, 11)
     return digits
@@ -63,6 +65,7 @@ export default function ChamadoPage() {
     }
   }
 
+  // Valida CPF e carrega setores e avisos da empresa
   async function validarCPF(cpf: string) {
     const digits = cpf.replace(/\D/g, '')
     if (digits.length < 11) return
@@ -83,6 +86,7 @@ export default function ChamadoPage() {
     }
   }
 
+  // Busca avisos relevantes para o CPF informado
   async function fetchAvisos(cpf: string) {
     try {
       const res = await fetch(`/api/quadro-avisos/mostrar-avisos?cpf=${cpf}`)

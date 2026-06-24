@@ -48,6 +48,7 @@ const MODULOS_DISPONIVEIS: ModuloInfo[] = [
   }, */
 ]
 
+// Pagina principal do dashboard com modulos disponiveis
 export default function DashboardPage() {
   const { data: session, status } = useSession()
   const router = useRouter()

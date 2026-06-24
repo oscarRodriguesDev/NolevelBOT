@@ -16,6 +16,7 @@ import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 type ContatoTelefone = { telefone: string; instance: string } | null
 
+// Busca telefone de contato do cliente pelo CPF ou historico do chamado
 async function buscarContato(cpf: string, chamadoId?: string): Promise<ContatoTelefone> {
   const contato = getPhoneByCpf(cpf)
   if (contato && contato.instance !== 'web') return contato
@@ -39,6 +40,7 @@ async function buscarContato(cpf: string, chamadoId?: string): Promise<ContatoTe
   return contato
 }
 
+// Envia notificacao via WhatsApp para o cliente sobre o chamado
 async function notificarCliente(cpf: string, ticket: string, etapa: 'criado' | 'atualizado' | 'finalizado', nomeAtendente?: string, observacao?: string, chamadoId?: string) {
   try {
     const contato = await buscarContato(cpf, chamadoId)
@@ -59,6 +61,7 @@ async function notificarCliente(cpf: string, ticket: string, etapa: 'criado' | '
   }
 }
 
+// Remove tags HTML e limita o tamanho de uma string
 function sanitizar(valor: string, maxLength = 500): string {
   return valor
     .replace(/<[^>]*>/g, "")
@@ -67,6 +70,7 @@ function sanitizar(valor: string, maxLength = 500): string {
     .slice(0, maxLength)
 }
 
+// Cria um novo chamado a partir do formulario publico
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req)
@@ -170,6 +174,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// Lista chamados com filtros e paginacao conforme permissao do usuario
 export async function GET(req: NextRequest) {
   try {
     const session = await getSessionOrFail()
@@ -257,6 +262,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// Atualiza status e historico de um chamado existente
 export async function PUT(req: NextRequest) {
   const session = await getSessionOrFail()
   if (!session) {
@@ -362,6 +368,7 @@ export async function PUT(req: NextRequest) {
   }
 }
 
+// Move um chamado para tickets fechados e notifica o cliente
 export async function DELETE(req: NextRequest) {
   const session = await getSessionOrFail()
   if (!session) {

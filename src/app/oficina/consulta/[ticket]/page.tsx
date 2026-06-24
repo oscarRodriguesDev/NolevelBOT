@@ -37,6 +37,7 @@ interface Solicitacao {
   createdAt: string;
 }
 
+// pagina de detalhe de uma solicitacao de manutencao
 export default function SolicitacaoDetalhePage() {
   const [solicitacao, setSolicitacao] = useState<Solicitacao | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,6 +46,7 @@ export default function SolicitacaoDetalhePage() {
   const ticket = params.ticket as string;
 
   useEffect(() => {
+    // busca os dados da solicitacao pela API
     async function fetchSolicitacao() {
       try {
         const res = await fetch(`/api/tickets/search?ticket=${ticket}`);

@@ -4,6 +4,7 @@ import { captureError } from "./app-error";
 const baseUrl = process.env.BASE_URL_WP||process.env.NEXT_PUBLIC_BASE_URL_WP;
 
 
+//filtra avisos que ainda estao dentro do prazo de duracao
 async function filtrarAvisosValidos(avisos: { titulo: string; conteudo: string; createdAt: Date; duracao: string | null }[]) {
   const agora = new Date();
   const validos: { titulo: string; conteudo: string }[] = [];
@@ -28,6 +29,7 @@ async function filtrarAvisosValidos(avisos: { titulo: string; conteudo: string; 
   return validos;
 }
 
+//busca avisos gerais ou de uma empresa pelo cpf
 export async function buscarAvisos(cpf?: string, _req?: Request) {
   try {
     const { prisma } = await import("@/lib/prisma");
@@ -55,6 +57,7 @@ export async function buscarAvisos(cpf?: string, _req?: Request) {
   }
 }
 
+//busca avisos especificos para um cpf
 export async function buscarAvisosPorCpf(cpf: string) {
   try {
     const { prisma } = await import("@/lib/prisma");
@@ -198,6 +201,7 @@ const MEDIA_HKDF_MAP: Record<string, string> = {
   audio: "Audio", sticker: "Image", gif: "Video",
 };
 
+//converte valor generico para Buffer
 function toBuffer(val: any): Buffer | undefined {
   if (!val) return undefined;
   if (val instanceof Buffer) return val;
@@ -208,6 +212,7 @@ function toBuffer(val: any): Buffer | undefined {
   return undefined;
 }
 
+//baixa e descriptografa midia do WhatsApp
 export async function downloadWhatsAppMedia(mediaMessage: any): Promise<Buffer | null> {
   try {
     const { url, directPath, mediaKey: rawKey, mimetype } = mediaMessage || {};
@@ -257,6 +262,7 @@ export async function downloadWhatsAppMedia(mediaMessage: any): Promise<Buffer |
   }
 }
 
+//baixa midia da instancia Evolution via REST ou base64
 export async function downloadEvolutionMedia(
   instance: string,
   key: { id: string; remoteJid: string; fromMe: boolean },
@@ -357,6 +363,7 @@ export async function validarCpf(cpf: string) {
 
 
 
+//verifica se a empresa possui um modulo especifico ativo
 export async function checkEmpresaModule(
   empresaId: string,
   modulo: "OFICINA" | "CORPORATIVO" | "EVENTOS"
@@ -382,6 +389,7 @@ export async function checkEmpresaModule(
   }
 }
 
+//retorna o nome do bot configurado para a empresa do cpf
 export async function getNomeBot(cpf: string) {
   try {
     const { prisma } = await import("@/lib/prisma");

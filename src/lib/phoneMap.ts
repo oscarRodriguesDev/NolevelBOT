@@ -10,6 +10,7 @@ type PhoneEntry = {
   updatedAt: string;
 };
 
+// Le o arquivo JSON de mapeamento telefone-CPF do disco
 function readMap(): Record<string, PhoneEntry> {
   try {
     if (fs.existsSync(DATA_FILE)) {
@@ -21,6 +22,7 @@ function readMap(): Record<string, PhoneEntry> {
   return {};
 }
 
+// Salva o mapa de telefones no arquivo JSON
 function writeMap(map: Record<string, PhoneEntry>): void {
   try {
     if (!fs.existsSync(DATA_DIR)) {
@@ -32,6 +34,7 @@ function writeMap(map: Record<string, PhoneEntry>): void {
   }
 }
 
+// Registra um telefone associado a um CPF no mapa
 export function registerPhone(cpf: string, telefone: string, instance: string): void {
   const map = readMap();
   const cpfLimpo = cpf.replace(/\D/g, '');
@@ -41,12 +44,14 @@ export function registerPhone(cpf: string, telefone: string, instance: string): 
   console.log(`📞 Phone registered: CPF ${cpfLimpo} -> ${telefone} (instance ${instance})`);
 }
 
+// Busca o telefone registrado para um CPF
 export function getPhoneByCpf(cpf: string): PhoneEntry | null {
   const map = readMap();
   const cpfLimpo = cpf.replace(/\D/g, '');
   return map[cpfLimpo] || null;
 }
 
+// Remove o registro de telefone de um CPF
 export function removePhone(cpf: string): void {
   const map = readMap();
   const cpfLimpo = cpf.replace(/\D/g, '');

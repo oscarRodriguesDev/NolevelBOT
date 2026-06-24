@@ -19,6 +19,7 @@ type Aviso = {
   setor: string | null
 }
 
+// Chat mobile com assistente virtual e suporte a imagens
 export default function MobileChat() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -43,6 +44,7 @@ export default function MobileChat() {
     }
   }, [sessionId])
 
+  // Faz upload de arquivo para o servidor
   async function uploadFile(file: File): Promise<string | null> {
     setUploading(true)
     try {
@@ -52,6 +54,7 @@ export default function MobileChat() {
     }
   }
 
+  // Envia mensagem para o chatbot e processa resposta
   async function sendToBot(text: string, fileUrl?: string) {
     setLoading(true)
     try {
@@ -89,6 +92,7 @@ export default function MobileChat() {
     }
   }
 
+  // Processa arquivo selecionado e envia ao chatbot
   async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -116,6 +120,7 @@ export default function MobileChat() {
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
+  // Carrega lista de avisos do quadro de avisos
   async function fetchAvisos() {
     try {
       const res = await fetch('/api/quadro-avisos/mostrar-avisos')
@@ -127,6 +132,7 @@ export default function MobileChat() {
     } catch { }
   }
 
+  // Envia mensagem do usuario para o chatbot
   async function sendMessage() {
     if (!input.trim() || loading) return
 

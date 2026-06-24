@@ -11,6 +11,7 @@ const ROLE_CORES: Record<string, string> = {
   GOD: "#f59e0b", ADMIN: "#3b82f6", GESTOR: "#8b5cf6", ATENDENTE: "#10b981",
 }
 
+// Componente de graficos do dashboard God
 export function Charts({ data }: { data: { statusStats: StatItem[]; roleDistribution: StatItem[]; setorStats: StatItem[]; topEmpresas: EmpresaStat[]; chamadosPeriodo: StatItem[] } }) {
   return (
     <>

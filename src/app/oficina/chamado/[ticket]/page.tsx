@@ -5,6 +5,7 @@ import { ThemeToggle } from '@/app/components/theme-toggle'
 import { FileUpload } from '@/app/components/fileInput'
 import toast from 'react-hot-toast'
 
+// pagina de formulario de abertura de chamado (pedido de manutencao)
 export default function TicketPage() {
 
 
@@ -24,6 +25,7 @@ export default function TicketPage() {
   const [SETORES, setSetores] = useState<string[]>([])
 
   useEffect(() => {
+    // busca os setores disponiveis da empresa via API
     async function fetchSetores() {
       try {
         const response = await fetch(`/api/empresa?cnpj=${process.env.NEXT_PUBLIC_CNPJ}`) // cnpj da empresa deve ser definida em variavel de ambiente

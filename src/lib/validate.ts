@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import type { ZodSchema } from "zod"
 
+//valida dados com schema Zod ou retorna erro 400
 export function validateOrError<T>(data: unknown, schema: ZodSchema<T>): T | NextResponse {
   const result = schema.safeParse(data)
   if (!result.success) {

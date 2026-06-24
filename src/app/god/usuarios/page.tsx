@@ -33,6 +33,7 @@ const ROLE_LABEL: Record<string, string> = {
   ATENDENTE: "Atendente",
 }
 
+// Pagina de listagem e gestao de usuarios do modulo God
 export default function GodUsuariosPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -89,16 +90,19 @@ export default function GodUsuariosPage() {
       .catch(() => {})
   }, [])
 
+  // Inicia modo de edicao de um usuario
   function startEdit(user: Usuario) {
     setEditingId(user.id)
     setEditForm({ name: user.name, email: user.email })
   }
 
+  // Cancela edicao e limpa formulario
   function cancelEdit() {
     setEditingId(null)
     setEditForm({ name: "", email: "" })
   }
 
+  // Salva alteracoes de nome e email do usuario
   async function saveEdit(id: string) {
     try {
       const res = await fetch("/api/users", {
@@ -119,6 +123,7 @@ export default function GodUsuariosPage() {
     }
   }
 
+  // Remove usuario do sistema com confirmacao
   async function deletarUsuario(id: string, nome: string) {
     if (!confirm(`Tem certeza que deseja remover "${nome}"?`)) return
     try {

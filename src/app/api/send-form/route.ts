@@ -3,6 +3,7 @@ import { applyRateLimit } from "@/lib/rate-limit"
 import { validateOrError } from "@/lib/validate"
 import { sendFormSchema } from "@/lib/validation"
 
+// Envia dados do formulario de contato para o Google Forms
 export async function POST(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "send-form", 5, 60 * 1000)
   if (rateLimit) return rateLimit

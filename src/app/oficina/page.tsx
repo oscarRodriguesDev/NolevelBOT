@@ -4,6 +4,7 @@ import { LuCheck, LuLoader, LuArrowRight, LuBus } from 'react-icons/lu'
 import { ThemeToggle } from '../components/theme-toggle'
 import toast from 'react-hot-toast'
 
+// pagina inicial da oficina com registro de defeito por matricula
 export default function OficinaPage() {
   const [step, setStep] = useState<'matricula' | 'form' | 'sucesso'>('matricula')
   const [matricula, setMatricula] = useState('')
@@ -20,6 +21,7 @@ export default function OficinaPage() {
     setor: '',
   })
 
+  // busca dados da matricula e avanca para o formulario
   async function buscarMatricula() {
     const clean = matricula.replace(/\D/g, '')
     if (!clean) {

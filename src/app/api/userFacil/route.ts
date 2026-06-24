@@ -15,6 +15,7 @@ const roleMap: Record<string, ROLE> = {
   "X11": "ATENDENTE",
 }
 
+// Retorna lista de empresas disponiveis para usuarios GOD
 export async function GET() {
   const session = await getSessionOrFail(["GOD"])
   if (!session) {
@@ -33,6 +34,7 @@ export async function GET() {
   return NextResponse.json(empresas)
 }
 
+// Cria um novo usuario com role, avatar e vinculo a empresa
 export async function POST(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "userFacil", 20, 60 * 1000)
   if (rateLimit) return rateLimit

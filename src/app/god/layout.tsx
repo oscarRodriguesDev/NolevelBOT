@@ -12,16 +12,19 @@ type HeaderContextType = {
 
 const HeaderContext = createContext<HeaderContextType | null>(null)
 
+// Hook para acessar contexto de header
 export function useHeader() {
   const ctx = useContext(HeaderContext)
   if (!ctx) throw new Error('useHeader must be used within provider')
   return ctx
 }
 
+// Layout do modulo God com sidebar e header
 export default function GodLayout({ children }: { children: React.ReactNode }) {
   const [titulo, setTitulo] = useState('Painel GOD')
   const [descricao, setDescricao] = useState('Controle total da plataforma')
 
+  // Atualiza titulo e descricao do header
   function setHeader(data: { titulo: string; descricao: string }) {
     setTitulo(data.titulo)
     setDescricao(data.descricao)

@@ -5,12 +5,14 @@ import { getSessionOrFail } from "@/util/permission"
 import { getTicketWhereClause } from "@/lib/rbac"
 import { ROLE } from "@prisma/client"
 
+// Retorna o numero da semana do ano para uma data
 function getWeek(date: Date) {
   const first = new Date(date.getFullYear(), 0, 1)
   const diff = (date.getTime() - first.getTime()) / 86400000
   return Math.ceil((diff + first.getDay() + 1) / 7)
 }
 
+// Tenta fazer parse do JSON da descricao e retorna objeto tipado ou null
 function parseOficinaDescricao(descricao: string) {
   try {
     const parsed = JSON.parse(descricao)
@@ -21,6 +23,7 @@ function parseOficinaDescricao(descricao: string) {
   return null
 }
 
+// Gera todos os dados do dashboard (corporativo ou oficina) conforme periodo e modulo
 export async function GET(req: Request) {
   const rateLimit = await applyRateLimit(req, "dashboards", 60, 60 * 1000)
   if (rateLimit) return rateLimit
@@ -39,7 +42,9 @@ export async function GET(req: Request) {
     const empresaId = session.user.empresaId
 
     const now = new Date()
+    // Retorna chave no formato MM/AAAA para uma data
     function getMonthKey(d: Date) { return `${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}` }
+    // Retorna chave de periodo conforme configuracao (dia, semana, mes, ano)
     function getPeriodKey(d: Date) {
       if (periodo === "dia") return d.toISOString().slice(0, 10)
       if (periodo === "semana") return `S${getWeek(d)}`
@@ -48,6 +53,7 @@ export async function GET(req: Request) {
       return d.toISOString().slice(0, 10)
     }
 
+    // Retorna a data inicial para filtro conforme o periodo selecionado
     function getPeriodDateRange(p: string): Date | null {
       if (p === "dia") { const d = new Date(now); d.setHours(0,0,0,0); return d }
       if (p === "semana") { const d = new Date(now); d.setDate(d.getDate() - 7); return d }
@@ -308,6 +314,7 @@ export async function GET(req: Request) {
   }
 }
 
+// Busca dados de tickets evitados e avisos para compor metricas do dashboard
 async function getEvitadosEAvisos(
   empresaId: string | undefined,
   dateFrom: Date | null,

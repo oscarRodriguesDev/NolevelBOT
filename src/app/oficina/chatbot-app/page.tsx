@@ -19,6 +19,7 @@ type Aviso = {
   setor: string | null
 }
 
+// pagina do chatbot de atendimento da oficina
 export default function MobileChat() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -43,6 +44,7 @@ export default function MobileChat() {
     }
   }, [sessionId])
 
+  // faz upload de arquivo para o servidor e retorna a URL
   async function uploadFile(file: File): Promise<string | null> {
     setUploading(true)
     try {
@@ -52,6 +54,7 @@ export default function MobileChat() {
     }
   }
 
+  // envia mensagem para o chatbot e processa a resposta
   async function sendToBot(text: string, fileUrl?: string) {
     setLoading(true)
     try {
@@ -89,6 +92,7 @@ export default function MobileChat() {
     }
   }
 
+  // processa o arquivo selecionado pelo usuario e envia ao chatbot
   async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -116,6 +120,7 @@ export default function MobileChat() {
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
+  // busca avisos gerais para exibir no chatbot
   async function fetchAvisos() {
     try {
       const res = await fetch('/api/quadro-avisos/mostrar-avisos')
@@ -127,6 +132,7 @@ export default function MobileChat() {
     } catch { }
   }
 
+  // envia a mensagem digitada pelo usuario para o chatbot
   async function sendMessage() {
     if (!input.trim() || loading) return
 

@@ -30,6 +30,7 @@ const MODULOS_OPCOES = [
   { valor: 'EVENTOS', label: 'Eventos', icon: CalendarCheck, cor: 'var(--status-waiting)' },
 ]
 
+// Pagina principal de gerenciamento de empresas
 export default function EmpresaPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -74,6 +75,7 @@ export default function EmpresaPage() {
 
 
   //busca de empesas
+  // Carrega lista de empresas da API
   async function fetchEmpresas() {
     try {
       const res = await fetch('/api/empresa')
@@ -94,6 +96,7 @@ export default function EmpresaPage() {
 
 
   //edição de empresa
+  // Inicia modo edicao inline de uma empresa
   function startEdit(emp: Empresa) {
     setEditingId(emp.id)
     setEditForm({
@@ -107,6 +110,7 @@ export default function EmpresaPage() {
   }
 
   //cancelar edição
+  // Cancela edicao inline e reseta formulario
   function cancelEdit() {
     setEditingId(null)
     setEditForm({ nome: '', cnpj: '', setores: '', modulos: [] })
@@ -115,6 +119,7 @@ export default function EmpresaPage() {
   }
 
   //salvar edição
+  // Salva alteracoes da empresa editada
   async function saveEdit(id: string) {
     try {
       let finalLogoUrl = editLogoPreview
@@ -157,6 +162,7 @@ export default function EmpresaPage() {
 
 
   //deletar empresa
+  // Exclui empresa com confirmacao
   async function handleDelete(id: string, nome: string) {
     if (!confirm(`Tem certeza que deseja excluir a empresa "${nome}"?\n\nEsta ação não pode ser desfeita.`)) return
 
@@ -177,6 +183,7 @@ export default function EmpresaPage() {
   }
 
   //configuração do bot
+  // Abre modal de configuracao do assistente virtual
   function openBotConfig(emp: Empresa) {
     setBotConfigId(emp.id)
     setBotForm({
@@ -190,12 +197,14 @@ export default function EmpresaPage() {
 
 
   //fechar configuração do bot
+  // Fecha modal de configuracao do assistente
   function closeBotConfig() {
     setBotConfigId(null)
     setBotForm({ botName: '', botPresentation: '', botServiceDesc: '', botAvisosDesc: '', botPrompt: '' })
   }
 
   //gerar prompt do bot
+  // Gera prompt do assistente via IA
   async function handleGerarPrompt() {
     if (!botForm.botPresentation && !botForm.botServiceDesc && !botForm.botAvisosDesc) {
       toast.error('Preencha pelo menos uma descrição')
@@ -228,6 +237,7 @@ export default function EmpresaPage() {
 
 
   //salvar configuração do bot
+  // Salva configuracao do assistente virtual
   async function handleSaveBotConfig() {
     try {
       const res = await fetch('/api/empresa/prompt', {
@@ -252,6 +262,7 @@ export default function EmpresaPage() {
   }
 
   //limpar configuração do bot
+  // Remove configuracao do assistente com confirmacao
   async function handleClearBotConfig() {
     if (!confirm('Remover toda a configuração do bot desta empresa?')) return
     try {
@@ -690,6 +701,7 @@ export default function EmpresaPage() {
   )
 }
 
+// Esqueleto de carregamento para cards de empresa
 function SkeletonLoader() {
   return (
     <>

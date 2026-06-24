@@ -6,6 +6,7 @@ import { getSessionOrFail } from '@/util/permission'
 import { limparCPF } from "@/util/limparcpfs"
 import { CAN_BATCH_CPF } from "@/lib/rbac"
 
+// Cadastra CPFs via upload ou manualmente por empresa
 export async function POST(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "cpfs", 30, 60 * 1000)
   if (rateLimit) return rateLimit
@@ -113,6 +114,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// Retorna CPFs da empresa do usuario logado
 export async function GET(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "cpfs", 60, 60 * 1000)
   if (rateLimit) return rateLimit
@@ -151,6 +153,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// Deleta um CPF da empresa do usuario logado
 export async function DELETE(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "cpfs", 20, 60 * 1000)
   if (rateLimit) return rateLimit

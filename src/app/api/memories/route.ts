@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { validarBotApiKey } from "@/lib/bot-auth";
 
 // Funções de banco
+// Busca o resumo de persona de um CPF no banco
 async function getResumoPersona(cpf: string) {
   try {
     return await prisma.resumoPersona.findUnique({ where: { cpf } });
@@ -13,6 +14,7 @@ async function getResumoPersona(cpf: string) {
   }
 }
 
+// Cria ou atualiza o resumo de persona de um CPF no banco
 async function upsertResumoPersona(cpf: string, nome: string, resumo: string) {
   try {
     await prisma.resumoPersona.upsert({
@@ -26,6 +28,7 @@ async function upsertResumoPersona(cpf: string, nome: string, resumo: string) {
 }
 
 // Endpoint
+// Retorna a memoria (resumo de persona) de um CPF via API do bot
 export async function GET(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "memories", 20, 60 * 1000)
   if (rateLimit) return rateLimit
@@ -49,6 +52,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(persona);
 }
 
+// Salva ou atualiza a memoria (resumo de persona) de um CPF via API do bot
 export async function POST(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "memories", 20, 60 * 1000)
   if (rateLimit) return rateLimit

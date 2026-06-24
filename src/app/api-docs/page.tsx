@@ -92,6 +92,7 @@ const endpoints = [
   { method: 'POST', path: '/api/memories', auth: false, description: 'Salvar memória de conversa do bot' },
 ]
 
+// Pagina de documentacao da API listando todos os endpoints do sistema
 export default function ApiDocsPage() {
   return (
     <div className="min-h-screen p-6 sm:p-10 transition-colors duration-300"

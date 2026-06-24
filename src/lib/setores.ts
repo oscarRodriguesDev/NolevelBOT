@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma"
 import { cacheGetOrSet } from "@/lib/db-cache"
 
 
+// Retorna a lista de setores da empresa associada a um CPF com cache de 30min
 export async function getSetores(cpf: string) {
   try {
     if (!cpf) {

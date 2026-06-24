@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma"
 import { getSessionOrFail } from "@/util/permission"
 import { ROLE } from "@prisma/client"
 
+// Retorna os avisos validos da empresa do usuario, filtrando por setor e removendo vencidos
 export async function GET() {
   try {
     const session = await getSessionOrFail()
@@ -77,6 +78,7 @@ export async function GET() {
 
 
 // POST - Criar novo aviso
+// Cria um novo aviso no quadro de avisos
 export async function POST(request: Request) {
   const rateLimit = await applyRateLimit(request, "quadro-avisos", 20, 60 * 1000)
   if (rateLimit) return rateLimit
@@ -135,6 +137,7 @@ export async function POST(request: Request) {
 
 
 // PUT - Editar aviso
+// Atualiza os dados de um aviso existente
 export async function PUT(request: Request) {
   const rateLimit = await applyRateLimit(request, "quadro-avisos", 20, 60 * 1000)
   if (rateLimit) return rateLimit
@@ -188,6 +191,7 @@ export async function PUT(request: Request) {
 }
 
 // DELETE - Deletar aviso
+// Remove um aviso do quadro pelo ID
 export async function DELETE(request: Request) {
   const rateLimit = await applyRateLimit(request, "quadro-avisos", 15, 60 * 1000)
   if (rateLimit) return rateLimit

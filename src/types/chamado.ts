@@ -31,6 +31,7 @@ export type PrioridadeChamado = 'baixa' | 'normal' | 'alta' | 'critica'
 
 export const STATUS_VALIDOS = ['NOVO', 'EM_ATENDIMENTO', 'AGUARDANDO', 'CONCLUIDO', 'CANCELADO'] as const
 
+// Retorna cor CSS baseada no status do chamado
 export function getStatusColor(status: string): string {
   const s = status?.toUpperCase() || ""
   if (s.includes("NOVO")) return "var(--status-new)"
@@ -41,6 +42,7 @@ export function getStatusColor(status: string): string {
   return "#6b7280"
 }
 
+// Retorna cor CSS baseada na prioridade do chamado
 export function getPriorityColor(prioridade: string): string {
   const p = prioridade?.toUpperCase() || ""
   if (p.includes("BAIXA")) return "#10b981"
@@ -50,6 +52,7 @@ export function getPriorityColor(prioridade: string): string {
   return "var(--primary)"
 }
 
+// Normaliza string de status para formato padrao
 export function normalizarStatus(status: string): string {
   const s = status?.toUpperCase().replace(/[^A-Z]/g, '') || ''
   if (s.includes('NOVO')) return 'NOVO'

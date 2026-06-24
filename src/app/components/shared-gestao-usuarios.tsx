@@ -20,6 +20,7 @@ const roleMap: Record<string, ROLE> = {
   "X11": "ATENDENTE",
 }
 
+// Converte papel interno para codigo de formulario
 function roleBackToFront(role: ROLE): string {
   const inv: Record<string, string> = {
     GOD: "XX!",
@@ -30,6 +31,7 @@ function roleBackToFront(role: ROLE): string {
   return inv[role]
 }
 
+// Formata CPF com mascara de pontuacao
 function formatCPF(value: string): string {
   const digits = value.replace(/\D/g, "").slice(0, 11)
   return digits
@@ -42,6 +44,7 @@ interface Props {
   setHeader: (data: { titulo: string; descricao: string }) => void
 }
 
+// Pagina de criacao de usuarios com formulario
 export default function SharedGestaoUsuariosPage({ setHeader }: Props) {
   const { data: session } = useSession()
   const userRole = (session?.user?.role as ROLE) || null
@@ -71,6 +74,7 @@ export default function SharedGestaoUsuariosPage({ setHeader }: Props) {
   }, [setHeader])
 
   useEffect(() => {
+    // Carrega empresas e setores para o formulario
     async function fetchDados() {
       try {
         setLoadingDados(true)
@@ -103,12 +107,14 @@ export default function SharedGestaoUsuariosPage({ setHeader }: Props) {
     fetchDados()
   }, [userRole, userSetor])
 
+  // Atualiza setores ao trocar empresa
   function handleEmpresaChange(empresaId: string) {
     setForm(prev => ({ ...prev, empresaId, setor: "" }))
     const emp = empresas.find(e => e.id === empresaId)
     setSetoresDisponiveis(emp?.setores || [])
   }
 
+  // Gerencia alteracoes nos campos do formulario
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = e.target
     if (name === "empresaId") {
@@ -130,11 +136,13 @@ export default function SharedGestaoUsuariosPage({ setHeader }: Props) {
     setForm((prev) => ({ ...prev, [name]: value }))
   }
 
+  // Define arquivo de avatar selecionado
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] || null
     setForm((prev) => ({ ...prev, avatarFile: file }))
   }
 
+  // Envia dados para criar novo usuario
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)

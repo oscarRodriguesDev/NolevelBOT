@@ -17,6 +17,7 @@ interface Props {
   setHeader: (data: { titulo: string; descricao: string }) => void
 }
 
+// Pagina do quadro de avisos com CRUD
 export default function SharedAvisosPage({ setHeader }: Props) {
   const { data: session } = useSession()
   const userRole = session?.user?.role as ROLE | undefined
@@ -52,6 +53,7 @@ export default function SharedAvisosPage({ setHeader }: Props) {
     }
   }, [podeEscolherSetor, session?.user?.empresaId])
 
+  // Busca a lista de avisos da API
   async function fetchAvisos() {
 
     try {
@@ -67,6 +69,7 @@ export default function SharedAvisosPage({ setHeader }: Props) {
     fetchAvisos()
   }, [])
 
+  // Reseta o formulario de aviso
   function resetForm() {
     setTitulo("")
     setConteudo("")
@@ -78,6 +81,7 @@ export default function SharedAvisosPage({ setHeader }: Props) {
     setOpen(false)
   }
 
+  // Envia ou atualiza um aviso
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!titulo || !conteudo) return
@@ -120,6 +124,7 @@ export default function SharedAvisosPage({ setHeader }: Props) {
     }
   }
 
+  // Preenche o formulario para edicao de aviso
   function handleEdit(aviso: Aviso) {
     setTitulo(aviso.titulo)
     setConteudo(aviso.conteudo)
@@ -130,6 +135,7 @@ export default function SharedAvisosPage({ setHeader }: Props) {
     setOpen(true)
   }
 
+  // Exclui um aviso pelo ID
   async function handleDelete(id: string) {
     if (!confirm("Deseja realmente excluir este aviso?")) return
 

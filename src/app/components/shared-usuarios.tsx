@@ -25,6 +25,7 @@ interface Props {
   redirectBase: string
 }
 
+// Pagina de listagem e gerenciamento de usuarios
 export default function SharedUsuariosPage({ setHeader, redirectBase }: Props) {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -52,6 +53,7 @@ export default function SharedUsuariosPage({ setHeader, redirectBase }: Props) {
     })
   }, [userRole, setHeader])
 
+  // Busca lista de usuarios da API
   async function fetchUsers() {
     setLoading(true)
     try {
@@ -67,16 +69,19 @@ export default function SharedUsuariosPage({ setHeader, redirectBase }: Props) {
 
   useEffect(() => { fetchUsers() }, [])
 
+  // Inicia modo de edicao inline de usuario
   function startEdit(user: UserItem) {
     setEditingId(user.id)
     setEditForm({ name: user.name, email: user.email, cpf: user.cpf, setor: user.setor })
   }
 
+  // Cancela edicao inline
   function cancelEdit() {
     setEditingId(null)
     setEditForm({ name: '', email: '', cpf: '', setor: '' })
   }
 
+  // Salva edicao inline de usuario
   async function saveEdit(id: string) {
     try {
       const res = await fetch(`/api/users?id=${id}`, {
@@ -95,6 +100,7 @@ export default function SharedUsuariosPage({ setHeader, redirectBase }: Props) {
     } catch { toast.error('Erro ao conectar') }
   }
 
+  // Exclui usuario com confirmacao
   async function handleDelete(id: string, name: string) {
     if (!confirm(`Remover "${name}"?`)) return
     try {

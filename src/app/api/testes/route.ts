@@ -31,6 +31,7 @@ interface VitestReport {
   testResults: TestSuiteResult[]
 }
 
+// Categoriza um arquivo de teste em grupo, icone e label
 function categorizeTestFile(filePath: string): { group: string; icon: string; label: string } {
   if (filePath.includes('rbac')) return { group: 'rbac', icon: '🔒', label: 'Controle de Acesso (RBAC)' }
   if (filePath.includes('validation')) return { group: 'validation', icon: '✅', label: 'Validação de Entrada' }
@@ -39,6 +40,7 @@ function categorizeTestFile(filePath: string): { group: string; icon: string; la
   return { group: 'outros', icon: '⚙️', label: 'Outros' }
 }
 
+// Constroi relatorio agrupando resultados de testes por categoria
 function buildReport(vitestData: VitestReport) {
   const categories: Record<string, { total: number; passed: number; failed: number; tests: TestAssertion[] }> = {
     rbac: { total: 0, passed: 0, failed: 0, tests: [] },
@@ -97,6 +99,7 @@ function buildReport(vitestData: VitestReport) {
   }
 }
 
+// Executa suite de testes e retorna relatorio com categorias e vulnerabilidades
 export async function GET() {
   try {
     if (process.env.ENABLE_TESTES !== 'true') {

@@ -12,6 +12,7 @@ import type { ROLE } from '@prisma/client'
 
 const ALL_ROLES: ROLE[] = ['GOD', 'ADMIN', 'GESTOR', 'ATENDENTE']
 
+// Executa testes de seguranca e permissoes para um usuario especifico
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions)
   if (!session?.user || (session.user as any).role !== 'GOD') {

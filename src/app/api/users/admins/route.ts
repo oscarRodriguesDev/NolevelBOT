@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { getSessionOrFail } from "@/util/permission"
 import { limparCPF } from "@/util/limparcpfs"
 
+// Lista todos os administradores (GOD only)
 export async function GET() {
   const session = await getSessionOrFail(["GOD"])
   if (!session) {
@@ -39,6 +40,7 @@ export async function GET() {
   }
 }
 
+// Atualiza dados de um administrador (GOD only)
 export async function PUT(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "users-admins", 20, 60 * 1000)
   if (rateLimit) return rateLimit
@@ -101,6 +103,7 @@ export async function PUT(req: NextRequest) {
   }
 }
 
+// Remove um administrador (GOD only)
 export async function DELETE(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "users-admins", 15, 60 * 1000)
   if (rateLimit) return rateLimit

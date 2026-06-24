@@ -4,6 +4,7 @@ import { useTheme } from "../providers";
 import { Sun, Moon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Botao de alternancia entre temas claro e escuro
 export function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
 

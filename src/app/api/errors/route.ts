@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/nextauth"
 import { getAllErrors, getError } from "@/lib/error-store"
 
+// Retorna todos os erros armazenados ou um erro especifico pelo codigo
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions)
   if (session?.user?.role !== "GOD") {

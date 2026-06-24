@@ -3,6 +3,7 @@ import { applyRateLimit } from '@/lib/rate-limit'
 import { prisma } from '@/lib/prisma'
 import { uploadFile } from '@/lib/upload'
 
+// Valida a matricula do usuario e retorna dados da empresa
 export async function GET(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "oficina-tickets", 30, 60 * 1000)
   if (rateLimit) return rateLimit
@@ -45,6 +46,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// Cria um novo ticket de manutencao (chamado) na oficina
 export async function POST(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "oficina-tickets", 10, 60 * 1000)
   if (rateLimit) return rateLimit

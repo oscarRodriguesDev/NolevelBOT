@@ -11,6 +11,8 @@ const PRIORIDADE_CORES: Record<string, string> = {
   baixa: "var(--status-completed)", normal: "var(--primary)", alta: "var(--status-waiting)", critica: "var(--status-cancelled)",
 }
 
+// Graficos do dashboard: status, prioridade, setor, evolucao e correlacao
+// Componente de graficos do dashboard corporativo
 export function Charts({ statusStats, prioridadeStats, chamadosPorSetor, chamadosPeriodo, comparativoAvisos }: {
   statusStats: StatItem[]; prioridadeStats: StatItem[]; chamadosPorSetor: StatItem[];
   chamadosPeriodo: StatItem[]; comparativoAvisos: ComparativoItem[];

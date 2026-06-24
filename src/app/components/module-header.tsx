@@ -7,6 +7,7 @@ interface Props {
   descricao: string
 }
 
+// Cabecalho do modulo com titulo e alternador de tema
 export function Header({ titulo, descricao }: Props) {
   return (
     <div

@@ -1,5 +1,6 @@
 import { SkeletonTable } from "@/app/components/skeleton"
 
+// Tela de carregamento com esqueleto para tabela
 export default function Loading() {
   return (
     <div className="py-10 px-4" style={{ backgroundColor: "var(--background)", color: "var(--foreground)" }}>

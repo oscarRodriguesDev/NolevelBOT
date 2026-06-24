@@ -10,6 +10,7 @@ import type { HistoricoItem } from '@/types/chamado'
 import { normalizarStatus } from '@/types/chamado'
 import { ROLE } from '@prisma/client'
 
+// Cria um novo chamado via busca publica com upload de anexo
 export async function POST(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "tickets-search", 10, 60 * 1000)
   if (rateLimit) return rateLimit
@@ -70,6 +71,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// Busca chamados por CPF, ticket ou listagem geral com filtro de permissao
 export async function GET(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "tickets-search", 30, 60 * 1000)
   if (rateLimit) return rateLimit
@@ -128,6 +130,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// Atualiza status e historico de um chamado pela busca
 export async function PUT(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "tickets-search", 20, 60 * 1000)
   if (rateLimit) return rateLimit
@@ -211,6 +214,7 @@ export async function PUT(req: NextRequest) {
   }
 }
 
+// Finaliza um chamado movendo-o para tickets fechados pela busca
 export async function DELETE(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "tickets-search", 15, 60 * 1000)
   if (rateLimit) return rateLimit

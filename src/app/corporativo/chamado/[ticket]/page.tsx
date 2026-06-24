@@ -5,6 +5,7 @@ import { ThemeToggle } from '@/app/components/theme-toggle'
 import { FileUpload } from '@/app/components/fileInput'
 import toast from 'react-hot-toast'
 
+// Pagina de criacao de chamado com formulario e anexo
 export default function TicketPage() {
 
 

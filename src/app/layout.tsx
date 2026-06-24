@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   description: "Sistema inteligente de gestão de chamados e atendimento",
 };
 
+// Layout raiz da aplicacao com configuracao de HTML
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>

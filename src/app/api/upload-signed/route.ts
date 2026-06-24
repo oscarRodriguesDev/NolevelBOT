@@ -17,6 +17,7 @@ export const runtime = 'nodejs'
 
 const bucketCache = new Set<string>()
 
+// Verifica se o bucket existe no Supabase e cria se necessario
 async function ensureBucket(bucket: string) {
   if (bucketCache.has(bucket)) return
   const { data } = await supabase.storage.getBucket(bucket)
@@ -26,6 +27,7 @@ async function ensureBucket(bucket: string) {
   bucketCache.add(bucket)
 }
 
+// Gera URL assinada para upload direto ao Supabase com validacoes
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req)

@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { ThemeToggle } from "@/app/components/theme-toggle"
 
+// Pagina 404 para rotas nao encontradas
 export default function NotFound() {
   return (
     <div

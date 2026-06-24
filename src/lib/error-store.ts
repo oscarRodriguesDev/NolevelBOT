@@ -13,10 +13,12 @@ const CLEANUP_INTERVAL = 10 * 60 * 1000
 let counter = 0
 const store = new Map<string, StoredError>()
 
+// Preenche numero com zeros a esquerda para 5 digitos
 function pad(n: number): string {
   return String(n).padStart(5, "0")
 }
 
+// Remove entradas expiradas do armazenamento interno
 function cleanup() {
   const now = Date.now()
   for (const [code, err] of store) {
@@ -28,6 +30,7 @@ if (typeof setInterval !== "undefined") {
   setInterval(cleanup, CLEANUP_INTERVAL).unref()
 }
 
+// Armazena erro e retorna codigo unico de rastreamento
 export function storeError(error: unknown, context?: string): string {
   counter++
   const code = `${PREFIX}-${pad(counter)}`
@@ -43,14 +46,17 @@ export function storeError(error: unknown, context?: string): string {
   return code
 }
 
+// Retorna erro armazenado pelo codigo informado
 export function getError(code: string): StoredError | undefined {
   return store.get(code)
 }
 
+// Retorna todos os erros armazenados ordenados do mais recente
 export function getAllErrors(): StoredError[] {
   return Array.from(store.values()).sort((a, b) => b.timestamp - a.timestamp)
 }
 
+// Limpa todos os erros armazenados e reseta o contador
 export function clearErrors(): void {
   store.clear()
   counter = 0

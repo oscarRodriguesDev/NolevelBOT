@@ -4,10 +4,12 @@ import { prisma } from "@/lib/prisma";
 import { getServerSessionRBAC } from "@/lib/rbac-server";
 import OpenAI from "openai";
 
+// Retorna instancia do cliente OpenAI configurada
 function getOpenAI(): OpenAI {
   return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 }
 
+// Retorna as configuracoes de prompt de uma empresa
 export async function GET(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "empresa-prompt", 30, 60 * 1000)
   if (rateLimit) return rateLimit
@@ -46,6 +48,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// Gera um novo prompt via OpenAI e salva na empresa
 export async function POST(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "empresa-prompt", 20, 60 * 1000)
   if (rateLimit) return rateLimit
@@ -143,6 +146,7 @@ Regras:
   }
 }
 
+// Atualiza as configuracoes de prompt de uma empresa
 export async function PUT(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "empresa-prompt", 20, 60 * 1000)
   if (rateLimit) return rateLimit
@@ -184,6 +188,7 @@ export async function PUT(req: NextRequest) {
   }
 }
 
+// Remove as configuracoes de prompt e descricoes do bot de uma empresa
 export async function DELETE(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "empresa-prompt", 15, 60 * 1000)
   if (rateLimit) return rateLimit

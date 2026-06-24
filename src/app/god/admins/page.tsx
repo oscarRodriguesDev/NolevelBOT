@@ -21,6 +21,7 @@ const roleMap: Record<string, ROLE> = {
   "X11": "ATENDENTE",
 }
 
+// Converte role do banco para codigo interno
 function roleBackToFront(role: ROLE): string {
   const inv: Record<string, string> = {
     GOD: "XX!",
@@ -31,6 +32,7 @@ function roleBackToFront(role: ROLE): string {
   return inv[role]
 }
 
+// Formata CPF com mascara de digitos
 function formatCPF(value: string): string {
   const digits = value.replace(/\D/g, "").slice(0, 11)
   return digits
@@ -39,6 +41,7 @@ function formatCPF(value: string): string {
     .replace(/\.(\d{3})(\d)/, ".$1-$2")
 }
 
+// Pagina de criacao de usuario pelo admin
 export default function CriarUsuarioPage() {
   const { data: session } = useSession()
   const userRole = (session?.user?.role as ROLE) || null
@@ -70,6 +73,7 @@ export default function CriarUsuarioPage() {
   }, [setHeader])
 
   useEffect(() => {
+    // Carrega dados de empresas e setores do servidor
     async function fetchDados() {
       try {
         setLoadingDados(true)
@@ -102,12 +106,14 @@ export default function CriarUsuarioPage() {
     fetchDados()
   }, [userRole, userSetor])
 
+  // Atualiza setores ao trocar empresa selecionada
   function handleEmpresaChange(empresaId: string) {
     setForm(prev => ({ ...prev, empresaId, setor: "" }))
     const emp = empresas.find(e => e.id === empresaId)
     setSetoresDisponiveis(emp?.setores || [])
   }
 
+  // Lida com mudancas em todos os campos do formulario
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = e.target
     if (name === "empresaId") {
@@ -129,11 +135,13 @@ export default function CriarUsuarioPage() {
     setForm((prev) => ({ ...prev, [name]: value }))
   }
 
+  // Lida com selecao de arquivo de avatar
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] || null
     setForm((prev) => ({ ...prev, avatarFile: file }))
   }
 
+  // Envia formulario de criacao de usuario para a API
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)

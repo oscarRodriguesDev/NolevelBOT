@@ -40,6 +40,7 @@ type Session = {
 
 const sessions = new TTLMap<string, Session>(120 * 60 * 1000);
 
+// Busca avisos especificos para uma matricula dentro de uma empresa
 async function buscarAvisosEspecificos(
   empresaId: string,
   matricula: string
@@ -80,6 +81,7 @@ async function buscarAvisosEspecificos(
   }
 }
 
+// Busca avisos especificos para um veiculo dentro de uma empresa
 async function buscarAvisosDoVeiculo(
   empresaId: string,
   numeroOnibus: string
@@ -120,6 +122,7 @@ async function buscarAvisosDoVeiculo(
   }
 }
 
+// Processa mensagens do webhook da oficina para registro de defeitos veiculares
 export async function POST(req: NextRequest) {
   const rateLimit = await rateLimited(req, "webhook-oficina")
   if (rateLimit) return rateLimit
@@ -141,6 +144,7 @@ export async function POST(req: NextRequest) {
     if (exit) return exit;
 
     const sess = session;
+    // Processa midia recebida e armazena URL na sessao da oficina
     async function processMedia(): Promise<string | undefined> {
       const url = await processWebhookMedia(data, instance, number, hasImage, hasDocument, sess.matricula || "oficina");
       if (url) sess.anexoUrl = url;
@@ -418,6 +422,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// Monta o resumo formatado do registro de defeito para confirmacao
 function montarResumo(session: Session): string {
   return (
     `*Resumo do Registro:*\n\n` +

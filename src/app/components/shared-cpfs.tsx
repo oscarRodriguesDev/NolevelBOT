@@ -22,6 +22,7 @@ interface Props {
   moduleSlug: "corporativo" | "oficina" | "eventos"
 }
 
+// Pagina de gerenciamento de CPFs/colaboradores
 export default function SharedCpfsPage({ setHeader, moduleSlug }: Props) {
   const { data: session } = useSession()
   const userRole = session?.user?.role as ROLE | null
@@ -40,6 +41,7 @@ export default function SharedCpfsPage({ setHeader, moduleSlug }: Props) {
   const [editingAdmin, setEditingAdmin] = useState<Admin | null>(null)
   const [editForm, setEditForm] = useState({ name: "", email: "", cpf: "", setor: "" })
 
+  // Busca registros de CPFs da API
   async function fetchRegistros() {
     try {
       const res = await fetch("/api/cpfs")
@@ -50,6 +52,7 @@ export default function SharedCpfsPage({ setHeader, moduleSlug }: Props) {
     }
   }
 
+  // Busca lista de admins (apenas GOD)
   async function fetchAdmins() {
     if (!isGod) return
     try {
@@ -84,6 +87,7 @@ export default function SharedCpfsPage({ setHeader, moduleSlug }: Props) {
     loadData()
   }, [setHeader, isOficina])
 
+  // Deleta um CPF pelo numero
   async function handleDelete(cpfToDelete: string) {
     try {
       const res = await fetch("/api/cpfs", {
@@ -105,6 +109,7 @@ export default function SharedCpfsPage({ setHeader, moduleSlug }: Props) {
     }
   }
 
+  // Cadastra CPF manualmente via formulario
   async function cadastrarManual(e: React.FormEvent) {
     e.preventDefault()
     try {
@@ -129,6 +134,7 @@ export default function SharedCpfsPage({ setHeader, moduleSlug }: Props) {
     }
   }
 
+  // Importa CPFs em lote via arquivo
   async function enviarArquivo(e: React.FormEvent) {
     e.preventDefault()
     if (!file) {
@@ -160,6 +166,7 @@ export default function SharedCpfsPage({ setHeader, moduleSlug }: Props) {
     }
   }
 
+  // Remove um administrador pelo ID
   async function handleDeleteAdmin(adminId: string, adminName: string) {
     if (!confirm(`Tem certeza que deseja remover o admin "${adminName}"?`)) return
 
@@ -177,6 +184,7 @@ export default function SharedCpfsPage({ setHeader, moduleSlug }: Props) {
     }
   }
 
+  // Abre formulario de edicao de admin
   function openEditAdmin(admin: Admin) {
     setEditingAdmin(admin)
     setEditForm({
@@ -187,6 +195,7 @@ export default function SharedCpfsPage({ setHeader, moduleSlug }: Props) {
     })
   }
 
+  // Salva alteracoes de um administrador
   async function saveEditAdmin() {
     if (!editingAdmin) return
 

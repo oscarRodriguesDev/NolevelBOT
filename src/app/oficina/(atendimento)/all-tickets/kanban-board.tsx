@@ -31,6 +31,7 @@ const COLUMNS = [
   { key: "CANCELADO", title: "Cancelado", color: "var(--status-cancelled)" },
 ]
 
+// normaliza o status do chamado para uma das colunas do kanban
 function normalizeStatus(status: string): string {
   const s = status?.toUpperCase() || ""
   if (s.includes("NOVO")) return "NOVO"
@@ -41,6 +42,7 @@ function normalizeStatus(status: string): string {
   return "NOVO"
 }
 
+// componente de quadro kanban para arrastar e soltar chamados entre colunas
 export default function KanbanBoard({ tickets, loading, onRefresh }: KanbanBoardProps) {
   const { data: session } = useSession()
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null)

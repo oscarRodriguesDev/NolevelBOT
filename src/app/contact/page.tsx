@@ -4,11 +4,13 @@ import { useState } from "react"
 import { ThemeToggle } from "../components/theme-toggle"
 import { BtnVoltar } from "../components/back"
 
+// Pagina de formulario de contato
 export default function ContatoForm() {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
+  // Envia formulario de contato para a API
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setLoading(true)

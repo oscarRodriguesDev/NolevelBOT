@@ -32,17 +32,20 @@ export const CAN_VIEW_EMPRESAS: ROLE[] = ["GOD"]
 export const CAN_CREATE_EMPRESA: ROLE[] = ["GOD"]
 export const CAN_BATCH_CPF: ROLE[] = ["GOD", "ADMIN", "GESTOR"]
 
+// Verifica se um usuario pode criar outro com a role especificada
 export function podeCriarRole(quemCria: ROLE, roleAlvo: ROLE): boolean {
   const permitidas = CREATE_ROLE_MAP[quemCria]
   return permitidas.includes(roleAlvo)
 }
 
+// Verifica se um usuario pode deletar outro com a role especificada
 export function podeDeletarRole(quemDeleta: ROLE, roleAlvo: ROLE): boolean {
   if (roleAlvo === "GOD") return false
   const permitidas = DELETE_ROLE_MAP[quemDeleta]
   return permitidas.includes(roleAlvo)
 }
 
+// Retorna o filtro de empresa e setor baseado na role do usuario
 export function getSetorFilter(
   userRole: ROLE,
   userSetor: string,
@@ -55,6 +58,7 @@ export function getSetorFilter(
   return base
 }
 
+// Retorna a clausula WHERE para consultas de tickets conforme a role
 export function getTicketWhereClause(
   userRole: ROLE,
   userSetor: string,
@@ -63,6 +67,7 @@ export function getTicketWhereClause(
   return getSetorFilter(userRole, userSetor, userEmpresaId)
 }
 
+// Converte o enum ROLE para o nome de exibicao em portugues
 export function roleParaDisplay(role: ROLE): string {
   const nomes: Record<ROLE, string> = {
     GOD: "Master",
@@ -73,10 +78,12 @@ export function roleParaDisplay(role: ROLE): string {
   return nomes[role]
 }
 
+// Retorna a lista de roles que o usuario pode criar
 export function rolesQuePodeCriar(quemCria: ROLE): ROLE[] {
   return CREATE_ROLE_MAP[quemCria] || []
 }
 
+// Retorna a lista de roles que o usuario pode visualizar
 export function rolesQuePodeVer(quemVe: ROLE): ROLE[] {
   return VIEW_USERS_ROLES[quemVe]?.roles || []
 }

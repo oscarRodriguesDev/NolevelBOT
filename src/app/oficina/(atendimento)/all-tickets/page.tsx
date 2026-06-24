@@ -22,6 +22,7 @@ type Solicitacao = {
 
 const LIMIT = 20
 
+// pagina principal de gerenciamento de solicitacoes com visualizacao em lista e kanban
 export default function SolicitacoesPage() {
   const [solicitacoes, setSolicitacoes] = useState<Solicitacao[]>([])
   const [loading, setLoading] = useState(false)
@@ -52,6 +53,7 @@ export default function SolicitacoesPage() {
     })
   }, [setHeader])
 
+  // recarrega a lista de solicitacoes com filtros e pagina atuais
   function refreshSolicitacoes() {
     fetchSolicitacoes(filters, page)
   }
@@ -143,6 +145,7 @@ export default function SolicitacoesPage() {
     setPage(1)
   }
 
+  // navega para a pagina especificada na paginacao
   function goToPage(p: number) {
     if (p >= 1 && p <= totalPages) setPage(p)
   }

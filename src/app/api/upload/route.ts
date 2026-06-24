@@ -10,6 +10,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024
 
 //export const runtime = 'edge';
 export const runtime = 'nodejs';
+// Faz upload de arquivo validando tipo, tamanho e bucket permitido
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req)

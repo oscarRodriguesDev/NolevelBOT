@@ -9,6 +9,7 @@ import { validarBotApiKey } from "@/lib/bot-auth";
 
 //post salva os cpfs, se for multipart/form-data, importa do excel ou csv, se for json, cadastra manualmente
 //testar salvamento por planilha excel 
+// Cadastra CPFs via upload de arquivo ou manualmente
 export async function POST(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "general-cpf", 30, 60 * 1000)
   if (rateLimit) return rateLimit
@@ -161,6 +162,7 @@ export async function POST(req: NextRequest) {
 
 
 // Rota usada pelos bots — exige X-API-Key header
+// Retorna CPFs filtrados ou todos (usado por bots)
 export async function GET(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "general-cpf", 30, 60 * 1000)
   if (rateLimit) return rateLimit
@@ -206,6 +208,7 @@ export async function GET(req: NextRequest) {
 }
 
 
+// Deleta um CPF do banco de dados
 export async function DELETE(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "general-cpf", 20, 60 * 1000)
   if (rateLimit) return rateLimit

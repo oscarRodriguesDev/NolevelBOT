@@ -5,6 +5,7 @@ import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { validateOrError } from '@/lib/validate'
 import { createEmpresaSchema } from '@/lib/validation'
 
+// Cria uma nova empresa com dados validados
 export async function POST(req: NextRequest) {
   const session = await getSessionOrFail(["GOD"])
   if (!session) {
@@ -34,6 +35,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// Busca empresa(s) por id, cpf ou lista todas conforme permissao
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -164,6 +166,7 @@ export async function GET(request: Request) {
   }
 }
 
+// Atualiza os dados de uma empresa existente
 export async function PUT(req: NextRequest) {
   const session = await getSessionOrFail(["GOD"])
   if (!session) {
@@ -208,6 +211,7 @@ export async function PUT(req: NextRequest) {
   }
 }
 
+// Remove uma empresa e todos os dados vinculados em transacao
 export async function DELETE(req: NextRequest) {
   const session = await getSessionOrFail(["GOD"])
   if (!session) {

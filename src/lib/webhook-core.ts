@@ -14,6 +14,7 @@ export interface WebhookMessage {
   hasMedia: boolean
 }
 
+//extrai dados da mensagem do webhook do WhatsApp
 export function parseWebhookMessage(body: any): WebhookMessage | null {
   if (body.event !== "messages.upsert") return null
 
@@ -41,10 +42,12 @@ export function parseWebhookMessage(body: any): WebhookMessage | null {
   }
 }
 
+//aplica limite de taxa na requisicao
 export async function rateLimited(req: NextRequest, key: string): Promise<NextResponse | null> {
   return await applyRateLimit(req, key, 60, 60 * 1000)
 }
 
+//obtem sessao existente ou cria uma nova
 export function getOrCreateSession<T extends { state: string; lastInteraction: number }>(
   sessions: TTLMap<string, T>,
   key: string,
@@ -60,6 +63,7 @@ export function getOrCreateSession<T extends { state: string; lastInteraction: n
   return session
 }
 
+//encerra atendimento se usuario digitar sair/cancelar
 export async function handleExit(
   userInput: string,
   instance: string,
@@ -75,6 +79,7 @@ export async function handleExit(
   return null
 }
 
+//processa e faz upload de midia recebida pelo webhook
 export async function processWebhookMedia(
   data: any,
   instance: string,
@@ -108,10 +113,12 @@ export async function processWebhookMedia(
   return undefined
 }
 
+//persiste sessao no mapa TTL
 export function saveSession<T>(sessions: TTLMap<string, T>, key: string, session: T): void {
   sessions.set(key, session)
 }
 
+//retorna funcao de tratamento de erro para webhooks
 export function webhookError(name: string): (error: unknown) => NextResponse {
   return (error: unknown) => {
     console.error(`Erro crítico no ${name}:`, error)

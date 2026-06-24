@@ -9,6 +9,7 @@ import { signIn, getSession } from "next-auth/react";
 import Link from "next/link";
 
 
+// Pagina de login com autenticacao e Turnstile
 export default function LoginPage() {
   const router = useRouter();
   const turnstileRef = useRef<HTMLDivElement>(null);

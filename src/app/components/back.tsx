@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { TiArrowBack } from "react-icons/ti";
 import { motion } from "framer-motion";
 
+// Botao para voltar a pagina anterior
 export function BtnVoltar() {
   const router = useRouter();
 

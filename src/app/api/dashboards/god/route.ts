@@ -2,12 +2,14 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getSessionOrFail } from "@/util/permission"
 
+// Retorna o numero da semana do ano para uma data
 function getWeek(date: Date) {
   const first = new Date(date.getFullYear(), 0, 1)
   const diff = (date.getTime() - first.getTime()) / 86400000
   return Math.ceil((diff + first.getDay() + 1) / 7)
 }
 
+// Gera o dashboard global com metricas de todas as empresas
 export async function GET() {
   const session = await getSessionOrFail(["GOD"])
   if (!session) {

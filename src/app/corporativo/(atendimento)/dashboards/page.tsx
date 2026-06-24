@@ -22,6 +22,7 @@ interface ComparativoItem {
   evitados: number;
 }
 
+// Pagina de dashboard com metricas, graficos e exportacao
 export default function Dashboard() {
   const router = useRouter()
   const [periodo, setPeriodo] = useState<"dia" | "semana" | "mes" | "ano">("mes")
@@ -60,6 +61,7 @@ export default function Dashboard() {
   useEffect(() => {
     let isMounted = true
 
+    // Busca dados do dashboard na API com periodo selecionado
     async function fetchDashboardData() {
       if (!isLoading) setIsLoading(true)
 
@@ -115,6 +117,7 @@ export default function Dashboard() {
     }
   }, [periodo])
 
+  // Exporta dados do dashboard para arquivo CSV
   function downloadCSV() {
     const linhas: string[] = []
     linhas.push(`Relatorio Corporativo - Periodo: ${periodo}`)
@@ -170,6 +173,7 @@ export default function Dashboard() {
     URL.revokeObjectURL(url)
   }
 
+  // Exporta relatorio do dashboard para PDF com jsPDF
   async function downloadPDF() {
     const jsPDF = (await import("jspdf")).default
     const pdf = new jsPDF()
@@ -533,6 +537,7 @@ export default function Dashboard() {
   )
 }
 
+// Cartao de indicador chave (KPI) com cor e valor
 function KPICard({
   label,
   value,

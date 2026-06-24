@@ -46,6 +46,7 @@ type Webhook27Session = UserSession & {
 const sessions = new TTLMap<string, Webhook27Session>(120 * 60 * 1000);
 const link = `${process.env.NEXT_PUBLIC_BASE_URL_WP}/chamado`; 
 
+// Processa mensagens do webhook WhatsApp instancia 27 com fluxo de IA
 export async function POST(req: NextRequest) {
   const rateLimit = await rateLimited(req, "webhook27")
   if (rateLimit) return rateLimit
@@ -71,6 +72,7 @@ export async function POST(req: NextRequest) {
       avisos = await buscarAvisos(session.cpf, req);
     }
 
+    // Processa midia recebida e avanca para coleta de setor
     async function processMediaAndAdvance() {
       const url = await processWebhookMedia(data, instance, number, hasImage, hasDocument, session.cpf || "unknown");
       if (url) session.anexoUrl = url;
@@ -84,6 +86,7 @@ export async function POST(req: NextRequest) {
       session.state = FlowState.COLETAR_SETOR;
     }
 
+    // Busca o empresaId associado a um CPF na tabela cpfs
     async function getEmpresaIdFromCpf(cpf: string): Promise<string | undefined> {
       try {
         const { prisma } = await import("@/lib/prisma");

@@ -2,6 +2,7 @@
 
 import { useEffect } from "react"
 
+// Tela de erro do modulo de atendimento com botao de tentar novamente
 export default function AtendimentoError({
   error,
   reset,

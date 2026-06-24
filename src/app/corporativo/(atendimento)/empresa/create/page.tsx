@@ -10,6 +10,7 @@ import { useHeader } from '../../layout'
 import toast from 'react-hot-toast'
 import { uploadFileDirect } from '@/lib/upload-client'
 
+// Pagina de cadastro de nova empresa com modulos e assistente
 export default function CreateEmpresa() {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -40,6 +41,7 @@ export default function CreateEmpresa() {
     { valor: 'EVENTOS', label: 'Eventos', icon: CalendarCheck, desc: 'Captura de leads em feiras e eventos' },
   ]
 
+  // Alterna selecao de modulo para a empresa
   function toggleModulo(valor: string) {
     setModulosSelecionados(prev =>
       prev.includes(valor) ? prev.filter(m => m !== valor) : [...prev, valor]
@@ -68,6 +70,7 @@ export default function CreateEmpresa() {
       .substring(0, 18)
   }
 
+  // Processa upload de logo da empresa
   function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -79,6 +82,7 @@ export default function CreateEmpresa() {
     setLogoPreview(URL.createObjectURL(file))
   }
 
+  // Gera prompt do assistente virtual via IA
   async function handleGerarPrompt() {
     if (!botPresentation && !botServiceDesc && !botAvisosDesc) {
       toast.error('Preencha pelo menos uma descrição para gerar o prompt')
@@ -128,6 +132,7 @@ Máximo 400 caracteres. Seja objetivo.`
     }
   }
 
+  // Envia formulario de cadastro da empresa
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)

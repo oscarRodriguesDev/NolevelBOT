@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { StatusChamado, saudacao } from "./usedata";
 
+//retorna instancia do cliente OpenAI
 function getOpenAI(): OpenAI {
   return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 }
@@ -34,6 +35,7 @@ export type UserSession = {
 
 type FileIntent = "send_file" | "no_file" | "continue";
 
+//detecta se o usuario quer enviar um arquivo ou nao
 export function detectFileIntent(input: string): FileIntent {
   const lower = input.toLowerCase();
 
@@ -83,6 +85,7 @@ type EmpresaConfig = {
   nome: string;
 };
 
+//carrega configuracao da empresa associada ao cpf
 async function getEmpresaConfig(cpf?: string): Promise<EmpresaConfig> {
   const { prisma } = await import("@/lib/prisma");
 
@@ -135,6 +138,7 @@ async function getEmpresaConfig(cpf?: string): Promise<EmpresaConfig> {
   };
 }
 
+//monta o prompt de sistema para o modelo OpenAI
 function montarSystemPrompt(
   config: EmpresaConfig,
   session: UserSession,
@@ -204,6 +208,7 @@ function montarSystemPrompt(
   ].filter(Boolean).join("\n");
 }
 
+//envia mensagem do usuario para a IA e retorna resposta
 export async function botIA4(
   session: UserSession,
   userInput: string,

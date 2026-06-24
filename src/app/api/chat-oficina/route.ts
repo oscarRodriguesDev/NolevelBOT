@@ -31,6 +31,7 @@ type Session = {
 
 const sessions = new TTLMap<string, Session>(120 * 60 * 1000)
 
+// Busca avisos especificos para a matricula do usuario
 async function buscarAvisosEspecificos(empresaId: string, matricula: string): Promise<string> {
   try {
     const avisos = await prisma.avisos.findMany({
@@ -68,6 +69,7 @@ async function buscarAvisosEspecificos(empresaId: string, matricula: string): Pr
   }
 }
 
+// Busca avisos relacionados ao veiculo informado
 async function buscarAvisosDoVeiculo(empresaId: string, numeroOnibus: string): Promise<string> {
   try {
     const avisos = await prisma.avisos.findMany({
@@ -105,6 +107,7 @@ async function buscarAvisosDoVeiculo(empresaId: string, numeroOnibus: string): P
   }
 }
 
+// Monta o resumo formatado do registro de defeito
 function montarResumo(session: Session): string {
   let resumo =
     `*Resumo do Registro:*\n\n` +
@@ -123,6 +126,7 @@ function montarResumo(session: Session): string {
   return resumo
 }
 
+// Manipula o fluxo de atendimento da oficina
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -142,6 +146,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ reply: "Atendimento encerrado. Quando precisar, é só voltar!", sessionId: sid })
     }
 
+    // Envia resposta e atualiza a sessao
     async function reply(text: string) {
       sessions.set(sid, session!)
       return NextResponse.json({ reply: text, sessionId: sid })
@@ -152,7 +157,7 @@ export async function POST(req: NextRequest) {
     switch (session.state) {
       case FlowState.INICIO: {
         session.state = FlowState.IDENTIFICACAO_MATRICULA
-        return reply("🚌 *Oficina - Registro de Defeito*\n\nBem-vindo! Para começar, digite sua *matrícula* (apenas números).")
+        return reply(" - Registro de Defeito*\n\nBem-vindo! Para começar, digite sua *matrícula* (apenas números).")
       }
 
       case FlowState.IDENTIFICACAO_MATRICULA: {
@@ -173,7 +178,7 @@ export async function POST(req: NextRequest) {
               ? `Sua empresa possui o(s) módulo(s): ${activeModules.join(", ")}.`
               : "Sua empresa não possui módulos de atendimento ativos."
             sessions.delete(sid)
-            return reply(`Olá, ${registro.nome}! Sua matrícula foi encontrada ✅, mas sua empresa não possui o módulo *OFICINA* ativo.\n\n${modulosMsg}\n\nPor favor, utilize o canal de atendimento correto para o módulo desejado. Se precisar de ajuda, entre em contato com a administração da sua empresa.`)
+            return reply(`Olá, ${registro.nome}! Sua matrícula foi encontrada ✅, mas sua empresa não possui o módulo *Operacional* ativo.\n\n${modulosMsg}\n\nPor favor, utilize o canal de atendimento correto para o módulo desejado. Se precisar de ajuda, entre em contato com a administração da sua empresa.`)
           }
         }
 
@@ -187,7 +192,7 @@ export async function POST(req: NextRequest) {
           msg += `\n\n*📢 Aviso importante para você:*\n\n${avisosEspecificos}`
         }
 
-        msg += `\n\nQual a sua *função*? (Ex: Motorista, Fiscal...)`
+        msg += `\n\nQual a sua *função*? `
         session.state = FlowState.COLETAR_FUNCAO
         return reply(msg)
       }

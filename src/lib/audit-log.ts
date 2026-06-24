@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import type { modulo } from "@prisma/client"
 
+// Registra log de acesso do usuario no banco de dados
 export async function logAcesso(params: {
   cpf?: string | null
   nome?: string | null

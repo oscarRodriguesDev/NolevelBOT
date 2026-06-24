@@ -13,6 +13,7 @@ export type UserSession = {
   setor: string
 }
 
+// Obtem a sessao do servidor e valida se a role do usuario esta entre as permitidas
 export async function getServerSessionRBAC(allowedRoles?: ROLE[]): Promise<{
   session: UserSession | null
   error: NextResponse | null

@@ -1,3 +1,4 @@
+// Skeleton para placeholder de carregamento
 export function Skeleton({ className = "" }: { className?: string }) {
   return (
     <div
@@ -7,6 +8,7 @@ export function Skeleton({ className = "" }: { className?: string }) {
   )
 }
 
+// Skeleton de tabela com linhas e colunas
 export function SkeletonTable({ rows = 5, cols = 5 }: { rows?: number; cols?: number }) {
   return (
     <div className="space-y-3" role="status" aria-label="Carregando">
@@ -21,6 +23,7 @@ export function SkeletonTable({ rows = 5, cols = 5 }: { rows?: number; cols?: nu
   )
 }
 
+// Skeleton de cards em grid
 export function SkeletonCard({ count = 3 }: { count?: number }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">

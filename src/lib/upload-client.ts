@@ -1,3 +1,4 @@
+// Faz upload de arquivo via URL assinada e retorna a URL publica
 export async function uploadFileDirect(
   file: File,
   bucket = "anexo",

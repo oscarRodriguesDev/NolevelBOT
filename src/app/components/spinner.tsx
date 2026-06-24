@@ -1,3 +1,4 @@
+// Spinner SVG animado de carregamento
 export function Spinner({ size = 20, className = "" }: { size?: number; className?: string }) {
   return (
     <svg
