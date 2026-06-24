@@ -263,7 +263,7 @@
 ## PED-029: Bloqueio de chamados repetitivos no webhook-corporativo
 **Data:** 24/06/2026
 **Status:** ✅ Concluído
-**Commit:** `<PENDENTE>`
+**Commit:** `98b3c79`
 **Descrição:**
 - Adicionada função `verificarChamadosAbertos(cpf)` que consulta os últimos 5 chamados do CPF no banco.
 - **Bloqueio 1:** Se houver chamado com status aberto (NOVO/aberto/em_atendimento/aguardando/EM_ANDAMENTO), o bot exibe os detalhes do chamado e encerra o fluxo — impede abertura de novo chamado.
