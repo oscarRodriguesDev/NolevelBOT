@@ -38,6 +38,20 @@ export async function POST(req: NextRequest) {
     const { number, instance, userInput, lowerInput, hasImage, hasDocument, hasMedia } = msg;
     const data = body.data;
 
+    const evolutionUrl = body?.server_url || "";
+    const evolutionApiKey = body?.apikey || "";
+
+    if (evolutionApiKey) {
+      const empresa = await prisma.empresa.findFirst({ where: { evolution_token: evolutionApiKey } });
+      if (!empresa) {
+        console.warn("apikey invalida recebida no webhook-corporativo:", evolutionApiKey);
+      }
+    }
+
+    async function sendText(text: string) {
+      return sendEvolutionText(instance, number, text, evolutionUrl, evolutionApiKey);
+    }
+
     const session = getOrCreateSession(sessions, number, {
       state: FlowState.INICIO as typeof FlowState.INICIO,
       lastInteraction: Date.now(),
@@ -66,8 +80,7 @@ export async function POST(req: NextRequest) {
       const url = await processWebhookMedia(data, instance, number, hasImage, hasDocument, session.cpf || "corporativo");
       if (url) session.anexoUrl = url;
       const setores = await getSetores(session.cpf || "");
-      await sendEvolutionText(
-        instance, number,
+      await sendText(
         `Pra qual setor devo encaminhar?\n\n📍 *Setores disponíveis:* ${setores.join(", ")}`
       );
       session.state = FlowState.COLETAR_SETOR;
@@ -158,20 +171,20 @@ Nao inclua mais nada alem dessas duas palavras.`,
           avisos
         );
         session.state = FlowState.IDENTIFICACAO_CPF;
-        await sendEvolutionText(instance, number, resp);
+        await sendText( resp);
         break;
       }
 
       case FlowState.IDENTIFICACAO_CPF: {
         const cleanCPF = userInput.replace(/\D/g, "");
         if (cleanCPF.length !== 11) {
-          await sendEvolutionText(instance, number, "Hum, esse CPF parece incompleto… Pode digitar so os 11 numeros?");
+          await sendText( "Hum, esse CPF parece incompleto… Pode digitar so os 11 numeros?");
           return NextResponse.json({ ok: true });
         }
 
         const registro = await prisma.cpfs.findUnique({ where: { cpf: cleanCPF } });
         if (!registro) {
-          await sendEvolutionText(instance, number, "Esse CPF nao esta cadastrado. Verifique e tente novamente.");
+          await sendText( "Esse CPF nao esta cadastrado. Verifique e tente novamente.");
           return NextResponse.json({ ok: true });
         }
 
@@ -188,8 +201,7 @@ Nao inclua mais nada alem dessas duas palavras.`,
             const modulosMsg = activeModules.length > 0
               ? `Modulos disponiveis: ${activeModules.join(", ")}.`
               : "Sua empresa nao possui modulos ativos.";
-            await sendEvolutionText(
-              instance, number,
+            await sendText(
               `Ola, ${registro.nome}! Seu CPF foi encontrado, mas sua empresa nao possui o modulo *CORPORATIVO* ativo.\n\n${modulosMsg}\n\nUtilize o canal correto para seu modulo.`
             );
             sessions.delete(number);
@@ -203,11 +215,11 @@ Nao inclua mais nada alem dessas duas palavras.`,
         if (avisos && !avisos.includes("Sem avisos")) {
           const instrucao = `CPF ${cleanCPF} validado. Nome: ${session.nome}. Aviso importante:\n${avisos}\n\nApresente-se e informe o aviso de forma acolhedora. Depois apresente: ${menuString}`;
           const resp = await botIA(session, userInput, instrucao, avisos);
-          await sendEvolutionText(instance, number, resp);
+          await sendText( resp);
         } else {
           const instrucao = `CPF ${cleanCPF} validado. Nome: ${session.nome}. Apresente-se e apresente as opcoes: ${menuString}`;
           const resp = await botIA(session, userInput, instrucao, avisos);
-          await sendEvolutionText(instance, number, resp);
+          await sendText( resp);
         }
         session.state = FlowState.MENU_PRINCIPAL;
         break;
@@ -215,7 +227,7 @@ Nao inclua mais nada alem dessas duas palavras.`,
 
       case FlowState.MENU_PRINCIPAL: {
         if (["1", "abrir", "chamado"].some(v => lowerInput.includes(v))) {
-          await sendEvolutionText(instance, number, "Claro! Me conta o que esta acontecendo? Descreva com detalhes.");
+          await sendText( "Claro! Me conta o que esta acontecendo? Descreva com detalhes.");
           session.state = FlowState.COLETAR_MOTIVO;
         } else if (["2", "status", "consultar", "ver"].some(v => lowerInput.includes(v))) {
           const chamados = await StatusChamado(session.cpf || "");
@@ -232,16 +244,16 @@ Nao inclua mais nada alem dessas duas palavras.`,
                 ].filter(Boolean).join("\n");
               }).join("\n\n━━━━━━━━━━━━━━━━\n\n")
             : "Nenhum chamado encontrado no seu CPF.";
-          await sendEvolutionText(instance, number, `📋 *SEUS CHAMADOS*\n\n${lista}\n\n${menuString}`);
+          await sendText( `📋 *SEUS CHAMADOS*\n\n${lista}\n\n${menuString}`);
         } else if (["3", "sair", "encerrar"].some(v => lowerInput.includes(v))) {
-          await sendEvolutionText(instance, number, "Atendimento encerrado. Quando precisar e so me chamar!");
+          await sendText( "Atendimento encerrado. Quando precisar e so me chamar!");
           sessions.delete(number);
         } else {
           const resp = await botIA(session, userInput, `Escolha uma opcao: ${menuString}. Se nao identificar, retorne NAO_IDENTIFIQUEI`, avisos);
           if (resp.includes("NAO_IDENTIFIQUEI")) {
-            await sendEvolutionText(instance, number, "Desculpa, nao consegui entender. Digite 1 para abrir chamado ou 2 para consultar.");
+            await sendText( "Desculpa, nao consegui entender. Digite 1 para abrir chamado ou 2 para consultar.");
           } else {
-            await sendEvolutionText(instance, number, resp);
+            await sendText( resp);
           }
         }
         break;
@@ -249,7 +261,7 @@ Nao inclua mais nada alem dessas duas palavras.`,
 
       case FlowState.COLETAR_MOTIVO: {
         if (!userInput && hasMedia) {
-          await sendEvolutionText(instance, number, "Recebi! Agora me conte qual o motivo do contato.");
+          await sendText( "Recebi! Agora me conte qual o motivo do contato.");
           return NextResponse.json({ ok: true });
         }
 
@@ -257,7 +269,7 @@ Nao inclua mais nada alem dessas duas palavras.`,
 
         const fileIntent = detectFileIntent(userInput);
         if (fileIntent === "send_file") {
-          await sendEvolutionText(instance, number, "Pode enviar a foto ou documento por aqui! 📎");
+          await sendText( "Pode enviar a foto ou documento por aqui! 📎");
           session.state = FlowState.COLETAR_MIDIA;
           break;
         }
@@ -278,7 +290,7 @@ Nao inclua mais nada alem dessas duas palavras.`,
           );
 
           if (analise.startsWith("AVISO_RESOLVE:")) {
-            await sendEvolutionText(instance, number, analise.replace("AVISO_RESOLVE:", "").trim());
+            await sendText( analise.replace("AVISO_RESOLVE:", "").trim());
             sessions.delete(number);
             break;
           }
@@ -287,13 +299,13 @@ Nao inclua mais nada alem dessas duas palavras.`,
         if (session.cpf) {
           const { bloqueado, mensagem } = await verificarChamadoRelacionado(session.cpf, session.motivoAtual || "");
           if (bloqueado) {
-            await sendEvolutionText(instance, number, mensagem);
+            await sendText( mensagem);
             sessions.delete(number);
             return NextResponse.json({ ok: true });
           }
         }
 
-        await sendEvolutionText(instance, number, "Certo! Precisa enviar alguma foto ou documento?");
+        await sendText( "Certo! Precisa enviar alguma foto ou documento?");
         session.state = FlowState.PERGUNTAR_ANEXO;
         break;
       }
@@ -305,7 +317,7 @@ Nao inclua mais nada alem dessas duas palavras.`,
         }
         const intent = detectFileIntent(userInput);
         if (intent === "send_file") {
-          await sendEvolutionText(instance, number, "Pode enviar! Manda a foto ou arquivo aqui. 📎");
+          await sendText( "Pode enviar! Manda a foto ou arquivo aqui. 📎");
           session.state = FlowState.COLETAR_MIDIA;
         } else {
           const { buscarAvisosPorCpf } = await import("@/lib/usedata");
@@ -315,7 +327,7 @@ Nao inclua mais nada alem dessas duas palavras.`,
           let resumo = `*Resumo do Registro:*\n\n👤 Nome: ${session.nome}\n🔢 CPF: ${session.cpf}\n📝 Motivo: ${session.motivoAtual}\n`;
           if (session.anexoUrl) resumo += `📎 Anexo: ✅\n`;
           resumo += `\nOs dados estao corretos? (sim/nao)`;
-          await sendEvolutionText(instance, number, resumo);
+          await sendText( resumo);
           session.state = FlowState.CONFIRMAR;
         }
         break;
@@ -331,16 +343,16 @@ Nao inclua mais nada alem dessas duas palavras.`,
           let resumo = `*Resumo do Registro:*\n\n👤 Nome: ${session.nome}\n🔢 CPF: ${session.cpf}\n📝 Motivo: ${session.motivoAtual}\n`;
           if (session.anexoUrl) resumo += `📎 Anexo: ✅\n`;
           resumo += `\nOs dados estao corretos? (sim/nao)`;
-          await sendEvolutionText(instance, number, resumo);
+          await sendText( resumo);
           session.state = FlowState.CONFIRMAR;
         } else if (detectFileIntent(userInput) === "no_file") {
           let resumo = `*Resumo do Registro:*\n\n👤 Nome: ${session.nome}\n🔢 CPF: ${session.cpf}\n📝 Motivo: ${session.motivoAtual}\n`;
           if (session.anexoUrl) resumo += `📎 Anexo: ✅\n`;
           resumo += `\nOs dados estao corretos? (sim/nao)`;
-          await sendEvolutionText(instance, number, resumo);
+          await sendText( resumo);
           session.state = FlowState.CONFIRMAR;
         } else {
-          await sendEvolutionText(instance, number, "Pode enviar o arquivo por aqui! 📎\n\nSe nao quiser, digite *nao*.");
+          await sendText( "Pode enviar o arquivo por aqui! 📎\n\nSe nao quiser, digite *nao*.");
         }
         break;
       }
@@ -351,22 +363,22 @@ Nao inclua mais nada alem dessas duas palavras.`,
           let resumo = `*Resumo do Registro:*\n\n👤 Nome: ${session.nome}\n🔢 CPF: ${session.cpf}\n📝 Motivo: ${session.motivoAtual}\n`;
           resumo += `📎 Anexo: ✅\n`;
           resumo += `\nOs dados estao corretos? (sim/nao)`;
-          await sendEvolutionText(instance, number, resumo);
+          await sendText( resumo);
           return NextResponse.json({ ok: true });
         }
 
         if (["sim", "s", "confirmar", "correto"].some(v => lowerInput.includes(v))) {
           const setores = await getSetores(session.cpf || '');
           if (setores.length === 0) {
-            await sendEvolutionText(instance, number, "Nenhum setor disponivel. Entre em contato com a administracao.");
+            await sendText( "Nenhum setor disponivel. Entre em contato com a administracao.");
             return NextResponse.json({ ok: true });
           }
-          await sendEvolutionText(instance, number, `Pra qual *setor* devo encaminhar?\n\n📍 *Setores:* ${setores.join(", ")}`);
+          await sendText( `Pra qual *setor* devo encaminhar?\n\n📍 *Setores:* ${setores.join(", ")}`);
           session.state = FlowState.COLETAR_SETOR;
         } else {
           session.anexoUrl = undefined;
           session.motivoAtual = undefined;
-          await sendEvolutionText(instance, number, "Tudo bem! Vamos recomecar. Digite seu CPF:");
+          await sendText( "Tudo bem! Vamos recomecar. Digite seu CPF:");
           session.state = FlowState.IDENTIFICACAO_CPF;
         }
         break;
@@ -386,15 +398,15 @@ Nao inclua mais nada alem dessas duas palavras.`,
             let msg = `✅ *Registro concluido!*\n\nSeu chamado *${ticket}* foi criado para *${setor}*.`;
             if (session.anexoUrl) msg += `\n📎 O anexo foi salvo automaticamente.`;
             msg += `\n\nNossa equipe vai analisar em breve.\n\nObrigado pelo contato! 💼`;
-            await sendEvolutionText(instance, number, msg);
+            await sendText( msg);
           } else {
             const fallback = `TKT-FB-${Date.now()}`;
-            await sendEvolutionText(instance, number, `Ops, problema ao registrar. Protocole: *${fallback}*. Equipe notificada.`);
+            await sendText( `Ops, problema ao registrar. Protocole: *${fallback}*. Equipe notificada.`);
           }
           sessions.delete(number);
           return NextResponse.json({ ok: true });
         } else {
-          await sendEvolutionText(instance, number, `Nao encontrei esse setor. Disponiveis: ${setores.join(", ")}.`);
+          await sendText( `Nao encontrei esse setor. Disponiveis: ${setores.join(", ")}.`);
         }
         break;
       }

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Building2, Search, Pencil, Trash2, X, Check, Sparkles, Image, Loader2, Upload, Wrench, Headphones, CalendarCheck } from 'lucide-react'
+import { Plus, Building2, Search, Pencil, Trash2, X, Check, Sparkles, Image, Loader2, Upload, Wrench, Headphones, CalendarCheck, Key, Copy, RotateCw } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { ROLE } from '@prisma/client'
 import { useHeader } from '../layout'
@@ -17,6 +17,7 @@ interface Empresa {
   setores: string[]
   modulos: string[]
   logoUrl?: string | null
+  evolution_token?: string | null
   botName?: string | null
   botPresentation?: string | null
   botServiceDesc?: string | null
@@ -53,6 +54,11 @@ export default function EmpresaPage() {
     botPrompt: '',
   })
   const [gerandoPrompt, setGerandoPrompt] = useState(false)
+
+  const [viewKeyId, setViewKeyId] = useState<string | null>(null)
+  const [regeneratingKey, setRegeneratingKey] = useState(false)
+  const [keyCopied, setKeyCopied] = useState(false)
+  const [currentKey, setCurrentKey] = useState('')
 
   const { setHeader } = useHeader()
 
@@ -534,6 +540,13 @@ export default function EmpresaPage() {
 
                     <div className="flex gap-2 pt-2 border-t flex-wrap" style={{ borderColor: "var(--border-subtle)" }}>
                       <button
+                        onClick={() => { setViewKeyId(empresa.id); setCurrentKey(empresa.evolution_token || ''); setKeyCopied(false) }}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105"
+                        style={{ color: "var(--foreground)", backgroundColor: "var(--surface-elevated)" }}
+                      >
+                        <Key size={14} /> API Key
+                      </button>
+                      <button
                         onClick={() => router.push(`/corporativo/empresa/${empresa.id}/usuarios`)}
                         className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105"
                         style={{ color: "var(--foreground)", backgroundColor: "var(--surface-elevated)" }}
@@ -579,6 +592,140 @@ export default function EmpresaPage() {
           )}
         </div>
       </div>
+
+      {viewKeyId && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
+          onClick={() => setViewKeyId(null)}
+        >
+          <div
+            className="rounded-2xl border shadow-2xl w-full max-w-lg overflow-hidden"
+            style={{
+              backgroundColor: "var(--surface)",
+              borderColor: "var(--border-subtle)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="border-b p-6 flex items-center justify-between"
+              style={{
+                backgroundColor: "var(--surface-elevated)",
+                borderColor: "var(--border-subtle)",
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg" style={{ backgroundColor: "var(--primary)", color: "#fff" }}>
+                  <Key size={20} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold">Chave de API</h3>
+                  <p className="text-xs opacity-50">Evolution API - Apenas GOD visualiza</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setViewKeyId(null)}
+                className="p-2 rounded-lg transition-colors hover:brightness-90"
+                style={{ backgroundColor: "var(--surface)" }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              {currentKey ? (
+                <>
+                  <p className="text-sm opacity-70">
+                    Copie a chave abaixo e configure na instância da Evolution API.
+                  </p>
+                  <div
+                    className="flex items-center gap-2 p-3 rounded-xl border font-mono text-xs break-all"
+                    style={{
+                      backgroundColor: "var(--surface-elevated)",
+                      borderColor: "var(--border-subtle)",
+                    }}
+                  >
+                    <span className="flex-1 select-all">{currentKey}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(currentKey)
+                        setKeyCopied(true)
+                        setTimeout(() => setKeyCopied(false), 2000)
+                      }}
+                      className="p-2 rounded-lg transition-all hover:brightness-110 flex-shrink-0"
+                      style={{ backgroundColor: keyCopied ? "var(--status-completed)" : "var(--primary)", color: "#fff" }}
+                      title="Copiar"
+                    >
+                      <Copy size={16} />
+                    </button>
+                  </div>
+                  {keyCopied && (
+                    <p className="text-xs text-center" style={{ color: "var(--status-completed)" }}>
+                      Copiado!
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setRegeneratingKey(true)
+                      try {
+                        const res = await fetch(`/api/empresa?id=${viewKeyId}`, {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ regenerar_token: true }),
+                        })
+                        if (!res.ok) { toast.error('Erro ao regenerar chave'); return }
+                        const data = await res.json()
+                        setCurrentKey(data.evolution_token)
+                        setKeyCopied(false)
+                        toast.success('Chave regenerada!')
+                        fetchEmpresas()
+                      } catch { toast.error('Erro ao conectar') }
+                      finally { setRegeneratingKey(false) }
+                    }}
+                    disabled={regeneratingKey}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all hover:brightness-110 disabled:opacity-50"
+                    style={{ backgroundColor: "var(--surface-elevated)", color: "var(--foreground)" }}
+                  >
+                    <RotateCw size={14} className={regeneratingKey ? 'animate-spin' : ''} />
+                    {regeneratingKey ? 'Regenerando...' : 'Regenerar Chave'}
+                  </button>
+                </>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-sm opacity-70">
+                    Esta empresa ainda não possui chave de API. Clique abaixo para gerar.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setRegeneratingKey(true)
+                      try {
+                        const res = await fetch(`/api/empresa?id=${viewKeyId}`, {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ regenerar_token: true }),
+                        })
+                        if (!res.ok) { toast.error('Erro ao gerar chave'); return }
+                        const data = await res.json()
+                        setCurrentKey(data.evolution_token)
+                        toast.success('Chave gerada!')
+                        fetchEmpresas()
+                      } catch { toast.error('Erro ao conectar') }
+                      finally { setRegeneratingKey(false) }
+                    }}
+                    disabled={regeneratingKey}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-white transition-all hover:brightness-110 disabled:opacity-50"
+                    style={{ backgroundColor: "var(--primary)" }}
+                  >
+                    {regeneratingKey ? <><Loader2 className="animate-spin" size={16} /> Gerando...</> : <><Key size={16} /> Gerar Chave</>}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {botConfigId && (
         <div

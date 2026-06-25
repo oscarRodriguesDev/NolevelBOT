@@ -275,6 +275,47 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 
 ## Registro de Autoria
 
+### Mudança: Adicionadas colunas evolution_url e evolution_token no schema empresa
+**Autor:** Usuário
+**Arquivos:** `prisma/schema.prisma`
+**Data:** 25/06/2026
+**Descrição:** Adicionados campos `evolution_url` e `evolution_token` (String?) no model `empresa` e executada migration correspondente.
+
+### Mudança: Criado webhook-teste para testar comunicação com Evolution API
+**Autor:** Usuário
+**Arquivos:** `src/app/api/webhook-teste/route.ts`, `src/lib/usedata.ts`
+**Data:** 25/06/2026
+**Descrição:** Criado endpoint `/api/webhook-teste` que recebe eventos da Evolution API. Em eventos `messages.upsert`, tenta responder "teste passed" via API de envio. Em outros eventos, retorna o body recebido para debug. O arquivo `usedata.ts` recebeu ajustes de formatação e reorganização de imports.
+
+### Mudança: Fix webhook-teste — server_url e instance dinâmicos do payload
+**Autor:** Vibecode
+**Arquivos:** `src/app/api/webhook-teste/route.ts`
+**Data:** 25/06/2026
+**Descrição:** webhook-teste agora extrai `server_url` e `instance` diretamente do payload da Evolution API, eliminando valores hardcoded.
+
+### Mudança: sendEvolutionText aceita baseUrl e apiKey opcionais
+**Autor:** Vibecode
+**Arquivos:** `src/lib/usedata.ts`
+**Data:** 25/06/2026
+**Descrição:** Adicionados parâmetros opcionais `baseUrl` e `apiKey` a `sendEvolutionText`. Se ausentes, usa os valores de ambiente (compatível com callers existentes).
+
+### Mudança: webhook-corporativo com server_url e apikey dinâmicos do payload
+**Autor:** Vibecode
+**Arquivos:** `src/app/api/webhook-corporativo/route.ts`
+**Data:** 25/06/2026
+**Descrição:** webhook-corporativo agora extrai `body.server_url` como URL base e `body.apikey` como chave de API do payload. Valida `apikey` contra `empresa.evolution_token`. Criado helper local `sendText()` que encapsula `sendEvolutionText` com os valores dinâmicos, eliminando repetição. Todas as ~20+ chamadas de envio migradas para `sendText()`.
+
+### Mudança: API key automática (32 bytes) na criação de empresa + visualização/regeneração
+**Autor:** Vibecode
+**Arquivos:** `src/app/api/empresa/route.ts`, `src/app/corporativo/(atendimento)/empresa/create/page.tsx`, `src/app/corporativo/(atendimento)/empresa/page.tsx`
+**Data:** 25/06/2026
+**Descrição:**
+- POST `/api/empresa`: gera `evolution_token` de 32 bytes (64 hex) automaticamente via `crypto.randomBytes`
+- GET `/api/empresa`: retorna `evolution_token` apenas para GOD
+- PUT `/api/empresa`: aceita `regenerar_token: true` para gerar nova chave
+- Tela de criação: overlay com a chave gerada + botão copiar após criar empresa
+- Tela de listagem: botão "API Key" em cada card → modal com visualizar, copiar e regenerar chave
+
 ### Mudança: Botão "Concluído" no chamado corporativo faz reload em vez de fechar janela
 **Autor:** Usuário
 **Arquivos:** `src/app/corporativo/chamado/page.tsx`

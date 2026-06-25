@@ -135,6 +135,20 @@ export async function POST(req: NextRequest) {
     const { number, instance, userInput, lowerInput, hasImage, hasDocument, hasMedia } = msg;
     const data = body.data;
 
+    const evolutionUrl = body?.server_url || "";
+    const evolutionApiKey = body?.apikey || "";
+
+    if (evolutionApiKey) {
+      const empresa = await prisma.empresa.findFirst({ where: { evolution_token: evolutionApiKey } });
+      if (!empresa) {
+        console.warn("apikey invalida recebida no webhook-oficina:", evolutionApiKey);
+      }
+    }
+
+    async function sendText(text: string) {
+      return sendEvolutionText(instance, number, text, evolutionUrl, evolutionApiKey);
+    }
+
     const session = getOrCreateSession(sessions, number, {
       state: FlowState.INICIO,
       lastInteraction: Date.now(),
@@ -153,9 +167,7 @@ export async function POST(req: NextRequest) {
 
     switch (session.state) {
       case FlowState.INICIO: {
-        await sendEvolutionText(
-          instance,
-          number,
+        await sendText(
           `🚌 *Oficina - Registro de Defeito*\n\nBem-vindo! Para começar, digite sua *matrícula* (apenas números).`
         );
         session.state = FlowState.IDENTIFICACAO_MATRICULA;
@@ -165,13 +177,13 @@ export async function POST(req: NextRequest) {
       case FlowState.IDENTIFICACAO_MATRICULA: {
         const matricula = userInput.replace(/\D/g, "");
         if (!matricula) {
-          await sendEvolutionText(instance, number, "Digite sua matrícula com apenas números.");
+          await sendText( "Digite sua matrícula com apenas números.");
           return NextResponse.json({ ok: true });
         }
 
         const registro = await prisma.cpfs.findFirst({ where: { cpf: matricula } });
         if (!registro) {
-          await sendEvolutionText(instance, number, "Matrícula não encontrada. Verifique e tente novamente.");
+          await sendText( "Matrícula não encontrada. Verifique e tente novamente.");
           return NextResponse.json({ ok: true });
         }
 
@@ -185,9 +197,7 @@ export async function POST(req: NextRequest) {
             const modulosMsg = activeModules.length > 0
               ? `Sua empresa possui o(s) módulo(s): ${activeModules.join(", ")}.`
               : "Sua empresa não possui módulos de atendimento ativos.";
-            await sendEvolutionText(
-              instance,
-              number,
+            await sendText(
               `Olá, ${registro.nome}! Sua matrícula foi encontrada ✅, mas sua empresa não possui o módulo *OFICINA* ativo.\n\n${modulosMsg}\n\nPor favor, utilize o canal de atendimento correto para o módulo desejado. Se precisar de ajuda, entre em contato com a administração da sua empresa.`
             );
             sessions.delete(number);
@@ -199,23 +209,17 @@ export async function POST(req: NextRequest) {
           ? await buscarAvisosEspecificos(session.empresaId, matricula)
           : "";
 
-        await sendEvolutionText(
-          instance,
-          number,
+        await sendText(
           `Olá, *${registro.nome}!* 😊`
         );
 
         if (avisosEspecificos) {
-          await sendEvolutionText(
-            instance,
-            number,
+          await sendText(
             `*📢 Aviso importante para você:*\n\n${avisosEspecificos}`
           );
         }
 
-        await sendEvolutionText(
-          instance,
-          number,
+        await sendText(
           `Qual a sua *função*? (Ex: Motorista, Fiscal...)`
         );
         session.state = FlowState.COLETAR_FUNCAO;
@@ -224,7 +228,7 @@ export async function POST(req: NextRequest) {
 
       case FlowState.COLETAR_FUNCAO: {
         session.funcao = userInput;
-        await sendEvolutionText(instance, number, "Qual a identificação do veiculo?");
+        await sendText( "Qual a identificação do veiculo?");
         session.state = FlowState.COLETAR_ONIBUS;
         break;
       }
@@ -246,7 +250,7 @@ export async function POST(req: NextRequest) {
           msg = `*📢 Aviso referente a este veículo:*\n\n${avisosVeiculo}\n\n---\n\n` + msg;
         }
 
-        await sendEvolutionText(instance, number, msg);
+        await sendText( msg);
         session.state = FlowState.COLETAR_DEFEITO;
         break;
       }
@@ -257,23 +261,21 @@ export async function POST(req: NextRequest) {
           if (texto) {
             session.defeito = texto;
           } else if (!session.defeito) {
-            await sendEvolutionText(instance, number, "Recebi! Agora me conte qual é o *defeito* para eu registrar.");
+            await sendText( "Recebi! Agora me conte qual é o *defeito* para eu registrar.");
             return NextResponse.json({ ok: true });
           }
           if (session.defeito) {
             const resumo = montarResumo(session);
-            await sendEvolutionText(instance, number, resumo);
+            await sendText( resumo);
             session.state = FlowState.CONFIRMAR;
           }
         } else {
           session.defeito = userInput;
           if (!session.defeito) {
-            await sendEvolutionText(instance, number, "Descreva o *defeito* encontrado no veículo com detalhes:");
+            await sendText( "Descreva o *defeito* encontrado no veículo com detalhes:");
             return NextResponse.json({ ok: true });
           }
-          await sendEvolutionText(
-            instance,
-            number,
+          await sendText(
             "Deseja enviar uma *foto* do problema? (sim/não)"
           );
           session.state = FlowState.PERGUNTAR_ANEXO;
@@ -284,17 +286,15 @@ export async function POST(req: NextRequest) {
       case FlowState.PERGUNTAR_ANEXO: {
         if (hasMedia) {
           await processMedia();
-          await sendEvolutionText(instance, number, montarResumo(session));
+          await sendText( montarResumo(session));
           session.state = FlowState.CONFIRMAR;
         } else if (["sim", "s", "quero", "ok"].some(v => lowerInput.includes(v))) {
-          await sendEvolutionText(
-            instance,
-            number,
+          await sendText(
             "Pode enviar a *foto* aqui mesmo! 📎"
           );
           session.state = FlowState.COLETAR_MIDIA;
         } else {
-          await sendEvolutionText(instance, number, montarResumo(session));
+          await sendText( montarResumo(session));
           session.state = FlowState.CONFIRMAR;
         }
         break;
@@ -303,15 +303,13 @@ export async function POST(req: NextRequest) {
       case FlowState.COLETAR_MIDIA: {
         if (hasMedia) {
           await processMedia();
-          await sendEvolutionText(instance, number, montarResumo(session));
+          await sendText( montarResumo(session));
           session.state = FlowState.CONFIRMAR;
         } else if (["não", "nao", "n", "sem foto", "sem arquivo"].some(v => lowerInput.includes(v))) {
-          await sendEvolutionText(instance, number, montarResumo(session));
+          await sendText( montarResumo(session));
           session.state = FlowState.CONFIRMAR;
         } else {
-          await sendEvolutionText(
-            instance,
-            number,
+          await sendText(
             "Pode enviar a *foto* por aqui mesmo! 📎\n\nSe não quiser, digite *não*."
           );
         }
@@ -321,31 +319,25 @@ export async function POST(req: NextRequest) {
       case FlowState.CONFIRMAR: {
         if (hasMedia) {
           await processMedia();
-          await sendEvolutionText(instance, number, `Os dados estão corretos? (sim/não)`);
+          await sendText( `Os dados estão corretos? (sim/não)`);
           return NextResponse.json({ ok: true });
         }
 
         if (["sim", "s", "confirmar", "correto"].some(v => lowerInput.includes(v))) {
           const setores = await getSetores(session.matricula || '');
           if (setores.length === 0) {
-            await sendEvolutionText(
-              instance,
-              number,
+            await sendText(
               "Nenhum setor disponível para encaminhamento. Entre em contato com a administração."
             );
             return NextResponse.json({ ok: true });
           }
-          await sendEvolutionText(
-            instance,
-            number,
+          await sendText(
             `Pra qual *setor* devo encaminhar?\n\n📍 *Setores disponíveis:* ${setores.join(", ")}`
           );
           session.state = FlowState.COLETAR_SETOR;
         } else {
           session.anexoUrl = undefined;
-          await sendEvolutionText(
-            instance,
-            number,
+          await sendText(
             "Tudo bem! Vamos recomeçar. Digite sua matrícula:"
           );
           session.state = FlowState.IDENTIFICACAO_MATRICULA;
@@ -391,23 +383,19 @@ export async function POST(req: NextRequest) {
             }
             msg += `\n\nNossa equipe vai analisar o mais breve possível.\n\nObrigado pelo relato! 🚌`;
           
-            await sendEvolutionText(instance, number, msg);
+            await sendText( msg);
             sessions.delete(number);
             return NextResponse.json({ ok: true });
           } catch {
             const fallback = `TKT-FB-${Date.now()}`;
-            await sendEvolutionText(
-              instance,
-              number,
+            await sendText(
               `Ops, tive um problema ao registrar. Mas anote o protocolo: *${fallback}*. Nossa equipe foi notificada.`
             );
             sessions.delete(number);
             return NextResponse.json({ ok: true });
           }
         } else {
-          await sendEvolutionText(
-            instance,
-            number,
+          await sendText(
             `Não encontrei esse setor. Os disponíveis são: ${setores.join(", ")}. Qual deles atende seu caso?`
           );
         }

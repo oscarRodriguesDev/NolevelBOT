@@ -1,11 +1,8 @@
 import { NextResponse } from "next/server";
 import { applyRateLimit } from "@/lib/rate-limit";
 
-const EVOLUTION_URL = "https://evolution.nolevel.hiskra.com.br";
-const INSTANCE = "bot";
-
-// Webhook de teste que ecoa mensagem de volta para o remetente
 export async function POST(req: Request) {
+
   const rateLimit = await applyRateLimit(req, "webhook-teste", 60, 60 * 1000)
   if (rateLimit) return rateLimit
 
@@ -15,7 +12,7 @@ export async function POST(req: Request) {
     console.log("WEBHOOK RECEBEU:", JSON.stringify(body));
 
     if (body?.event !== "messages.upsert") {
-      return NextResponse.json({ ok: true, ignored: true });
+      return NextResponse.json({ ok: true, ignored: true, resposta: body });
     }
 
     const remoteJid = body?.data?.key?.remoteJid;
@@ -27,8 +24,19 @@ export async function POST(req: Request) {
       });
     }
 
+    const evolutionUrl = body?.server_url || "";
+    const instance = body?.instance || "";
+
+    if (!evolutionUrl) {
+      return NextResponse.json({ ok: false, error: "server_url não encontrado no payload" });
+    }
+
+    if (!instance) {
+      return NextResponse.json({ ok: false, error: "instance não encontrado no payload" });
+    }
+
     const response = await fetch(
-      `${EVOLUTION_URL}/message/sendText/${INSTANCE}`,
+      `${evolutionUrl}/message/sendText/${instance}`,
       {
         method: "POST",
         headers: {
@@ -49,6 +57,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       ok: true,
+      evolutionUrl,
+      instance,
       status: response.status,
       response: result,
     });

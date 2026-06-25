@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { captureError } from "./app-error";
 
-const baseUrl = process.env.BASE_URL_WP||process.env.NEXT_PUBLIC_BASE_URL_WP;
+const baseUrl = process.env.BASE_URL_WP || process.env.NEXT_PUBLIC_BASE_URL_WP;
 
 
 //filtra avisos que ainda estao dentro do prazo de duracao
@@ -133,8 +133,8 @@ export function saudacao() {
   if (hora >= 5 && hora < 12) return "Bom dia";
   if (hora >= 12 && hora < 18) return "Boa tarde";
   if (hora >= 18 || hora < 5) return "Boa noite";
-  
-  return "Olá"; 
+
+  return "Olá";
 }
 
 
@@ -222,8 +222,8 @@ export async function downloadWhatsAppMedia(mediaMessage: any): Promise<Buffer |
 
     const type = mimetype?.startsWith("image") ? "image"
       : mimetype?.startsWith("video") ? "video"
-      : mimetype?.startsWith("audio") ? "audio"
-      : "document";
+        : mimetype?.startsWith("audio") ? "audio"
+          : "document";
     const info = `WhatsApp ${MEDIA_HKDF_MAP[type] || "Document"} Keys`;
 
     const expanded = Buffer.from(crypto.hkdfSync("sha256", mediaKey, Buffer.alloc(0), info, 112));
@@ -326,13 +326,14 @@ export async function downloadEvolutionMedia(
   }
 }
 
-
 //envio de mensagem para o whatsapp esta ok
-export async function sendEvolutionText(instance: string, number: string, text: string) {
+export async function sendEvolutionText(instance: string, number: string, text: string, baseUrl?: string, apiKey?: string) {
   const typingDelay = Math.min(Math.max(1000, text.length * 20), 3000);
-  await fetch(`${process.env.EVOLUTION_API_URL}/message/sendText/${instance}`, {
+  const url = baseUrl || process.env.EVOLUTION_API_URL;
+  const key = apiKey || process.env.EVOLUTION_API_KEY!;
+  await fetch(`${url}/message/sendText/${instance}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", apikey: process.env.EVOLUTION_API_KEY! },
+    headers: { "Content-Type": "application/json", apikey: key },
     body: JSON.stringify({ number: number.replace("@s.whatsapp.net", ""), text, options: { delay: typingDelay, presence: "composing" } })
   });
 }

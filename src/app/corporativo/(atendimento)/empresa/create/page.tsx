@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { ROLE } from '@prisma/client'
 import Link from 'next/link'
-import { ArrowLeft, Building2, CheckCircle2, Loader2, Upload, Sparkles, Image, Wrench, Headphones, CalendarCheck } from 'lucide-react'
+import { ArrowLeft, Building2, CheckCircle2, Loader2, Upload, Sparkles, Image, Wrench, Headphones, CalendarCheck, Copy, Key } from 'lucide-react'
 import { useHeader } from '../../layout'
 import toast from 'react-hot-toast'
 import { uploadFileDirect } from '@/lib/upload-client'
@@ -53,6 +53,8 @@ export default function CreateEmpresa() {
   const [botServiceDesc, setBotServiceDesc] = useState('')
   const [botAvisosDesc, setBotAvisosDesc] = useState('')
   const [botPrompt, setBotPrompt] = useState('')
+  const [apiKeyGerada, setApiKeyGerada] = useState('')
+  const [copiado, setCopiado] = useState(false)
 
   const { setHeader } = useHeader()
 
@@ -166,9 +168,14 @@ Máximo 400 caracteres. Seja objetivo.`
       })
 
       if (!res.ok) throw new Error()
-      toast.success('Empresa criada com sucesso!')
-      router.push('/corporativo/empresa')
-      router.refresh()
+      const data = await res.json()
+      if (data.evolution_token) {
+        setApiKeyGerada(data.evolution_token)
+      } else {
+        toast.success('Empresa criada com sucesso!')
+        router.push('/corporativo/empresa')
+        router.refresh()
+      }
     } catch (error) {
       toast.error('Erro ao criar empresa. Verifique os dados.')
     } finally {
@@ -534,6 +541,82 @@ Máximo 400 caracteres. Seja objetivo.`
             </div>
           </form>
         </div>
+
+        {apiKeyGerada && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
+          >
+            <div
+              className="rounded-2xl border shadow-2xl w-full max-w-lg overflow-hidden"
+              style={{
+                backgroundColor: "var(--surface)",
+                borderColor: "var(--border-subtle)",
+              }}
+            >
+              <div
+                className="border-b p-6 flex items-center gap-3"
+                style={{
+                  backgroundColor: "var(--surface-elevated)",
+                  borderColor: "var(--border-subtle)",
+                }}
+              >
+                <div className="p-2 rounded-lg" style={{ backgroundColor: "var(--primary)", color: "#fff" }}>
+                  <Key size={20} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold">Empresa Criada!</h3>
+                  <p className="text-xs opacity-50">Guarde a chave de API abaixo</p>
+                </div>
+              </div>
+              <div className="p-6 space-y-4">
+                <p className="text-sm opacity-70">
+                  Esta chave será usada para autenticar sua empresa na Evolution API.
+                  Copie e configure na instância do Evolution.
+                </p>
+                <div
+                  className="flex items-center gap-2 p-3 rounded-xl border font-mono text-xs break-all"
+                  style={{
+                    backgroundColor: "var(--surface-elevated)",
+                    borderColor: "var(--border-subtle)",
+                  }}
+                >
+                  <span className="flex-1 select-all">{apiKeyGerada}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(apiKeyGerada)
+                      setCopiado(true)
+                      setTimeout(() => setCopiado(false), 2000)
+                    }}
+                    className="p-2 rounded-lg transition-all hover:brightness-110 flex-shrink-0"
+                    style={{ backgroundColor: copiado ? "var(--status-completed)" : "var(--primary)", color: "#fff" }}
+                    title="Copiar"
+                  >
+                    <Copy size={16} />
+                  </button>
+                </div>
+                {copiado && (
+                  <p className="text-xs text-center" style={{ color: "var(--status-completed)" }}>
+                    Copiado!
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setApiKeyGerada('')
+                    router.push('/corporativo/empresa')
+                    router.refresh()
+                  }}
+                  className="w-full py-3 rounded-xl font-bold text-white transition-all hover:brightness-110"
+                  style={{ backgroundColor: "var(--primary)" }}
+                >
+                  Ir para Empresas
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   )

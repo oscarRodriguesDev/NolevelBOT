@@ -5,6 +5,12 @@ import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { validateOrError } from '@/lib/validate'
 import { createEmpresaSchema } from '@/lib/validation'
 import { deleteStorageFile } from '@/lib/upload'
+import crypto from "crypto"
+
+// Gera uma chave de API segura de 32 bytes (64 caracteres hex)
+function gerarApiKey(): string {
+  return crypto.randomBytes(32).toString("hex")
+}
 
 // Cria uma nova empresa com dados validados
 export async function POST(req: NextRequest) {
@@ -28,9 +34,11 @@ export async function POST(req: NextRequest) {
     if (body.botAvisosDesc !== undefined) data.botAvisosDesc = body.botAvisosDesc
     if (body.botPrompt !== undefined) data.botPrompt = body.botPrompt
 
+    data.evolution_token = gerarApiKey()
+
     const empresa = await prisma.empresa.create({ data })
 
-    return NextResponse.json(empresa)
+    return NextResponse.json({ ...empresa, evolution_token: data.evolution_token })
   } catch (error) {
     return NextResponse.json({ error: 'Erro ao criar empresa' }, { status: 500 })
   }
@@ -53,21 +61,18 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
       }
 
+      const selectFields: any = {
+        id: true, nome: true, cnpj: true, setores: true, modulos: true,
+        logoUrl: true, botName: true, botPresentation: true,
+        botServiceDesc: true, botAvisosDesc: true, botPrompt: true,
+      }
+      if (session.user.role === "GOD") {
+        selectFields.evolution_token = true
+      }
+
       const empresa = await prisma.empresa.findUnique({
         where: { id },
-        select: {
-          id: true,
-          nome: true,
-          cnpj: true,
-          setores: true,
-          modulos: true,
-          logoUrl: true,
-          botName: true,
-          botPresentation: true,
-          botServiceDesc: true,
-          botAvisosDesc: true,
-          botPrompt: true,
-        },
+        select: selectFields,
       })
 
       if (!empresa) {
@@ -97,17 +102,10 @@ export async function GET(request: Request) {
       if (userRole === "GOD") {
         const empresas = await prisma.empresa.findMany({
           select: {
-            id: true,
-            nome: true,
-            cnpj: true,
-            setores: true,
-            modulos: true,
-            logoUrl: true,
-            botName: true,
-            botPresentation: true,
-            botServiceDesc: true,
-            botAvisosDesc: true,
-            botPrompt: true,
+            id: true, nome: true, cnpj: true, setores: true, modulos: true,
+            logoUrl: true, evolution_token: true, botName: true,
+            botPresentation: true, botServiceDesc: true,
+            botAvisosDesc: true, botPrompt: true,
           },
         })
         return NextResponse.json(empresas)
@@ -199,11 +197,18 @@ export async function PUT(req: NextRequest) {
     if (body.botServiceDesc !== undefined) data.botServiceDesc = body.botServiceDesc
     if (body.botAvisosDesc !== undefined) data.botAvisosDesc = body.botAvisosDesc
     if (body.botPrompt !== undefined) data.botPrompt = body.botPrompt
+    if (body.regenerar_token) data.evolution_token = gerarApiKey()
+
+    const selectFields: any = {
+      id: true, nome: true, cnpj: true, setores: true, modulos: true,
+      logoUrl: true, botName: true, botPrompt: true,
+    }
+    if (body.regenerar_token) selectFields.evolution_token = true
 
     const empresa = await prisma.empresa.update({
       where: { id },
       data,
-      select: { id: true, nome: true, cnpj: true, setores: true, modulos: true, logoUrl: true, botName: true, botPrompt: true },
+      select: selectFields,
     })
 
     return NextResponse.json(empresa)
