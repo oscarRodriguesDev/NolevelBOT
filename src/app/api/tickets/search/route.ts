@@ -5,7 +5,7 @@ import type { Prisma } from '@prisma/client'
 export const dynamic = 'force-dynamic'
 import { getSessionOrFail } from '@/util/permission'
 import { getTicketWhereClause } from '@/lib/rbac'
-import { uploadFile } from '@/lib/upload'
+import { uploadFile, deleteStorageFile } from '@/lib/upload'
 import type { HistoricoItem } from '@/types/chamado'
 import { normalizarStatus } from '@/types/chamado'
 import { ROLE } from '@prisma/client'
@@ -254,6 +254,8 @@ export async function DELETE(req: NextRequest) {
         return NextResponse.json({ error: "Você só pode finalizar chamados do seu setor" }, { status: 403 })
       }
     }
+
+    await deleteStorageFile(chamado.anexoUrl)
 
     await prisma.tickets_fechados.create({
       data: {

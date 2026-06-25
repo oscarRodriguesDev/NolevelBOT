@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import type { Prisma } from '@prisma/client'
 export const dynamic = 'force-dynamic'
-import { uploadFile } from '@/lib/upload'
+import { uploadFile, deleteStorageFile } from '@/lib/upload'
 import { validateOrError } from '@/lib/validate'
 import { createTicketSchema, isValidCPF } from '@/lib/validation'
 import { getSessionOrFail } from '@/util/permission'
@@ -406,6 +406,8 @@ export async function DELETE(req: NextRequest) {
         return NextResponse.json({ error: "Você só pode finalizar chamados do seu setor" }, { status: 403 })
       }
     }
+
+    await deleteStorageFile(chamado.anexoUrl)
 
     await prisma.tickets_fechados.create({
       data: {

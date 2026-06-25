@@ -170,3 +170,27 @@ export async function uploadBuffer({
 
   return data.publicUrl
 }
+
+// Deleta um arquivo do Supabase Storage a partir da URL publica
+export async function deleteStorageFile(url: string | null | undefined): Promise<boolean> {
+  if (!url) return true
+
+  try {
+    const match = url.match(/\/object\/public\/([^/]+)\/(.+)/)
+    if (!match) return false
+
+    const bucket = match[1]
+    const filePath = match[2]
+
+    const { error } = await supabase.storage.from(bucket).remove([filePath])
+    if (error) {
+      console.error("ERRO AO DELETAR ARQUIVO DO STORAGE:", error)
+      return false
+    }
+
+    return true
+  } catch (error) {
+    console.error("ERRO AO DELETAR ARQUIVO DO STORAGE:", error)
+    return false
+  }
+}

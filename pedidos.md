@@ -270,3 +270,15 @@
 - Se relacionado: exibe status do chamado existente e bloqueia.
 - Se for assunto diferente: permite abertura normalmente.
 - Build: ✅ sucesso.
+
+## PED-030: Limpeza de arquivos órfãos no Supabase Storage
+**Data:** 24/06/2026
+**Status:** ✅ Concluído
+**Commit:** `{commit_id}`
+**Descrição:**
+- Criada função `deleteStorageFile(url)` em `src/lib/upload.ts` que extrai bucket + path da URL pública do Supabase e deleta o arquivo do storage.
+- **Empresa DELETE:** Logo é removido do bucket `logo` ao deletar empresa.
+- **Usuário DELETE:** Avatar é removido do bucket `profile` ao deletar usuário.
+- **Ticket DELETE:** Anexo é removido do bucket `anexo` ao finalizar/mover para tickets_fechados.
+- 8 novos testes para `deleteStorageFile` (total: 253 testes).
+- Build: ✅ sucesso.

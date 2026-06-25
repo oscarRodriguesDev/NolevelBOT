@@ -5,7 +5,7 @@ import { createUserSchema, updateUserSchema } from "@/lib/validation"
 import { prisma } from "@/lib/prisma"
 import { hash } from "bcryptjs"
 import { ROLE } from "@prisma/client"
-import { uploadFile } from "@/lib/upload"
+import { uploadFile, deleteStorageFile } from "@/lib/upload"
 import { getSessionOrFail } from "@/util/permission"
 import { limparCPF } from "@/util/limparcpfs"
 import { podeCriarRole, roleParaDisplay, rolesQuePodeCriar } from "@/lib/rbac"
@@ -241,7 +241,7 @@ export async function DELETE(req: NextRequest) {
 
     const targetUser = await prisma.user.findUnique({
       where: { id },
-      select: { id: true, role: true, empresaId: true, setor: true, cpf: true },
+      select: { id: true, role: true, empresaId: true, setor: true, cpf: true, avatarUrl: true },
     })
 
     if (!targetUser) {
@@ -311,6 +311,8 @@ export async function DELETE(req: NextRequest) {
         )
       }
     }
+
+    await deleteStorageFile(targetUser.avatarUrl)
 
     // Execução em transação para garantir que ambos sejam deletados
     await prisma.$transaction(async (tx) => {

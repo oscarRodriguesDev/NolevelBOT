@@ -255,6 +255,24 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 **Data:** 20/06/2026
 **Descrição:** Criado arquivo `data/regras.md` com todas as regras da plataforma: visão geral, regras de cadastro baseadas nas validações Zod (email, senha, CPF, CNPJ), regras de acesso RBAC (papéis, hierarquia, permissões, escopo de dados), sistema de módulos, status de chamados, prioridades, canais de atendimento, segurança e temas. Funciona como manual de uso completo da plataforma.
 
+### Mudança: Version bump 1.0.9 → 1.1.0
+**Autor:** Usuário
+**Arquivos:** `package.json`, `package-lock.json`
+**Data:** 24/06/2026
+**Descrição:** Atualizada versão do projeto de 1.0.9 para 1.1.0.
+
+### Mudança: Limpeza de arquivos órfãos no Supabase Storage (PED-030)
+**Autor:** Vibecode
+**Arquivos:** `src/lib/upload.ts`, `src/app/api/empresa/route.ts`, `src/app/api/users/route.ts`, `src/app/api/tickets/route.ts`, `src/app/api/tickets/search/route.ts`, `src/__tests__/upload.test.ts`
+**Data:** 24/06/2026
+**Descrição:**
+- Criada função `deleteStorageFile(url)` em `src/lib/upload.ts`: extrai bucket + filePath da URL pública do Supabase e chama `supabase.storage.from(bucket).remove([filePath])`. Tolerante a null/undefined/empty.
+- **Empresa DELETE:** Antes da transaction, lê `logoUrl` e deleta do bucket `logo`.
+- **Usuário DELETE:** Adicionado `avatarUrl` ao select, chamada a `deleteStorageFile` antes da transaction.
+- **Ticket DELETE** (tickets/route.ts + tickets/search/route.ts): `deleteStorageFile(chamado.anexoUrl)` antes de mover para `tickets_fechados`.
+- 8 novos testes para `deleteStorageFile` (null, undefined, vazio, URL válida com bucket anexo/profile/logo, erro do Supabase, URL inválida).
+- Build: ✅ sucesso. Testes: 253 passando (12 arquivos).
+
 ## Registro de Autoria
 
 ### Mudança: Botão "Concluído" no chamado corporativo faz reload em vez de fechar janela

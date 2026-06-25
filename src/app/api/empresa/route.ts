@@ -4,6 +4,7 @@ import { getSessionOrFail } from '@/util/permission'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { validateOrError } from '@/lib/validate'
 import { createEmpresaSchema } from '@/lib/validation'
+import { deleteStorageFile } from '@/lib/upload'
 
 // Cria uma nova empresa com dados validados
 export async function POST(req: NextRequest) {
@@ -230,6 +231,8 @@ export async function DELETE(req: NextRequest) {
     if (!empresaExiste) {
       return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 })
     }
+
+    await deleteStorageFile(empresaExiste.logoUrl)
 
     await prisma.$transaction([
       prisma.avisos.deleteMany({ where: { empresaId: id } }),
