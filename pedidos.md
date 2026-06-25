@@ -260,13 +260,13 @@
 - Criado `gerar-memoria.ts`: gera resumo de 1-2 frases via `gpt-4o-mini` e salva em `resumoPersona`
 - Build: ✅ sucesso.
 
-## PED-029: Bloqueio de chamados repetitivos no webhook-corporativo
+## PED-029: Bloqueio inteligente de chamados repetitivos no webhook-corporativo
 **Data:** 24/06/2026
 **Status:** ✅ Concluído
-**Commit:** `98b3c79`
+**Commit:** `<PENDENTE>`
 **Descrição:**
-- Adicionada função `verificarChamadosAbertos(cpf)` que consulta os últimos 5 chamados do CPF no banco.
-- **Bloqueio 1:** Se houver chamado com status aberto (NOVO/aberto/em_atendimento/aguardando/EM_ANDAMENTO), o bot exibe os detalhes do chamado e encerra o fluxo — impede abertura de novo chamado.
-- **Bloqueio 2:** Se o último chamado foi fechado há menos de 3 dias, o bot informa o usuário para aguardar o prazo.
-- A verificação ocorre no estado `MENU_PRINCIPAL` antes de ir para `COLETAR_MOTIVO`, economizando tokens.
+- Substituída `verificarChamadosAbertos` por `verificarChamadoRelacionado(cpf, motivo)`.
+- Usuário descreve o problema, IA analisa se o motivo é **relacionado** a algum chamado já aberto.
+- Se relacionado: exibe status do chamado existente e bloqueia.
+- Se for assunto diferente: permite abertura normalmente.
 - Build: ✅ sucesso.
