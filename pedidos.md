@@ -274,7 +274,7 @@
 ## PED-030: Limpeza de arquivos órfãos no Supabase Storage
 **Data:** 24/06/2026
 **Status:** ✅ Concluído
-**Commit:** `{commit_id}`
+**Commit:** `2aa2d10`
 **Descrição:**
 - Criada função `deleteStorageFile(url)` em `src/lib/upload.ts` que extrai bucket + path da URL pública do Supabase e deleta o arquivo do storage.
 - **Empresa DELETE:** Logo é removido do bucket `logo` ao deletar empresa.
