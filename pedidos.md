@@ -263,7 +263,7 @@
 ## PED-029: Bloqueio inteligente de chamados repetitivos no webhook-corporativo
 **Data:** 24/06/2026
 **Status:** ✅ Concluído
-**Commit:** `<PENDENTE>`
+**Commit:** `0fa239c`
 **Descrição:**
 - Substituída `verificarChamadosAbertos` por `verificarChamadoRelacionado(cpf, motivo)`.
 - Usuário descreve o problema, IA analisa se o motivo é **relacionado** a algum chamado já aberto.
