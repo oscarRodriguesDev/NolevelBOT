@@ -637,6 +637,16 @@ Sistema de tema claro/escuro com CSS variables em `globals.css`:
 - `/api/upload` mantido para compatibilidade com possíveis callers não mapeados.
 - Build: ✅ sucesso.
 
+### Mudança: Bloqueio inteligente de chamados repetitivos no webhook-corporativo (refinado)
+**Autor:** Vibecode
+**Arquivos:** `src/app/api/webhook-corporativo/route.ts`
+**Data:** 24/06/2026
+**Descrição:**
+- `verificarChamadoRelacionado` agora carrega memória do usuário (`getMemoria(cpf)`) e passa contexto completo (setor, status, data, descrição) para a IA.
+- Prompt enriquecido instrui a IA a considerar tipo de problema, setor, sintomas e continuidade.
+- Fix: verificação movida para ANTES do bloco `semAvisos`, rodando em todos os fluxos (com ou sem avisos).
+- Build: ✅ sucesso.
+
 ### Mudança: Bloqueio inteligente de chamados repetitivos no webhook-corporativo
 **Autor:** Vibecode
 **Arquivos:** `src/app/api/webhook-corporativo/route.ts`

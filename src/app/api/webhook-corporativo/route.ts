@@ -85,14 +85,32 @@ export async function POST(req: NextRequest) {
 
       if (chamados.length === 0) return { bloqueado: false, mensagem: "" };
 
-      const resumo = chamados.map((t, i) =>
-        `Chamado ${i + 1}: ticket ${t.ticket}, descricao: "${t.descricao.substring(0, 200)}"`
+      const memoriaUsuario = await getMemoria(cpf);
+
+      const resumoChamados = chamados.map((t, i) =>
+        `Chamado ${i + 1}: ticket=${t.ticket}, setor=${t.setor}, status=${statusLabels[t.status] || t.status}, abertura=${new Date(t.createdAt).toLocaleDateString("pt-BR")}, descricao="${t.descricao.substring(0, 300)}"`
       ).join("\n");
 
       const analise = await botIA(
-        { ...session, state: FlowState.COLETAR_MOTIVO },
+        { ...session, state: FlowState.COLETAR_MOTIVO, memoria: memoriaUsuario || session.memoria },
         motivo,
-        `Novo motivo relatado pelo usuario: "${motivo}"\n\nChamados abertos do usuario:\n${resumo}\n\nAnalise se o novo motivo esta RELACIONADO a algum dos chamados abertos (mesmo assunto, mesmo problema). Se estiver relacionado, retorne APENAS "RELACIONADO". Se for um assunto DIFERENTE, retorne APENAS "DIFERENTE".`,
+        `DADOS DO USUARIO:
+Nome: ${session.nome}
+Memoria registrada: ${memoriaUsuario || session.memoria || "nenhuma"}
+Novo motivo relatado: "${motivo}"
+
+CHAMADOS ABERTOS DO USUARIO:
+${resumoChamados}
+
+INSTRUCAO: Analise com cuidado se o novo motivo relatado tem RELACAO com algum chamado aberto. Considere:
+- Mesmo tipo de problema ou assunto
+- Mesmo setor envolvido
+- Mesma descricao ou sintoma
+- Continuacao de um assunto anterior
+
+Se for sobre o MESMO ASSUNTO de um chamado ja aberto, retorne APENAS: RELACIONADO
+Se for um assunto COMPLETAMENTE DIFERENTE, retorne APENAS: DIFERENTE
+Nao inclua mais nada alem dessas duas palavras.`,
         avisos
       );
 
@@ -252,22 +270,18 @@ export async function POST(req: NextRequest) {
 
         const semAvisos = todosAvisos === "Sem avisos." || todosAvisos === "Sem avisos no momento.";
 
-        if (semAvisos) {
-          await sendEvolutionText(instance, number, "Certo! Precisa enviar alguma foto ou documento?");
-          session.state = FlowState.PERGUNTAR_ANEXO;
-          break;
-        }
+        if (!semAvisos) {
+          const analise = await botIA(
+            session, userInput,
+            `Analise o motivo e os avisos. Se o aviso resolver, retorne "AVISO_RESOLVE:" + mensagem. Senao, retorne "PROSSEGUIR_FLUXO".`,
+            todosAvisos
+          );
 
-        const analise = await botIA(
-          session, userInput,
-          `Analise o motivo e os avisos. Se o aviso resolver, retorne "AVISO_RESOLVE:" + mensagem. Senao, retorne "PROSSEGUIR_FLUXO".`,
-          todosAvisos
-        );
-
-        if (analise.startsWith("AVISO_RESOLVE:")) {
-          await sendEvolutionText(instance, number, analise.replace("AVISO_RESOLVE:", "").trim());
-          sessions.delete(number);
-          break;
+          if (analise.startsWith("AVISO_RESOLVE:")) {
+            await sendEvolutionText(instance, number, analise.replace("AVISO_RESOLVE:", "").trim());
+            sessions.delete(number);
+            break;
+          }
         }
 
         if (session.cpf) {
