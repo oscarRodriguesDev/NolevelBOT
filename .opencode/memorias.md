@@ -26,6 +26,7 @@ Registro de decisões e alterações do projeto.
 | 2026-08-01 | F4 concluída: `docs/integracao-whatsapp.md` (guia de configuração para clientes — Meta Cloud API + Evolution API, token secreto, verificação e troubleshooting). `evolution-provider.ts`: extractToken prioriza `?token=` na URL (universal) > header `x-webhook-token` > `body.apikey` — importante porque a Evolution envia o apikey da instância no body, que NÃO é o token NoLevel. 281 testes passando, build limpo | VIBECODE |
 | 2026-08-02 | UI modais da tela de empresas (visão GOD): modal "Integração WhatsApp" deixou de ser `max-w-lg overflow-hidden` (crescia sem limite, sem scroll) e passou a `max-w-2xl max-h-[92vh] flex flex-col` com **header fixo** (`shrink-0`) e **scroll apenas no conteúdo** (`overflow-y-auto flex-1`). Modal "Configuração do Assistente" refatorado no mesmo padrão. Botões de ação ficam na área rolável (última seção). Build limpo | VIBECODE |
 | 2026-08-02 | Modal Integração WhatsApp (visão GOD): URLs do webhook agora são **filtradas pelos módulos adquiridos** pela empresa (`currentModulos` do estado, mapeamento `WEBHOOKS_POR_MODULO`: CORPORATIVO→webhook-corporativo, OFICINA→webhook-oficina, COMERCIAL→webhook-comercial). Empresa sem módulos ativos vê aviso em vez das URLs. Build limpo | VIBECODE |
+| 2026-08-02 | `docs/integracao-whatsapp.md`: adicionada nota de **disponibilidade por módulo** (só são liberadas as URLs dos webhooks dos módulos adquiridos) | VIBECODE |
 
 <!-- Migrado de memorias.md (raiz) -->
 # MEMÓRIAS DO PROJETO — NolevelBOT

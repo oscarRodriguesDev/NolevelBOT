@@ -42,6 +42,8 @@ Sua API de WhatsApp ──(WhatsApp)──▶ Cliente
 | Oficina (Operação) | `https://app.nolevel.com.br/api/webhook-oficina` |
 | Comercial (Leads) | `https://app.nolevel.com.br/api/webhook-comercial` |
 
+> ⚠️ **Disponibilidade por módulo:** só são liberadas as URLs dos **módulos que sua empresa adquiriu**.
+> Empresas sem um módulo não conseguem receber mensagens daquele fluxo.
 > Troque `app.nolevel.com.br` pelo domínio real da plataforma. As URLs exatas aparecem no painel
 > **Empresas → Integração WhatsApp**.
 
