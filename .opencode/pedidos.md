@@ -13,13 +13,26 @@ Registro de pedidos do usuário com ID do commit.
 
 ## PED-033: Migração para webhook agnóstico (BYO API WhatsApp) — NoLevel sai da infra de WhatsApp
 **Data:** 01/08/2026
-**Status:** 🔄 Em andamento — Fase 1 concluída
-**Commit:** `bbc7384` (F1)
+**Status:** 🔄 Em andamento — Fases 1 a 3 concluídas (F4 = doc/validação em runtime)
+**Commits:** `bbc7384` (F1) · `4c0440e` (F2) · `98207df` (registro F2)
 **Decisões do usuário:**
 - Sem clientes ativos → **migração total** (sem convivência em paralelo)
 - NoLevel passa a servir **apenas o webhook**: o cliente usa a própria API de WhatsApp (Evolution self-hosted, Meta Cloud API ou outra qualquer)
 - NoLevel continua fornecendo: sistema de chamados/tickets + bot inteligente (IA)
 - Saída definitiva da responsabilidade de hospedar/gerenciar instâncias WhatsApp
+- Empresas que usam o webhook precisam de **token secreto** (sem token → 401)
+
+**Fase 3 (commit `aa6...`):**
+- `MetaProvider` em `src/lib/whatsapp/meta-provider.ts` (Meta Cloud API):
+  - Parse do payload (`entry[].changes[].value.messages[]`); ignora status
+  - Verificação do webhook via GET (`hub.mode`/`hub.verify_token`/`hub.challenge`) — challenge só é devolvido se o verify_token bater com o token de uma empresa (403 caso contrário)
+  - Envio via Graph API `POST /{phone_number_id}/messages` (Bearer = `api_key` da empresa)
+  - Download de mídia via `GET /{media_id}` → URL assinada → bytes
+  - **Autenticação do webhook**: token via `?token=` na URL do webhook (a Meta não permite header custom) ou `x-webhook-token`; sem token → 401
+- `registry.ts`: detecção de provider por header `x-whatsapp-provider` OU **heurística do payload** (cada provider reconhece o próprio formato)
+- `handleWebhookVerify(req)` no registry: delega o handshake GET ao provider adequado
+- Webhooks oficina/corporativo/comercial: export `GET` adicionado
+- 13 testes novos (parse, extractToken por query/header, 401, anti-falsificação, handshake GET 200/403/405); suíte **279 testes** passando; build limpo
 
 **Fase 2 (commit `4c0440e`):**
 - Schema (autorizado): colunas `provider` (default `EVOLUTION`) e `api_key` na `empresa`; `evolution_url`/`evolution_token` reaproveitados como URL da API do cliente e token do webhook

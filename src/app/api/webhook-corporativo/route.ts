@@ -11,7 +11,7 @@ import {
   webhookError,
 } from "@/lib/webhook-core";
 import { FlowState, botIA, detectFileIntent, type CorporateSession } from "@/lib/useIA-corporativa";
-import { handleWebhook } from "@/lib/whatsapp/registry";
+import { handleWebhook, handleWebhookVerify } from "@/lib/whatsapp/registry";
 
 const menuString = "1. Abrir Chamado, 2. Consultar Chamado, 3. Sair";
 
@@ -24,6 +24,11 @@ const statusLabels: Record<string, string> = {
 type WebhookSession = CorporateSession & { pendingState?: string };
 
 const sessions = new TTLMap<string, WebhookSession>(120 * 60 * 1000);
+
+// Verificação do webhook via GET (ex: assinatura da Meta Cloud API)
+export async function GET(req: NextRequest) {
+  return handleWebhookVerify(req);
+}
 
 export async function POST(req: NextRequest) {
   const r = await handleWebhook(req, "webhook-corporativo");

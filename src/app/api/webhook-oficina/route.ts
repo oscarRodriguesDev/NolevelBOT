@@ -10,7 +10,7 @@ import {
   saveSession,
   webhookError,
 } from "@/lib/webhook-core";
-import { handleWebhook } from "@/lib/whatsapp/registry";
+import { handleWebhook, handleWebhookVerify } from "@/lib/whatsapp/registry";
 
 const FlowState = {
   INICIO: "inicio",
@@ -38,6 +38,11 @@ type Session = {
 };
 
 const sessions = new TTLMap<string, Session>(120 * 60 * 1000);
+
+// Verificação do webhook via GET (ex: assinatura da Meta Cloud API)
+export async function GET(req: NextRequest) {
+  return handleWebhookVerify(req);
+}
 
 // Busca avisos especificos para uma matricula dentro de uma empresa
 async function buscarAvisosEspecificos(

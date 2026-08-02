@@ -46,6 +46,9 @@ export interface WhatsAppProvider {
   /** Baixa a mídia (imagem/documento) da mensagem e devolve o buffer. */
   downloadMedia(ctx: ProviderContext, message: WhatsAppMessage): Promise<Buffer | null>;
 
+  /** Verifica o webhook (ex: challenge `hub.challenge` da Meta). Retorna null se não se aplica a este provider. */
+  verifyWebhook?(req: NextRequest): Promise<Response | null>;
+
   /** Extrai o token/credencial que identifica a empresa no webhook. */
   extractToken(body: unknown, req: NextRequest): string | null;
 }

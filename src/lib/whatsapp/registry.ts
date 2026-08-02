@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { applyRateLimit, checkRateLimit } from "@/lib/rate-limit";
 import type { WhatsAppProvider, WhatsAppMessage, ProviderContext } from "./types";
 import { evolutionProvider } from "./evolution-provider";
+import { metaProvider } from "./meta-provider";
 
 // ─────────────────────────────────────────────────────────────
 // Registry de provedores + rota comum dos webhooks
@@ -24,6 +25,9 @@ export function getProvider(name: string): WhatsAppProvider | undefined {
 // registra os providers padrão (idempotente no carregamento)
 if (!registry.has(evolutionProvider.name)) {
   registerProvider(evolutionProvider);
+}
+if (!registry.has(metaProvider.name)) {
+  registerProvider(metaProvider);
 }
 
 export interface WebhookHandleResult {
@@ -57,11 +61,25 @@ export async function handleWebhook(
     return { ok: false, response: NextResponse.json({ ok: true }) };
   }
 
-  // detecta o provedor pelo header (opcional); default: evolution
-  const headerProvider = (req.headers.get("x-whatsapp-provider") || "evolution").toLowerCase();
-  const provider = getProvider(headerProvider) || getProvider("evolution")!;
+  // detecta o provedor: header explícito (opcional) ou heurística do payload
+  // (a Meta, por exemplo, não permite header custom — reconhecemos pelo body)
+  const headerProvider = (req.headers.get("x-whatsapp-provider") || "").toLowerCase();
+  let provider: WhatsAppProvider | undefined = headerProvider
+    ? getProvider(headerProvider)
+    : undefined;
+  if (!provider) {
+    for (const p of registry.values()) {
+      if (p.parseEvent(body)) {
+        provider = p;
+        break;
+      }
+    }
+  }
 
   // parse inicial — eventos ignoráveis respondem ok sem exigir token
+  if (!provider) {
+    return { ok: false, response: NextResponse.json({ ok: true }) };
+  }
   const parsed = provider.parseEvent(body);
   if (!parsed || !parsed.message) {
     return { ok: false, response: NextResponse.json({ ok: true }) };
@@ -115,4 +133,21 @@ export async function handleWebhook(
     provider: effectiveProvider,
     empresaId: empresa.id,
   };
+}
+
+/**
+ * Verificação de webhook via GET (ex: assinatura da Meta Cloud API).
+ * Delega ao primeiro provider que reconhecer a requisição
+ * (o challenge só é respondido se o verify_token bater com uma empresa).
+ */
+export async function handleWebhookVerify(req: NextRequest): Promise<NextResponse> {
+  for (const p of registry.values()) {
+    if (typeof p.verifyWebhook === "function") {
+      const res = await p.verifyWebhook(req);
+      if (res) {
+        return new NextResponse(res.body, { status: res.status, headers: res.headers });
+      }
+    }
+  }
+  return NextResponse.json({ error: "Verificação não suportada." }, { status: 405 });
 }
