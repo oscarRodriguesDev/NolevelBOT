@@ -3,6 +3,7 @@ import { applyRateLimit } from "@/lib/rate-limit"
 import { TTLMap } from "@/lib/ttl-map"
 import { getSetores } from "@/lib/setores"
 import { botIA4 as botIA, FlowState, UserSession, detectFileIntent } from "@/lib/useIA4"
+import { getEmpresaBotInfo, planoTemBotIA, botScriptResposta } from "@/lib/bot-script"
 import { validarCpf, StatusChamado, enviarChamado, buscarAvisos, buscarAvisosPorCpf, generateRandomTicket } from "@/lib/usedata"
 
 const menuString = "1. Abrir Chamado, 2. Consultar Chamado, 3. Sair"
@@ -19,7 +20,34 @@ const statusLabels: Record<string, string> = {
   FECHADO: "🔒 Fechado",
 }
 
-const sessions = new TTLMap<string, UserSession & { pendingState?: string; setorAtual?: string; modulo?: string }>(120 * 60 * 1000)
+const sessions = new TTLMap<string, UserSession & { pendingState?: string; setorAtual?: string; modulo?: string; planoBot?: string; nomeEmpresaBot?: string }>(120 * 60 * 1000)
+
+// Decide entre IA e script conforme o plano da empresa (SaaS).
+// Cacheia o plano na sessão após o CPF ser identificado.
+async function responderBot(
+  session: UserSession & { planoBot?: string; nomeEmpresaBot?: string },
+  userInput: string,
+  instrucaoEtapa: string,
+  avisos: string
+): Promise<string> {
+  // Antes de identificar o CPF não sabemos a empresa — usa IA padrão.
+  if (!session.cpf) {
+    return botIA(session, userInput, instrucaoEtapa, avisos)
+  }
+
+  if (!session.planoBot) {
+    const info = await getEmpresaBotInfo(session.cpf)
+    session.planoBot = info.plano
+    session.nomeEmpresaBot = info.nomeEmpresa || undefined
+  }
+
+  const temIA = await planoTemBotIA(session.planoBot as any)
+  if (!temIA) {
+    return botScriptResposta(session.state, session.nome, session.nomeEmpresaBot)
+  }
+
+  return botIA(session, userInput, instrucaoEtapa, avisos)
+}
 
 export interface ChatConfig {
   rateLimitKey: string
@@ -73,7 +101,7 @@ export async function handleChatRequest(req: NextRequest, config: ChatConfig) {
     switch (session.state) {
       case FlowState.INICIO: {
         if (!config.hasInicioFlow) break
-        const resp = await botIA(
+        const resp = await responderBot(
           session,
           userInput,
           `O usuário acabou de chegar. Dê as boas-vindas e peça OBRIGATORIAMENTE o CPF para começar o 
@@ -117,7 +145,7 @@ export async function handleChatRequest(req: NextRequest, config: ChatConfig) {
               ? `CPF ${cleanCPF} validado. Nome: ${session.nome}. Existe um aviso importante específico para você:\n${avisos}\n\nAção OBRIGATÓRIA: Apresente-se com seu nome e o nome da sua empresa. Em seguida, informe o aviso de forma HUMANIZADA e ACOLHEDORA. Depois, apresente as opções: ${menuString}. Tudo em uma única mensagem.`
               : `CPF ${cleanCPF} encontrado. Existe um aviso importante:\n${avisos}\n\nAção OBRIGATÓRIA: Apresente-se com seu nome e o nome da sua empresa. Em seguida, informe o aviso de forma HUMANIZADA e ACOLHEDORA. Depois, pergunte educadamente como o usuário gostaria de ser chamado. Tudo em uma única mensagem.`;
 
-            const apresentacao = await botIA(session, userInput, instrucaoAviso, avisos)
+            const apresentacao = await responderBot(session, userInput, instrucaoAviso, avisos)
             session.state = session.nome ? FlowState.MENU_PRINCIPAL : FlowState.IDENTIFICACAO_NOME
             return NextResponse.json({ reply: apresentacao })
           }
@@ -126,7 +154,7 @@ export async function handleChatRequest(req: NextRequest, config: ChatConfig) {
             ? `CPF ${cleanCPF} validado. O nome dele é ${session.nome}. OBRIGATÓRIO: Apresente-se com seu nome e o nome da sua empresa. Depois, saude o usuário e apresente as opções: ${menuString}`
             : `CPF ${cleanCPF} encontrado. OBRIGATÓRIO: Apresente-se com seu nome e o nome da sua empresa. Depois, pergunte como o usuário gostaria de ser chamado.`;
 
-          const resposta = await botIA(session, userInput, instrucao, avisos)
+          const resposta = await responderBot(session, userInput, instrucao, avisos)
           session.state = session.nome ? FlowState.MENU_PRINCIPAL : FlowState.IDENTIFICACAO_NOME
           return NextResponse.json({ reply: resposta })
         } else {
@@ -136,7 +164,7 @@ export async function handleChatRequest(req: NextRequest, config: ChatConfig) {
 
       case FlowState.IDENTIFICACAO_NOME: {
         session.nome = userInput
-        const resposta = await botIA(
+        const resposta = await responderBot(
           session,
           userInput,
           `Agora que já sabe o nome (${userInput}), apresente o menu: ${menuString}`,
@@ -181,7 +209,7 @@ export async function handleChatRequest(req: NextRequest, config: ChatConfig) {
           return NextResponse.json({ reply: `📋 *SEUS CHAMADOS*\n\n${lista}\n\nPosso ajudar com algo mais?\n\n${menuString}` })
         }
 
-        const resposta = await botIA(
+        const resposta = await responderBot(
           session,
           userInput,
           `Tente identificar o que ele quer, caso não consiga encerre amigavelmente. Não faça suposições, apenas encerre o atendimento.`,
@@ -210,7 +238,7 @@ export async function handleChatRequest(req: NextRequest, config: ChatConfig) {
 
         const instrucaoColetar = config.coletarMotivoInstruction || defaultColetarMotivoInstruction
 
-        const analiseIA = await botIA(
+        const analiseIA = await responderBot(
           session,
           userInput,
           instrucaoColetar,
@@ -237,7 +265,7 @@ export async function handleChatRequest(req: NextRequest, config: ChatConfig) {
 
       case FlowState.VERIFICAR_AVISOS: {
         const todosAvisos = await buscarAvisos(session.cpf, req)
-        const analiseIA = await botIA(
+        const analiseIA = await responderBot(
           session,
           userInput,
           `O usuário respondeu após ter sido informado sobre um aviso. Verifique a resposta.
@@ -269,7 +297,7 @@ export async function handleChatRequest(req: NextRequest, config: ChatConfig) {
           session.nome = userInput
         }
 
-        const resposta = await botIA(
+        const resposta = await responderBot(
           session,
           userInput,
           `Apresente-se com o SEU NOME e o NOME DA SUA EMPRESA e apresente as opções: ${menuString}`,
@@ -331,7 +359,7 @@ export async function handleChatRequest(req: NextRequest, config: ChatConfig) {
           }
         }
 
-        const resp = await botIA(
+        const resp = await responderBot(
           session, userInput,
           `O usuário respondeu sobre enviar foto. Se ele disse sim ou algo positivo, retorne apenas "SIM". Se disse não ou algo negativo, retorne apenas "NAO".`,
           avisos

@@ -22,6 +22,29 @@ enum modulo{
   COMERCIAL
 }
 
+// Planos dinâmicos do SaaS — criados/ editados pelo GOD
+model planos {
+  id                 String   @id @default(uuid())
+  slug               String   @unique      // ex.: "start", "profissional"
+  nome               String                 // ex.: "Start"
+  preco              Float                  // valor mensal
+  descricao          String   @default("")
+  maxModulos         Int      @default(-1)  // -1 = ilimitado (todos)
+  maxUsuarios        Int      @default(5)
+  botIA              Boolean  @default(false)
+  canais             String[] @default([])  // ["app", "whatsapp", "telegram"]
+  modulosAutomaticos String[] @default([])  // [] = escolha livre; preenchido = todos
+  ativo              Boolean  @default(true)
+  destaque           Boolean  @default(false) // badge "Recomendado"
+  ordem              Int      @default(0)
+  extincaoEm         DateTime?               // quando o plano será extinto (30 dias após solicitação)
+  extincaoAvisadaEm  DateTime?               // quando o aviso de extinção foi disparado
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([ativo, ordem])
+}
+
 // prisma/schema.prisma
 model empresa {
   id              String    @id @default(uuid())
@@ -44,6 +67,7 @@ model empresa {
   avisos          avisos[]
   modulos         modulo[]
   databaseUrl     String? // URL de conexão específica para esta empresa
+  plano           String   @default("start") // slug do plano de assinatura (tabela planos)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 

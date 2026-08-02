@@ -4,6 +4,17 @@ import { prisma } from "@/lib/prisma";
 import { getServerSessionRBAC } from "@/lib/rbac-server";
 import OpenAI from "openai";
 
+// GOD acessa qualquer empresa; ADMIN/GESTOR apenas a própria.
+async function autorizarEmpresa(session: any, empresaId?: string | null): Promise<NextResponse | null> {
+  if (!empresaId) {
+    return NextResponse.json({ error: "empresaId é obrigatório" }, { status: 400 })
+  }
+  if (session.role !== "GOD" && session.empresaId !== empresaId) {
+    return NextResponse.json({ error: "Você só pode acessar a sua empresa" }, { status: 403 })
+  }
+  return null
+}
+
 // Retorna instancia do cliente OpenAI configurada
 function getOpenAI(): OpenAI {
   return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -13,12 +24,14 @@ function getOpenAI(): OpenAI {
 export async function GET(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "empresa-prompt", 30, 60 * 1000)
   if (rateLimit) return rateLimit
-  const { session, error } = await getServerSessionRBAC(["GOD"]);
+  const { session, error } = await getServerSessionRBAC(["GOD", "ADMIN", "GESTOR"]);
   if (error) return error;
 
   const { searchParams } = new URL(req.url);
   const empresaId = searchParams.get("empresaId");
 
+  const negado = await autorizarEmpresa(session, empresaId)
+  if (negado) return negado
   if (!empresaId) {
     return NextResponse.json({ error: "empresaId é obrigatório" }, { status: 400 });
   }
@@ -52,7 +65,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "empresa-prompt", 20, 60 * 1000)
   if (rateLimit) return rateLimit
-  const { session, error } = await getServerSessionRBAC(["GOD"]);
+  const { session, error } = await getServerSessionRBAC(["GOD", "ADMIN", "GESTOR"]);
   if (error) return error;
 
   try {
@@ -63,6 +76,11 @@ export async function POST(req: NextRequest) {
 
     if (!empresaId) {
       return NextResponse.json({ error: "empresaId é obrigatório" }, { status: 400 });
+    }
+
+    if (!isPreview) {
+      const negado = await autorizarEmpresa(session, empresaId)
+      if (negado) return negado
     }
 
     let nomeEmpresa = "Empresa";
@@ -150,13 +168,15 @@ Regras:
 export async function PUT(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "empresa-prompt", 20, 60 * 1000)
   if (rateLimit) return rateLimit
-  const { session, error } = await getServerSessionRBAC(["GOD"]);
+  const { session, error } = await getServerSessionRBAC(["GOD", "ADMIN", "GESTOR"]);
   if (error) return error;
 
   try {
     const body = await req.json();
     const { empresaId, botPrompt, botName, botPresentation, botServiceDesc, botAvisosDesc } = body;
 
+    const negado = await autorizarEmpresa(session, empresaId)
+    if (negado) return negado
     if (!empresaId) {
       return NextResponse.json({ error: "empresaId é obrigatório" }, { status: 400 });
     }
@@ -192,13 +212,15 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const rateLimit = await applyRateLimit(req, "empresa-prompt", 15, 60 * 1000)
   if (rateLimit) return rateLimit
-  const { session, error } = await getServerSessionRBAC(["GOD"]);
+  const { session, error } = await getServerSessionRBAC(["GOD", "ADMIN", "GESTOR"]);
   if (error) return error;
 
   try {
     const { searchParams } = new URL(req.url);
     const empresaId = searchParams.get("empresaId");
 
+    const negado = await autorizarEmpresa(session, empresaId)
+    if (negado) return negado
     if (!empresaId) {
       return NextResponse.json({ error: "empresaId é obrigatório" }, { status: 400 });
     }

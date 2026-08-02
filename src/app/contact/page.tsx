@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
+import { LuArrowRight } from "react-icons/lu"
 import { ThemeToggle } from "../components/theme-toggle"
 import { BtnVoltar } from "../components/back"
 
@@ -130,6 +132,31 @@ export default function ContatoForm() {
             </div>
           )}
         </form>
+
+        {/* Atalho para compra de planos */}
+        <div
+          className="mt-4 rounded-2xl border p-6 text-center"
+          style={{
+            backgroundColor: "var(--surface)",
+            borderColor: "var(--border-subtle)",
+          }}
+        >
+          <p className="text-sm font-bold" style={{ color: "var(--foreground)" }}>
+            Já sabe qual plano contratar?
+          </p>
+          <p className="mt-1 text-xs font-medium opacity-50">
+            Conheça os planos Start, Profissional e Enterprise.
+          </p>
+
+          <Link
+            href="/planos"
+            className="mt-4 w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl font-black text-xs uppercase tracking-[0.2em] text-white transition-all hover:brightness-110 hover:shadow-lg active:scale-[0.98]"
+            style={{ backgroundColor: "var(--primary)" }}
+          >
+            Ver planos e assinar
+            <LuArrowRight size={16} />
+          </Link>
+        </div>
       </div>
     </main>
   )

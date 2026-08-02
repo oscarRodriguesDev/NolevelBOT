@@ -70,7 +70,12 @@ export async function GET(request: Request) {
         logoUrl: true, botName: true, botPresentation: true,
         botServiceDesc: true, botAvisosDesc: true, botPrompt: true,
       }
-      if (session.user.role === "GOD") {
+      // GOD vê tudo; ADMIN/GESTOR da própria empresa também podem ver
+      // os segredos (token do webhook e API key) para configurar o bot.
+      const podeVerSegredos =
+        session.user.role === "GOD" ||
+        (session.user.empresaId === id && (session.user.role === "ADMIN" || session.user.role === "GESTOR"))
+      if (podeVerSegredos) {
         selectFields.evolution_token = true
         selectFields.api_key = true
       }
@@ -173,7 +178,7 @@ export async function GET(request: Request) {
 
 // Atualiza os dados de uma empresa existente
 export async function PUT(req: NextRequest) {
-  const session = await getSessionOrFail(["GOD"])
+  const session = await getSessionOrFail(["GOD", "ADMIN", "GESTOR"])
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
@@ -187,6 +192,11 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "ID da empresa é obrigatório" }, { status: 400 })
     }
 
+    // ADMIN/GESTOR só podem editar a própria empresa
+    if (session.user.role !== "GOD" && session.user.empresaId !== id) {
+      return NextResponse.json({ error: "Você só pode editar a sua empresa" }, { status: 403 })
+    }
+
     const empresaExiste = await prisma.empresa.findUnique({ where: { id } })
     if (!empresaExiste) {
       return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 })
@@ -196,7 +206,8 @@ export async function PUT(req: NextRequest) {
     if (body.nome) data.nome = body.nome
     if (body.cnpj) data.cnpj = body.cnpj
     if (body.setores !== undefined) data.setores = body.setores
-    if (body.modulos !== undefined) data.modulos = body.modulos
+    // Somente GOD altera módulos diretamente; ADMIN/GESTOR mudam via plano
+    if (session.user.role === "GOD" && body.modulos !== undefined) data.modulos = body.modulos
     if (body.logoUrl !== undefined) data.logoUrl = body.logoUrl
     if (body.botName !== undefined) data.botName = body.botName
     if (body.botPresentation !== undefined) data.botPresentation = body.botPresentation

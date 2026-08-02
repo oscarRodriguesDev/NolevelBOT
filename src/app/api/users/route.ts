@@ -10,6 +10,8 @@ import { getSessionOrFail } from "@/util/permission"
 import { limparCPF } from "@/util/limparcpfs"
 import { podeCriarRole, roleParaDisplay, rolesQuePodeCriar } from "@/lib/rbac"
 import { getServerSessionRBAC } from "@/lib/rbac-server"
+import { dentroDoLimiteDeUsuarios } from "@/lib/planos"
+import { getPlanoPorSlug } from "@/lib/planos-server"
 
 const roleMap: Record<string, ROLE> = {
   "XX!": "GOD",
@@ -127,6 +129,31 @@ export async function POST(req: NextRequest) {
     const emailExistente = await prisma.user.findUnique({ where: { email } })
     if (emailExistente) {
       return NextResponse.json({ error: "Email já cadastrado" }, { status: 400 })
+    }
+
+    // Limite de usuarios por plano (SaaS): conta GESTOR + ATENDENTE
+    // GOD e ADMIN nao consomem o limite de usuarios operacionais.
+    if (finalRole === "GESTOR" || finalRole === "ATENDENTE") {
+      const empresaComPlano = await prisma.empresa.findUnique({
+        where: { id: empresaID },
+        select: { plano: true },
+      })
+      const planoEmpresa = await getPlanoPorSlug(empresaComPlano?.plano)
+      const [totalGestores, totalAtendentes] = await Promise.all([
+        prisma.user.count({ where: { empresaId: empresaID, role: "GESTOR" } }),
+        prisma.user.count({ where: { empresaId: empresaID, role: "ATENDENTE" } }),
+      ])
+      const total = totalGestores + totalAtendentes
+      const limite = dentroDoLimiteDeUsuarios(planoEmpresa!, total)
+      if (!limite.ok) {
+        const nomePlano = planoEmpresa?.nome || "Start"
+        return NextResponse.json(
+          {
+            error: `Limite do plano ${nomePlano} atingido: máximo de ${limite.maxUsuarios} usuários (gestores + atendentes). Faça um upgrade para adicionar mais.`,
+          },
+          { status: 403 }
+        )
+      }
     }
 
     const avatarUrl = await uploadFile({

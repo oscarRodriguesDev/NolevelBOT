@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { LuMenu, LuX, LuTickets, LuBell, LuUsers, LuHouse, LuSettings, LuBuilding2, LuWrench, LuCalendarCheck, LuChevronDown, LuChevronRight, LuHeadphones, LuTruck, LuGlobe, LuBug } from 'react-icons/lu'
+import { LuMenu, LuX, LuTickets, LuBell, LuUsers, LuHouse, LuSettings, LuBuilding2, LuWrench, LuCalendarCheck, LuChevronDown, LuChevronRight, LuHeadphones, LuTruck, LuGlobe, LuBug, LuStore } from 'react-icons/lu'
 import { useSession } from 'next-auth/react'
 import { ROLE } from '@prisma/client'
 import packageJson from '../../../package.json'
@@ -103,14 +103,26 @@ export function Sidebar() {
       items: [
         { label: 'Dashboard Global', href: '/god/dashboard', icon: LuHouse, show: true },
         { label: 'Empresas', href: '/corporativo/empresa', icon: LuBuilding2, show: true },
+        { label: 'Planos', href: '/god/planos', icon: LuStore, show: true },
         { label: 'Usuários', href: '/god/usuarios', icon: LuUsers, show: true },
         { label: 'Admins', href: '/god/admins', icon: LuSettings, show: true },
         { label: 'Erros', href: '/god/erros', icon: LuBug, show:false },
       ],
     })
+  } else if (userRole === "ADMIN" || userRole === "GESTOR") {
+    // Painel da própria empresa — acessível independente dos módulos contratados
+    modulos.push({
+      key: 'minha-empresa',
+      label: 'Empresa',
+      icon: LuStore,
+      modulos: [],
+      items: [
+        { label: 'Minha Empresa', href: '/minha-empresa', icon: LuBuilding2, show: true },
+      ],
+    })
   }
 
-  const modulosDisponiveis = modulos.filter(m => m.modulos.some(mod => temModulo(mod)) || m.key === 'plataforma')
+  const modulosDisponiveis = modulos.filter(m => m.modulos.some(mod => temModulo(mod)) || m.key === 'plataforma' || m.key === 'minha-empresa')
 
   const [modulosAbertos, setModulosAbertos] = useState<string[]>(() => {
     const inicial: string[] = []
