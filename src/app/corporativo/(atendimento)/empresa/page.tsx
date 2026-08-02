@@ -34,6 +34,13 @@ const MODULOS_OPCOES = [
   { valor: 'COMERCIAL', label: 'Comercial', icon: CalendarCheck, cor: 'var(--status-waiting)' },
 ]
 
+// webhook de cada módulo — só são exibidas as URLs dos módulos que a empresa adquiriu
+const WEBHOOKS_POR_MODULO = [
+  { modulo: 'CORPORATIVO', rota: 'webhook-corporativo', label: 'Corporativo (SAC)' },
+  { modulo: 'OFICINA', rota: 'webhook-oficina', label: 'Oficina (Operação)' },
+  { modulo: 'COMERCIAL', rota: 'webhook-comercial', label: 'Comercial (Leads)' },
+]
+
 // Pagina principal de gerenciamento de empresas
 export default function EmpresaPage() {
   const { data: session, status } = useSession()
@@ -65,6 +72,7 @@ export default function EmpresaPage() {
   const [currentProvider, setCurrentProvider] = useState('EVOLUTION')
   const [currentApiUrl, setCurrentApiUrl] = useState('')
   const [currentApiKey, setCurrentApiKey] = useState('')
+  const [currentModulos, setCurrentModulos] = useState<string[]>([])
   const [savingApiConfig, setSavingApiConfig] = useState(false)
 
   const { setHeader } = useHeader()
@@ -574,6 +582,7 @@ export default function EmpresaPage() {
                           setCurrentProvider(empresa.provider || 'EVOLUTION')
                           setCurrentApiUrl(empresa.evolution_url || '')
                           setCurrentApiKey(empresa.api_key || '')
+                          setCurrentModulos(empresa.modulos || [])
                           setKeyCopied(false)
                         }}
                         className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105"
@@ -763,32 +772,39 @@ export default function EmpresaPage() {
               <div className="space-y-2 border-t pt-4" style={{ borderColor: "var(--border-subtle)" }}>
                 <h4 className="text-sm font-bold">URLs do Webhook</h4>
                 <p className="text-xs opacity-60">
-                  O cliente aponta o webhook da própria API para uma destas rotas, conforme o módulo contratado.
+                  O cliente aponta o webhook da própria API para a rota do módulo contratado.
                 </p>
-                {["webhook-corporativo", "webhook-oficina", "webhook-comercial"].map((p) => {
-                  const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/api/${p}`
+                {WEBHOOKS_POR_MODULO.filter((w) => currentModulos.includes(w.modulo)).map((w) => {
+                  const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/api/${w.rota}`
                   return (
-                    <div
-                      key={p}
-                      className="flex items-center gap-2 p-2.5 rounded-lg border font-mono text-xs"
-                      style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)" }}
-                    >
-                      <span className="flex-1 truncate">{url}</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText(url)
-                          toast.success('URL copiada!')
-                        }}
-                        className="p-1.5 rounded-md transition-all hover:brightness-110"
-                        style={{ backgroundColor: "var(--primary)", color: "#fff" }}
-                        title="Copiar URL"
+                    <div key={w.rota}>
+                      <p className="text-[10px] font-bold uppercase tracking-wider opacity-50 mb-1">{w.label}</p>
+                      <div
+                        className="flex items-center gap-2 p-2.5 rounded-lg border font-mono text-xs"
+                        style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)" }}
                       >
-                        <Copy size={14} />
-                      </button>
+                        <span className="flex-1 truncate">{url}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(url)
+                            toast.success('URL copiada!')
+                          }}
+                          className="p-1.5 rounded-md transition-all hover:brightness-110"
+                          style={{ backgroundColor: "var(--primary)", color: "#fff" }}
+                          title="Copiar URL"
+                        >
+                          <Copy size={14} />
+                        </button>
+                      </div>
                     </div>
                   )
                 })}
+                {currentModulos.length === 0 && (
+                  <p className="text-xs" style={{ color: "var(--status-waiting)" }}>
+                    Esta empresa não possui módulos ativos. Adicione um módulo para liberar a URL do webhook.
+                  </p>
+                )}
               </div>
 
               {/* Configuração do provedor (API do cliente) */}
