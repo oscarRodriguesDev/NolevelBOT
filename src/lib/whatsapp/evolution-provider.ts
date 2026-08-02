@@ -71,7 +71,14 @@ export const evolutionProvider: WhatsAppProvider = {
   async downloadMedia(ctx, message) {
     const data = message.raw as any;
     const mediaMsg = data?.message?.imageMessage || data?.message?.documentMessage;
-    return downloadEvolutionMedia(ctx.instance, data?.key, data?.message?.base64, mediaMsg);
+    return downloadEvolutionMedia(
+      ctx.instance,
+      data?.key,
+      data?.message?.base64,
+      mediaMsg,
+      ctx.serverUrl,
+      ctx.apiKey
+    );
   },
 
   extractToken(body: any): string | null {

@@ -566,13 +566,14 @@ Máximo 400 caracteres. Seja objetivo.`
                 </div>
                 <div>
                   <h3 className="text-lg font-bold">Empresa Criada!</h3>
-                  <p className="text-xs opacity-50">Guarde a chave de API abaixo</p>
+                  <p className="text-xs opacity-50">Guarde o token do webhook abaixo</p>
                 </div>
               </div>
               <div className="p-6 space-y-4">
                 <p className="text-sm opacity-70">
-                  Esta chave será usada para autenticar sua empresa na Evolution API.
-                  Copie e configure na instância do Evolution.
+                  Este é o <b>token do webhook</b> da empresa. O cliente deve configurá-lo na própria API de WhatsApp
+                  (apikey/verify do webhook). Em seguida, acesse a tela de edição da empresa para cadastrar a URL da API
+                  e a chave de envio do provedor.
                 </p>
                 <div
                   className="flex items-center gap-2 p-3 rounded-xl border font-mono text-xs break-all"

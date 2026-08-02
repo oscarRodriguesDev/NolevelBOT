@@ -28,8 +28,10 @@ model empresa {
   nome            String    @unique
   cnpj            String    @unique
   setores         String[]
-  evolution_url   String?
-  evolution_token String?
+  evolution_url   String?                    // URL base da API de WhatsApp do cliente (BYO)
+  evolution_token String?                    // token de autenticação do webhook emitido pelo NoLevel
+  provider        String    @default("EVOLUTION") // qual API de WhatsApp o cliente usa (EVOLUTION | META | ...)
+  api_key         String?                    // credencial de ENVIO do provedor do cliente (só GOD vê)
   logoUrl         String?                    // URL da logo da empresa
   botName         String?                    // Nome do assistente virtual para esta empresa
   botPresentation String?                    // Input: como o bot deve se apresentar

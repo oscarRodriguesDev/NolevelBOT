@@ -21,6 +21,7 @@ Registro de decisões e alterações do projeto.
 | 2026-08-01 | Decisão estratégica: NoLevel sai da infra de WhatsApp → webhook agnóstico (BYO API). Cliente usa a própria API (Evolution/Meta/outra). Migração total, sem clientes ativos. | USUARIO |
 | 2026-08-01 | Arquitetura definida: camada WhatsAppProvider (parse/send/download) isolando o transporte do fluxo de negócio (chamados + IA) | VIBECODE |
 | 2026-08-01 | F1 concluída: criados `src/lib/whatsapp/` (types.ts, evolution-provider.ts, registry.ts). `handleWebhook` centraliza rate limit + parse + auth (401 em token ausente/inválido) + rate limit por empresa. Webhooks oficina/corporativo/comercial refatorados p/ provider agnóstico; máquina de estados intacta. `processWebhookMedia` agora provider-agnostic. Testes novos (13) | VIBECODE |
+| 2026-08-01 | F2 (schema autorizado pelo usuário): colunas `provider` (default EVOLUTION) e `api_key` na `empresa`. `evolution_url`/`evolution_token` reaproveitados como URL da API do cliente e token do webhook. `handleWebhook` agora monta ctx de envio da CONFIG da empresa (anti-SSRF — não confia no body). `downloadEvolutionMedia` aceita baseUrl/apiKey do cliente. API `/api/empresa` aceita provider/evolution_url/api_key. Painel "Integração WhatsApp (BYO)" na tela de empresas (token + URLs do webhook + config do provedor). MIGRAÇÃO DE BANCO PENDENTE (usuário executa) | VIBECODE |
 
 <!-- Migrado de memorias.md (raiz) -->
 # MEMÓRIAS DO PROJETO — NolevelBOT

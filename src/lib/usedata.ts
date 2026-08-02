@@ -263,11 +263,14 @@ export async function downloadWhatsAppMedia(mediaMessage: any): Promise<Buffer |
 }
 
 //baixa midia da instancia Evolution via REST ou base64
+//baseUrl/apiKey opcionais: quando o cliente usa a própria API (BYO), vêm da config da empresa
 export async function downloadEvolutionMedia(
   instance: string,
   key: { id: string; remoteJid: string; fromMe: boolean },
   base64Override?: string,
-  mediaMessage?: any
+  mediaMessage?: any,
+  baseUrl?: string,
+  apiKey?: string
 ): Promise<Buffer | null> {
   const msgId = key?.id || "unknown";
   console.error(`[downloadMedia] msgId=${msgId} hasBase64=${!!base64Override} hasMediaMsg=${!!mediaMessage}`);
@@ -286,8 +289,8 @@ export async function downloadEvolutionMedia(
 
     console.error(`[downloadMedia] REST Evolution...`);
 
-    const headers = { "Content-Type": "application/json", apikey: process.env.EVOLUTION_API_KEY! };
-    const urlEvolution = process.env.EVOLUTION_API_URL || "https://evolution.nolevel.hiskra.com.br/";
+    const headers = { "Content-Type": "application/json", apikey: apiKey || process.env.EVOLUTION_API_KEY! };
+    const urlEvolution = baseUrl || process.env.EVOLUTION_API_URL || "https://evolution.nolevel.hiskra.com.br/";
 
     // V1: /chat/downloadMediaMessage/{instance}
     const body = {

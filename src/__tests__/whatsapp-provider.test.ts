@@ -121,15 +121,40 @@ describe("handleWebhook", () => {
   })
 
   it("retorna ok com message, ctx e empresaId quando token valido", async () => {
-    vi.mocked(prisma.empresa.findFirst).mockResolvedValue({ id: "emp-1" })
+    vi.mocked(prisma.empresa.findFirst).mockResolvedValue({
+      id: "emp-1",
+      provider: "EVOLUTION",
+      evolution_url: "https://api.cliente.com.br",
+      api_key: "chave-de-envio-do-cliente",
+    })
     const res = await handleWebhook(makeReq(baseBody), "webhook-teste")
     expect(res.ok).toBe(true)
     expect(res.message!.userInput).toBe("Olá")
     expect(res.ctx!.provider).toBe("evolution")
+    expect(res.ctx!.serverUrl).toBe("https://api.cliente.com.br")
+    expect(res.ctx!.apiKey).toBe("chave-de-envio-do-cliente")
     expect(res.empresaId).toBe("emp-1")
     expect(prisma.empresa.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({ where: { evolution_token: "token-empresa-valido" } })
     )
+  })
+
+  it("ctx de envio vem da config da empresa, nao do body (anti-SSRF)", async () => {
+    vi.mocked(prisma.empresa.findFirst).mockResolvedValue({
+      id: "emp-2",
+      provider: "EVOLUTION",
+      evolution_url: "https://url-confiavel.com.br",
+      api_key: "segredo-da-empresa",
+    })
+    const body = {
+      ...baseBody,
+      server_url: "https://url-maliciosa.com.br",
+      apikey: "token-empresa-valido",
+    }
+    const res = await handleWebhook(makeReq(body), "webhook-teste")
+    expect(res.ok).toBe(true)
+    expect(res.ctx!.serverUrl).toBe("https://url-confiavel.com.br")
+    expect(res.ctx!.apiKey).toBe("segredo-da-empresa")
   })
 
   it("repassa rate limit do IP quando bloqueado", async () => {

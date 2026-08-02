@@ -18,6 +18,9 @@ interface Empresa {
   modulos: string[]
   logoUrl?: string | null
   evolution_token?: string | null
+  provider?: string | null
+  evolution_url?: string | null
+  api_key?: string | null
   botName?: string | null
   botPresentation?: string | null
   botServiceDesc?: string | null
@@ -59,6 +62,10 @@ export default function EmpresaPage() {
   const [regeneratingKey, setRegeneratingKey] = useState(false)
   const [keyCopied, setKeyCopied] = useState(false)
   const [currentKey, setCurrentKey] = useState('')
+  const [currentProvider, setCurrentProvider] = useState('EVOLUTION')
+  const [currentApiUrl, setCurrentApiUrl] = useState('')
+  const [currentApiKey, setCurrentApiKey] = useState('')
+  const [savingApiConfig, setSavingApiConfig] = useState(false)
 
   const { setHeader } = useHeader()
 
@@ -113,6 +120,27 @@ export default function EmpresaPage() {
     })
     setEditLogoFile(null)
     setEditLogoPreview(emp.logoUrl || null)
+  }
+
+  // Salva a configuração de integração WhatsApp (BYO API) da empresa
+  async function saveApiConfig() {
+    if (!viewKeyId) return
+    setSavingApiConfig(true)
+    try {
+      const res = await fetch(`/api/empresa?id=${viewKeyId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: currentProvider,
+          evolution_url: currentApiUrl,
+          api_key: currentApiKey,
+        }),
+      })
+      if (!res.ok) { toast.error('Erro ao salvar configuração'); return }
+      toast.success('Configuração de WhatsApp salva!')
+      fetchEmpresas()
+    } catch { toast.error('Erro ao conectar') }
+    finally { setSavingApiConfig(false) }
   }
 
   //cancelar edição
@@ -540,11 +568,18 @@ export default function EmpresaPage() {
 
                     <div className="flex gap-2 pt-2 border-t flex-wrap" style={{ borderColor: "var(--border-subtle)" }}>
                       <button
-                        onClick={() => { setViewKeyId(empresa.id); setCurrentKey(empresa.evolution_token || ''); setKeyCopied(false) }}
+                        onClick={() => {
+                          setViewKeyId(empresa.id)
+                          setCurrentKey(empresa.evolution_token || '')
+                          setCurrentProvider(empresa.provider || 'EVOLUTION')
+                          setCurrentApiUrl(empresa.evolution_url || '')
+                          setCurrentApiKey(empresa.api_key || '')
+                          setKeyCopied(false)
+                        }}
                         className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105"
                         style={{ color: "var(--foreground)", backgroundColor: "var(--surface-elevated)" }}
                       >
-                        <Key size={14} /> API Key
+                        <Key size={14} /> WhatsApp
                       </button>
                       <button
                         onClick={() => router.push(`/corporativo/empresa/${empresa.id}/usuarios`)}
@@ -618,10 +653,10 @@ export default function EmpresaPage() {
                 <div className="p-2 rounded-lg" style={{ backgroundColor: "var(--primary)", color: "#fff" }}>
                   <Key size={20} />
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold">Chave de API</h3>
-                  <p className="text-xs opacity-50">Evolution API - Apenas GOD visualiza</p>
-                </div>
+                  <div>
+                    <h3 className="text-lg font-bold">Integração WhatsApp</h3>
+                    <p className="text-xs opacity-50">BYO API — o cliente usa a própria API. Apenas GOD visualiza</p>
+                  </div>
               </div>
               <button
                 onClick={() => setViewKeyId(null)}
@@ -631,39 +666,72 @@ export default function EmpresaPage() {
                 <X size={18} />
               </button>
             </div>
-            <div className="p-6 space-y-4">
-              {currentKey ? (
-                <>
-                  <p className="text-sm opacity-70">
-                    Copie a chave abaixo e configure na instância da Evolution API.
+            <div className="p-6 space-y-6">
+              {/* Token do webhook */}
+              <div className="space-y-3">
+                <div>
+                  <h4 className="text-sm font-bold">Token do Webhook</h4>
+                  <p className="text-xs opacity-60">
+                    O cliente configura este token na própria API de WhatsApp como apikey/verify do webhook. Sem ele, o webhook responde 401.
                   </p>
-                  <div
-                    className="flex items-center gap-2 p-3 rounded-xl border font-mono text-xs break-all"
-                    style={{
-                      backgroundColor: "var(--surface-elevated)",
-                      borderColor: "var(--border-subtle)",
-                    }}
-                  >
-                    <span className="flex-1 select-all">{currentKey}</span>
+                </div>
+                {currentKey ? (
+                  <>
+                    <div
+                      className="flex items-center gap-2 p-3 rounded-xl border font-mono text-xs break-all"
+                      style={{
+                        backgroundColor: "var(--surface-elevated)",
+                        borderColor: "var(--border-subtle)",
+                      }}
+                    >
+                      <span className="flex-1 select-all">{currentKey}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(currentKey)
+                          setKeyCopied(true)
+                          setTimeout(() => setKeyCopied(false), 2000)
+                        }}
+                        className="p-2 rounded-lg transition-all hover:brightness-110 flex-shrink-0"
+                        style={{ backgroundColor: keyCopied ? "var(--status-completed)" : "var(--primary)", color: "#fff" }}
+                        title="Copiar"
+                      >
+                        <Copy size={16} />
+                      </button>
+                    </div>
+                    {keyCopied && (
+                      <p className="text-xs text-center" style={{ color: "var(--status-completed)" }}>
+                        Copiado!
+                      </p>
+                    )}
                     <button
                       type="button"
-                      onClick={() => {
-                        navigator.clipboard.writeText(currentKey)
-                        setKeyCopied(true)
-                        setTimeout(() => setKeyCopied(false), 2000)
+                      onClick={async () => {
+                        setRegeneratingKey(true)
+                        try {
+                          const res = await fetch(`/api/empresa?id=${viewKeyId}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ regenerar_token: true }),
+                          })
+                          if (!res.ok) { toast.error('Erro ao regenerar chave'); return }
+                          const data = await res.json()
+                          setCurrentKey(data.evolution_token)
+                          setKeyCopied(false)
+                          toast.success('Chave regenerada!')
+                          fetchEmpresas()
+                        } catch { toast.error('Erro ao conectar') }
+                        finally { setRegeneratingKey(false) }
                       }}
-                      className="p-2 rounded-lg transition-all hover:brightness-110 flex-shrink-0"
-                      style={{ backgroundColor: keyCopied ? "var(--status-completed)" : "var(--primary)", color: "#fff" }}
-                      title="Copiar"
+                      disabled={regeneratingKey}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all hover:brightness-110 disabled:opacity-50"
+                      style={{ backgroundColor: "var(--surface-elevated)", color: "var(--foreground)" }}
                     >
-                      <Copy size={16} />
+                      <RotateCw size={14} className={regeneratingKey ? 'animate-spin' : ''} />
+                      {regeneratingKey ? 'Regenerando...' : 'Regenerar Token'}
                     </button>
-                  </div>
-                  {keyCopied && (
-                    <p className="text-xs text-center" style={{ color: "var(--status-completed)" }}>
-                      Copiado!
-                    </p>
-                  )}
+                  </>
+                ) : (
                   <button
                     type="button"
                     onClick={async () => {
@@ -674,42 +742,10 @@ export default function EmpresaPage() {
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({ regenerar_token: true }),
                         })
-                        if (!res.ok) { toast.error('Erro ao regenerar chave'); return }
+                        if (!res.ok) { toast.error('Erro ao gerar token'); return }
                         const data = await res.json()
                         setCurrentKey(data.evolution_token)
-                        setKeyCopied(false)
-                        toast.success('Chave regenerada!')
-                        fetchEmpresas()
-                      } catch { toast.error('Erro ao conectar') }
-                      finally { setRegeneratingKey(false) }
-                    }}
-                    disabled={regeneratingKey}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all hover:brightness-110 disabled:opacity-50"
-                    style={{ backgroundColor: "var(--surface-elevated)", color: "var(--foreground)" }}
-                  >
-                    <RotateCw size={14} className={regeneratingKey ? 'animate-spin' : ''} />
-                    {regeneratingKey ? 'Regenerando...' : 'Regenerar Chave'}
-                  </button>
-                </>
-              ) : (
-                <div className="space-y-4">
-                  <p className="text-sm opacity-70">
-                    Esta empresa ainda não possui chave de API. Clique abaixo para gerar.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      setRegeneratingKey(true)
-                      try {
-                        const res = await fetch(`/api/empresa?id=${viewKeyId}`, {
-                          method: 'PUT',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ regenerar_token: true }),
-                        })
-                        if (!res.ok) { toast.error('Erro ao gerar chave'); return }
-                        const data = await res.json()
-                        setCurrentKey(data.evolution_token)
-                        toast.success('Chave gerada!')
+                        toast.success('Token gerado!')
                         fetchEmpresas()
                       } catch { toast.error('Erro ao conectar') }
                       finally { setRegeneratingKey(false) }
@@ -718,10 +754,88 @@ export default function EmpresaPage() {
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-white transition-all hover:brightness-110 disabled:opacity-50"
                     style={{ backgroundColor: "var(--primary)" }}
                   >
-                    {regeneratingKey ? <><Loader2 className="animate-spin" size={16} /> Gerando...</> : <><Key size={16} /> Gerar Chave</>}
+                    {regeneratingKey ? <><Loader2 className="animate-spin" size={16} /> Gerando...</> : <><Key size={16} /> Gerar Token</>}
                   </button>
+                )}
+              </div>
+
+              {/* URLs do webhook */}
+              <div className="space-y-2 border-t pt-4" style={{ borderColor: "var(--border-subtle)" }}>
+                <h4 className="text-sm font-bold">URLs do Webhook</h4>
+                <p className="text-xs opacity-60">
+                  O cliente aponta o webhook da própria API para uma destas rotas, conforme o módulo contratado.
+                </p>
+                {["webhook-corporativo", "webhook-oficina", "webhook-comercial"].map((p) => {
+                  const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/api/${p}`
+                  return (
+                    <div
+                      key={p}
+                      className="flex items-center gap-2 p-2.5 rounded-lg border font-mono text-xs"
+                      style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)" }}
+                    >
+                      <span className="flex-1 truncate">{url}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(url)
+                          toast.success('URL copiada!')
+                        }}
+                        className="p-1.5 rounded-md transition-all hover:brightness-110"
+                        style={{ backgroundColor: "var(--primary)", color: "#fff" }}
+                        title="Copiar URL"
+                      >
+                        <Copy size={14} />
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Configuração do provedor (API do cliente) */}
+              <div className="space-y-3 border-t pt-4" style={{ borderColor: "var(--border-subtle)" }}>
+                <h4 className="text-sm font-bold">Provedor (API do cliente)</h4>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-wider opacity-70">Provedor</label>
+                  <select
+                    value={currentProvider}
+                    onChange={(e) => setCurrentProvider(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                    style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
+                  >
+                    <option value="EVOLUTION">Evolution API (self-hosted do cliente)</option>
+                    <option value="META">Meta Cloud API</option>
+                  </select>
                 </div>
-              )}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-wider opacity-70">URL da API do cliente</label>
+                  <input
+                    value={currentApiUrl}
+                    onChange={(e) => setCurrentApiUrl(e.target.value)}
+                    placeholder="https://evolution.minhaempresa.com.br"
+                    className="w-full px-3 py-2.5 rounded-xl border outline-none focus:ring-2 focus:ring-[var(--primary)] font-mono text-sm"
+                    style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-wider opacity-70">API Key de envio (do provedor do cliente)</label>
+                  <input
+                    value={currentApiKey}
+                    onChange={(e) => setCurrentApiKey(e.target.value)}
+                    placeholder="Chave de envio do provedor"
+                    className="w-full px-3 py-2.5 rounded-xl border outline-none focus:ring-2 focus:ring-[var(--primary)] font-mono text-sm"
+                    style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={saveApiConfig}
+                  disabled={savingApiConfig}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-white transition-all hover:brightness-110 disabled:opacity-50"
+                  style={{ backgroundColor: "var(--primary)" }}
+                >
+                  {savingApiConfig ? <><Loader2 className="animate-spin" size={16} /> Salvando...</> : <><Check size={16} /> Salvar configuração</>}
+                </button>
+              </div>
             </div>
           </div>
         </div>

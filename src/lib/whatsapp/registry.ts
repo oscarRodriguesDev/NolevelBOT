@@ -7,6 +7,8 @@ import { evolutionProvider } from "./evolution-provider";
 // ─────────────────────────────────────────────────────────────
 // Registry de provedores + rota comum dos webhooks
 // Centraliza: rate limit → parse → autenticação (401) → despacho
+// O contexto de ENVIO vem da configuração cadastrada na empresa
+// (evolution_url/api_key) — NUNCA do corpo do webhook (anti-SSRF).
 // ─────────────────────────────────────────────────────────────
 
 const registry = new Map<string, WhatsAppProvider>();
@@ -16,7 +18,7 @@ export function registerProvider(provider: WhatsAppProvider): void {
 }
 
 export function getProvider(name: string): WhatsAppProvider | undefined {
-  return registry.get(name);
+  return registry.get(name.toLowerCase());
 }
 
 // registra os providers padrão (idempotente no carregamento)
@@ -34,9 +36,10 @@ export interface WebhookHandleResult {
 }
 
 /**
- * Rota comum dos webhooks do sistema.
- * Fase 1: provedor Evolution (o cliente usa a própria instância e envia o token da empresa).
- * O webhook só processa mensagens de empresas com token válido (401 em token ausente/inválido).
+ * Rota comum dos webhooks do sistema (BYO API).
+ * - Eventos ignoráveis (status, fromMe, etc.) respondem 200 { ok: true } sem processar.
+ * - Mensagens reais exigem token válido da empresa (401 em ausente/inválido).
+ * - O envio de resposta usa a configuração da EMPRESA, não o corpo do request.
  */
 export async function handleWebhook(
   req: NextRequest,
@@ -54,15 +57,17 @@ export async function handleWebhook(
     return { ok: false, response: NextResponse.json({ ok: true }) };
   }
 
-  // Fase 1: provedor Evolution. Futuros provedores serão detectados por header/heurística.
-  const provider = getProvider("evolution")!;
+  // detecta o provedor pelo header (opcional); default: evolution
+  const headerProvider = (req.headers.get("x-whatsapp-provider") || "evolution").toLowerCase();
+  const provider = getProvider(headerProvider) || getProvider("evolution")!;
+
+  // parse inicial — eventos ignoráveis respondem ok sem exigir token
   const parsed = provider.parseEvent(body);
   if (!parsed || !parsed.message) {
-    // evento ignorável (status, fromMe, etc.)
     return { ok: false, response: NextResponse.json({ ok: true }) };
   }
 
-  // Autenticação: identifica a empresa pelo token do webhook.
+  // autenticação: identifica a empresa pelo token do webhook
   const token = provider.extractToken(body, req);
   if (!token) {
     return {
@@ -73,7 +78,7 @@ export async function handleWebhook(
 
   const empresa = await prisma.empresa.findFirst({
     where: { evolution_token: token },
-    select: { id: true },
+    select: { id: true, provider: true, evolution_url: true, api_key: true },
   });
   if (!empresa) {
     return {
@@ -91,11 +96,23 @@ export async function handleWebhook(
     };
   }
 
+  // provider efetivo conforme configurado na empresa (futuro: META, etc.)
+  const providerName = (empresa.provider || "EVOLUTION").toLowerCase();
+  const effectiveProvider = getProvider(providerName) || provider;
+
+  // contexto de ENVIO vindo da configuração da empresa (não do body)
+  const ctx: ProviderContext = {
+    provider: providerName,
+    instance: parsed.ctx.instance,
+    serverUrl: empresa.evolution_url || undefined,
+    apiKey: empresa.api_key || undefined,
+  };
+
   return {
     ok: true,
     message: parsed.message,
-    ctx: parsed.ctx,
-    provider,
+    ctx,
+    provider: effectiveProvider,
     empresaId: empresa.id,
   };
 }

@@ -33,6 +33,9 @@ export async function POST(req: NextRequest) {
     if (body.botServiceDesc !== undefined) data.botServiceDesc = body.botServiceDesc
     if (body.botAvisosDesc !== undefined) data.botAvisosDesc = body.botAvisosDesc
     if (body.botPrompt !== undefined) data.botPrompt = body.botPrompt
+    if (body.provider !== undefined) data.provider = body.provider
+    if (body.evolution_url !== undefined) data.evolution_url = body.evolution_url
+    if (body.api_key !== undefined) data.api_key = body.api_key
 
     data.evolution_token = gerarApiKey()
 
@@ -63,11 +66,13 @@ export async function GET(request: Request) {
 
       const selectFields: any = {
         id: true, nome: true, cnpj: true, setores: true, modulos: true,
+        provider: true, evolution_url: true,
         logoUrl: true, botName: true, botPresentation: true,
         botServiceDesc: true, botAvisosDesc: true, botPrompt: true,
       }
       if (session.user.role === "GOD") {
         selectFields.evolution_token = true
+        selectFields.api_key = true
       }
 
       const empresa = await prisma.empresa.findUnique({
@@ -103,7 +108,8 @@ export async function GET(request: Request) {
         const empresas = await prisma.empresa.findMany({
           select: {
             id: true, nome: true, cnpj: true, setores: true, modulos: true,
-            logoUrl: true, evolution_token: true, botName: true,
+            logoUrl: true, evolution_token: true, provider: true,
+            evolution_url: true, api_key: true, botName: true,
             botPresentation: true, botServiceDesc: true,
             botAvisosDesc: true, botPrompt: true,
           },
@@ -197,11 +203,15 @@ export async function PUT(req: NextRequest) {
     if (body.botServiceDesc !== undefined) data.botServiceDesc = body.botServiceDesc
     if (body.botAvisosDesc !== undefined) data.botAvisosDesc = body.botAvisosDesc
     if (body.botPrompt !== undefined) data.botPrompt = body.botPrompt
+    if (body.provider !== undefined) data.provider = body.provider
+    if (body.evolution_url !== undefined) data.evolution_url = body.evolution_url
+    if (body.api_key !== undefined) data.api_key = body.api_key
     if (body.regenerar_token) data.evolution_token = gerarApiKey()
 
     const selectFields: any = {
       id: true, nome: true, cnpj: true, setores: true, modulos: true,
       logoUrl: true, botName: true, botPrompt: true,
+      provider: true, evolution_url: true, api_key: true,
     }
     if (body.regenerar_token) selectFields.evolution_token = true
 
