@@ -59,7 +59,7 @@ describe("logAcesso", () => {
         cpf: "00000000000",
         nome: "Test",
         empresa: "Empresa Z",
-        modulo: "EVENTOS",
+        modulo: "COMERCIAL",
         acao: "login",
       })
     ).resolves.toBeUndefined()

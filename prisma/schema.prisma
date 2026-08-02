@@ -19,6 +19,7 @@ enum modulo{
   OFICINA
   CORPORATIVO
   EVENTOS
+  COMERCIAL
 }
 
 // prisma/schema.prisma
@@ -27,6 +28,8 @@ model empresa {
   nome            String    @unique
   cnpj            String    @unique
   setores         String[]
+  evolution_url   String?
+  evolution_token String?
   logoUrl         String?                    // URL da logo da empresa
   botName         String?                    // Nome do assistente virtual para esta empresa
   botPresentation String?                    // Input: como o bot deve se apresentar

@@ -72,6 +72,7 @@ const endpoints = [
   { method: 'POST', path: '/api/webhook24', auth: false, description: 'Webhook WhatsApp instância 24 — bot com IA + notificações proativas' },
   { method: 'POST', path: '/api/webhook27', auth: false, description: 'Webhook WhatsApp instância 27 — bot com IA (useIA4)' },
   { method: 'POST', path: '/api/webhook-leads', auth: false, description: 'Webhook captação de leads (eventos/feiras) — IA com matching inteligente de avisos' },
+  { method: 'POST', path: '/api/webhook-comercial', auth: false, description: 'Webhook comercial — captação de leads e atendimento inicial (sem IA)' },
   { method: 'POST', path: '/api/webhook-oficina', auth: false, description: 'Webhook oficina — registro de manutenção veicular por motoristas (sem IA)' },
 
   // ─── Upload ───

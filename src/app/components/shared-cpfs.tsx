@@ -19,7 +19,7 @@ interface Admin {
 
 interface Props {
   setHeader: (data: { titulo: string; descricao: string }) => void
-  moduleSlug: "corporativo" | "oficina" | "eventos"
+  moduleSlug: "corporativo" | "oficina" | "comercial"
 }
 
 // Pagina de gerenciamento de CPFs/colaboradores

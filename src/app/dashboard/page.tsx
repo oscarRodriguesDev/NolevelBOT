@@ -22,6 +22,7 @@ type ModuloInfo = {
   descricao: string
   icon: React.ComponentType<{ size?: number; className?: string }>
   href: string
+  cor: string
 }
 
 const MODULOS_DISPONIVEIS: ModuloInfo[] = [
@@ -31,6 +32,7 @@ const MODULOS_DISPONIVEIS: ModuloInfo[] = [
     descricao: "Gestão de chamados, dashboard, avisos e CPFs autorizados",
     icon: LuHeadphones,
     href: "/corporativo/dashboards",
+    cor: "var(--primary)",
   },
   {
     key: "OFICINA",
@@ -38,14 +40,16 @@ const MODULOS_DISPONIVEIS: ModuloInfo[] = [
     descricao: "Manutenção veicular e operações",
     icon: LuWrench,
     href: "/oficina/dashboards",
+    cor: "var(--status-in-progress)",
   },
- /*  {
-    key: "EVENTOS",
-    label: "Eventos",
-    descricao: "Captura de leads em feiras e eventos",
+  {
+    key: "COMERCIAL",
+    label: "Comercial",
+    descricao: "Atendimento comercial e captação de leads",
     icon: LuCalendarCheck,
-    href: "/corporativo/leads",
-  }, */
+    href: "/corporativo/dashboards",
+    cor: "var(--status-completed)",
+  },
 ]
 
 // Pagina principal do dashboard com modulos disponiveis
@@ -295,7 +299,7 @@ export default function DashboardPage() {
                         temAcesso ? "group-hover:scale-110" : ""
                       }`}
                       style={{
-                        backgroundColor: temAcesso ? "var(--primary)" : "var(--border-subtle)",
+                        backgroundColor: temAcesso ? modulo.cor : "var(--border-subtle)",
                         color: temAcesso ? "#fff" : "var(--foreground)",
                       }}
                     >
@@ -315,7 +319,7 @@ export default function DashboardPage() {
 
                     <div
                       className="flex items-center gap-2 mt-6 text-sm font-medium"
-                      style={{ color: temAcesso ? "var(--primary)" : "var(--foreground)" }}
+                      style={{ color: temAcesso ? modulo.cor : "var(--foreground)" }}
                     >
                       {temAcesso ? (
                         <>

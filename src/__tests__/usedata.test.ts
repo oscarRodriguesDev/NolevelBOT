@@ -90,7 +90,7 @@ describe("checkEmpresaModule", () => {
     const mockPrisma = {
       empresa: {
         findUnique: vi.fn().mockResolvedValue({
-          modulos: ["EVENTOS"],
+          modulos: ["COMERCIAL"],
         }),
       },
     }
@@ -99,7 +99,7 @@ describe("checkEmpresaModule", () => {
     const { checkEmpresaModule: check } = await import("@/lib/usedata")
     const result = await check("emp-2", "OFICINA")
     expect(result.hasModule).toBe(false)
-    expect(result.activeModules).toEqual(["EVENTOS"])
+    expect(result.activeModules).toEqual(["COMERCIAL"])
   })
 
   it("retorna fallback em caso de erro", async () => {

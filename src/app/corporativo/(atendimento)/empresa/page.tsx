@@ -28,7 +28,7 @@ interface Empresa {
 const MODULOS_OPCOES = [
   { valor: 'CORPORATIVO', label: 'Corporativo', icon: Headphones, cor: 'var(--status-new)' },
   { valor: 'OFICINA', label: 'Operacional', icon: Wrench, cor: 'var(--status-in-progress)' },
-  { valor: 'EVENTOS', label: 'Eventos', icon: CalendarCheck, cor: 'var(--status-waiting)' },
+  { valor: 'COMERCIAL', label: 'Comercial', icon: CalendarCheck, cor: 'var(--status-waiting)' },
 ]
 
 // Pagina principal de gerenciamento de empresas

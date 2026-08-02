@@ -1,5 +1,26 @@
 # Preferências do Usuário
 
+Padrões de código, estilo e convenções preferidas pelo usuário.
+
+## Estilo de Código
+
+-
+
+## Convenções
+
+-
+
+## Ferramentas e Stack
+
+-
+
+## Observações
+
+-
+
+<!-- Migrado de preferencias_do_usuario.md (raiz) -->
+# Preferências do Usuário
+
 ## Idioma
 - **Português (Brasil)** - todas as comunicações, nomes de commits, comentários e documentação
 

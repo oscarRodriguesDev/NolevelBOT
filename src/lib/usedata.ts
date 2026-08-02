@@ -367,7 +367,7 @@ export async function validarCpf(cpf: string) {
 //verifica se a empresa possui um modulo especifico ativo
 export async function checkEmpresaModule(
   empresaId: string,
-  modulo: "OFICINA" | "CORPORATIVO" | "EVENTOS"
+  modulo: "OFICINA" | "CORPORATIVO" | "EVENTOS" | "COMERCIAL"
 ): Promise<{ hasModule: boolean; activeModules: string[] }> {
   try {
     const { prisma } = await import("@/lib/prisma");

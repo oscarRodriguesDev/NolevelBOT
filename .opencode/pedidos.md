@@ -1,4 +1,27 @@
+# Pedidos
+
+Registro de pedidos do usuário com ID do commit.
+
+| Data | Pedido | Commit |
+|------|--------|--------|
+| 2026-07-09 | Criar comando `hiskra-code conect` + motor NVIDIA para substituir opencode | v4.0.0 |
+
+<!-- Migrado de pedidos.md (raiz) -->
 # Pedidos e Solicitações do Usuário
+
+## PED-031: Isolamento Evolution API por empresa (chave 32bytes + server_url/apikey dinâmicos)
+**Data:** 25/06/2026
+**Status:** ✅ Concluído
+**Commit:** `13f9b26`
+**Descrição:**
+- POST `/api/empresa` gera `evolution_token` de 32 bytes automaticamente
+- GET `/api/empresa` retorna `evolution_token` apenas para GOD
+- PUT `/api/empresa` aceita `regenerar_token: true` para nova chave
+- Tela de criação exibe chave gerada com botão copiar
+- Tela de listagem/edição tem modal "API Key" com copiar e regenerar
+- `sendEvolutionText()` aceita `baseUrl` e `apiKey` opcionais
+- webhook-corporativo e webhook-oficina: usam `server_url` e `apikey` do payload
+- webhook-teste: `server_url` e `instance` extraídos do payload
 
 ## FIX: Criação de ADMIN quebrada — setor vazio rejeitado pelo Zod
 **Data:** 18/06/2026

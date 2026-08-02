@@ -1,4 +1,4 @@
-export type ModuleSlug = "corporativo" | "oficina" | "eventos"
+export type ModuleSlug = "corporativo" | "oficina" | "comercial"
 
 export interface ModuleConfig {
   slug: ModuleSlug
@@ -23,11 +23,11 @@ export const MODULES: Record<ModuleSlug, ModuleConfig> = {
     moduleCheck: "OFICINA",
     redirectBase: "/oficina",
   },
-  eventos: {
-    slug: "eventos",
-    moduleLabel: "Eventos",
-    description: "Gestao de Eventos",
-    moduleCheck: "EVENTOS",
-    redirectBase: "/eventos",
+  comercial: {
+    slug: "comercial",
+    moduleLabel: "Comercial",
+    description: "Atendimento Comercial",
+    moduleCheck: "COMERCIAL",
+    redirectBase: "/comercial",
   },
 }

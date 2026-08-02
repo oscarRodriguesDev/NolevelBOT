@@ -1,3 +1,13 @@
+# Ideias
+
+Registro de sugestões, melhorias e ideias para o projeto.
+
+| Código | Ideia | Descrição | Status |
+| ------ | ----- | --------- | ------ |
+|        |       |           |        |
+
+<!-- Migrado de ideias.md (raiz) -->
+
 # Ideias e Melhorias — Skora
 
 > **Data da análise:** 17/06/2026
@@ -7,14 +17,14 @@
 
 ## 🏆 Categorias
 
-| Código | Categoria |
-|--------|-----------|
-| 🔴 **SEG** | Segurança (Crítico/Alto) |
-| 🟡 **ARQ** | Arquitetura e Qualidade de Código |
-| ⚡ **PERF** | Performance |
-| 🎨 **UX** | Experiência do Usuário |
-| 🛠️ **INFRA** | Infraestrutura e DevOps |
-| 🧪 **TEST** | Testes |
+| Código       | Categoria                         |
+| ------------ | --------------------------------- |
+| 🔴 **SEG**   | Segurança (Crítico/Alto)          |
+| 🟡 **ARQ**   | Arquitetura e Qualidade de Código |
+| ⚡ **PERF**  | Performance                       |
+| 🎨 **UX**    | Experiência do Usuário            |
+| 🛠️ **INFRA** | Infraestrutura e DevOps           |
+| 🧪 **TEST**  | Testes                            |
 
 ---
 
@@ -168,7 +178,8 @@
 **Severidade:** 🟡 ALTO  
 **Local:** `src/lib/nextauth.ts`, `src/lib/usedata.ts`  
 **Problema:** Logs expunham dados de autenticação (senhas, resultados de comparação) e informações internas.  
-**Solução:** 
+**Solução:**
+
 - Removidos `console.log` que expunham senhas de nextauth.ts (6 logs removidos)
 - `console.error` substituídos por `captureError()` que gera código `ERR-XXXXX` e armazena em memória com TTL de 24h
 - Criado `error-store.ts` com store em memória + cleanup automático
@@ -374,52 +385,56 @@
 ## 📋 Resumo por Prioridade
 
 ### 🔴 IMEDIATO (risco de segurança grave)
-| ID | Título | Esforço | Status |
-|----|--------|---------|--------|
-| SEG-001 | RCE via /api/testes | 🟢 Pequeno | ✅ |
-| SEG-002 | Upload sem validação | 🟡 Médio | ✅ |
-| SEG-003 | Memories público | 🟢 Pequeno | ✅ |
-| SEG-004 | Avisos público global | 🟢 Pequeno | ✅ |
-| SEG-005 | CPF validation desligada | 🟢 Pequeno | ❌ |
-| SEG-015 | Workflows .txt não executam | 🟢 Pequeno | ✅ |
+
+| ID      | Título                      | Esforço    | Status |
+| ------- | --------------------------- | ---------- | ------ |
+| SEG-001 | RCE via /api/testes         | 🟢 Pequeno | ✅     |
+| SEG-002 | Upload sem validação        | 🟡 Médio   | ✅     |
+| SEG-003 | Memories público            | 🟢 Pequeno | ✅     |
+| SEG-004 | Avisos público global       | 🟢 Pequeno | ✅     |
+| SEG-005 | CPF validation desligada    | 🟢 Pequeno | ❌     |
+| SEG-015 | Workflows .txt não executam | 🟢 Pequeno | ✅     |
 
 ### 🟡 CURTO PRAZO (melhoria significativa)
-| ID | Título | Esforço | Status |
-|----|--------|---------|--------|
-| SEG-006 | Sessões em memória sem cleanup | 🟡 Médio | ✅ |
-| SEG-007 | Rate limit ausente em 28 rotas | 🔴 Grande | ✅ |
-| SEG-008 | Zod não usado nas rotas | 🟡 Médio | ✅ |
-| SEG-009 | DELETE CPF vulnerável | 🟢 Pequeno | ✅ |
-| SEG-010 | PUT user-active sem confirmação | 🟢 Pequeno | ✅ |
-| ARQ-001 | Duplicação entre módulos | 🔴 Grande | ✅ |
-| SEG-016 | console.log expõe senhas | 🟡 Médio | ✅ |
-| ARQ-002 | Chat duplicado 3x | 🟡 Médio | ✅ |
-| ARQ-003 | Webhook26/27 duplicados | 🟡 Médio | ✅ |
-| ARQ-004 | webhook-oficina + core compartilhado | 🟡 Médio | ✅ |
-| SEG-013 | validarBotApiKey fail open | 🟡 Médio | ✅ |
+
+| ID      | Título                               | Esforço    | Status |
+| ------- | ------------------------------------ | ---------- | ------ |
+| SEG-006 | Sessões em memória sem cleanup       | 🟡 Médio   | ✅     |
+| SEG-007 | Rate limit ausente em 28 rotas       | 🔴 Grande  | ✅     |
+| SEG-008 | Zod não usado nas rotas              | 🟡 Médio   | ✅     |
+| SEG-009 | DELETE CPF vulnerável                | 🟢 Pequeno | ✅     |
+| SEG-010 | PUT user-active sem confirmação      | 🟢 Pequeno | ✅     |
+| ARQ-001 | Duplicação entre módulos             | 🔴 Grande  | ✅     |
+| SEG-016 | console.log expõe senhas             | 🟡 Médio   | ✅     |
+| ARQ-002 | Chat duplicado 3x                    | 🟡 Médio   | ✅     |
+| ARQ-003 | Webhook26/27 duplicados              | 🟡 Médio   | ✅     |
+| ARQ-004 | webhook-oficina + core compartilhado | 🟡 Médio   | ✅     |
+| SEG-013 | validarBotApiKey fail open           | 🟡 Médio   | ✅     |
 
 ### ⚠️ MÉDIO PRAZO (qualidade e performance)
-| ID | Título | Esforço | Status |
-|----|--------|---------|--------|
-| PERF-001 | Dashboard processa na memória | 🟡 Médio | ✅ |
-| PERF-002 | Sidebar recarrega módulos | 🟢 Pequeno | ✅ |
-| PERF-003 | Dynamic imports para libs pesadas | 🟢 Pequeno |
-| INFRA-001 | PhoneMap em JSON | 🟢 Resolvido |
-| INFRA-002 | Rate limit em memória | 🟢 Resolvido |
-| TEST-001 | Cobertura de testes webhooks | 🔴 Grande | ✅ |
-| TEST-002 | Expansão testes de segurança | 🟡 Médio | ✅ |
+
+| ID        | Título                            | Esforço      | Status |
+| --------- | --------------------------------- | ------------ | ------ |
+| PERF-001  | Dashboard processa na memória     | 🟡 Médio     | ✅     |
+| PERF-002  | Sidebar recarrega módulos         | 🟢 Pequeno   | ✅     |
+| PERF-003  | Dynamic imports para libs pesadas | 🟢 Pequeno   |
+| INFRA-001 | PhoneMap em JSON                  | 🟢 Resolvido |
+| INFRA-002 | Rate limit em memória             | 🟢 Resolvido |
+| TEST-001  | Cobertura de testes webhooks      | 🔴 Grande    | ✅     |
+| TEST-002  | Expansão testes de segurança      | 🟡 Médio     | ✅     |
 
 ### 🔵 FUTURO (UX e refinamentos)
-| ID | Título | Esforço |
-|----|--------|---------|
-| UX-001 | Kanban para Eventos | 🟢 Resolvido |
-| UX-002 | Label "Motoristas" em Eventos | 🟢 Resolvido |
-| UX-003 | Ícone Eventos = chave inglesa | 🟢 Resolvido |
-| UX-004 | Estado vazio nos dashboards | 🟢 Resolvido |
-| UX-005 | Acessibilidade em modais | 🟢 Resolvido |
-| UX-006 | Loading spinner no 404 | 🟢 Resolvido |
+
+| ID        | Título                        | Esforço      |
+| --------- | ----------------------------- | ------------ |
+| UX-001    | Kanban para Eventos           | 🟢 Resolvido |
+| UX-002    | Label "Motoristas" em Eventos | 🟢 Resolvido |
+| UX-003    | Ícone Eventos = chave inglesa | 🟢 Resolvido |
+| UX-004    | Estado vazio nos dashboards   | 🟢 Resolvido |
+| UX-005    | Acessibilidade em modais      | 🟢 Resolvido |
+| UX-006    | Loading spinner no 404        | 🟢 Resolvido |
 | INFRA-003 | Sistema de cache (PostgreSQL) | 🟢 Resolvido |
-| INFRA-004 | Variáveis de ambiente | 🟢 Pequeno |
+| INFRA-004 | Variáveis de ambiente         | 🟢 Pequeno   |
 
 ---
 
