@@ -1,45 +1,20 @@
-import { NextRequest, NextResponse } from "next/server"
-import { applyRateLimit } from "@/lib/rate-limit"
-import { TTLMap } from "@/lib/ttl-map"
-import { sendEvolutionText, downloadEvolutionMedia } from "@/lib/usedata"
-import { uploadBuffer } from "@/lib/upload"
+/* eslint-disable @typescript-eslint/no-explicit-any -- payload e sessões de webhook são dinâmicos */
+import { NextRequest, NextResponse } from "next/server";
+import { applyRateLimit } from "@/lib/rate-limit";
+import { TTLMap } from "@/lib/ttl-map";
+import { sendEvolutionText } from "@/lib/usedata";
+import { uploadBuffer } from "@/lib/upload";
+import { evolutionProvider } from "@/lib/whatsapp/evolution-provider";
+import type { WhatsAppMessage, WhatsAppProvider, ProviderContext } from "@/lib/whatsapp/types";
 
-export interface WebhookMessage {
-  number: string
-  instance: string
-  userInput: string
-  lowerInput: string
-  hasImage: boolean
-  hasDocument: boolean
-  hasMedia: boolean
-}
+// compat: alias mantido para não quebrar imports existentes
+export type WebhookMessage = WhatsAppMessage;
 
-//extrai dados da mensagem do webhook do WhatsApp
-export function parseWebhookMessage(body: any): WebhookMessage | null {
-  if (body.event !== "messages.upsert") return null
-
-  const data = body.data
-  if (!data?.message || data.key?.fromMe) return null
-
-  const hasImage = !!data.message.imageMessage
-  const hasDocument = !!data.message.documentMessage
-  const caption = data.message.imageMessage?.caption || data.message.documentMessage?.caption || ""
-  const userInput = (
-    data.message.conversation ||
-    data.message.extendedTextMessage?.text ||
-    caption ||
-    ""
-  ).trim()
-
-  return {
-    number: data.key.remoteJid,
-    instance: body.instance,
-    userInput,
-    lowerInput: userInput.toLowerCase(),
-    hasImage,
-    hasDocument,
-    hasMedia: hasImage || hasDocument,
-  }
+//extrai dados da mensagem do webhook do WhatsApp (delega ao provider Evolution)
+export function parseWebhookMessage(body: any): WhatsAppMessage | null {
+  const parsed = evolutionProvider.parseEvent(body);
+  if (!parsed) return null;
+  return parsed.message;
 }
 
 //aplica limite de taxa na requisicao
@@ -69,47 +44,48 @@ export async function handleExit(
   instance: string,
   number: string,
   sessions: TTLMap<string, any>,
-  sessionKey: string
+  sessionKey: string,
+  sendText?: (text: string) => Promise<void>
 ): Promise<NextResponse | null> {
   if (["sair", "encerrar", "cancelar"].includes(userInput.toLowerCase())) {
-    await sendEvolutionText(instance, number, "Atendimento encerrado. Quando precisar, é só me chamar!")
+    const send = sendText || ((text: string) => sendEvolutionText(instance, number, text))
+    await send("Atendimento encerrado. Quando precisar, é só me chamar!")
     sessions.delete(sessionKey)
     return NextResponse.json({ ok: true })
   }
   return null
 }
 
-//processa e faz upload de midia recebida pelo webhook
+//processa e faz upload de midia recebida pelo webhook (provider-agnostic)
 export async function processWebhookMedia(
-  data: any,
-  instance: string,
-  number: string,
-  hasImage: boolean,
-  hasDocument: boolean,
+  provider: WhatsAppProvider,
+  ctx: ProviderContext,
+  message: WhatsAppMessage,
   folder: string
 ): Promise<string | undefined> {
-  const mediaMsg = data.message.imageMessage || data.message.documentMessage
+  const data = message.raw as any
+  const mediaMsg = data?.message?.imageMessage || data?.message?.documentMessage
   if (!mediaMsg) return undefined
 
   const mimeType = mediaMsg.mimetype || "application/octet-stream"
   const ext = (mimeType.split("/").pop() || "bin").replace(/[^a-z0-9]/g, "")
-  const nomeArquivo = data.message.documentMessage?.fileName || `anexo_${Date.now()}.${ext}`
+  const nomeArquivo = mediaMsg.fileName || `anexo_${Date.now()}.${ext}`
 
-  const buffer = await downloadEvolutionMedia(instance, data.key, data.message?.base64, mediaMsg)
+  const buffer = await provider.downloadMedia(ctx, message)
 
   if (buffer) {
     const url = await uploadBuffer({ buffer, fileName: nomeArquivo, mimeType, folder })
     if (url) {
-      const tipo = hasImage ? "foto" : "documento"
-      await sendEvolutionText(instance, number, `Recebi ${tipo === "foto" ? "a foto" : "o documento"}! ✅`)
+      const tipo = message.hasImage ? "foto" : "documento"
+      await provider.sendText(ctx, message.number, `Recebi ${tipo === "foto" ? "a foto" : "o documento"}! ✅`)
     } else {
-      await sendEvolutionText(instance, number, "Ops, tive um problema ao salvar o arquivo. Mas vou seguir mesmo assim.")
+      await provider.sendText(ctx, message.number, "Ops, tive um problema ao salvar o arquivo. Mas vou seguir mesmo assim.")
     }
     return url || undefined
   }
 
   const link = `${process.env.NEXT_PUBLIC_BASE_URL_WP || ""}/chamado`
-  await sendEvolutionText(instance, number, `Não consegui baixar o arquivo. Se for essencial, acesse: ${link}`)
+  await provider.sendText(ctx, message.number, `Não consegui baixar o arquivo. Se for essencial, acesse: ${link}`)
   return undefined
 }
 

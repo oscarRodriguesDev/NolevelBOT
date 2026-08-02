@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TTLMap } from "@/lib/ttl-map";
-import { sendEvolutionText, checkEmpresaModule } from "@/lib/usedata";
+import { checkEmpresaModule } from "@/lib/usedata";
 import { getSetores } from "@/lib/setores";
 import { prisma } from "@/lib/prisma";
 import {
-  parseWebhookMessage,
-  rateLimited,
   getOrCreateSession,
   handleExit,
   processWebhookMedia,
   saveSession,
   webhookError,
 } from "@/lib/webhook-core";
+import { handleWebhook } from "@/lib/whatsapp/registry";
 
 const FlowState = {
   INICIO: "inicio",
@@ -124,29 +123,17 @@ async function buscarAvisosDoVeiculo(
 
 // Processa mensagens do webhook da oficina para registro de defeitos veiculares
 export async function POST(req: NextRequest) {
-  const rateLimit = await rateLimited(req, "webhook-oficina")
-  if (rateLimit) return rateLimit
+  const r = await handleWebhook(req, "webhook-oficina");
+  if (!r.ok) return r.response;
 
   try {
-    const body = await req.json();
-    const msg = parseWebhookMessage(body);
-    if (!msg) return NextResponse.json({ ok: true });
-
-    const { number, instance, userInput, lowerInput, hasImage, hasDocument, hasMedia } = msg;
-    const data = body.data;
-
-    const evolutionUrl = body?.server_url || "";
-    const evolutionApiKey = body?.apikey || "";
-
-    if (evolutionApiKey) {
-      const empresa = await prisma.empresa.findFirst({ where: { evolution_token: evolutionApiKey } });
-      if (!empresa) {
-        console.warn("apikey invalida recebida no webhook-oficina:", evolutionApiKey);
-      }
-    }
+    const msg = r.message!;
+    const ctx = r.ctx!;
+    const provider = r.provider!;
+    const { number, userInput, lowerInput, hasMedia } = msg;
 
     async function sendText(text: string) {
-      return sendEvolutionText(instance, number, text, evolutionUrl, evolutionApiKey);
+      return provider.sendText(ctx, number, text);
     }
 
     const session = getOrCreateSession(sessions, number, {
@@ -154,13 +141,13 @@ export async function POST(req: NextRequest) {
       lastInteraction: Date.now(),
     });
 
-    const exit = await handleExit(userInput, instance, number, sessions, number);
+    const exit = await handleExit(userInput, ctx.instance, number, sessions, number, sendText);
     if (exit) return exit;
 
     const sess = session;
     // Processa midia recebida e armazena URL na sessao da oficina
     async function processMedia(): Promise<string | undefined> {
-      const url = await processWebhookMedia(data, instance, number, hasImage, hasDocument, sess.matricula || "oficina");
+      const url = await processWebhookMedia(provider, ctx, msg, sess.matricula || "oficina");
       if (url) sess.anexoUrl = url;
       return userInput;
     }

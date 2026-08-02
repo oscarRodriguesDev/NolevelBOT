@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TTLMap } from "@/lib/ttl-map";
-import { sendEvolutionText } from "@/lib/usedata";
 import { prisma } from "@/lib/prisma";
 import {
-  parseWebhookMessage,
-  rateLimited,
   getOrCreateSession,
   handleExit,
   saveSession,
   webhookError,
 } from "@/lib/webhook-core";
+import { handleWebhook } from "@/lib/whatsapp/registry";
 
 const FlowState = {
   INICIO: "inicio",
@@ -31,28 +29,17 @@ type Session = {
 const sessions = new TTLMap<string, Session>(120 * 60 * 1000);
 
 export async function POST(req: NextRequest) {
-  const rateLimit = await rateLimited(req, "webhook-comercial")
-  if (rateLimit) return rateLimit
+  const r = await handleWebhook(req, "webhook-comercial");
+  if (!r.ok) return r.response;
 
   try {
-    const body = await req.json();
-    const msg = parseWebhookMessage(body);
-    if (!msg) return NextResponse.json({ ok: true });
-
-    const { number, instance, userInput, lowerInput } = msg;
-
-    const evolutionUrl = body?.server_url || "";
-    const evolutionApiKey = body?.apikey || "";
-
-    if (evolutionApiKey) {
-      const empresa = await prisma.empresa.findFirst({ where: { evolution_token: evolutionApiKey } });
-      if (!empresa) {
-        console.warn("apikey invalida recebida no webhook-comercial:", evolutionApiKey);
-      }
-    }
+    const msg = r.message!;
+    const ctx = r.ctx!;
+    const provider = r.provider!;
+    const { number, userInput, lowerInput } = msg;
 
     async function sendText(text: string) {
-      return sendEvolutionText(instance, number, text, evolutionUrl, evolutionApiKey);
+      return provider.sendText(ctx, number, text);
     }
 
     const session = getOrCreateSession(sessions, number, {
@@ -60,7 +47,7 @@ export async function POST(req: NextRequest) {
       lastInteraction: Date.now(),
     });
 
-    const exit = await handleExit(userInput, instance, number, sessions, number);
+    const exit = await handleExit(userInput, ctx.instance, number, sessions, number, sendText);
     if (exit) return exit;
 
     switch (session.state) {

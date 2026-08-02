@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TTLMap } from "@/lib/ttl-map";
-import { sendEvolutionText, checkEmpresaModule, getMemoria, saveMemoria, StatusChamado } from "@/lib/usedata";
+import { checkEmpresaModule, getMemoria, saveMemoria, StatusChamado } from "@/lib/usedata";
 import { getSetores } from "@/lib/setores";
 import { prisma } from "@/lib/prisma";
 import {
-  parseWebhookMessage,
-  rateLimited,
   getOrCreateSession,
   handleExit,
   processWebhookMedia,
@@ -13,6 +11,7 @@ import {
   webhookError,
 } from "@/lib/webhook-core";
 import { FlowState, botIA, detectFileIntent, type CorporateSession } from "@/lib/useIA-corporativa";
+import { handleWebhook } from "@/lib/whatsapp/registry";
 
 const menuString = "1. Abrir Chamado, 2. Consultar Chamado, 3. Sair";
 
@@ -27,29 +26,17 @@ type WebhookSession = CorporateSession & { pendingState?: string };
 const sessions = new TTLMap<string, WebhookSession>(120 * 60 * 1000);
 
 export async function POST(req: NextRequest) {
-  const rateLimit = await rateLimited(req, "webhook-corporativo")
-  if (rateLimit) return rateLimit
+  const r = await handleWebhook(req, "webhook-corporativo");
+  if (!r.ok) return r.response;
 
   try {
-    const body = await req.json();
-    const msg = parseWebhookMessage(body);
-    if (!msg) return NextResponse.json({ ok: true });
-
-    const { number, instance, userInput, lowerInput, hasImage, hasDocument, hasMedia } = msg;
-    const data = body.data;
-
-    const evolutionUrl = body?.server_url || "";
-    const evolutionApiKey = body?.apikey || "";
-
-    if (evolutionApiKey) {
-      const empresa = await prisma.empresa.findFirst({ where: { evolution_token: evolutionApiKey } });
-      if (!empresa) {
-        console.warn("apikey invalida recebida no webhook-corporativo:", evolutionApiKey);
-      }
-    }
+    const msg = r.message!;
+    const ctx = r.ctx!;
+    const provider = r.provider!;
+    const { number, userInput, lowerInput, hasMedia } = msg;
 
     async function sendText(text: string) {
-      return sendEvolutionText(instance, number, text, evolutionUrl, evolutionApiKey);
+      return provider.sendText(ctx, number, text);
     }
 
     const session = getOrCreateSession(sessions, number, {
@@ -57,7 +44,7 @@ export async function POST(req: NextRequest) {
       lastInteraction: Date.now(),
     });
 
-    const exit = await handleExit(userInput, instance, number, sessions, number);
+    const exit = await handleExit(userInput, ctx.instance, number, sessions, number, sendText);
     if (exit) return exit;
 
     let avisos = "Sem avisos no momento.";
@@ -77,7 +64,7 @@ export async function POST(req: NextRequest) {
     }
 
     async function processMediaAndAdvance() {
-      const url = await processWebhookMedia(data, instance, number, hasImage, hasDocument, session.cpf || "corporativo");
+      const url = await processWebhookMedia(provider, ctx, msg, session.cpf || "corporativo");
       if (url) session.anexoUrl = url;
       const setores = await getSetores(session.cpf || "");
       await sendText(
@@ -359,7 +346,7 @@ Nao inclua mais nada alem dessas duas palavras.`,
 
       case FlowState.CONFIRMAR: {
         if (hasMedia) {
-          await processWebhookMedia(data, instance, number, hasImage, hasDocument, session.cpf || "corporativo");
+          await processWebhookMedia(provider, ctx, msg, session.cpf || "corporativo");
           let resumo = `*Resumo do Registro:*\n\n👤 Nome: ${session.nome}\n🔢 CPF: ${session.cpf}\n📝 Motivo: ${session.motivoAtual}\n`;
           resumo += `📎 Anexo: ✅\n`;
           resumo += `\nOs dados estao corretos? (sim/nao)`;

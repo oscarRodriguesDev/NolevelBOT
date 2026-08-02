@@ -18,6 +18,9 @@ Registro de decisões e alterações do projeto.
 | 2026-07-09 | `engine-nvidia.js`: motor principal com loop de conversa interativo e tool calling multi-turn | VIBECODE |
 | 2026-07-09 | `index.cjs` (initProject): cria `.env` com KEY_NVIDIA padrão + `.gitignore` com `.env` | VIBECODE |
 | 2026-07-09 | `nvidia-api.js`: `DEFAULT_NVIDIA_KEY` embutida como chave padrão do pacote | VIBECODE |
+| 2026-08-01 | Decisão estratégica: NoLevel sai da infra de WhatsApp → webhook agnóstico (BYO API). Cliente usa a própria API (Evolution/Meta/outra). Migração total, sem clientes ativos. | USUARIO |
+| 2026-08-01 | Arquitetura definida: camada WhatsAppProvider (parse/send/download) isolando o transporte do fluxo de negócio (chamados + IA) | VIBECODE |
+| 2026-08-01 | F1 concluída: criados `src/lib/whatsapp/` (types.ts, evolution-provider.ts, registry.ts). `handleWebhook` centraliza rate limit + parse + auth (401 em token ausente/inválido) + rate limit por empresa. Webhooks oficina/corporativo/comercial refatorados p/ provider agnóstico; máquina de estados intacta. `processWebhookMedia` agora provider-agnostic. Testes novos (13) | VIBECODE |
 
 <!-- Migrado de memorias.md (raiz) -->
 # MEMÓRIAS DO PROJETO — NolevelBOT

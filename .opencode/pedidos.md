@@ -5,9 +5,27 @@ Registro de pedidos do usuário com ID do commit.
 | Data | Pedido | Commit |
 |------|--------|--------|
 | 2026-07-09 | Criar comando `hiskra-code conect` + motor NVIDIA para substituir opencode | v4.0.0 |
+| 2026-08-01 | Checkpoint pré-migração webhook agnóstico (PED-032) | `256e4ca` |
+| 2026-08-01 | Migração webhook agnóstico BYO API (PED-033) | em andamento |
 
 <!-- Migrado de pedidos.md (raiz) -->
 # Pedidos e Solicitações do Usuário
+
+## PED-033: Migração para webhook agnóstico (BYO API WhatsApp) — NoLevel sai da infra de WhatsApp
+**Data:** 01/08/2026
+**Status:** 🔄 Em andamento
+**Commit:** —
+**Decisões do usuário:**
+- Sem clientes ativos → **migração total** (sem convivência em paralelo)
+- NoLevel passa a servir **apenas o webhook**: o cliente usa a própria API de WhatsApp (Evolution self-hosted, Meta Cloud API ou outra qualquer)
+- NoLevel continua fornecendo: sistema de chamados/tickets + bot inteligente (IA)
+- Saída definitiva da responsabilidade de hospedar/gerenciar instâncias WhatsApp
+
+## PED-032: Checkpoint pré-migração webhook agnóstico
+**Data:** 01/08/2026
+**Status:** ✅ Concluído
+**Commit:** `256e4ca`
+**Descrição:** Commit do estado do usuário antes da migração — módulo COMERCIAL no lugar de EVENTOS, webhook-comercial, proxy atualizado, testes ajustados, arquivos de controle movidos para `.opencode/`.
 
 ## PED-031: Isolamento Evolution API por empresa (chave 32bytes + server_url/apikey dinâmicos)
 **Data:** 25/06/2026
