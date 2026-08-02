@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- payload de webhook de provedores externos é dinâmico */
+import { NextRequest } from "next/server";
 import { sendEvolutionText, downloadEvolutionMedia } from "@/lib/usedata";
 import type { WhatsAppProvider, WhatsAppMessage, ProviderContext } from "./types";
 
@@ -81,8 +82,17 @@ export const evolutionProvider: WhatsAppProvider = {
     );
   },
 
-  extractToken(body: any): string | null {
-    const token = body?.apikey;
-    return typeof token === "string" && token.length > 0 ? token : null;
+  extractToken(body: any, req: NextRequest): string | null {
+    // 1º: query param ?token= (universal e controlável pelo cliente — a Evolution
+    //     também envia a URL do webhook com query string; recomendado).
+    // 2º: header x-webhook-token (quando a Evolution do cliente suporta headers custom).
+    // 3º: body.apikey (fonte original; apikey da instância Evolution).
+    const url = new URL(req.url);
+    const queryToken = url.searchParams.get("token");
+    if (queryToken) return queryToken;
+    const headerToken = req.headers.get("x-webhook-token");
+    if (headerToken) return headerToken;
+    const bodyToken = body?.apikey;
+    return typeof bodyToken === "string" && bodyToken.length > 0 ? bodyToken : null;
   },
 };

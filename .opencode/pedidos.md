@@ -13,8 +13,8 @@ Registro de pedidos do usuário com ID do commit.
 
 ## PED-033: Migração para webhook agnóstico (BYO API WhatsApp) — NoLevel sai da infra de WhatsApp
 **Data:** 01/08/2026
-**Status:** 🔄 Em andamento — Fases 1 a 3 concluídas (F4 = doc/validação em runtime)
-**Commits:** `bbc7384` (F1) · `4c0440e` (F2) · `98207df` (registro F2)
+**Status:** 🔄 Em andamento — Fases 1 a 4 concluídas (resta: migração de banco + validação em runtime)
+**Commits:** `bbc7384` (F1) · `4c0440e` (F2) · `98207df` (registro F2) · `0e4e3e1` (F3)
 **Decisões do usuário:**
 - Sem clientes ativos → **migração total** (sem convivência em paralelo)
 - NoLevel passa a servir **apenas o webhook**: o cliente usa a própria API de WhatsApp (Evolution self-hosted, Meta Cloud API ou outra qualquer)
@@ -33,6 +33,11 @@ Registro de pedidos do usuário com ID do commit.
 - `handleWebhookVerify(req)` no registry: delega o handshake GET ao provider adequado
 - Webhooks oficina/corporativo/comercial: export `GET` adicionado
 - 13 testes novos (parse, extractToken por query/header, 401, anti-falsificação, handshake GET 200/403/405); suíte **279 testes** passando; build limpo
+
+**Fase 4 (doc + fallback de token Evolution):**
+- `docs/integracao-whatsapp.md`: guia completo de configuração para clientes (visão geral BYO, token secreto, passo-a-passo Meta Cloud API e Evolution API, verificação de funcionamento e solução de problemas)
+- `evolution-provider.ts`: `extractToken` agora prioriza `?token=` na URL (universal), depois header `x-webhook-token`, depois `body.apikey` — evita que o `apikey` da instância Evolution (que difere do token NoLevel) sobrescreva o token correto da URL
+- +2 testes (prioridade query param e header fallback); suíte **281 testes** passando; build limpo
 
 **Fase 2 (commit `4c0440e`):**
 - Schema (autorizado): colunas `provider` (default `EVOLUTION`) e `api_key` na `empresa`; `evolution_url`/`evolution_token` reaproveitados como URL da API do cliente e token do webhook

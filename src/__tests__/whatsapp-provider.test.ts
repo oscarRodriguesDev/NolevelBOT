@@ -94,6 +94,22 @@ describe("evolutionProvider.extractToken", () => {
     expect(evolutionProvider.extractToken({}, req)).toBeNull()
     expect(evolutionProvider.extractToken({ apikey: "" }, req)).toBeNull()
   })
+
+  it("prioriza o token da query string (?token=) sobre o apikey do body", () => {
+    const req2 = makeReq({})
+    const url = new URL("http://localhost/api/webhook-teste?token=token-da-url")
+    const reqWithQuery = new NextRequest(url, { method: "POST", body: JSON.stringify(baseBody) })
+    expect(evolutionProvider.extractToken(baseBody, reqWithQuery)).toBe("token-da-url")
+  })
+
+  it("aceita o token do header x-webhook-token como fallback", () => {
+    const reqHeader = new NextRequest("http://localhost/api/webhook-teste", {
+      method: "POST",
+      headers: { "x-webhook-token": "token-header" },
+      body: JSON.stringify(baseBody),
+    })
+    expect(evolutionProvider.extractToken(baseBody, reqHeader)).toBe("token-header")
+  })
 })
 
 describe("handleWebhook", () => {
