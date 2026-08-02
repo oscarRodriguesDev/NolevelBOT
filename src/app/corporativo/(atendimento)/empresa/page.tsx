@@ -635,7 +635,7 @@ export default function EmpresaPage() {
           onClick={() => setViewKeyId(null)}
         >
           <div
-            className="rounded-2xl border shadow-2xl w-full max-w-lg overflow-hidden"
+            className="rounded-2xl border shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden"
             style={{
               backgroundColor: "var(--surface)",
               borderColor: "var(--border-subtle)",
@@ -643,7 +643,7 @@ export default function EmpresaPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div
-              className="border-b p-6 flex items-center justify-between"
+              className="border-b p-6 flex items-center justify-between shrink-0"
               style={{
                 backgroundColor: "var(--surface-elevated)",
                 borderColor: "var(--border-subtle)",
@@ -666,7 +666,7 @@ export default function EmpresaPage() {
                 <X size={18} />
               </button>
             </div>
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-6 overflow-y-auto flex-1">
               {/* Token do webhook */}
               <div className="space-y-3">
                 <div>
@@ -848,14 +848,14 @@ export default function EmpresaPage() {
           onClick={closeBotConfig}
         >
           <div
-            className="rounded-2xl border shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+            className="rounded-2xl border shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden"
             style={{
               backgroundColor: "var(--surface)",
               borderColor: "var(--border-subtle)",
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between p-6 border-b" style={{ borderColor: "var(--border-subtle)" }}>
+            <div className="flex items-center justify-between p-6 border-b shrink-0" style={{ borderColor: "var(--border-subtle)" }}>
               <div className="flex items-center gap-2">
                 <Sparkles size={20} style={{ color: "var(--primary)" }} />
                 <h3 className="font-bold text-lg">Configuração do Assistente Virtual</h3>
@@ -869,7 +869,7 @@ export default function EmpresaPage() {
               </button>
             </div>
 
-            <div className="p-6 space-y-5">
+            <div className="p-6 space-y-5 overflow-y-auto flex-1">
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold uppercase tracking-wider opacity-70">Nome do Assistente</label>
                 <input
