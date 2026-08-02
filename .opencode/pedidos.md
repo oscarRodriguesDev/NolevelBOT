@@ -6,20 +6,28 @@ Registro de pedidos do usuário com ID do commit.
 |------|--------|--------|
 | 2026-07-09 | Criar comando `hiskra-code conect` + motor NVIDIA para substituir opencode | v4.0.0 |
 | 2026-08-01 | Checkpoint pré-migração webhook agnóstico (PED-032) | `256e4ca` |
-| 2026-08-01 | Migração webhook agnóstico BYO API (PED-033) | em andamento |
+| 2026-08-01 | Migração webhook agnóstico BYO API (PED-033) | em andamento (F1: `bbc7384`) |
 
 <!-- Migrado de pedidos.md (raiz) -->
 # Pedidos e Solicitações do Usuário
 
 ## PED-033: Migração para webhook agnóstico (BYO API WhatsApp) — NoLevel sai da infra de WhatsApp
 **Data:** 01/08/2026
-**Status:** 🔄 Em andamento
-**Commit:** —
+**Status:** 🔄 Em andamento — Fase 1 concluída
+**Commit:** `bbc7384` (F1)
 **Decisões do usuário:**
 - Sem clientes ativos → **migração total** (sem convivência em paralelo)
 - NoLevel passa a servir **apenas o webhook**: o cliente usa a própria API de WhatsApp (Evolution self-hosted, Meta Cloud API ou outra qualquer)
 - NoLevel continua fornecendo: sistema de chamados/tickets + bot inteligente (IA)
 - Saída definitiva da responsabilidade de hospedar/gerenciar instâncias WhatsApp
+
+**Fase 1 (commit `bbc7384`):**
+- Criada camada `src/lib/whatsapp/`: `types.ts` (interface WhatsAppProvider), `evolution-provider.ts` (parse/send/download extraídos), `registry.ts` (`handleWebhook` centraliza rate limit + parse + auth)
+- Autenticação real: webhook exige token da empresa → **401** em token ausente/inválido (antes aceitava silenciosamente)
+- Rate limit por empresa (além do por IP)
+- Webhooks oficina/corporativo/comercial refatorados para provider-agnostic; máquina de estados preservada
+- `processWebhookMedia` e `handleExit` agora provider-agnostic
+- 13 testes novos em `src/__tests__/whatsapp-provider.test.ts`; suíte 265 testes passando; build limpo
 
 ## PED-032: Checkpoint pré-migração webhook agnóstico
 **Data:** 01/08/2026
