@@ -6,7 +6,7 @@ Registro de pedidos do usuário com ID do commit.
 |------|--------|--------|
 | 2026-07-09 | Criar comando `hiskra-code conect` + motor NVIDIA para substituir opencode | v4.0.0 |
 | 2026-08-01 | Checkpoint pré-migração webhook agnóstico (PED-032) | `256e4ca` |
-| 2026-08-01 | Migração webhook agnóstico BYO API (PED-033) | em andamento (F1: `bbc7384`) |
+| 2026-08-01 | Migração webhook agnóstico BYO API (PED-033) | em andamento (F1: `bbc7384`, F2: `4c0440e`) |
 
 <!-- Migrado de pedidos.md (raiz) -->
 # Pedidos e Solicitações do Usuário
@@ -21,13 +21,27 @@ Registro de pedidos do usuário com ID do commit.
 - NoLevel continua fornecendo: sistema de chamados/tickets + bot inteligente (IA)
 - Saída definitiva da responsabilidade de hospedar/gerenciar instâncias WhatsApp
 
+**Fase 2 (commit `4c0440e`):**
+- Schema (autorizado): colunas `provider` (default `EVOLUTION`) e `api_key` na `empresa`; `evolution_url`/`evolution_token` reaproveitados como URL da API do cliente e token do webhook
+- **Anti-SSRF**: `handleWebhook` monta o contexto de envio a partir da config da empresa (não mais do body)
+- `downloadEvolutionMedia` aceita URL/chave do cliente (BYO)
+- API `/api/empresa`: aceita `provider`, `evolution_url`, `api_key`; expõe `api_key` só para GOD
+- Painel "Integração WhatsApp (BYO)" na tela de empresas: token do webhook (copiar/regenerar), URLs do webhook dos 3 módulos, config do provedor (Evolution/Meta) + URL da API + chave de envio
+- Tela de criação atualizada (token do webhook, não instância Evolution)
+- ⚠️ **MIGRAÇÃO DE BANCO PENDENTE** — usuário deve executar (SQL abaixo)
+  ```sql
+  ALTER TABLE "empresa" ADD COLUMN "provider" TEXT NOT NULL DEFAULT 'EVOLUTION';
+  ALTER TABLE "empresa" ADD COLUMN "api_key" TEXT;
+  ```
+  (ou `npx prisma migrate dev`)
+
 **Fase 1 (commit `bbc7384`):**
 - Criada camada `src/lib/whatsapp/`: `types.ts` (interface WhatsAppProvider), `evolution-provider.ts` (parse/send/download extraídos), `registry.ts` (`handleWebhook` centraliza rate limit + parse + auth)
 - Autenticação real: webhook exige token da empresa → **401** em token ausente/inválido (antes aceitava silenciosamente)
 - Rate limit por empresa (além do por IP)
 - Webhooks oficina/corporativo/comercial refatorados para provider-agnostic; máquina de estados preservada
 - `processWebhookMedia` e `handleExit` agora provider-agnostic
-- 13 testes novos em `src/__tests__/whatsapp-provider.test.ts`; suíte 265 testes passando; build limpo
+- 13 testes novos em `src/__tests__/whatsapp-provider.test.ts`; suíte 266 testes passando; build limpo
 
 ## PED-032: Checkpoint pré-migração webhook agnóstico
 **Data:** 01/08/2026
