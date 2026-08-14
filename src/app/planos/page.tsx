@@ -18,6 +18,7 @@ import {
   LuMessageCircle,
   LuRefreshCcw,
   LuLoader,
+  LuSettings,
 } from "react-icons/lu";
 
 // Tipos do plano vindos da API (tabela planos no banco)
@@ -91,22 +92,23 @@ export default function PlanosPage() {
   const { data: session, status } = useSession();
   const isLogado = status === "authenticated";
   const podeTrocar = isLogado && !!session?.user?.empresaId;
+  const isGod = (session?.user?.role as string) === "GOD";
 
   const [planos, setPlanos] = useState<PlanoApi[]>([]);
   const [loadingPlanos, setLoadingPlanos] = useState(true);
   const [planoAtual, setPlanoAtual] = useState<string | null>(null);
   const [trocando, setTrocando] = useState(false);
 
-  // Carrega planos do banco (público)
+  // Carrega planos do banco (GOD vê todos, inclusive em extinção)
   useEffect(() => {
-    fetch("/api/planos")
+    fetch(`/api/planos${isGod ? "?todos=true" : ""}`)
       .then((r) => (r.ok ? r.json() : []))
       .then((d) => {
         setPlanos(d || []);
         setLoadingPlanos(false);
       })
       .catch(() => setLoadingPlanos(false));
-  }, []);
+  }, [isGod]);
 
   // Carrega o plano atual da empresa quando logado
   useEffect(() => {
@@ -136,6 +138,29 @@ export default function PlanosPage() {
       toast.error(err.message || "Erro ao trocar plano");
     } finally {
       setTrocando(false);
+    }
+  }
+
+  // Exclui (extingue em 30 dias) um plano — apenas GOD
+  async function handleExcluirPlano(plano: PlanoApi) {
+    const confirmado = confirm(
+      `Solicitar a extinção do plano "${plano.nome}"?\n\n` +
+        `• Todas as empresas com este plano serão notificadas via aviso.\n` +
+        `• A exclusão efetiva ocorrerá em 30 dias.\n` +
+        `• As empresas serão migradas para o plano mais vantajoso, sem aumento de custo.\n\n` +
+        `Deseja continuar?`
+    );
+    if (!confirmado) return;
+    try {
+      const res = await fetch(`/api/planos?id=${plano.id}&action=extinguir`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erro ao solicitar extinção");
+      toast.success(data.message || "Extinção agendada!");
+      setPlanos((prev) => prev.filter((p) => p.id !== plano.id));
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao solicitar extinção");
     }
   }
 
@@ -189,6 +214,42 @@ export default function PlanosPage() {
             Implantação guiada incluída em todos os planos.
           </motion.p>
         </div>
+
+        {/* Gestao de planos (GOD) */}
+        {isGod && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.15 }}
+            className="max-w-2xl mx-auto mb-12 rounded-2xl border p-5 flex flex-col sm:flex-row items-center gap-4"
+            style={{ backgroundColor: "var(--surface)", borderColor: "var(--primary)" }}
+          >
+            <div className="flex items-center gap-3 flex-1">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                style={{ backgroundColor: "var(--primary)", color: "#fff" }}
+              >
+                <LuSettings size={18} />
+              </div>
+              <div>
+                <p className="text-sm font-black" style={{ color: "var(--foreground)" }}>
+                  Modo administrador (GOD)
+                </p>
+                <p className="text-xs font-medium opacity-50">
+                  Edite valores, limites, destaque ou solicite a extinção dos planos atuais.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/god/planos"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider text-white transition-all hover:brightness-110"
+              style={{ backgroundColor: "var(--primary)" }}
+            >
+              <LuSettings size={14} />
+              Gerenciar planos
+            </Link>
+          </motion.div>
+        )}
 
         {/* Troca de plano (usuarios logados) */}
         {podeTrocar && (
@@ -278,6 +339,28 @@ export default function PlanosPage() {
                   </span>
                 )}
 
+                {/* Badge de status para GOD */}
+                {isGod && (
+                  <span
+                    className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest text-white shadow"
+                    style={{
+                      backgroundColor:
+                        plano.extincaoEm
+                          ? "var(--status-cancelled)"
+                          : plano.ativo
+                          ? "var(--status-completed)"
+                          : "var(--surface-elevated)",
+                      color: plano.ativo && !plano.extincaoEm ? "#fff" : "var(--foreground)",
+                    }}
+                  >
+                    {plano.extincaoEm
+                      ? `Extinção ${new Date(plano.extincaoEm).toLocaleDateString("pt-BR")}`
+                      : plano.ativo
+                      ? "Ativo"
+                      : "Inativo"}
+                  </span>
+                )}
+
                 {/* Icone + nome */}
                 <div
                   className="w-12 h-12 rounded-xl flex items-center justify-center mb-5"
@@ -341,6 +424,35 @@ export default function PlanosPage() {
                 >
                   {destaque ? "Assinar agora" : `Assinar ${plano.nome}`}
                 </Link>
+
+                {/* Acoes de gestao (GOD) */}
+                {isGod && (
+                  <div className="flex gap-2 mt-3">
+                    <Link
+                      href="/god/planos"
+                      className="flex-1 py-2.5 rounded-xl text-center text-xs font-black uppercase tracking-wider transition-all hover:brightness-90"
+                      style={{
+                        backgroundColor: "var(--surface-elevated)",
+                        color: "var(--foreground)",
+                        border: "1px solid var(--border-subtle)",
+                      }}
+                    >
+                      Editar
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => handleExcluirPlano(plano)}
+                      className="flex-1 py-2.5 rounded-xl text-center text-xs font-black uppercase tracking-wider transition-all hover:brightness-90"
+                      style={{
+                        backgroundColor: "var(--surface-elevated)",
+                        color: "var(--status-cancelled)",
+                        border: "1px solid var(--border-subtle)",
+                      }}
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                )}
               </motion.div>
             );
           })}

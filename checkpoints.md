@@ -32,6 +32,7 @@
 - **Alterado**: `src/app/components/sidebar.tsx` — item "Planos" (`/god/planos`) no bloco GOD.
 - **Alterado**: `src/__tests__/planos.test.ts` — reescrito para funções puras (7 testes).
 - **Build**: ok (69 rotas). **Testes**: 288 passando (Vitest).
+- **Alterado**: `src/app/planos/page.tsx` — GOD vê todos os planos (inativos/em extinção) com badge de status, banner "Modo administrador" → `/god/planos`, botões Editar/Excluir (extinção 30 dias).
 
 ### Pendências / próximos passos
 - **Checkout real**: acesso é liberado sem pagamento (simulado). Definir gateway (Mercado Pago, Stripe) e fluxo de cobrança.
