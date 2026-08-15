@@ -1,5 +1,14 @@
 # Checkpoints — Estado da Sessão
 
+## 2026-08-15 (Webhook Asaas: BUG "Token inválido" — RESOLVIDO)
+
+### Estado final
+- **Sintoma**: webhook Asaas (`PAYMENT_RECEIVED`) chegava no endpoint mas retornava `{"error": "Token inválido"}` mesmo com o token correto no Vercel.
+- **Causa raiz**: o endpoint só lia o token de `Authorization: Bearer` / `x-asaas-token`. **O Asaas envia o token de autenticação do webhook no header `asaas-access-token`** — por isso o token nunca batia.
+- **Correção** (`src/app/api/webhooks/asaas/route.ts`): token agora é lido de `Authorization: Bearer` → `x-asaas-token` → **`asaas-access-token`** → `asaas_access_token`.
+- **Testes**: +1 caso usando o header real (`asaas-access-token`) com `PAYMENT_RECEIVED` → PAGO. **360 passando** (23 arquivos). **Build**: ok.
+- **Pendência externa**: continuar de onde o usuário estava — verificar se o webhook do Asaas já está com o Token de Autenticação preenchido e o endpoint apontando para `https://<domínio>/api/webhooks/asaas`.
+
 ## 2026-08-15 (Escolha Trial vs Pagamento imediato)
 
 ### Estado final

@@ -4,6 +4,13 @@
 
 ## Sessão 2026-08-15
 
+### BUG do webhook Asaas "Token inválido" — RESOLVIDO
+- **Sintoma reportado**: o Asaas envia o evento (ex.: `PAYMENT_RECEIVED`) para `/api/webhooks/asaas`, mas o endpoint responde `{"error": "Token inválido"}` mesmo com o token correto configurado na Vercel.
+- **Causa raiz**: o código só lia o token dos headers `Authorization: Bearer ...` e `x-asaas-token`. **O Asaas envia o token de autenticação do webhook no header `asaas-access-token`** (docs.asaas.com → "What does the Authentication Token mean in the webhook settings?"). Como o token nunca era encontrado, o request caía no 401.
+- **Correção** (`src/app/api/webhooks/asaas/route.ts`): a extração do token passou a aceitar, nesta ordem: `Authorization: Bearer`, `x-asaas-token`, **`asaas-access-token`** e `asaas_access_token` (variação usada pela central de ajuda).
+- **Testes**: `asaas-webhook.test.ts` ganhou helper `criaRequestAsaas` (usa o header real `asaas-access-token`) + teste novo provando que `PAYMENT_RECEIVED` com esse header atualiza a empresa para PAGO. **360 passando** (23 arquivos), build ok.
+- **Lições**: (1) a autenticação de webhook do Asaas NÃO usa `Authorization`/`x-asaas-token` — é `asaas-access-token`; (2) testar com o header real do provedor evita esse tipo de falso "token inválido" em produção.
+
 ### Escolha Trial vs Pagamento imediato
 - **Demanda do usuário**: hoje o trial é sempre aplicado (assinatura Asaas com `paymentDelay`), mesmo para quem informa o cartão. Agora o usuário escolhe: **trial grátis** (pula o pagamento, conta liberada na hora) OU **pagamento imediato** (redireciona para `/pagamento` e cobra já). Quem já recebeu a degustação tem a escolha **indisponível** (pagamento obrigatório).
 - **Schema**: `empresa.trialUsado Boolean @default(false)` — distingue "nunca usou trial" de "já consumiu a degustação". Migração `20260815150000_add_trial_usado`.

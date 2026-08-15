@@ -59,9 +59,15 @@ async function localizarEmpresa(ext: string | null, payment: any) {
 
 export async function POST(req: NextRequest) {
   // 1) Validação de token (header)
+  // O Asaas envia o token de autenticação do webhook no header "asaas-access-token"
+  // (também aceitamos Authorization Bearer / x-asaas-token / asaas_access_token por compatibilidade)
   const tokenHeader = req.headers.get("authorization") || ""
   const token =
-    tokenHeader.replace(/^Bearer\s+/i, "") || req.headers.get("x-asaas-token") || ""
+    tokenHeader.replace(/^Bearer\s+/i, "") ||
+    req.headers.get("x-asaas-token") ||
+    req.headers.get("asaas-access-token") ||
+    req.headers.get("asaas_access_token") ||
+    ""
 
   const expected = getWebhookToken()
   if (!expected || token !== expected) {

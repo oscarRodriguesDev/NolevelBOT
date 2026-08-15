@@ -16,6 +16,15 @@ function criaRequest(body: unknown, token = "whsec_test") {
   })
 }
 
+// Formato real do Asaas: token vai no header asaas-access-token
+function criaRequestAsaas(body: unknown, token = "whsec_test") {
+  return new NextRequest("http://localhost/api/webhooks/asaas", {
+    method: "POST",
+    headers: { "asaas-access-token": token },
+    body: JSON.stringify(body),
+  })
+}
+
 beforeEach(() => {
   vi.resetModules()
   process.env = { ...ENV_BACKUP }
@@ -55,6 +64,38 @@ describe("webhook asaas - validação", () => {
       criaRequest({ event: "PAYMENT_CONFIRMED" }, "token-errado")
     )
     expect(res.status).toBe(401)
+  })
+
+  it("aceita token enviado no header asaas-access-token (formato real do Asaas)", async () => {
+    const { POST } = await import("@/app/api/webhooks/asaas/route")
+
+    mockFindUnique.mockResolvedValue({
+      id: "emp-asaas",
+      nome: "Empresa Asaas",
+      statusPagamento: "PENDENTE",
+      trialAtivo: true,
+    })
+    mockConsultarCobranca.mockResolvedValue({
+      id: "pay_asaas",
+      status: "CONFIRMED",
+      externalReference: "emp-asaas",
+      subscription: null,
+      customer: null,
+    })
+
+    const res = await POST(
+      criaRequestAsaas({
+        id: "evt_asaas",
+        event: "PAYMENT_RECEIVED",
+        payment: { id: "pay_asaas" },
+      })
+    )
+
+    expect(res.status).toBe(200)
+    expect(mockUpdate).toHaveBeenCalledWith({
+      where: { id: "emp-asaas" },
+      data: expect.objectContaining({ statusPagamento: "PAGO" }),
+    })
   })
 
   it("rejeita payload inválido (400)", async () => {
