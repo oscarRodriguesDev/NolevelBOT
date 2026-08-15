@@ -2,6 +2,28 @@
 
 > Autoria: VIBECODE
 
+## Sessão 2026-08-15
+
+### Pagamento real no Asaas — página própria (sem checkout do Asaas)
+- **Decisão do usuário**: o fluxo deve chamar a API do Asaas de verdade (inclusive na sandbox) e o cliente paga em **página própria do app** (NÃO usar payment link/checkout hospedado do Asaas).
+- **Causa do "parece mock"**: `criarAssinatura` enviava `value: 0` + `billingType: CREDIT_CARD` sem cartão → API rejeita (400) → `catch` silencioso no signup engolia o erro → nenhuma assinatura criada.
+- **`src/lib/asaas.ts`** reescrito:
+  - `criarAssinatura` agora recebe `valor` (preço real do plano) e `cartao` (DadosCartao). Fluxo: garante customer → **tokeniza cartão** (`POST /creditCards`) → **cria assinatura** (`POST /subscriptions`) com `creditCardToken`, `value` real, `paymentDelay` (trial), `cycle`.
+  - Aceita `creditCardToken` pré-existente (pula tokenização).
+  - Novos helpers: `getAsaasModo()` ("mock"|"sandbox"|"producao") e `mascararChave()`.
+  - **PCI**: `cartao` é usado UMA vez para tokenizar; número NUNCA é persistido nem logado.
+- **`src/lib/token-pagamento.ts`** (novo): token efêmero assinado HMAC-SHA256 (`NEXTAUTH_SECRET`) com validade de 1h — permite a página `/pagamento` identificar a empresa recém-criada SEM sessão e SEM migração de banco. `criarTokenPagamento`/`validarTokenPagamento` (timing-safe).
+- **Signup** (`src/app/api/signup/route.ts`): NÃO cria mais assinatura (não há cartão no signup). Retorna `pagamentoUrl` (`/pagamento?t=<token>`). Conta nasce PENDENTE + trialAtivo.
+- **`POST/GET /api/empresa/pagamento`** (novo):
+  - `GET ?t=` → dados da cobrança (plano, valor, modo, trial) para montar a página.
+  - `POST` → valida token + cartão (Luhn não aplicado; validações de formato) → busca plano (valor real) → `criarAssinatura` → salva `asaasCustomerId/asaasSubscriptionId/asaasPaymentId`.
+  - Falha do Asaas → `storeError` (error-store) + resposta 502 com `codigo` rastreável (não expõe dado do cartão).
+- **`/pagamento`** (`src/app/pagamento/page.tsx`): página própria de pagamento — resumo da cobrança, formulário com máscaras (número/validade/CVV), aviso + botão de **cartão de teste da sandbox** (5162 3062 1493 2319 · 08/29 · 318), feedback de sucesso/erro com código.
+- **`/assinar`**: após criar conta, redireciona para `pagamentoUrl`.
+- **`GET /api/asaas/diagnostico`** (novo, ADMIN/GOD): mostra `modo` (mock/sandbox/producao), base URL, chave mascarada, se webhook token existe e **testa a API real** (`GET /customers?limit=1`) — confirma se está em mock ou não.
+- **Vercel**: precisa ter `ASAAS_API_KEY` com o nome EXATO. Chave sandbox (`$aact_hmlg_...`) funciona com a URL default sandbox; se um dia for chave de produção (`$aact_prod_...`), definir `ASAAS_BASE_URL=https://api.asaas.com/v3` (senão chama sandbox com chave prod e falha).
+- **Testes**: `asaas.test.ts` reescrito (fluxo real: 4 chamadas, valor real, falha sem cartão, token pré-existente, helpers), `token-pagamento.test.ts` (5), `pagamento-api.test.ts` (9). **Total 353 passando**, build ok (**75 rotas**).
+
 ## Sessão 2026-08-14
 
 ### Mensagem de bloqueio no login (pagamento)

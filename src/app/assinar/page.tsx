@@ -164,8 +164,14 @@ function AssinarContent() {
         throw new Error(data.error || "Erro ao criar conta");
       }
 
-      toast.success("Conta criada! Bem-vindo à Skora.");
-      setTimeout(() => router.push("/"), 1200);
+      toast.success("Conta criada! Conclua o pagamento com cartão.");
+      setTimeout(() => {
+        if (data.pagamentoUrl) {
+          window.location.href = data.pagamentoUrl;
+        } else {
+          router.push("/");
+        }
+      }, 900);
     } catch (err: any) {
       toast.error(err.message || "Erro ao criar conta.");
     } finally {
@@ -225,7 +231,7 @@ function AssinarContent() {
             <span style={{ color: "var(--primary)" }}>{plano.nome}</span>
           </h1>
           <p className="mt-2 text-sm font-medium opacity-50">
-            Crie sua conta e comece a usar em minutos. Sem cartão de crédito.
+            Crie sua conta e conclua o pagamento com cartão de crédito em minutos.
           </p>
         </div>
 
@@ -254,7 +260,7 @@ function AssinarContent() {
               {moduloAutomatico
                 ? "Todos os módulos liberados automaticamente."
                 : `Escolha até ${plano.maxModulos} módulo(s) abaixo.`}{" "}
-              · Acesso liberado imediatamente (checkout em breve).
+              · 7 dias grátis após o pagamento confirmar.
             </p>
           </div>
         </motion.div>
@@ -463,7 +469,7 @@ function AssinarContent() {
           </motion.button>
 
           <p className="text-center text-xs font-medium opacity-40">
-            Ao continuar você concorda com os termos de uso. Teste grátis por 7 dias.
+            Ao continuar você concorda com os termos de uso. 7 dias grátis após o pagamento.
           </p>
         </form>
       </div>

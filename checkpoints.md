@@ -1,5 +1,19 @@
 # Checkpoints — Estado da Sessão
 
+## 2026-08-15 (Pagamento real no Asaas — página própria)
+
+### Estado final
+- **Alterado** `src/lib/asaas.ts`: `criarAssinatura` real — tokeniza cartão (`POST /creditCards`) + cria assinatura (`POST /subscriptions`) com **valor real do plano** e trial via `paymentDelay`. Antes enviava `value: 0` sem cartão (API rejeitava e o erro era engolido → parecia mock). Novos `getAsaasModo()` e `mascararChave()`. PCI: cartão nunca persistido/logado.
+- **Criado** `src/lib/token-pagamento.ts`: token HMAC (`NEXTAUTH_SECRET`, validade 1h) para a página de pagamento pós-signup (sem sessão, sem migração).
+- **Alterado** `src/app/api/signup/route.ts`: não cria mais assinatura; retorna `pagamentoUrl` (`/pagamento?t=...`).
+- **Criado** `POST/GET /api/empresa/pagamento`: GET devolve dados da cobrança; POST valida cartão e cria a assinatura no Asaas, salvando os ids. Falha do Asaas vira `storeError` + resposta 502 com código rastreável.
+- **Criado** `src/app/pagamento/page.tsx`: página própria de pagamento (formulário de cartão com máscaras, cartão de teste da sandbox 5162 3062 1493 2319 · 08/29 · 318, feedback com código de erro).
+- **Alterado** `src/app/assinar/page.tsx`: redireciona para a página de pagamento após criar a conta.
+- **Criado** `GET /api/asaas/diagnostico` (ADMIN/GOD): modo (mock/sandbox/producao), chave mascarada, teste real da API.
+- **Testes**: `asaas.test.ts` (8), `token-pagamento.test.ts` (5), `pagamento-api.test.ts` (9). **353 passando** (Vitest). **Build**: ok (75 rotas).
+- **Config Vercel**: `ASAAS_API_KEY` (nome exato). Chave sandbox usa URL default; chave de produção exigiria `ASAAS_BASE_URL=https://api.asaas.com/v3`.
+- **Pendente (sessões anteriores, inalterado)**: aplicar migração `20260814120000_add_asaas_pagamento` (`npx prisma migrate deploy`), apontar webhook Asaas p/ `/api/webhooks/asaas` e configurar `ASAAS_WEBHOOK_TOKEN` no Vercel.
+
 ## 2026-08-14
 
 ### Estado final

@@ -21,13 +21,27 @@ export type StatusPagamento =
 // Dias de trial padrão concedidos no signup (primeira cobrança após este período)
 export const TRIAL_DIAS = 7
 
+export interface DadosCartao {
+  number: string
+  holderName: string
+  expiryMonth: string | number
+  expiryYear: string | number
+  ccv: string
+}
+
 export interface DadosCriarAssinatura {
-  trial: number // dias de trial
+  trial: number // dias de trial (primeira cobrança após este período)
   cycle: CicloAsaas
   externalReference: string // empresaId
   nome: string
-  cpfCnpj: string
+  cpfCnpj: string // CPF/CNPJ da empresa (customer)
   email?: string
+  valor: number // valor real do plano (em reais)
+  cartao?: DadosCartao // dados do cartão do cliente (nunca persistidos)
+  creditCardToken?: string // token já tokenizado no Asaas (dispensa `cartao`)
+  titularCpfCnpj?: string // CPF/CNPJ do titular do cartão
+  titularPostalCode?: string
+  titularPhone?: string
 }
 
 export interface AssinaturaCriada {
@@ -35,6 +49,7 @@ export interface AssinaturaCriada {
   customerId: string
   paymentId: string | null
   status: string
+  valor: number
   mock: boolean
 }
 
@@ -60,6 +75,20 @@ export function isAsaasConfigured(): boolean {
   return Boolean(process.env.ASAAS_API_KEY)
 }
 
+// Modo de operação atual: "mock" (sem chave), "sandbox" ou "producao"
+export function getAsaasModo(): "mock" | "sandbox" | "producao" {
+  if (!isAsaasConfigured()) return "mock"
+  return getAsaasBaseUrl().includes("sandbox") ? "sandbox" : "producao"
+}
+
+// Exibe a chave mascarada (nunca expõe a chave completa em logs/UI)
+export function mascararChave(chave?: string): string {
+  const k = chave || process.env.ASAAS_API_KEY || ""
+  if (!k) return "(não configurada)"
+  if (k.length <= 10) return `${k.slice(0, 3)}...`
+  return `${k.slice(0, 6)}...${k.slice(-4)}`
+}
+
 async function asaasFetch(
   path: string,
   options: RequestInit = {}
@@ -82,12 +111,15 @@ async function asaasFetch(
   return res.json()
 }
 
-// Cria (ou reutiliza) o cliente no Asaas e a assinatura com período de trial.
+// Cria (ou reutiliza) o cliente no Asaas, tokeniza o cartão e cria a assinatura
+// com o valor REAL do plano e período de trial.
 // externalReference = empresaId, usado pelo webhook para localizar a empresa.
+// ATENÇÃO PCI: `dados.cartao` é usado APENAS para tokenizar no Asaas —
+// o número do cartão NUNCA é persistido nem logado por este módulo.
 export async function criarAssinatura(
   dados: DadosCriarAssinatura
 ): Promise<AssinaturaCriada> {
-  // Fallback dev: sem API key configurada, retorna mock que mantém o fluxo atual
+  // Fallback dev: sem API key configurada, retorna mock que mantém o fluxo local
   if (!isAsaasConfigured()) {
     const paymentId = `pay_mock_${dados.externalReference.slice(0, 8)}_${Date.now()}`
     return {
@@ -95,6 +127,7 @@ export async function criarAssinatura(
       customerId: `cus_mock_${dados.externalReference.slice(0, 8)}`,
       paymentId,
       status: "PENDING",
+      valor: dados.valor,
       mock: true,
     }
   }
@@ -118,13 +151,52 @@ export async function criarAssinatura(
     })
   }
 
-  // 2) Cria assinatura com trial
+  // 2) Garante um token de cartão (fluxo real: página própria de pagamento)
+  let creditCardToken = dados.creditCardToken
+  if (!creditCardToken) {
+    if (!dados.cartao?.number) {
+      throw new Error(
+        "Dados de cartão obrigatórios para criar assinatura real no Asaas (modo: " +
+          getAsaasModo() +
+          ")"
+      )
+    }
+    const card = await asaasFetch("/creditCards", {
+      method: "POST",
+      body: JSON.stringify({
+        customer: customer.id,
+        creditCard: {
+          holderName: dados.cartao.holderName,
+          number: dados.cartao.number.replace(/\D/g, ""),
+          expiryMonth: String(dados.cartao.expiryMonth).padStart(2, "0"),
+          expiryYear: String(dados.cartao.expiryYear).slice(-4),
+          ccv: dados.cartao.ccv.replace(/\D/g, ""),
+        },
+        creditCardHolderInfo: {
+          name: dados.cartao.holderName,
+          email: dados.email,
+          cpfCnpj: dados.titularCpfCnpj || dados.cpfCnpj,
+          postalCode: dados.titularPostalCode || "",
+          addressNumber: "",
+          phone: dados.titularPhone || "",
+          mobilePhone: dados.titularPhone || "",
+        },
+      }),
+    })
+    creditCardToken = card?.id
+    if (!creditCardToken) {
+      throw new Error("Asaas não retornou token de cartão ao tokenizar")
+    }
+  }
+
+  // 3) Cria assinatura com trial e valor real do plano
   const assinatura = await asaasFetch("/subscriptions", {
     method: "POST",
     body: JSON.stringify({
       customer: customer.id,
       billingType: "CREDIT_CARD",
-      value: 0, // valor ajustado pelo plano/checkout no Asaas
+      creditCardToken,
+      value: dados.valor,
       cycle: dados.cycle,
       externalReference: dados.externalReference,
       description: `Assinatura NoLevel - ${dados.nome}`,
@@ -138,6 +210,7 @@ export async function criarAssinatura(
     customerId: customer.id,
     paymentId: assinatura.paymentId || null,
     status: assinatura.status || "PENDING",
+    valor: dados.valor,
     mock: false,
   }
 }

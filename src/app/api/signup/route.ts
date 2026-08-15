@@ -6,7 +6,7 @@ import crypto from "crypto"
 import { limparCPF } from "@/util/limparcpfs"
 import { validarModulos, gerarEmailAdmin } from "@/lib/planos"
 import { getPlanoPorSlug } from "@/lib/planos-server"
-import { criarAssinatura, isAsaasConfigured } from "@/lib/asaas"
+import { criarTokenPagamento } from "@/lib/token-pagamento"
 
 // Gera uma chave de API segura de 32 bytes (64 caracteres hex)
 function gerarApiKey(): string {
@@ -119,31 +119,10 @@ export async function POST(req: NextRequest) {
       return { novaEmpresa, novoAdmin }
     })
 
-    // Assinatura no Asaas (fallback mock em dev quando sem ASAAS_API_KEY)
-    let assinatura = null
-    try {
-      assinatura = await criarAssinatura({
-        trial: 7,
-        cycle: "MONTHLY",
-        externalReference: resultado.novaEmpresa.id,
-        nome: nomeEmpresa,
-        cpfCnpj: cnpj,
-        email: emailAdmin,
-      })
-      if (assinatura.subscriptionId) {
-        await prisma.empresa.update({
-          where: { id: resultado.novaEmpresa.id },
-          data: {
-            asaasCustomerId: assinatura.customerId,
-            asaasSubscriptionId: assinatura.subscriptionId,
-            asaasPaymentId: assinatura.paymentId,
-          },
-        })
-      }
-    } catch (e) {
-      // Falha no Asaas não derruba o signup (fluxo atual continua em dev)
-      console.error("Falha ao criar assinatura Asaas:", e)
-    }
+    // Pagamento: a conta nasce em trial com acesso imediato.
+    // O cliente conclui o pagamento com cartão na página própria /pagamento,
+    // que recebe um token efêmero assinado (sem sessão ainda).
+    const pagamentoUrl = `/pagamento?t=${criarTokenPagamento(resultado.novaEmpresa.id)}`
 
     return NextResponse.json(
       {
@@ -151,9 +130,7 @@ export async function POST(req: NextRequest) {
         empresa: { id: resultado.novaEmpresa.id, nome: resultado.novaEmpresa.nome },
         admin: { id: resultado.novoAdmin.id, email: resultado.novoAdmin.email },
         plano: planoRegistro.nome,
-        asaas: assinatura
-          ? { subscriptionId: assinatura.subscriptionId, mock: assinatura.mock }
-          : null,
+        pagamentoUrl,
       },
       { status: 201 }
     )
