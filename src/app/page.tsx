@@ -71,6 +71,26 @@ export default function LoginPage() {
     }
 
     try {
+      // Pré-verificação de acesso: mostra o MOTIVO quando o login está
+      // bloqueado por pagamento (em vez de "email ou senha incorretos")
+      const verif = await fetch("/api/auth/verificar-acesso", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      })
+        .then((r) => r.json())
+        .catch(() => ({ acessivel: true }));
+
+      if (verif && verif.acessivel === false) {
+        setError(
+          verif.mensagem ||
+            "Seu acesso está bloqueado no momento. Entre em contato com o suporte."
+        );
+        setPassword("");
+        setLoading(false);
+        return;
+      }
+
       const credentials: Record<string, string> = { email, password }
       if (failedAttempts >= 3 && turnstileToken) {
         credentials.turnstileToken = turnstileToken

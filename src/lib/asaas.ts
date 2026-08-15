@@ -18,6 +18,9 @@ export type StatusPagamento =
   | "CANCELADO"
   | "REEMBOLSADO"
 
+// Dias de trial padrão concedidos no signup (primeira cobrança após este período)
+export const TRIAL_DIAS = 7
+
 export interface DadosCriarAssinatura {
   trial: number // dias de trial
   cycle: CicloAsaas
@@ -175,6 +178,41 @@ export async function cancelarAssinatura(
   await asaasFetch(`/subscriptions/${subscriptionId}`, {
     method: "DELETE",
   })
+}
+
+export interface AssinaturaConsultada {
+  id: string
+  status: string
+  cycle: string | null
+  nextDueDate: string | null // próximo vencimento da recorrência
+  value: number
+  mock: boolean
+}
+
+// Consulta uma assinatura no Asaas (usada para exibir vencimento no financeiro)
+export async function consultarAssinatura(
+  subscriptionId: string
+): Promise<AssinaturaConsultada> {
+  if (!isAsaasConfigured()) {
+    return {
+      id: subscriptionId,
+      status: "ACTIVE",
+      cycle: "MONTHLY",
+      nextDueDate: null,
+      value: 0,
+      mock: true,
+    }
+  }
+
+  const s = await asaasFetch(`/subscriptions/${subscriptionId}`)
+  return {
+    id: s.id,
+    status: s.status,
+    cycle: s.cycle || null,
+    nextDueDate: s.nextDueDate || null,
+    value: Number(s.value) || 0,
+    mock: false,
+  }
 }
 
 // Mapeia o status do Asaas para o enum do schema

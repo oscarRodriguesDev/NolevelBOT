@@ -4,6 +4,22 @@
 
 ## Sessão 2026-08-14
 
+### Mensagem de bloqueio no login (pagamento)
+- **Problema**: quando o acesso estava bloqueado por pagamento, o login falhava com "Email ou senha incorretos" — sem explicar o motivo.
+- **Criado** `POST /api/auth/verificar-acesso` — pré-verificação ANTES do `signIn`: informa motivo do bloqueio com mensagem específica (ATRASADO/CANCELADO/REEMBOLSADO/PENDENTE sem trial). Não revela existência de conta (email inexistente/GOD → `acessivel: true`). Em falha de banco, não bloqueia o fluxo. Rate limit 20/min.
+- **Alterado** `src/app/page.tsx` (login): antes de chamar `signIn`, consulta `/api/auth/verificar-acesso`; se `acessivel === false`, exibe a mensagem do motivo e não tenta logar (também não incrementa `failedAttempts`/captcha).
+- **Alterado** `src/lib/nextauth.ts`: bloqueio por pagamento NÃO chama mais `trackFailedLogin` (senão o usuário bloqueado acumulava tentativas e disparava Turnstile à toa).
+- **Testes**: `verificar-acesso.test.ts` (9: inexistente, GOD, PAGO, trial, ATRASADO, CANCELADO, REEMBOLSADO, PENDENTE, falha de banco). Total 336 passando, build ok (72 rotas).
+
+### Área "Assinatura e Financeiro" (ADMIN)
+- **Decisão**: dados financeiros visíveis APENAS para o ADMIN da própria empresa (quem comprou) e GOD. GESTOR/ATENDENTE não veem.
+- **Criado** `src/lib/assinatura.ts` — funções puras: `calcularTrialFim` (createdAt + TRIAL_DIAS), `calcularDiasRestantes`, `formatarDataBR`, `labelCiclo`, `montarResumoAssinatura` (plano, status, trial, vencimento, ciclo, ids Asaas).
+- **Trial calculado por `createdAt` + 7 dias** (constante `TRIAL_DIAS` em `asaas.ts`) — não exigiu nova coluna no schema.
+- **Criado** `GET /api/empresa/assinatura` — rate limit, RBAC `["ADMIN","GOD"]`, ADMIN restrito à própria empresa. Busca nome do plano dinâmico e, se houver `asaasSubscriptionId`, consulta o Asaas para `nextDueDate` (vencimento da recorrência) + ciclo.
+- **Criado** `consultarAssinatura` em `asaas.ts` (GET /subscriptions/{id}; mock em dev).
+- **UI** (`src/app/minha-empresa/page.tsx`): seção "Assinatura e Financeiro" renderizada só para `userRole === 'ADMIN'`. Cards: plano, status do pagamento (badge colorido), trial (dias restantes + data fim + aviso de 1ª cobrança) OU recorrência (próximo vencimento + ciclo) quando PAGO OU aviso de bloqueio quando ATRASADO/CANCELADO/REEMBOLSADO/PENDENTE.
+- **Testes**: `assinatura.test.ts` (10) + `assinatura-api.test.ts` (9: permissões GESTOR/outra-empresa, GOD liberado, trial, vencimento, 404). Total 327 passando, build ok (71 rotas).
+
 ### Integração Asaas (assinaturas SaaS) + bloqueio por pagamento
 - **Schema** (`prisma/schema.prisma`): enum `statusPagamento` (PENDENTE/PAGO/ATRASADO/CANCELADO/REEMBOLSADO) + campos em `empresa`: `statusPagamento` (default PENDENTE), `asaasCustomerId?`, `asaasSubscriptionId?`, `asaasPaymentId?`, `trialAtivo` (default true).
 - **Migração**: `20260814120000_add_asaas_pagamento` (criada, NÃO aplicada no banco — aplicar com `npx prisma migrate deploy`).

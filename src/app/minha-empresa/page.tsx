@@ -7,9 +7,68 @@ import { ROLE } from '@prisma/client'
 import {
   Building2, Key, Copy, RotateCw, Check, X, Loader2, Image,
   Sparkles, Headphones, Wrench, CalendarCheck, Save, Link2,
+  CreditCard, Timer, CalendarClock, AlertTriangle, CircleDollarSign, Ban,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { uploadFileDirect } from '@/lib/upload-client'
+
+interface Assinatura {
+  plano: string
+  nomePlano: string | null
+  statusPagamento: string
+  trialAtivo: boolean
+  trialDias: number
+  trialInicio: string | null
+  trialFim: string | null
+  trialDiasRestantes: number | null
+  dataVencimento: string | null
+  ciclo: string | null
+  assinaturaId: string | null
+  clienteId: string | null
+  assinaturaAsaas: boolean
+}
+
+const STATUS_PAGAMENTO_LABEL: Record<string, string> = {
+  PENDENTE: 'Pendente',
+  PAGO: 'Pago',
+  ATRASADO: 'Em atraso',
+  CANCELADO: 'Cancelado',
+  REEMBOLSADO: 'Reembolsado',
+}
+
+const CICLO_LABEL: Record<string, string> = {
+  WEEKLY: 'Semanal',
+  BIWEEKLY: 'Quinzenal',
+  MONTHLY: 'Mensal',
+  QUARTERLY: 'Trimestral',
+  SEMIANNUALLY: 'Semestral',
+  YEARLY: 'Anual',
+}
+
+function formatarDataBR(iso: string | null): string {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return '—'
+  return d.toLocaleDateString('pt-BR')
+}
+
+function diasRestantesDe(iso: string | null): number | null {
+  if (!iso) return null
+  const alvo = new Date(iso).getTime()
+  if (isNaN(alvo)) return null
+  return Math.max(0, Math.ceil((alvo - Date.now()) / 86400000))
+}
+
+function corStatus(status: string): string {
+  switch (status) {
+    case 'PAGO': return 'var(--status-completed)'
+    case 'PENDENTE': return 'var(--status-waiting)'
+    case 'ATRASADO': return 'var(--status-cancelled)'
+    case 'REEMBOLSADO': return 'var(--status-in-progress)'
+    case 'CANCELADO': return 'var(--status-new)'
+    default: return 'var(--status-waiting)'
+  }
+}
 
 interface Empresa {
   id: string
@@ -52,6 +111,9 @@ export default function MinhaEmpresaPage() {
   const [plano, setPlano] = useState<string>('')
   const [nomePlano, setNomePlano] = useState('')
 
+  // assinatura / financeiro (visível apenas para o ADMIN que comprou)
+  const [assinatura, setAssinatura] = useState<Assinatura | null>(null)
+
   // edição dos dados da empresa
   const [editando, setEditando] = useState(false)
   const [editForm, setEditForm] = useState({ nome: '', cnpj: '', setores: '' })
@@ -83,6 +145,8 @@ export default function MinhaEmpresaPage() {
 
   const userRole = session?.user?.role as ROLE | undefined
   const isAdmin = userRole === 'ADMIN' || userRole === 'GESTOR'
+  // dono = ADMIN (quem comprou a aplicação) — vê os dados financeiros
+  const isOwner = userRole === 'ADMIN'
 
   useEffect(() => {
     if (status === 'loading') return
@@ -133,6 +197,15 @@ export default function MinhaEmpresaPage() {
       })
       .catch(() => {})
   }, [status, session, isAdmin])
+
+  // carrega dados de assinatura/financeiro — somente ADMIN
+  useEffect(() => {
+    if (status === 'loading' || !session?.user?.empresaId || !isOwner) return
+    fetch(`/api/empresa/assinatura?id=${session.user.empresaId}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => setAssinatura(data))
+      .catch(() => setAssinatura(null))
+  }, [status, session, isOwner])
 
   async function reloadEmpresa() {
     if (!session?.user?.empresaId) return
@@ -368,6 +441,112 @@ export default function MinhaEmpresaPage() {
             })}
           </div>
         </div>
+
+        {/* Assinatura e Financeiro — visível apenas para o ADMIN que comprou */}
+        {isOwner && assinatura && (
+          <section
+            className="rounded-3xl border p-6 sm:p-8"
+            style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border-subtle)' }}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <CreditCard size={18} style={{ color: 'var(--primary)' }} />
+              <h2 className="text-lg font-bold">Assinatura e Financeiro</h2>
+            </div>
+            <p className="text-xs opacity-60 mb-5">
+              Plano contratado, período de teste e vencimento da recorrência.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Plano */}
+              <div className="p-4 rounded-xl" style={{ backgroundColor: 'var(--surface-elevated)' }}>
+                <p className="text-[10px] font-bold uppercase tracking-wider opacity-50 mb-1">Plano</p>
+                <p className="text-lg font-bold" style={{ color: 'var(--primary)' }}>
+                  {assinatura.nomePlano || assinatura.plano || '—'}
+                </p>
+                <p className="text-xs opacity-60 font-mono">{assinatura.plano}</p>
+              </div>
+
+              {/* Status do pagamento */}
+              <div className="p-4 rounded-xl" style={{ backgroundColor: 'var(--surface-elevated)' }}>
+                <p className="text-[10px] font-bold uppercase tracking-wider opacity-50 mb-1">Status do pagamento</p>
+                <span
+                  className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full"
+                  style={{
+                    backgroundColor: corStatus(assinatura.statusPagamento),
+                    color: '#fff',
+                  }}
+                >
+                  {STATUS_PAGAMENTO_LABEL[assinatura.statusPagamento] || assinatura.statusPagamento}
+                </span>
+              </div>
+
+              {/* Trial */}
+              {assinatura.trialAtivo ? (
+                <div className="p-4 rounded-xl border-2 border-dashed" style={{ backgroundColor: 'var(--surface-elevated)', borderColor: 'var(--status-waiting)' }}>
+                  <p className="text-[10px] font-bold uppercase tracking-wider opacity-50 mb-1 flex items-center gap-1">
+                    <Timer size={12} /> Período de teste
+                  </p>
+                  <p className="text-2xl font-black" style={{ color: 'var(--status-waiting)' }}>
+                    {assinatura.trialDiasRestantes ?? diasRestantesDe(assinatura.trialFim) ?? '—'}{' '}
+                    <span className="text-sm font-semibold">dia(s) restantes</span>
+                  </p>
+                  <p className="text-xs opacity-60 mt-1">
+                    Termina em <strong>{formatarDataBR(assinatura.trialFim)}</strong>
+                  </p>
+                  <p className="text-[11px] opacity-50 mt-2">
+                    Ao final do teste, será cobrada a 1ª mensalidade do plano.
+                  </p>
+                </div>
+              ) : assinatura.statusPagamento === 'PAGO' ? (
+                <div className="p-4 rounded-xl border-2 border-dashed" style={{ backgroundColor: 'var(--surface-elevated)', borderColor: 'var(--status-completed)' }}>
+                  <p className="text-[10px] font-bold uppercase tracking-wider opacity-50 mb-1 flex items-center gap-1">
+                    <CalendarClock size={12} /> Recorrência
+                  </p>
+                  <p className="text-sm font-bold" style={{ color: 'var(--status-completed)' }}>
+                    Próximo vencimento
+                  </p>
+                  <p className="text-lg font-bold">
+                    {formatarDataBR(assinatura.dataVencimento)}
+                  </p>
+                  <p className="text-xs opacity-60 mt-1">
+                    Cobrança {CICLO_LABEL[assinatura.ciclo?.toUpperCase() || ''] || assinatura.ciclo || '—'}
+                  </p>
+                </div>
+              ) : assinatura.statusPagamento === 'ATRASADO' ? (
+                <div className="p-4 rounded-xl border-2 border-dashed" style={{ backgroundColor: 'var(--surface-elevated)', borderColor: 'var(--status-cancelled)' }}>
+                  <p className="text-[10px] font-bold uppercase tracking-wider opacity-50 mb-1 flex items-center gap-1">
+                    <AlertTriangle size={12} /> Atenção
+                  </p>
+                  <p className="text-sm font-bold" style={{ color: 'var(--status-cancelled)' }}>
+                    Pagamento em atraso
+                  </p>
+                  <p className="text-[11px] opacity-60 mt-2">
+                    Regularize o pagamento para desbloquear o acesso da empresa.
+                  </p>
+                </div>
+              ) : (
+                <div className="p-4 rounded-xl border-2 border-dashed" style={{ backgroundColor: 'var(--surface-elevated)', borderColor: 'var(--status-cancelled)' }}>
+                  <p className="text-[10px] font-bold uppercase tracking-wider opacity-50 mb-1 flex items-center gap-1">
+                    <Ban size={12} /> Assinatura
+                  </p>
+                  <p className="text-sm font-bold" style={{ color: 'var(--status-cancelled)' }}>
+                    {STATUS_PAGAMENTO_LABEL[assinatura.statusPagamento] || assinatura.statusPagamento}
+                  </p>
+                  <p className="text-[11px] opacity-60 mt-2">
+                    Sua assinatura não está ativa no momento.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {assinatura.assinaturaId && (
+              <p className="text-[10px] opacity-40 font-mono mt-4">
+                Assinatura: {assinatura.assinaturaId}
+                {!assinatura.assinaturaAsaas && ' (ambiente de desenvolvimento)'}
+              </p>
+            )}
+          </section>
+        )}
 
         {/* Dados da empresa */}
         <section

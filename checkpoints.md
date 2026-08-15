@@ -3,6 +3,21 @@
 ## 2026-08-14
 
 ### Estado final
+- **Criado**: `POST /api/auth/verificar-acesso` — retorna motivo do bloqueio de login por pagamento (ATRASADO/CANCELADO/REEMBOLSADO/PENDENTE) com mensagem amigável; não revela conta inexistente; falha de banco não bloqueia fluxo.
+- **Alterado**: `src/app/page.tsx` — login consulta a verificação antes do `signIn` e mostra o motivo específico do bloqueio (sem incrementar falhas/captcha).
+- **Alterado**: `src/lib/nextauth.ts` — bloqueio por pagamento não conta mais como senha errada.
+- **Testes**: `verificar-acesso.test.ts` (9 testes). **336 passando** (Vitest). **Build**: ok (72 rotas).
+- **Pendente (sessões anteriores, inalterado)**: aplicar migração `20260814120000_add_asaas_pagamento` (`npx prisma migrate deploy`) e apontar webhook Asaas p/ `/api/webhooks/asaas`.
+
+## 2026-08-14 (Assinatura/Financeiro)
+- **Criado**: `src/lib/assinatura.ts` — cálculo de trial (createdAt + 7d), dias restantes, formatação BR, resumo de assinatura.
+- **Criado**: `GET /api/empresa/assinatura` — RBAC ADMIN/GOD; ADMIN só da própria empresa; vencimento da recorrência via Asaas (`nextDueDate` + ciclo).
+- **Criado**: `consultarAssinatura` em `src/lib/asaas.ts` (GET /subscriptions/{id}, mock em dev).
+- **Alterado**: `src/app/minha-empresa/page.tsx` — seção "Assinatura e Financeiro" visível apenas para ADMIN (plano, status, trial com dias restantes, vencimento/ciclo, avisos de bloqueio).
+- **Testes**: `assinatura.test.ts` + `assinatura-api.test.ts` (19 testes). **327 passando** (Vitest). **Build**: ok (71 rotas).
+- **Pendente (sessão anterior, inalterado)**: aplicar migração `20260814120000_add_asaas_pagamento` (`npx prisma migrate deploy`) e apontar webhook Asaas p/ `/api/webhooks/asaas`.
+
+## 2026-08-14 (Asaas)
 - **Criado**: `src/lib/asaas.ts` — criarAssinatura, consultarCobranca, cancelarAssinatura, mapearStatusAsaas, fallback mock sem API key.
 - **Criado**: `src/app/api/webhooks/asaas/route.ts` — token + consulta reversa + idempotência (TTLMap 24h) + mapeamento de eventos + invalida cache de módulos.
 - **Alterado**: `prisma/schema.prisma` — enum `statusPagamento` + 4 campos novos em `empresa`.

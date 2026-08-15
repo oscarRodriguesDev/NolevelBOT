@@ -55,7 +55,8 @@ export const authOptions: NextAuthOptions = {
           const pago = empresa?.statusPagamento === "PAGO"
           const emTrial = empresa?.trialAtivo === true
           if (!pago && !emTrial) {
-            await trackFailedLogin(credentials.email)
+            // Não conta como senha errada (não dispara captcha):
+            // o motivo é informado pela rota /api/auth/verificar-acesso
             return null
           }
         }
