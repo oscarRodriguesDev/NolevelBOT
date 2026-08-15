@@ -24,7 +24,15 @@ async function empresaPeloToken(token: string) {
   if (!empresaId) return null
   return prisma.empresa.findUnique({
     where: { id: empresaId },
-    select: { id: true, nome: true, plano: true, cnpj: true, statusPagamento: true },
+    select: {
+      id: true,
+      nome: true,
+      plano: true,
+      cnpj: true,
+      statusPagamento: true,
+      trialAtivo: true,
+      trialUsado: true,
+    },
   })
 }
 
@@ -53,6 +61,9 @@ export async function GET(req: NextRequest) {
     asaasConfigurado: isAsaasConfigured(),
     trialDias: TRIAL_DIAS,
     statusPagamento: empresa.statusPagamento,
+    trialAtivo: empresa.trialAtivo,
+    trialUsado: empresa.trialUsado,
+    trialDisponivel: !empresa.trialUsado,
   })
 }
 
@@ -102,8 +113,10 @@ export async function POST(req: NextRequest) {
 
     let assinatura
     try {
+      // Quem chega nesta rota optou por PAGAMENTO IMEDIATO (trial não usado aqui).
+      // `trial: 0` → primeira cobrança é imediata (sem paymentDelay no Asaas).
       assinatura = await criarAssinatura({
-        trial: TRIAL_DIAS,
+        trial: 0,
         cycle: "MONTHLY",
         externalReference: empresa.id,
         nome: empresa.nome,
@@ -139,6 +152,8 @@ export async function POST(req: NextRequest) {
         asaasCustomerId: assinatura.customerId,
         asaasSubscriptionId: assinatura.subscriptionId,
         asaasPaymentId: assinatura.paymentId,
+        // Pagamento imediato: não está mais em trial (acesso só após confirmação PAGO).
+        trialAtivo: false,
       },
     })
 

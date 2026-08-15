@@ -4,6 +4,13 @@
 
 ## 2026-08-15
 
+- [x] **Feature**: escolha entre **trial grátis de 7 dias** (default, pula pagamento) e **pagamento imediato** no cadastro. Quem já consumiu a degustação não pode usar trial de novo (pagamento obrigatório). — **FEITO** — (commit desta sessão)
+  - **Banco**: `empresa.trialUsado` + migração `20260815150000_add_trial_usado` (aplicada via `migrate deploy`; `migrate dev` quebra na shadow por ordem alfabética das migrações históricas).
+  - **Signup**: `usarTrial` (default true) — trial não gera `pagamentoUrl`; pagamento gera.
+  - **Pagamento**: assinatura Asaas `trial: 0` (cobrança imediata, sem `paymentDelay`).
+  - **Front**: checkbox no `/assinar`; banner "trial já utilizado" no `/pagamento`; card "Degustação utilizada" no `minha-empresa`.
+  - **Testes**: +6 (`signup-trial.test.ts`), 359 passando, build ok.
+
 - [x] **BUG (fazer amanhã)**: após o cadastro, o sistema não redireciona para a tela onde o usuário coloca os dados de pagamento (`/pagamento?t=<token>`). Fluxo esperado: `/assinar` cria a conta → redireciona para a página de pagamento. — **RESOLVIDO** — (commit desta sessão)
   - **Causa raiz**: a migração `20260814120000_add_asaas_pagamento` NÃO estava registrada na tabela `_prisma_migrations` (as colunas `statusPagamento`/`trialAtivo`/`asaas*` existiam no banco por aplicação manual, mas o Prisma considerava a migração pendente). O `prisma migrate deploy` falhava com `type "statusPagamento" already exists` e o fluxo ficava num estado inconsistente — qualquer intervenção (redeploy/dev) podia quebrar o signup sem `pagamentoUrl`.
   - **Correção**: `prisma migrate resolve --applied 20260814120000_add_asaas_pagamento` → banco 100% consistente (`migrate status`: up to date).

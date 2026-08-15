@@ -4,6 +4,15 @@
 
 ## Sessão 2026-08-15
 
+### Escolha Trial vs Pagamento imediato
+- **Demanda do usuário**: hoje o trial é sempre aplicado (assinatura Asaas com `paymentDelay`), mesmo para quem informa o cartão. Agora o usuário escolhe: **trial grátis** (pula o pagamento, conta liberada na hora) OU **pagamento imediato** (redireciona para `/pagamento` e cobra já). Quem já recebeu a degustação tem a escolha **indisponível** (pagamento obrigatório).
+- **Schema**: `empresa.trialUsado Boolean @default(false)` — distingue "nunca usou trial" de "já consumiu a degustação". Migração `20260815150000_add_trial_usado`.
+  - ⚠️ **Nota técnica**: `prisma migrate dev` falha na shadow database (migrações históricas `20260802192500`/`20260802213428` fora de ordem alfabética — a `02192500` roda antes da `02213428` na sombra). Solução usada: criar a migração manualmente e aplicar com `prisma migrate deploy` (não usa shadow).
+- **Signup**: `usarTrial` default true. Trial → `trialAtivo=true`+`trialUsado=true`, resposta sem `pagamentoUrl`. Pagamento → `trialAtivo=false`+`trialUsado=false`, resposta com `pagamentoUrl`.
+- **Pagamento**: `criarAssinatura({ trial: 0 })` (cobrança imediata, sem trial embutido) + `trialAtivo: false` no update. `GET` retorna `trialUsado`/`trialDisponivel`.
+- **UX**: `/assinar` com checkbox (default trial; botão muda o texto); `/pagamento` com banner "trial já utilizado"; painel `minha-empresa` com card "Degustação utilizada".
+- **Testes**: +6 (`signup-trial.test.ts`), `pagamento-api.test.ts` atualizado. Total 359, build ok.
+
 ### BUG do redirect pós-cadastro — RESOLVIDO
 - **Sintoma reportado**: `/assinar` criava a conta mas não redirecionava para `/pagamento?t=<token>`.
 - **Causa raiz**: a migração `20260814120000_add_asaas_pagamento` NÃO estava registrada em `_prisma_migrations` — as colunas e o tipo `statusPagamento` existiam no banco (aplicados manualmente no Supabase), mas o Prisma a tratava como pendente. `migrate deploy` quebrava (`type "statusPagamento" already exists`) e qualquer inconsistência/deploy antigo podia derrubar o signup sem devolver `pagamentoUrl`.

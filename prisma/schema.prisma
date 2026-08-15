@@ -64,6 +64,7 @@ model empresa {
   asaasSubscriptionId String? // id da assinatura no Asaas
   asaasPaymentId  String?   // id do último pagamento no Asaas
   trialAtivo      Boolean   @default(true) // true enquanto estiver no período de teste
+  trialUsado      Boolean   @default(false) // true se a empresa já consumiu a degustação trial (não pode usar de novo)
   evolution_url   String?                    // URL base da API de WhatsApp do cliente (BYO)
   evolution_token String?                    // token de autenticação do webhook emitido pelo NoLevel
   provider        String    @default("EVOLUTION") // qual API de WhatsApp o cliente usa (EVOLUTION | META | ...)

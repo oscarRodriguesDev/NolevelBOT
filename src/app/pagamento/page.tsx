@@ -52,6 +52,9 @@ function PagamentoContent() {
     modo: string;
     asaasConfigurado: boolean;
     trialDias: number;
+    trialAtivo: boolean;
+    trialUsado: boolean;
+    trialDisponivel: boolean;
   } | null>(null);
 
   const [cartao, setCartao] = useState({
@@ -225,9 +228,27 @@ function PagamentoContent() {
           </div>
           <div className="flex items-center gap-2 mt-4 text-xs font-bold opacity-70">
             <LuShieldCheck size={15} style={{ color: "var(--primary)" }} />
-            Teste grátis de {dados.trialDias} dias após a confirmação · Cancele quando quiser
+            Assinatura mensal · Cancele quando quiser
           </div>
         </motion.div>
+
+        {/* Aviso: trial já utilizado (degustação indisponível) */}
+        {dados.trialUsado && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-start gap-2.5 rounded-xl border p-4 mb-6 text-xs font-medium leading-relaxed"
+            style={{ backgroundColor: "rgba(239,68,68,0.08)", borderColor: "rgba(239,68,68,0.4)" }}
+          >
+            <LuTriangleAlert size={16} className="shrink-0 mt-0.5" style={{ color: "#ef4444" }} />
+            <div>
+              <p className="font-black uppercase tracking-wider mb-0.5">Trial já utilizado</p>
+              <p className="opacity-80">
+                Você já recebeu seu período de teste grátis. Para continuar usando o sistema, o pagamento é obrigatório.
+              </p>
+            </div>
+          </motion.div>
+        )}
 
         {emSandbox && (
           <motion.div

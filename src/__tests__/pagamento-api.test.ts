@@ -64,6 +64,8 @@ const EMPRESA = {
   plano: "start",
   cnpj: "12345678000100",
   statusPagamento: "PENDENTE",
+  trialAtivo: false,
+  trialUsado: false,
 }
 
 describe("GET /api/empresa/pagamento — dados da cobrança", () => {
@@ -95,6 +97,23 @@ describe("GET /api/empresa/pagamento — dados da cobrança", () => {
     expect(json.modo).toBe("sandbox")
     expect(json.asaasConfigurado).toBe(true)
     expect(json.trialDias).toBe(7)
+    // trial já consumido? (empresa nova ainda tem disponível)
+    expect(json.trialAtivo).toBe(false)
+    expect(json.trialUsado).toBe(false)
+    expect(json.trialDisponivel).toBe(true)
+  })
+
+  it("token de empresa que já usou o trial retorna trialUsado/trialDisponivel=false", async () => {
+    mockValidarToken.mockReturnValue("emp-1")
+    mockFindUnique.mockResolvedValue({ ...EMPRESA, trialUsado: true })
+
+    const { GET } = await import("@/app/api/empresa/pagamento/route")
+    const res = await GET(req("http://localhost/api/empresa/pagamento?t=ok"))
+    expect(res.status).toBe(200)
+
+    const json = await res.json()
+    expect(json.trialUsado).toBe(true)
+    expect(json.trialDisponivel).toBe(false)
   })
 })
 
@@ -159,19 +178,24 @@ describe("POST /api/empresa/pagamento — processa o cartão", () => {
     expect(json.status).toBe("PENDING")
     expect(json.valor).toBe(99.9)
 
-    // criarAssinatura recebeu o valor real do plano + cartão + trial
+    // criarAssinatura recebeu o valor real do plano + cartão, SEM trial (pagamento imediato)
     expect(mockCriarAssinatura).toHaveBeenCalledTimes(1)
     const arg = mockCriarAssinatura.mock.calls[0][0]
     expect(arg.valor).toBe(99.9)
-    expect(arg.trial).toBe(7)
+    expect(arg.trial).toBe(0)
     expect(arg.externalReference).toBe("emp-1")
     expect(arg.cpfCnpj).toBe("12345678000100")
     expect(arg.cartao.number.replace(/\D/g, "")).toBe("5162306214932319")
 
-    // empresa atualizada com ids do Asaas
+    // empresa atualizada com ids do Asaas e fora do trial
     expect(mockUpdate).toHaveBeenCalledWith({
       where: { id: "emp-1" },
-      data: { asaasCustomerId: "cus_1", asaasSubscriptionId: "sub_1", asaasPaymentId: "pay_1" },
+      data: {
+        asaasCustomerId: "cus_1",
+        asaasSubscriptionId: "sub_1",
+        asaasPaymentId: "pay_1",
+        trialAtivo: false,
+      },
     })
   })
 

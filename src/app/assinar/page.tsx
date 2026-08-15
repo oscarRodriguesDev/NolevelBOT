@@ -98,6 +98,8 @@ function AssinarContent() {
   const [empresa, setEmpresa] = useState({ nome: "", cnpj: "", setores: "" });
   const [admin, setAdmin] = useState({ nome: "", cpf: "", password: "" });
   const [emailPreview, setEmailPreview] = useState("");
+  // Trial grátis é a opção padrão; desmarcar = pagamento imediato
+  const [usarTrial, setUsarTrial] = useState(true);
 
   // Atualiza preview do email automatico
   function handleEmpresaNome(nome: string) {
@@ -154,6 +156,7 @@ function AssinarContent() {
             password: admin.password,
           },
           modulos: modulosSel,
+          usarTrial,
         }),
       });
 
@@ -161,6 +164,17 @@ function AssinarContent() {
 
       if (!res.ok) {
         throw new Error(data.error || "Erro ao criar conta");
+      }
+
+      if (usarTrial) {
+        // Trial ativado: pula o pagamento e vai direto para o login.
+        toast.success(
+          `Conta criada! Seu teste grátis de ${data.trialDias ?? 7} dias foi ativado. Faça login para começar.`
+        );
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 1500);
+        return;
       }
 
       if (!data.pagamentoUrl) {
@@ -451,6 +465,43 @@ function AssinarContent() {
             )}
           </motion.section>
 
+          {/* Escolha: trial grátis OU pagamento imediato */}
+          <motion.section
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.12 }}
+            className="rounded-2xl border p-5 sm:p-6"
+            style={{ backgroundColor: "var(--surface)", borderColor: "var(--border-subtle)" }}
+          >
+            <button
+              type="button"
+              onClick={() => setUsarTrial((v) => !v)}
+              role="checkbox"
+              aria-checked={usarTrial}
+              className="flex items-start gap-3 w-full text-left"
+            >
+              <span
+                className="w-5 h-5 rounded-md border-2 flex items-center justify-center mt-0.5 shrink-0 transition-all duration-200"
+                style={{
+                  backgroundColor: usarTrial ? "var(--primary)" : "transparent",
+                  borderColor: "var(--primary)",
+                }}
+              >
+                {usarTrial && <LuCheck size={14} color="#fff" />}
+              </span>
+              <span className="flex-1">
+                <p className="text-sm font-bold" style={{ color: "var(--foreground)" }}>
+                  Usar teste grátis de 7 dias
+                </p>
+                <p className="text-xs font-medium opacity-50 mt-0.5 leading-relaxed">
+                  {usarTrial
+                    ? "Sua conta é liberada imediatamente, sem cartão. O pagamento fica para depois do período de degustação."
+                    : "Você será direcionado ao pagamento com cartão agora. A primeira cobrança é imediata (sem período de teste)."}
+                </p>
+              </span>
+            </button>
+          </motion.section>
+
           {/* Submit */}
           <motion.button
             initial={{ opacity: 0, y: 16 }}
@@ -466,13 +517,15 @@ function AssinarContent() {
                 <LuLoader size={18} className="animate-spin" />
                 Criando sua conta...
               </span>
+            ) : usarTrial ? (
+              `Ativar teste grátis do plano ${plano.nome}`
             ) : (
               `Liberar acesso ao plano ${plano.nome}`
             )}
           </motion.button>
 
           <p className="text-center text-xs font-medium opacity-40">
-            Ao continuar você concorda com os termos de uso. 7 dias grátis após o pagamento.
+            Ao continuar você concorda com os termos de uso.
           </p>
         </form>
       </div>

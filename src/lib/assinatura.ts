@@ -11,6 +11,7 @@ export interface ResumoAssinatura {
   nomePlano: string | null
   statusPagamento: StatusPagamento
   trialAtivo: boolean
+  trialUsado: boolean // true se a empresa já consumiu a degustação trial
   trialDias: number // dias totais do trial
   trialInicio: string | null // ISO
   trialFim: string | null // ISO
@@ -66,6 +67,7 @@ export function montarResumoAssinatura(params: {
   nomePlano: string | null
   statusPagamento: StatusPagamento
   trialAtivo: boolean
+  trialUsado?: boolean
   createdAt: Date
   trialDias?: number
   dataVencimento?: string | null
@@ -82,6 +84,7 @@ export function montarResumoAssinatura(params: {
     nomePlano: params.nomePlano,
     statusPagamento: params.statusPagamento,
     trialAtivo: params.trialAtivo,
+    trialUsado: params.trialUsado ?? false,
     trialDias,
     trialInicio: params.createdAt.toISOString(),
     trialFim: trialFim.toISOString(),

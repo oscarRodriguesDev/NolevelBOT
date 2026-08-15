@@ -17,6 +17,7 @@ interface Assinatura {
   nomePlano: string | null
   statusPagamento: string
   trialAtivo: boolean
+  trialUsado: boolean
   trialDias: number
   trialInicio: string | null
   trialFim: string | null
@@ -522,6 +523,18 @@ export default function MinhaEmpresaPage() {
                   </p>
                   <p className="text-[11px] opacity-60 mt-2">
                     Regularize o pagamento para desbloquear o acesso da empresa.
+                  </p>
+                </div>
+              ) : assinatura.trialUsado ? (
+                <div className="p-4 rounded-xl border-2 border-dashed" style={{ backgroundColor: 'var(--surface-elevated)', borderColor: 'var(--status-cancelled)' }}>
+                  <p className="text-[10px] font-bold uppercase tracking-wider opacity-50 mb-1 flex items-center gap-1">
+                    <Ban size={12} /> Degustação utilizada
+                  </p>
+                  <p className="text-sm font-bold" style={{ color: 'var(--status-cancelled)' }}>
+                    {STATUS_PAGAMENTO_LABEL[assinatura.statusPagamento] || assinatura.statusPagamento}
+                  </p>
+                  <p className="text-[11px] opacity-60 mt-2">
+                    Você já utilizou seu período de teste. O pagamento é necessário para usar o sistema.
                   </p>
                 </div>
               ) : (

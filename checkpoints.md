@@ -1,5 +1,20 @@
 # Checkpoints — Estado da Sessão
 
+## 2026-08-15 (Escolha Trial vs Pagamento imediato)
+
+### Estado final
+- **Nova regra de negócio**: no cadastro, o usuário escolhe entre **trial grátis de 7 dias** (default) e **pagamento imediato**. Quem já consumiu a degustação não pode usar trial de novo (pagamento obrigatório).
+- **Banco**: novo campo `empresa.trialUsado Boolean @default(false)` (rastreia quem já recebeu a degustação). Migração `20260815150000_add_trial_usado` criada manualmente (o `migrate dev` quebra na shadow database por ordem alfabética das migrações históricas) e **aplicada** via `migrate deploy`. Banco consistente (8 migrações).
+- **`POST /api/signup`**: aceita `usarTrial` (default `true`). Com trial → `trialAtivo=true`, `trialUsado=true`, resposta **sem** `pagamentoUrl` (pula pagamento). Sem trial → `trialAtivo=false`, `trialUsado=false`, resposta com `pagamentoUrl`.
+- **`POST /api/empresa/pagamento`**: assinatura Asaas agora com `trial: 0` (**pagamento imediato, sem `paymentDelay`**) e `trialAtivo=false` no update. `GET` devolve `trialUsado`/`trialDisponivel`/`trialAtivo`.
+- **`src/lib/assinatura.ts`**: `ResumoAssinatura` ganhou `trialUsado`; `GET /api/empresa/assinatura` o devolve.
+- **Front `/assinar`**: checkbox "Usar teste grátis de 7 dias" (default marcado). Trial → toast + redirect para `/` (login). Pagamento → redirect para `/pagamento?t=...`. Botão muda o texto conforme a escolha.
+- **Front `/pagamento`**: banner "Trial já utilizado — pagamento obrigatório" quando `trialUsado=true`; removida a menção a "trial após a confirmação" (não se aplica mais).
+- **Painel `minha-empresa`**: card "Degustação utilizada" quando `trialUsado` e fora do trial.
+- **Testes**: `pagamento-api.test.ts` atualizado (trial=0, trialUsado no GET, update com trialAtivo=false) + novo `signup-trial.test.ts` (6 casos: default trial, pagamento imediato, sem campo, plano inativo, CNPJ duplicado). **359 passando** (23 arquivos). **Build**: ok.
+- **Validação real (dev :3300)**: signup trial (sem pagamentoUrl) e pagamento imediato (com pagamentoUrl) → GET cobrança com trialDisponivel → POST pagamento ok (mock). Dados de teste removidos.
+- **Pendências externas (inalteradas)**: webhook Asaas no painel, `ASAAS_WEBHOOK_TOKEN`/`ASAAS_API_KEY` no Vercel, redeploy do branch `vibecode`.
+
 ## 2026-08-15 (BUG do redirect pós-cadastro — RESOLVIDO)
 
 ### Estado final

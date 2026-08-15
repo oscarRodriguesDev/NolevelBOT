@@ -7,6 +7,7 @@ import { limparCPF } from "@/util/limparcpfs"
 import { validarModulos, gerarEmailAdmin } from "@/lib/planos"
 import { getPlanoPorSlug } from "@/lib/planos-server"
 import { criarTokenPagamento } from "@/lib/token-pagamento"
+import { TRIAL_DIAS } from "@/lib/asaas"
 
 // Gera uma chave de API segura de 32 bytes (64 caracteres hex)
 function gerarApiKey(): string {
@@ -22,6 +23,8 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const { plano, empresa, admin, modulos } = body
+    // Usuário escolhe entre ativar o trial grátis (default) ou pagar imediatamente.
+    const usarTrial = body.usarTrial !== false
 
     // Validações básicas
     if (!plano) {
@@ -89,9 +92,11 @@ export async function POST(req: NextRequest) {
           modulos: modulosFinais as any,
           plano: planoId,
           evolution_token: gerarApiKey(),
-          // SaaS: nova conta nasce em trial, com pagamento pendente
+          // SaaS: trial ativo apenas se o usuário optou pela degustação.
+          // Quem escolhe pagamento imediato nasce sem trial (paga na página /pagamento).
           statusPagamento: "PENDENTE",
-          trialAtivo: true,
+          trialAtivo: usarTrial,
+          trialUsado: usarTrial,
         },
       })
 
@@ -119,17 +124,24 @@ export async function POST(req: NextRequest) {
       return { novaEmpresa, novoAdmin }
     })
 
-    // Pagamento: a conta nasce em trial com acesso imediato.
-    // O cliente conclui o pagamento com cartão na página própria /pagamento,
-    // que recebe um token efêmero assinado (sem sessão ainda).
-    const pagamentoUrl = `/pagamento?t=${criarTokenPagamento(resultado.novaEmpresa.id)}`
+    // Escolha do usuário no cadastro:
+    // - Trial: a conta nasce em degustação (acesso imediato) e o pagamento é pulado.
+    // - Pagamento imediato: a conta nasce sem trial e o cliente paga na página /pagamento,
+    //   identificada por um token efêmero assinado (sem sessão ainda).
+    const pagamentoUrl = usarTrial
+      ? null
+      : `/pagamento?t=${criarTokenPagamento(resultado.novaEmpresa.id)}`
 
     return NextResponse.json(
       {
-        message: "Conta criada com sucesso!",
+        message: usarTrial
+          ? "Conta criada! Seu teste grátis foi ativado."
+          : "Conta criada com sucesso!",
         empresa: { id: resultado.novaEmpresa.id, nome: resultado.novaEmpresa.nome },
         admin: { id: resultado.novoAdmin.id, email: resultado.novoAdmin.email },
         plano: planoRegistro.nome,
+        trialAtivo: usarTrial,
+        trialDias: TRIAL_DIAS,
         pagamentoUrl,
       },
       { status: 201 }
