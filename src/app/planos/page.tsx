@@ -19,6 +19,7 @@ import {
   LuRefreshCcw,
   LuLoader,
   LuSettings,
+  LuLock,
 } from "react-icons/lu";
 
 // Tipos do plano vindos da API (tabela planos no banco)
@@ -58,32 +59,45 @@ function formatarPreco(valor: number) {
   });
 }
 
+// Recurso da lista de planos (disponivel = false deixa o item desativado/indisponível)
+type Recurso = { texto: string; disponivel: boolean };
+
 // Monta os recursos dinamicamente a partir do plano
-function montarRecursos(p: PlanoApi): string[] {
-  const recursos = [
-    "Implantação + configuração guiada",
-    `Até ${p.maxUsuarios === -1 ? "∞" : p.maxUsuarios} usuários (gestores e atendentes)`,
-    "Usuários que abrem chamados: ilimitados",
+function montarRecursos(p: PlanoApi): Recurso[] {
+  const recursos: Recurso[] = [
+    { texto: "Implantação + configuração guiada", disponivel: true },
+    {
+      texto: `Até ${p.maxUsuarios === -1 ? "∞" : p.maxUsuarios} usuários (gestores e atendentes)`,
+      disponivel: true,
+    },
+    { texto: "Usuários que abrem chamados: ilimitados", disponivel: true },
   ];
 
   if (p.maxModulos === -1) {
-    recursos.push("Todos os módulos do sistema");
+    recursos.push({ texto: "Todos os módulos do sistema", disponivel: true });
   } else {
-    recursos.push(`${p.maxModulos} módulo(s) à sua escolha`);
+    recursos.push({ texto: `${p.maxModulos} módulo(s) à sua escolha`, disponivel: true });
   }
 
-  if (p.canais.includes("app")) recursos.push("Abertura de chamados pelo App");
-  if (p.canais.includes("whatsapp")) recursos.push("Abertura de chamados pelo WhatsApp");
-  if (p.canais.includes("telegram")) recursos.push("Abertura de chamados pelo Telegram (em breve)");
+  if (p.canais.includes("app")) {
+    recursos.push({ texto: "Abertura de chamados pelo App", disponivel: true });
+  }
+  if (p.canais.includes("whatsapp")) {
+    // WhatsApp: recurso temporariamente indisponível (visualmente desativado)
+    recursos.push({ texto: "Abertura de chamados pelo WhatsApp", disponivel: false });
+  }
+  if (p.canais.includes("telegram")) {
+    recursos.push({ texto: "Abertura de chamados pelo Telegram (em breve)", disponivel: true });
+  }
 
   if (p.botIA) {
-    recursos.push("Bot com IA (GPT-4o-mini)");
+    recursos.push({ texto: "Bot com IA (GPT-4o-mini)", disponivel: true });
   } else {
-    recursos.push("Bot automático (script sem IA)");
+    recursos.push({ texto: "Bot automático (script sem IA)", disponivel: true });
   }
 
-  recursos.push("Dashboard e métricas");
-  recursos.push("Suporte seg-sex, 08h-18h");
+  recursos.push({ texto: "Dashboard e métricas", disponivel: true });
+  recursos.push({ texto: "Suporte seg-sex, 08h-18h", disponivel: true });
   return recursos;
 }
 
@@ -397,19 +411,56 @@ export default function PlanosPage() {
 
                 {/* Recursos */}
                 <ul className="space-y-3 mb-8 flex-1">
-                  {recursos.map((recurso) => (
-                    <li key={recurso} className="flex items-start gap-2.5">
-                      <span
-                        className="mt-0.5 shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
-                        style={{ backgroundColor: "var(--success-light)" }}
-                      >
-                        <LuCheck size={13} style={{ color: "var(--status-completed)" }} />
-                      </span>
-                      <span className="text-sm font-medium opacity-70 leading-snug">
-                        {recurso}
-                      </span>
-                    </li>
-                  ))}
+                  {recursos.map((recurso) =>
+                    recurso.disponivel ? (
+                      <li key={recurso.texto} className="flex items-start gap-2.5">
+                        <span
+                          className="mt-0.5 shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
+                          style={{ backgroundColor: "var(--success-light)" }}
+                        >
+                          <LuCheck size={13} style={{ color: "var(--status-completed)" }} />
+                        </span>
+                        <span className="text-sm font-medium opacity-70 leading-snug">
+                          {recurso.texto}
+                        </span>
+                      </li>
+                    ) : (
+                      <li key={recurso.texto} className="flex items-center gap-2.5">
+                        <span
+                          className="mt-0.5 shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
+                          style={{
+                            backgroundColor: "var(--surface-elevated)",
+                            border: "1px solid var(--border-subtle)",
+                          }}
+                        >
+                          <LuLock size={11} style={{ color: "var(--foreground)", opacity: 0.45 }} />
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            toast(`${recurso.texto}: temporariamente indisponível.`, {
+                              icon: "🔒",
+                            })
+                          }
+                          title="Recurso temporariamente indisponível"
+                          className="text-sm font-medium text-left leading-snug cursor-not-allowed transition-opacity hover:opacity-70"
+                          style={{ color: "var(--foreground)" }}
+                        >
+                          <span className="opacity-70">{recurso.texto}</span>{" "}
+                          <span
+                            className="inline-block align-middle ml-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider"
+                            style={{
+                              backgroundColor: "var(--surface-elevated)",
+                              color: "var(--status-cancelled)",
+                              border: "1px solid var(--border-subtle)",
+                            }}
+                          >
+                            Indisponível
+                          </span>
+                        </button>
+                      </li>
+                    )
+                  )}
                 </ul>
 
                 {/* CTA para assinatura */}

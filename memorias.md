@@ -2,6 +2,27 @@
 
 > Autoria: VIBECODE
 
+## Sessão 2026-08-14
+
+### Integração Asaas (assinaturas SaaS) + bloqueio por pagamento
+- **Schema** (`prisma/schema.prisma`): enum `statusPagamento` (PENDENTE/PAGO/ATRASADO/CANCELADO/REEMBOLSADO) + campos em `empresa`: `statusPagamento` (default PENDENTE), `asaasCustomerId?`, `asaasSubscriptionId?`, `asaasPaymentId?`, `trialAtivo` (default true).
+- **Migração**: `20260814120000_add_asaas_pagamento` (criada, NÃO aplicada no banco — aplicar com `npx prisma migrate deploy`).
+- **Criado** `src/lib/asaas.ts`: `criarAssinatura` (trial=7, cycle, externalReference=empresaId, cliente por cpfCnpj), `consultarCobranca`, `cancelarAssinatura`, `mapearStatusAsaas`, `isAsaasConfigured`. Sem `ASAAS_API_KEY` → fallback mock (fluxo dev intacto).
+- **Criado** `src/app/api/webhooks/asaas/route.ts`: valida token (`Authorization: Bearer` ou `x-asaas-token`), consulta reversa `GET /payments/{id}` (anti-spoofing), idempotência via `TTLMap` (24h), mapeia eventos (PAYMENT_CONFIRMED/RECEIVED→PAGO e trial off; PAYMENT_OVERDUE→ATRASADO; REFUNDED→REEMBOLSADO; CANCELLED/SUBSCRIPTION_CANCELLED→CANCELADO), localiza empresa por externalReference→subscription→customer→payment, invalida cache de módulos.
+- **Bloqueio de acesso**: `src/lib/nextauth.ts` — login rejeitado se `statusPagamento ≠ PAGO` e fora do trial (GOD sempre liberado). `src/lib/usedata.ts` `checkEmpresaModule` — módulo só ativo com pagamento ok (PAGO ou trial).
+- **Signup** (`src/app/api/signup/route.ts`): nova empresa nasce `PENDENTE` + `trialAtivo: true`; cria assinatura Asaas (fallback mock em dev); falha no Asaas não derruba o signup.
+- **Env**: `.env.example` ganhou `ASAAS_API_KEY`, `ASAAS_BASE_URL`, `ASAAS_WEBHOOK_TOKEN` (o `.env` já tinha `ASAAS_API_KEY` e `ASAAS_TOKEN_WEBHOOK`; o código aceita ambos os nomes de token).
+- **Testes**: `asaas.test.ts` (6), `asaas-webhook.test.ts` (7), `asaas-bloqueio.test.ts` (5), `usedata.test.ts` atualizado (+bloqueio por pagamento). Total: 308 passando, build ok (70 rotas).
+- **Decisão**: durante o trial (`trialAtivo=true`) o acesso é permitido mesmo com `statusPagamento=PENDENTE` (senão o trial não teria utilidade). Bloqueio real vale para ATRASADO/CANCELADO/REEMBOLSADO.
+
+### WhatsApp indisponível nos planos (`/planos`)
+- Recurso WhatsApp agora aparece **visualmente desativado** nos cards de planos da página pública `/planos` (`src/app/planos/page.tsx`).
+- `montarRecursos()` passou a retornar objetos `{ texto, disponivel }`; WhatsApp sai com `disponivel: false`.
+- Na lista de recursos, item indisponível é renderizado com cadeado (`LuLock`), texto legível (sem riscado), badge "Indisponível" e `cursor-not-allowed`.
+- Ao clicar no item, dispara `toast` informando: "Abertura de chamados pelo WhatsApp: temporariamente indisponível.".
+- Demais recursos continuam com check verde e sem interação.
+- **Ajuste pós-revisão**: recurso NÃO é riscado/removido — apenas inativo (cadeado + badge "Indisponível"), mantendo o texto legível.
+
 ## Sessão 2026-08-02
 
 ### Página de Planos (`/planos`)

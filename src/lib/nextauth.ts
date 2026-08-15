@@ -46,8 +46,19 @@ export const authOptions: NextAuthOptions = {
 
         const empresa = await prisma.empresa.findUnique({
           where: { id: user.empresaId },
-          select: { nome: true },
+          select: { nome: true, statusPagamento: true, trialAtivo: true },
         })
+
+        // 🔒 Bloqueio por pagamento: GOD sempre liberado.
+        // Demais roles: exige statusPagamento = PAGO ou trial ativo.
+        if (user.role !== "GOD") {
+          const pago = empresa?.statusPagamento === "PAGO"
+          const emTrial = empresa?.trialAtivo === true
+          if (!pago && !emTrial) {
+            await trackFailedLogin(credentials.email)
+            return null
+          }
+        }
 
         logAcesso({
           cpf: user.cpf,

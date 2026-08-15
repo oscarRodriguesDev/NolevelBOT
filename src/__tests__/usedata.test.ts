@@ -70,11 +70,13 @@ describe("checkEmpresaModule", () => {
     expect(result.activeModules).toEqual([])
   })
 
-  it("retorna hasModule true quando empresa tem o modulo", async () => {
+  it("retorna hasModule true quando empresa tem o modulo e pagamento ok", async () => {
     const mockPrisma = {
       empresa: {
         findUnique: vi.fn().mockResolvedValue({
           modulos: ["CORPORATIVO", "OFICINA"],
+          statusPagamento: "PAGO",
+          trialAtivo: false,
         }),
       },
     }
@@ -91,6 +93,8 @@ describe("checkEmpresaModule", () => {
       empresa: {
         findUnique: vi.fn().mockResolvedValue({
           modulos: ["COMERCIAL"],
+          statusPagamento: "PAGO",
+          trialAtivo: false,
         }),
       },
     }
@@ -100,6 +104,42 @@ describe("checkEmpresaModule", () => {
     const result = await check("emp-2", "OFICINA")
     expect(result.hasModule).toBe(false)
     expect(result.activeModules).toEqual(["COMERCIAL"])
+  })
+
+  it("retorna hasModule true durante trial mesmo com status PENDENTE", async () => {
+    const mockPrisma = {
+      empresa: {
+        findUnique: vi.fn().mockResolvedValue({
+          modulos: ["CORPORATIVO"],
+          statusPagamento: "PENDENTE",
+          trialAtivo: true,
+        }),
+      },
+    }
+    vi.doMock("@/lib/prisma", () => ({ prisma: mockPrisma }))
+
+    const { checkEmpresaModule: check } = await import("@/lib/usedata")
+    const result = await check("emp-trial", "CORPORATIVO")
+    expect(result.hasModule).toBe(true)
+    expect(result.activeModules).toContain("CORPORATIVO")
+  })
+
+  it("bloqueia modulo quando pagamento atrasado e fora do trial", async () => {
+    const mockPrisma = {
+      empresa: {
+        findUnique: vi.fn().mockResolvedValue({
+          modulos: ["CORPORATIVO"],
+          statusPagamento: "ATRASADO",
+          trialAtivo: false,
+        }),
+      },
+    }
+    vi.doMock("@/lib/prisma", () => ({ prisma: mockPrisma }))
+
+    const { checkEmpresaModule: check } = await import("@/lib/usedata")
+    const result = await check("emp-bloqueada", "CORPORATIVO")
+    expect(result.hasModule).toBe(false)
+    expect(result.activeModules).toEqual([])
   })
 
   it("retorna fallback em caso de erro", async () => {

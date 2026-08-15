@@ -367,7 +367,7 @@ export async function validarCpf(cpf: string) {
 
 
 
-//verifica se a empresa possui um modulo especifico ativo
+//verifica se a empresa possui um modulo especifico ativo e está com pagamento em dia
 export async function checkEmpresaModule(
   empresaId: string,
   modulo: "OFICINA" | "CORPORATIVO" | "EVENTOS" | "COMERCIAL"
@@ -379,13 +379,16 @@ export async function checkEmpresaModule(
     return await cacheGetOrSet(`empresa:modulos:${empresaId}`, async () => {
       const empresa = await prisma.empresa.findUnique({
         where: { id: empresaId },
-        select: { modulos: true },
+        select: { modulos: true, statusPagamento: true, trialAtivo: true },
       });
       if (!empresa) return { hasModule: false, activeModules: [] };
       const modulos = empresa.modulos as string[];
+      // 🔒 Pagamento bloqueado (ATRASADO/CANCELADO/REEMBOLSADO) e fora do trial = sem acesso
+      const pagamentoOk =
+        empresa.statusPagamento === "PAGO" || empresa.trialAtivo === true;
       return {
-        hasModule: modulos.includes(modulo),
-        activeModules: modulos,
+        hasModule: pagamentoOk && modulos.includes(modulo),
+        activeModules: pagamentoOk ? modulos : [],
       };
     }, 1800); // 30min
   } catch {

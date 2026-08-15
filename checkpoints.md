@@ -1,5 +1,23 @@
 # Checkpoints — Estado da Sessão
 
+## 2026-08-14
+
+### Estado final
+- **Criado**: `src/lib/asaas.ts` — criarAssinatura, consultarCobranca, cancelarAssinatura, mapearStatusAsaas, fallback mock sem API key.
+- **Criado**: `src/app/api/webhooks/asaas/route.ts` — token + consulta reversa + idempotência (TTLMap 24h) + mapeamento de eventos + invalida cache de módulos.
+- **Alterado**: `prisma/schema.prisma` — enum `statusPagamento` + 4 campos novos em `empresa`.
+- **Criada**: migração `20260814120000_add_asaas_pagamento` — **NÃO aplicada** (rodar `npx prisma migrate deploy` antes de subir).
+- **Alterado**: `src/lib/nextauth.ts` — bloqueio de login por pagamento (PAGO ou trial; GOD liberado).
+- **Alterado**: `src/lib/usedata.ts` — `checkEmpresaModule` considera statusPagamento/trialAtivo.
+- **Alterado**: `src/app/api/signup/route.ts` — empresa nasce PENDENTE + trialAtivo=true; cria assinatura Asaas.
+- **Alterado**: `.env.example` — vars Asaas documentadas.
+- **Testes**: +18 novos (`asaas`, `asaas-webhook`, `asaas-bloqueio`, `usedata` atualizado). **308 passando** (Vitest). **Build**: ok (70 rotas).
+- **Pendente**: aplicar migração no banco (`npx prisma migrate deploy`) e apontar o webhook no painel Asaas: `https://<domínio>/api/webhooks/asaas` com token `ASAAS_WEBHOOK_TOKEN`/`ASAAS_TOKEN_WEBHOOK`.
+
+## 2026-08-14 (planos - WhatsApp)
+- **Alterado**: `src/app/planos/page.tsx` — recurso WhatsApp dos planos agora aparece inativo (cadeado + badge "Indisponível", texto legível sem riscado) e, ao clicar, exibe toast "temporariamente indisponível". `montarRecursos()` retorna `{ texto, disponivel }`; WhatsApp = `disponivel: false`.
+- **Build**: ok (69 rotas). **Testes**: 288 passando (Vitest).
+
 ## 2026-08-02
 
 ### Estado final
