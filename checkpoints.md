@@ -1,5 +1,23 @@
 # Checkpoints — Estado da Sessão
 
+## 2026-08-15 (BUG do redirect pós-cadastro — RESOLVIDO)
+
+### Estado final
+- **Causa raiz do BUG**: a migração `20260814120000_add_asaas_pagamento` NÃO estava registrada na tabela `_prisma_migrations` do banco (Supabase). As colunas (`statusPagamento`, `trialAtivo`, `asaasCustomerId/SubscriptionId/PaymentId`) e o tipo enum existiam por **aplicação manual anterior**, mas o `migrate status` a apontava como pendente → `migrate deploy` falhava (`type "statusPagamento" already exists`) → estado inconsistente podia derrubar o signup sem `pagamentoUrl`.
+- **Correção aplicada**: `npx prisma migrate resolve --applied 20260814120000_add_asaas_pagamento`. Agora `migrate status` = "Database schema is up to date!". `prisma generate` executado.
+- **Validação real do fluxo (servidor dev :3300, dados de teste criados e removidos do banco)**:
+  - `POST /api/signup` → **201** + `pagamentoUrl` `/pagamento?t=<token>` ✅
+  - `GET /api/empresa/pagamento?t=` → dados da cobrança (plano/valor/modo/trial) ✅
+  - `POST /api/empresa/pagamento` (cartão de teste) → assinatura criada, `ok:true` (mock local, sem `ASAAS_API_KEY`) ✅
+  - Página `/pagamento?t=` → HTTP 200 ✅
+- **Melhoria no front** (`src/app/assinar/page.tsx`): removido `useRouter`; se `pagamentoUrl` não vier, toast de erro explícito no lugar do redirect silencioso para `/`.
+- **Testes**: 353 passando (22 arquivos). **Build**: ok (75 rotas).
+- **Pendências restantes (config externa, não código)**:
+  - Redeployar o branch `vibecode` no Vercel (garantir código novo em produção/preview).
+  - No painel Asaas: apontar webhook para `https://<domínio>/api/webhooks/asaas`.
+  - No Vercel: definir `ASAAS_WEBHOOK_TOKEN` (código aceita também `ASAAS_TOKEN_WEBHOOK`).
+  - Confirmar `ASAAS_API_KEY` no Vercel (sandbox `$aact_hmlg_...`; se produção, `ASAAS_BASE_URL=https://api.asaas.com/v3`).
+
 ## 2026-08-15 (Pagamento real no Asaas — página própria)
 
 ### Estado final
@@ -12,6 +30,7 @@
 - **Criado** `GET /api/asaas/diagnostico` (ADMIN/GOD): modo (mock/sandbox/producao), chave mascarada, teste real da API.
 - **Testes**: `asaas.test.ts` (8), `token-pagamento.test.ts` (5), `pagamento-api.test.ts` (9). **353 passando** (Vitest). **Build**: ok (75 rotas).
 - **Config Vercel**: `ASAAS_API_KEY` (nome exato). Chave sandbox usa URL default; chave de produção exigiria `ASAAS_BASE_URL=https://api.asaas.com/v3`.
+- **Pendência (amanhã — ver `pedidos.md`)**: BUG — após o cadastro, não redireciona para a página de dados de pagamento (`/pagamento?t=...`).
 - **Pendente (sessões anteriores, inalterado)**: aplicar migração `20260814120000_add_asaas_pagamento` (`npx prisma migrate deploy`), apontar webhook Asaas p/ `/api/webhooks/asaas` e configurar `ASAAS_WEBHOOK_TOKEN` no Vercel.
 
 ## 2026-08-14

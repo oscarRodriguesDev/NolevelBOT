@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense, useMemo } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
@@ -68,7 +68,6 @@ function formatCPF(value: string) {
 // Conteudo principal (separado para usar useSearchParams dentro de Suspense)
 function AssinarContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const planoSlug = searchParams.get("plano") || "start";
 
   const [planos, setPlanos] = useState<PlanoApi[]>([]);
@@ -164,13 +163,17 @@ function AssinarContent() {
         throw new Error(data.error || "Erro ao criar conta");
       }
 
+      if (!data.pagamentoUrl) {
+        // Fallback de segurança: nunca deixar a conta criada sem encaminhamento claro
+        toast.error(
+          "Conta criada, mas não foi possível gerar o link de pagamento. Entre em contato com o suporte."
+        );
+        return;
+      }
+
       toast.success("Conta criada! Conclua o pagamento com cartão.");
       setTimeout(() => {
-        if (data.pagamentoUrl) {
-          window.location.href = data.pagamentoUrl;
-        } else {
-          router.push("/");
-        }
+        window.location.href = data.pagamentoUrl;
       }, 900);
     } catch (err: any) {
       toast.error(err.message || "Erro ao criar conta.");

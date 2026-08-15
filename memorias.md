@@ -4,6 +4,14 @@
 
 ## Sessão 2026-08-15
 
+### BUG do redirect pós-cadastro — RESOLVIDO
+- **Sintoma reportado**: `/assinar` criava a conta mas não redirecionava para `/pagamento?t=<token>`.
+- **Causa raiz**: a migração `20260814120000_add_asaas_pagamento` NÃO estava registrada em `_prisma_migrations` — as colunas e o tipo `statusPagamento` existiam no banco (aplicados manualmente no Supabase), mas o Prisma a tratava como pendente. `migrate deploy` quebrava (`type "statusPagamento" already exists`) e qualquer inconsistência/deploy antigo podia derrubar o signup sem devolver `pagamentoUrl`.
+- **Correção**: `npx prisma migrate resolve --applied 20260814120000_add_asaas_pagamento` → banco consistente (`migrate status` up to date).
+- **Validação**: fluxo completo testado de verdade contra o servidor dev (signup 201 + token → GET dados da cobrança → POST pagamento com cartão de teste → assinatura criada, mock local). Dados de teste removidos do banco após a validação.
+- **Melhoria no front** (`src/app/assinar/page.tsx`): sem `pagamentoUrl` → toast de erro explícito (antes: `router.push("/")` silencioso, que parecia "não redirecionar"). Removido `useRouter` do componente.
+- **Lições**: (1) banco aplicado manualmente sem registro em `_prisma_migrations` causa estado fantasma — sempre conferir `prisma migrate status`; (2) `prisma migrate resolve` é a ferramenta correta quando o SQL já está no banco; (3) fallbacks silenciosos de redirect são anti-diagnóstico.
+
 ### Pagamento real no Asaas — página própria (sem checkout do Asaas)
 - **Decisão do usuário**: o fluxo deve chamar a API do Asaas de verdade (inclusive na sandbox) e o cliente paga em **página própria do app** (NÃO usar payment link/checkout hospedado do Asaas).
 - **Causa do "parece mock"**: `criarAssinatura` enviava `value: 0` + `billingType: CREDIT_CARD` sem cartão → API rejeita (400) → `catch` silencioso no signup engolia o erro → nenhuma assinatura criada.
