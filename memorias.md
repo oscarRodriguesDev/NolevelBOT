@@ -2,7 +2,48 @@
 
 > Autoria: VIBECODE
 
-## Sessão 2026-08-16
+## Sessão 2026-08-16 (toasts padrão nas páginas Admin/Empresa)
+
+### Feedback react-hot-toast padronizado (sucesso + erro) nas páginas de gestão
+- **Padrão aplicado**: erro de API → `const err = await res.json().catch(() => ({}))` + `toast.error(err.error || "Mensagem específica")`; erro de rede → `toast.error("Erro ao conectar...")`; `toast.success` apenas quando a ação foi bem-sucedida e não há outro feedback equivalente.
+- **Alterados**:
+  - `src/app/minha-empresa/page.tsx` — salvar dados, regenerar token, salvar provedor (BYO), gerar prompt e salvar bot: erros de API passam a ler `err.error` (antes mensagem fixa).
+  - `src/app/god/planos/page.tsx` — criar/editar plano, destacar, extinguir e cancelar extinção: `res.json()` protegido com `.catch(() => ({}))`.
+  - `src/app/planos/page.tsx` — trocar plano e extinguir: `res.json()` protegido com `.catch(() => ({}))`.
+  - `src/app/corporativo/(atendimento)/empresa/page.tsx` — salvar empresa, excluir, salvar provedor, gerar/salvar/limpar prompt e gerar/regenerar token (inline): erros leem `err.error`.
+  - `src/app/corporativo/(atendimento)/empresa/create/page.tsx` — criar empresa: erro da API agora exibe `err.error` (antes `throw new Error()` genérico → mensagem fixa) e gerar prompt lê `err.error`.
+  - `src/app/god/admins/page.tsx` e `src/app/god/usuarios/page.tsx` — `res.json()` protegido com `.catch(() => ({}))` nos erros de API.
+  - `src/app/corporativo/(atendimento)/empresa/[id]/usuarios/page.tsx` — já tinha toast; `res.json()` protegido com `.catch(() => ({}))` (padrão unificado).
+- **Sem alteração (já OK)**: `src/app/god/erros/page.tsx` (apenas listagem GET, sem mutação). Sucessos de criar empresa com token (create) mantêm o modal "Empresa Criada!" como feedback equivalente (sem toast duplicado).
+- **Sem build/testes** (consolidação feita pelo usuário). Alterações não commitadas.
+
+## Sessão 2026-08-16 (feedback toast em páginas públicas e componentes compartilhados)
+
+### Feedback react-hot-toast (sucesso/erro) nas ações de usuário
+- **Alterado** `src/app/components/shared-avisos.tsx` (quadro de avisos): adicionado import de `toast` (não existia). Criar/editar aviso → `toast.success("Aviso publicado/atualizado com sucesso")` (antes: sucesso silencioso) e `toast.error(error.message || "Erro ao salvar o aviso.")` (antes: `setErrorMessage` sem renderização = falha silenciosa). Excluir → `toast.success("Aviso excluído com sucesso")`; erros de permissão/exclusão trocaram `alert()` por `toast.error` (o `confirm()` de confirmação foi mantido).
+- **Alterado** `src/app/components/modal-edit-user.tsx` (editar perfil/senha/avatar): adicionado import de `toast` + `toast.success` em "Senha alterada com sucesso!" e "Perfil atualizado com sucesso!" e `toast.error` no catch — mantido o banner inline `formMessage` existente.
+- **Alterado** `src/app/contact/page.tsx` (contato): adicionado `toast.success("Mensagem enviada!")` e `toast.error` no catch (rede → "Erro ao conectar com o servidor" via `TypeError`; API/validação → mensagem específica). Mantidos banners inline.
+- **Alterado** `src/app/pagamento/page.tsx` (pagamento): POST sem toast até então (só banner inline `resultado`) — agora `toast.success("Pagamento processado com sucesso!")`, `toast.error(msg)` na falha de API e no catch.
+- **Verificados sem alteração (já OK)**: `shared-cpfs.tsx` (todas as ações com sucesso/erro), `shared-usuarios.tsx` (editar/excluir com sucesso/erro), `assinar/page.tsx` (cadastro com sucesso/erro em todos os caminhos), `page.tsx` login (falha NÃO é silenciosa — banner inline de erro; sem toast por regra), `testes/page.tsx` (item opcional; erros já exibidos inline), `sidebar.tsx`/`module-layout.tsx`/`dashboard/page.tsx` (apenas GETs — sem toast).
+- **Não rodados**: build/testes (consolidação fica com o usuário).
+
+## Sessão 2026-08-16 (react-hot-toast no módulo Oficina)
+
+### Toasts adicionados/corrigidos
+- `src/app/oficina/chamado/[ticket]/page.tsx`: erro de API agora lê `err.error` (`toast.error(err.error || "Erro ao registrar solicitação")`); falha de rede → `toast.error("Erro ao conectar com o servidor")`. Sucesso mantém a tela dedicada (feedback equivalente — sem toast duplicado).
+- `src/app/oficina/(atendimento)/all-tickets/kanban-board.tsx`: troca de estágio via drag-and-drop (`handleDrop`) **não tinha feedback** — adicionado `toast.success("Status do chamado atualizado")` no 2xx, `toast.error(errData?.error || "Erro ao atualizar status")` no !ok e `toast.error("Erro ao conectar com o servidor")` no catch.
+- Já OK (não alterados): `chamado/page.tsx`, `oficina/page.tsx`, `(atendimento)/components/modal_tandimento.tsx` (atualizar/fechar já com toast), consulta (GET com mensagens na tela), `chatbot-app` (feedback visual no chat).
+- **Sem build/testes** (consolidação feita pelo usuário). Alterações não commitadas.
+
+## Sessão 2026-08-16 (toasts no módulo corporativo)
+
+### Feedback react-hot-toast no módulo corporativo
+- **Alterado** `src/app/corporativo/chamado/[ticket]/page.tsx` (criar chamado): adicionado `toast.success("Chamado registrado com sucesso")` no sucesso (antes: só trocava a tela, sem toast); erro de API agora lê `res.json().catch(() => ({}))` e exibe `err.error || "Erro ao registrar o chamado"`; erro de rede → `toast.error("Erro ao conectar com o servidor")`.
+- **Alterado** `src/app/corporativo/chamado/page.tsx`: falha de rede na validação de CPF (`validarCPF`) era silenciosa — adicionado `toast.error("Erro ao conectar com o servidor")`. O POST `/api/tickets` desta página já tinha toast de sucesso e erro.
+- **Verificados sem alteração (já OK ou sem ação de mutação)**: `kanban-board.tsx` (drag entre estágios já com toast), `modal_tandimento.tsx` (atualizar/fechar já com toast), `all-tickets/page.tsx` (só listagem/GET), `consulta/page.tsx` e `consulta/[ticket]/page.tsx` (GET com feedback visual), `chatbot-app/page.tsx` (erro de envio já tem feedback visual em balão — não duplicar com toast).
+- **Não rodados**: build/testes (consolidação fica com o usuário).
+
+## Sessão 2026-08-16 (GOD de empresa específica)
 
 ### GOD de empresa específica não conseguia adicionar usuários — RESOLVIDO
 - **Contexto**: um usuário com `role = GOD` e `empresaId = "1"` (empresa e usuário criados via SQL direto no banco, com id não-UUID) não conseguia adicionar usuários dentro da própria empresa.

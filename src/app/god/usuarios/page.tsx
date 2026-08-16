@@ -111,7 +111,7 @@ export default function GodUsuariosPage() {
         body: JSON.stringify({ id, ...editForm }),
       })
       if (!res.ok) {
-        const err = await res.json()
+        const err = await res.json().catch(() => ({}))
         toast.error(err.error || "Erro ao atualizar")
         return
       }
@@ -129,7 +129,7 @@ export default function GodUsuariosPage() {
     try {
       const res = await fetch(`/api/users?id=${id}`, { method: "DELETE" })
       if (!res.ok) {
-        const err = await res.json()
+        const err = await res.json().catch(() => ({}))
         toast.error(err.error || "Erro ao remover")
         return
       }

@@ -1,5 +1,19 @@
 # Checkpoints — Estado da Sessão
 
+## 2026-08-16 (Toast de confirmação/erro em toda a aplicação — CONCLUÍDO)
+
+### Estado final
+- **Feedback react-hot-toast (sucesso + erro) padronizado em todas as ações de usuário** (criar, editar, excluir, salvar, enviar, trocar estágio de chamado). Toaster global já montado no `layout-client.tsx` (nada a fazer lá).
+- **Padrão aplicado**: erro de API → `const err = await res.json().catch(() => ({}))` + `toast.error(err.error || "Mensagem específica")`; erro de rede → `toast.error("Erro ao conectar com o servidor")`; `toast.success` só quando a ação foi bem-sucedida e não há outro feedback equivalente (modais/telas de sucesso existentes foram mantidos sem duplicação).
+- **Alterados**:
+  - Corporativo: `chamado/[ticket]/page.tsx` (sucesso + erro), `chamado/page.tsx` (erro de rede no validarCPF).
+  - Oficina: `chamado/[ticket]/page.tsx` (erro específico), `(atendimento)/all-tickets/kanban-board.tsx` (drag & drop ganhou sucesso/erro — antes falha silenciosa).
+  - Gestão: `minha-empresa`, `god/planos`, `planos`, `corporativo/(atendimento)/empresa`, `corporativo/(atendimento)/empresa/create`, `corporativo/(atendimento)/empresa/[id]/usuarios`, `god/admins`, `god/usuarios` — erros de API passaram a ler `err.error` (fallback para mensagem específica).
+  - Públicas/componentes: `shared-avisos.tsx` (sucesso de publicar/editar/excluir antes silencioso; alert de erro → toast), `modal-edit-user.tsx` (perfil/senha), `contact/page.tsx` (mensagem enviada), `pagamento/page.tsx` (pagamento processado/erro).
+- **Já OK (verificado, sem alteração)**: `shared-cpfs`, `shared-usuarios`, `shared-gestao-usuarios`, `assinar`, `corporativo/oficina modal_tandimento`, kanban corporativo, `oficina/chamado/page`, `oficina/page`, `god/erros` (GET), consultas (GET com feedback na tela), chatbot-app (erro em balão do chat), login `page.tsx` (banner inline — sem toast por regra), `testes/page.tsx` (erros inline).
+- **Testes**: 367 passando (23 arquivos). **Build**: ok (75 rotas).
+- **Pendência usuário**: revisar se os banners inline mantidos (contato, pagamento, modal-edit-user) devem permanecer junto dos toasts ou se prefere remover (duplicação de feedback).
+
 ## 2026-08-16 (GOD de empresa específica não conseguia adicionar usuários — RESOLVIDO)
 
 ### Estado final

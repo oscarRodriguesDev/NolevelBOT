@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { createPortal } from "react-dom"
 import { Camera, X, Lock, User as UserIcon, Mail, Loader2 } from "lucide-react"
 import { useSession, signOut } from "next-auth/react"
+import toast from "react-hot-toast"
 
 interface User {
   id: string
@@ -114,6 +115,7 @@ export function UserProfileModal({ open, onClose }: Props) {
       // Se mudou a senha ou a API exigiu logout
       if (isChangingPassword || data?.logout) {
         setFormMessage({ type: "success", text: "Senha alterada! Redirecionando para o login..." })
+        toast.success("Senha alterada com sucesso!")
         setTimeout(() => {
           signOut({ redirect: false })
           window.location.href = "/login"
@@ -133,12 +135,15 @@ export function UserProfileModal({ open, onClose }: Props) {
       }
 
       setFormMessage({ type: "success", text: "Perfil atualizado com sucesso!" })
+      toast.success("Perfil atualizado com sucesso!")
       setTimeout(() => {
         onClose()
       }, 800)
       
     } catch (error) {
-      setFormMessage({ type: "error", text: error instanceof Error ? error.message : "Falha ao atualizar perfil" })
+      const msg = error instanceof Error ? error.message : "Falha ao atualizar perfil"
+      setFormMessage({ type: "error", text: msg })
+      toast.error(msg)
     } finally {
       setLoading(false)
     }

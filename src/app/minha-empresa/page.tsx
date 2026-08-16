@@ -246,8 +246,8 @@ export default function MinhaEmpresaPage() {
         }),
       })
       if (!res.ok) {
-        const data = await res.json()
-        toast.error(data.error || 'Erro ao atualizar')
+        const err = await res.json().catch(() => ({}))
+        toast.error(err.error || 'Erro ao atualizar')
         return
       }
       toast.success('Dados da empresa atualizados!')
@@ -271,7 +271,8 @@ export default function MinhaEmpresaPage() {
         body: JSON.stringify({ regenerar_token: true }),
       })
       if (!res.ok) {
-        toast.error('Erro ao regenerar chave')
+        const err = await res.json().catch(() => ({}))
+        toast.error(err.error || 'Erro ao regenerar chave')
         return
       }
       const data = await res.json()
@@ -300,7 +301,8 @@ export default function MinhaEmpresaPage() {
         }),
       })
       if (!res.ok) {
-        toast.error('Erro ao salvar configuração')
+        const err = await res.json().catch(() => ({}))
+        toast.error(err.error || 'Erro ao salvar configuração')
         return
       }
       toast.success('Configuração de WhatsApp salva!')
@@ -333,7 +335,8 @@ export default function MinhaEmpresaPage() {
         }),
       })
       if (!res.ok) {
-        toast.error('Erro ao gerar prompt')
+        const err = await res.json().catch(() => ({}))
+        toast.error(err.error || 'Erro ao gerar prompt')
         return
       }
       const data = await res.json()
@@ -364,7 +367,8 @@ export default function MinhaEmpresaPage() {
         }),
       })
       if (!res.ok) {
-        toast.error('Erro ao salvar')
+        const err = await res.json().catch(() => ({}))
+        toast.error(err.error || 'Erro ao salvar')
         return
       }
       toast.success('Configuração salva!')

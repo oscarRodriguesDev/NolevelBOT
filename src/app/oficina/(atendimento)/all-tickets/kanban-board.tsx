@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react"
 import { useSession } from "next-auth/react"
 import { ModalChamado } from "../components/modal_tandimento"
+import toast from "react-hot-toast"
 
 type Chamado = {
   id: string
@@ -106,10 +107,17 @@ export default function KanbanBoard({ tickets, loading, onRefresh }: KanbanBoard
         }),
       })
 
-      if (!response.ok) throw new Error("Erro ao atualizar status")
+      if (!response.ok) {
+        const errData = await response.json().catch(() => null)
+        toast.error(errData?.error || "Erro ao atualizar status")
+        return
+      }
+
+      toast.success("Status do chamado atualizado")
       onRefresh()
     } catch (error) {
       console.error("Erro ao mover:", error)
+      toast.error("Erro ao conectar com o servidor")
     }
   }, [tickets, session, onRefresh])
 

@@ -5,6 +5,7 @@ import Link from "next/link"
 import { LuArrowRight } from "react-icons/lu"
 import { ThemeToggle } from "../components/theme-toggle"
 import { BtnVoltar } from "../components/back"
+import toast from "react-hot-toast"
 
 // Pagina de formulario de contato
 export default function ContatoForm() {
@@ -50,8 +51,13 @@ export default function ContatoForm() {
 
       setSuccess(true)
       form.reset()
+      toast.success("Mensagem enviada!")
     } catch (error: any) {
-      setErrorMsg(error.message || "Ocorreu um erro inesperado.")
+      const msg = error instanceof TypeError
+        ? "Erro ao conectar com o servidor"
+        : (error.message || "Ocorreu um erro inesperado.")
+      setErrorMsg(msg)
+      toast.error(msg)
     } finally {
       setLoading(false)
     }

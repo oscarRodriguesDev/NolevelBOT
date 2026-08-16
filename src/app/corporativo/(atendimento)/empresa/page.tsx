@@ -144,7 +144,7 @@ export default function EmpresaPage() {
           api_key: currentApiKey,
         }),
       })
-      if (!res.ok) { toast.error('Erro ao salvar configuração'); return }
+      if (!res.ok) { const err = await res.json().catch(() => ({})); toast.error(err.error || 'Erro ao salvar configuração'); return }
       toast.success('Configuração de WhatsApp salva!')
       fetchEmpresas()
     } catch { toast.error('Erro ao conectar') }
@@ -189,8 +189,8 @@ export default function EmpresaPage() {
       })
 
       if (!res.ok) {
-        const data = await res.json()
-        toast.error(data.error || 'Erro ao atualizar')
+        const err = await res.json().catch(() => ({}))
+        toast.error(err.error || 'Erro ao atualizar')
         return
       }
 
@@ -212,8 +212,8 @@ export default function EmpresaPage() {
       const res = await fetch(`/api/empresa?id=${id}`, { method: 'DELETE' })
 
       if (!res.ok) {
-        const data = await res.json()
-        toast.error(data.error || 'Erro ao excluir')
+        const err = await res.json().catch(() => ({}))
+        toast.error(err.error || 'Erro ao excluir')
         return
       }
 
@@ -265,7 +265,7 @@ export default function EmpresaPage() {
           botName: botForm.botName,
         }),
       })
-      if (!res.ok) { toast.error('Erro ao gerar prompt'); return }
+      if (!res.ok) { const err = await res.json().catch(() => ({})); toast.error(err.error || 'Erro ao gerar prompt'); return }
       const data = await res.json()
       setBotForm(p => ({ ...p, botPrompt: data.botPrompt }))
       toast.success('Prompt gerado!')
@@ -294,7 +294,7 @@ export default function EmpresaPage() {
           botPrompt: botForm.botPrompt,
         }),
       })
-      if (!res.ok) { toast.error('Erro ao salvar'); return }
+      if (!res.ok) { const err = await res.json().catch(() => ({})); toast.error(err.error || 'Erro ao salvar'); return }
       toast.success('Configuração salva!')
       closeBotConfig()
       fetchEmpresas()
@@ -309,7 +309,7 @@ export default function EmpresaPage() {
     if (!confirm('Remover toda a configuração do bot desta empresa?')) return
     try {
       const res = await fetch(`/api/empresa/prompt?empresaId=${botConfigId}`, { method: 'DELETE' })
-      if (!res.ok) { toast.error('Erro ao limpar'); return }
+      if (!res.ok) { const err = await res.json().catch(() => ({})); toast.error(err.error || 'Erro ao limpar'); return }
       toast.success('Configuração removida')
       setBotForm({ botName: '', botPresentation: '', botServiceDesc: '', botAvisosDesc: '', botPrompt: '' })
       fetchEmpresas()
@@ -723,7 +723,7 @@ export default function EmpresaPage() {
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ regenerar_token: true }),
                           })
-                          if (!res.ok) { toast.error('Erro ao regenerar chave'); return }
+                          if (!res.ok) { const err = await res.json().catch(() => ({})); toast.error(err.error || 'Erro ao regenerar chave'); return }
                           const data = await res.json()
                           setCurrentKey(data.evolution_token)
                           setKeyCopied(false)
@@ -751,7 +751,7 @@ export default function EmpresaPage() {
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({ regenerar_token: true }),
                         })
-                        if (!res.ok) { toast.error('Erro ao gerar token'); return }
+                        if (!res.ok) { const err = await res.json().catch(() => ({})); toast.error(err.error || 'Erro ao gerar token'); return }
                         const data = await res.json()
                         setCurrentKey(data.evolution_token)
                         toast.success('Token gerado!')

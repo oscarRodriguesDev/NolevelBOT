@@ -83,6 +83,7 @@ export default function ChamadoPage() {
       }
     } catch {
       setCpfValido(false)
+      toast.error('Erro ao conectar com o servidor')
     }
   }
 

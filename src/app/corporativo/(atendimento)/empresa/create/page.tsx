@@ -119,8 +119,8 @@ Máximo 400 caracteres. Seja objetivo.`
       })
 
       if (!res.ok) {
-        const data = await res.json()
-        toast.error(data.error || 'Erro ao gerar prompt')
+        const err = await res.json().catch(() => ({}))
+        toast.error(err.error || 'Erro ao gerar prompt')
         return
       }
 
@@ -167,8 +167,12 @@ Máximo 400 caracteres. Seja objetivo.`
         }),
       })
 
-      if (!res.ok) throw new Error()
-      const data = await res.json()
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        toast.error(err.error || 'Erro ao criar empresa. Verifique os dados.')
+        return
+      }
+      const data = await res.json().catch(() => ({}))
       if (data.evolution_token) {
         setApiKeyGerada(data.evolution_token)
       } else {

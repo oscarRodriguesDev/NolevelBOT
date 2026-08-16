@@ -144,7 +144,7 @@ export default function PlanosPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plano: planoId.toLowerCase() }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Erro ao trocar plano");
       setPlanoAtual(planoId.toLowerCase());
       toast.success(data.message || "Plano alterado!");
@@ -169,7 +169,7 @@ export default function PlanosPage() {
       const res = await fetch(`/api/planos?id=${plano.id}&action=extinguir`, {
         method: "DELETE",
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Erro ao solicitar extinção");
       toast.success(data.message || "Extinção agendada!");
       setPlanos((prev) => prev.filter((p) => p.id !== plano.id));

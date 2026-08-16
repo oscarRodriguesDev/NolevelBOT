@@ -106,7 +106,7 @@ export default function EmpresaUsuariosPage() {
       })
 
       if (!res.ok) {
-        const data = await res.json()
+        const data = await res.json().catch(() => ({}))
         toast.error(data.error || 'Erro ao atualizar')
         return
       }
@@ -125,7 +125,7 @@ export default function EmpresaUsuariosPage() {
     try {
       const res = await fetch(`/api/users?id=${id}`, { method: 'DELETE' })
       if (!res.ok) {
-        const data = await res.json()
+        const data = await res.json().catch(() => ({}))
         toast.error(data.error || 'Erro ao remover')
         return
       }

@@ -144,11 +144,13 @@ function PagamentoContent() {
       const data = await res.json();
 
       if (!res.ok) {
+        const msg = data.error || "Não foi possível processar o pagamento."
         setResultado({
           ok: false,
-          msg: data.error || "Não foi possível processar o pagamento.",
+          msg,
           codigo: data.codigo,
-        });
+        })
+        toast.error(msg)
         return;
       }
 
@@ -157,9 +159,11 @@ function PagamentoContent() {
         ok: true,
         msg: `Pagamento processado${mock}. Sua assinatura será ativada em instantes após a confirmação.`,
       });
+      toast.success("Pagamento processado com sucesso!");
       setTimeout(() => router.push("/"), 1800);
     } catch (err: any) {
       setResultado({ ok: false, msg: err.message || "Erro ao processar pagamento." });
+      toast.error(err.message || "Erro ao processar pagamento.");
     } finally {
       setEnviando(false);
     }

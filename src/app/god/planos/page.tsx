@@ -184,7 +184,7 @@ export default function GodPlanosPage() {
           body: JSON.stringify(payload),
         }
       )
-      const data = await res.json()
+      const data = await res.json().catch(() => ({}))
       if (!res.ok) {
         toast.error(data.error || 'Erro ao salvar plano')
         return
@@ -207,7 +207,7 @@ export default function GodPlanosPage() {
         body: JSON.stringify({ destaque: !p.destaque }),
       })
       if (!res.ok) {
-        const data = await res.json()
+        const data = await res.json().catch(() => ({}))
         toast.error(data.error || 'Erro ao atualizar')
         return
       }
@@ -230,7 +230,7 @@ export default function GodPlanosPage() {
 
     try {
       const res = await fetch(`/api/planos?id=${p.id}&action=extinguir`, { method: 'DELETE' })
-      const data = await res.json()
+      const data = await res.json().catch(() => ({}))
       if (!res.ok) {
         toast.error(data.error || 'Erro ao solicitar extinção')
         return
@@ -246,7 +246,7 @@ export default function GodPlanosPage() {
     if (!confirm(`Cancelar a extinção do plano "${p.nome}"?`)) return
     try {
       const res = await fetch(`/api/planos?id=${p.id}&action=cancelar_extincao`, { method: 'DELETE' })
-      const data = await res.json()
+      const data = await res.json().catch(() => ({}))
       if (!res.ok) {
         toast.error(data.error || 'Erro ao cancelar')
         return

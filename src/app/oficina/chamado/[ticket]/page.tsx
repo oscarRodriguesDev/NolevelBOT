@@ -81,12 +81,14 @@ export default function TicketPage() {
       })
 
       if (!response.ok) {
-        throw new Error('Erro na requisição')
+        const err = await response.json().catch(() => ({}))
+        toast.error(err.error || 'Erro ao registrar solicitação')
+        return
       }
 
       setSubmitted(true)
     } catch {
-      toast.error('Erro ao processar. Tente novamente.')
+      toast.error('Erro ao conectar com o servidor')
     } finally {
       setLoading(false)
     }

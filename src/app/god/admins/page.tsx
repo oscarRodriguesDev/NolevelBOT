@@ -180,7 +180,7 @@ export default function CriarUsuarioPage() {
           avatarFile: null,
         })
       } else {
-        const errorData = await response.json()
+        const errorData = await response.json().catch(() => ({}))
         toast.error(errorData.error || "Erro ao criar usuário")
       }
     } catch (error) {

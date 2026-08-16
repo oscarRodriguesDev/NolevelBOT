@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import { ROLE } from "@prisma/client"
+import toast from "react-hot-toast"
 
 type Aviso = {
   id: string
@@ -116,9 +117,11 @@ export default function SharedAvisosPage({ setHeader }: Props) {
 
       await fetchAvisos()
       resetForm()
+      toast.success(editingId ? "Aviso atualizado com sucesso" : "Aviso publicado com sucesso")
     } catch (error: any) {
       console.error("Erro ao salvar aviso:", error)
       setErrorMessage(error.message)
+      toast.error(error.message || "Erro ao salvar o aviso.")
     } finally {
       setIsSubmitting(false)
     }
@@ -144,16 +147,17 @@ export default function SharedAvisosPage({ setHeader }: Props) {
 
       if (!response.ok) {
         if (response.status === 403 || response.status === 401) {
-          alert("Você não tem permissão para excluir avisos.")
+          toast.error("Você não tem permissão para excluir avisos.")
           return
         }
         throw new Error("Erro ao excluir o aviso.")
       }
 
       await fetchAvisos()
+      toast.success("Aviso excluído com sucesso")
     } catch (error) {
       console.error(error)
-      alert("Ocorreu um erro ao tentar excluir.")
+      toast.error("Ocorreu um erro ao tentar excluir.")
     }
   }
 
