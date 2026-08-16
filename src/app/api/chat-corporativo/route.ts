@@ -209,10 +209,10 @@ export async function POST(req: NextRequest) {
             msg += `\n\nNossa equipe vai analisar o mais breve possível.\n\nObrigado pelo contato! 💼`
 
             sessions.delete(sid)
-            return NextResponse.json({ reply: msg, sessionId: sid, done: true })
+            return NextResponse.json({ reply: msg, sessionId: sid, done: true, ticket })
           } catch {
             sessions.delete(sid)
-            return NextResponse.json({ reply: "Ops, tive um problema ao registrar. Nossa equipe foi notificada. Tente novamente mais tarde.", sessionId: sid, done: true })
+            return NextResponse.json({ reply: "Ops, tive um problema ao registrar. Nossa equipe foi notificada. Tente novamente mais tarde.", sessionId: sid, done: true, error: true })
           }
         }
 

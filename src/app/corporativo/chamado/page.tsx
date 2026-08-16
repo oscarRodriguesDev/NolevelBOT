@@ -28,6 +28,7 @@ export default function ChamadoPage() {
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [ticketCriado, setTicketCriado] = useState('')
   const [setoresDisponiveis, setSetoresDisponiveis] = useState<string[]>([])
   const [setorSelecionado, setSetorSelecionado] = useState('')
   const [avisos, setAvisos] = useState<any[]>([])
@@ -151,7 +152,8 @@ export default function ChamadoPage() {
 
       setLoading(false)
       setSubmitted(true)
-      toast.success('Chamado registrado com sucesso')
+      setTicketCriado(data?.ticket || '')
+      toast.success(data?.ticket ? `Chamado ${data.ticket} aberto com sucesso` : 'Chamado registrado com sucesso')
     } catch (error: any) {
       console.error('Erro ao registrar:', error)
       toast.error(error?.message || 'Erro ao processar. Tente novamente.')
@@ -182,6 +184,18 @@ export default function ChamadoPage() {
           <p className="mb-6 text-sm opacity-70">
             Sua solicitação foi registrada com sucesso e direcionada ao setor responsável.
           </p>
+          {ticketCriado && (
+            <div
+              className="mb-6 p-3 rounded-xl border text-sm font-semibold"
+              style={{
+                backgroundColor: 'var(--surface-elevated)',
+                borderColor: 'var(--border-subtle)',
+                color: 'var(--foreground)',
+              }}
+            >
+              Número do chamado: <span style={{ color: 'var(--primary)' }}>{ticketCriado}</span>
+            </div>
+          )}
           <button
             onClick={() => window.location.reload()}
             className="w-full py-4 rounded-xl font-bold transition-all duration-300 text-white hover:scale-105 active:scale-95"

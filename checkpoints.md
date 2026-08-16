@@ -1,5 +1,12 @@
 # Checkpoints — Estado da Sessão
 
+## 2026-08-16 (Confirmação de abertura de chamado no chatbot e formulários — CONCLUÍDO)
+
+### Estado final
+- **Chatbot (corporativo + oficina)**: corrigida a causa raiz — a confirmação era gerada pela API mas o frontend apagava o chat ao receber `done: true`. Agora a mensagem final (com número TKT) é exibida + `toast.success`/`toast.error` (via novo campo `ticket`/`error` nas APIs `chat-corporativo` e `chat-oficina`); o chat reinicia sozinho após 8s.
+- **Formulários (5)**: `corporativo/chamado`, `corporativo/chamado/[ticket]`, `oficina/chamado`, `oficina/chamado/[ticket]`, `oficina` (wizard) — agora capturam `data.ticket` e mostram o **número do chamado** em destaque na tela de sucesso + toast com o número.
+- **Testes**: 367 passando. **Build**: ok (75 rotas).
+
 ## 2026-08-16 (Toast de confirmação/erro em toda a aplicação — CONCLUÍDO)
 
 ### Estado final

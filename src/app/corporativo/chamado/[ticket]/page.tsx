@@ -22,6 +22,7 @@ export default function TicketPage() {
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [ticketCriado, setTicketCriado] = useState('')
   const [SETORES, setSetores] = useState<string[]>([])
 
   useEffect(() => {
@@ -85,7 +86,9 @@ export default function TicketPage() {
         return
       }
 
-      toast.success('Chamado registrado com sucesso')
+      const data = await response.json().catch(() => ({}))
+      setTicketCriado(data?.ticket || '')
+      toast.success(data?.ticket ? `Chamado ${data.ticket} aberto com sucesso` : 'Chamado registrado com sucesso')
       setSubmitted(true)
     } catch {
       toast.error('Erro ao conectar com o servidor')
@@ -117,6 +120,18 @@ export default function TicketPage() {
           <p className="mb-6 text-sm opacity-70">
             O chamado foi enviado com sucesso.
           </p>
+          {ticketCriado && (
+            <div
+              className="mb-6 p-3 rounded-xl border text-sm font-semibold"
+              style={{
+                backgroundColor: "var(--surface-elevated)",
+                borderColor: "var(--border-subtle)",
+                color: "var(--foreground)",
+              }}
+            >
+              Número do chamado: <span style={{ color: "var(--primary)" }}>{ticketCriado}</span>
+            </div>
+          )}
           <button
             onClick={() => window.close()}
             className="w-full py-4 rounded-xl font-bold transition-all duration-300 text-white hover:scale-105 active:scale-95"

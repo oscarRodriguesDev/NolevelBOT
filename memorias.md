@@ -2,6 +2,16 @@
 
 > Autoria: VIBECODE
 
+## Sessão 2026-08-16 (confirmação de abertura de chamado — chatbot e formulários)
+
+### Chamado aberto agora é confirmado ao usuário (com número TKT)
+- **Causa raiz (chatbot)**: ao abrir um chamado, as APIs `chat-corporativo`/`chat-oficina` retornavam `done: true` com a confirmação no `reply`, mas o frontend (`chatbot-app` corporativo/oficina) **limpava todas as mensagens** (`setMessages([])`) ao receber `done` — o usuário nunca via a confirmação. A API também não distinguia sucesso de erro.
+- **Correções**:
+  - APIs `chat-corporativo`/`chat-oficina`: retorno do registro passou a incluir `ticket` (no sucesso) e `error: true` (na falha).
+  - `chatbot-app` (2 arquivos): ao receber `done`, agora **exibe a mensagem final** (com o número do chamado) e mostra `toast.success("Chamado TKT-xxx aberto com sucesso!")` ou `toast.error(...)` na falha; o chat reinicia sozinho após 8s (tempo para o usuário ler a confirmação).
+  - Formulários (5): `corporativo/chamado/page.tsx`, `corporativo/chamado/[ticket]/page.tsx`, `oficina/chamado/page.tsx`, `oficina/chamado/[ticket]/page.tsx` e `oficina/page.tsx` — passaram a capturar `data.ticket` da resposta, exibir o **número do chamado** em destaque na tela de sucesso e incluir o número no `toast.success`.
+- **Testes**: 367 passando. **Build**: ok (75 rotas).
+
 ## Sessão 2026-08-16 (toasts padrão nas páginas Admin/Empresa)
 
 ### Feedback react-hot-toast padronizado (sucesso + erro) nas páginas de gestão

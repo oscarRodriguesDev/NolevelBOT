@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { ThemeToggle } from '../../components/theme-toggle'
 import { LuPaperclip, LuMegaphone, LuX } from 'react-icons/lu'
 import { uploadFileDirect } from '@/lib/upload-client'
+import toast from 'react-hot-toast'
 
 type Message = {
   id: number
@@ -67,9 +68,26 @@ export default function MobileChat() {
       const data = await res.json()
 
       if (data.done) {
-        setMessages([])
-        startedRef.current = false
-        setSessionId(crypto.randomUUID())
+        // Exibe a confirmacao final (ex.: chamado aberto com numero) antes de recomecar
+        const finalMessage: Message = {
+          id: Date.now(),
+          role: 'assistant',
+          content: data.reply || 'Atendimento encerrado.',
+        }
+        setMessages(prev => [...prev, finalMessage])
+
+        if (data.ticket) {
+          toast.success(`Chamado ${data.ticket} aberto com sucesso!`)
+        } else if (data.error) {
+          toast.error('Não foi possível registrar o chamado. Tente novamente.')
+        }
+
+        // Recomeca a conversa apos o usuario ler a confirmacao
+        setTimeout(() => {
+          setMessages([])
+          startedRef.current = false
+          setSessionId(crypto.randomUUID())
+        }, 8000)
         return
       }
 

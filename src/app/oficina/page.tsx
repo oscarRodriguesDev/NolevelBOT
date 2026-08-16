@@ -12,6 +12,7 @@ export default function OficinaPage() {
   const [nome, setNome] = useState('')
   const [setores, setSetores] = useState<string[]>([])
   const [empresaId, setEmpresaId] = useState('')
+  const [ticketCriado, setTicketCriado] = useState('')
 
   const [form, setForm] = useState({
     funcao: '',
@@ -87,8 +88,10 @@ export default function OficinaPage() {
         throw new Error(err.error || 'Erro ao registrar')
       }
 
+      const data = await res.json().catch(() => ({}))
+      setTicketCriado(data?.ticket || '')
       setStep('sucesso')
-      toast.success('Registro enviado com sucesso!')
+      toast.success(data?.ticket ? `Chamado ${data.ticket} aberto com sucesso!` : 'Registro enviado com sucesso!')
     } catch (err: any) {
       toast.error(err.message || 'Erro ao enviar')
     } finally {
@@ -119,6 +122,18 @@ export default function OficinaPage() {
           <p className="mb-6 text-sm opacity-70">
             Seu registro de defeito foi enviado para a operacional. Acompanhe pelo sistema de Pedidos de Manutenção (PM).
           </p>
+          {ticketCriado && (
+            <div
+              className="mb-6 p-3 rounded-xl border text-sm font-semibold"
+              style={{
+                backgroundColor: 'var(--surface-elevated)',
+                borderColor: 'var(--border-subtle)',
+                color: 'var(--foreground)',
+              }}
+            >
+              Número do chamado: <span style={{ color: 'var(--primary)' }}>{ticketCriado}</span>
+            </div>
+          )}
           <button
             onClick={() => window.close()}
             className="w-full py-4 rounded-xl font-bold text-white transition-all duration-300 hover:scale-105 active:scale-95"
