@@ -4,6 +4,13 @@
 
 ## 2026-08-15
 
+- [x] **BUG**: `POST /api/empresa/pagamento` retornando 502 no Vercel (pagamento real não destrava). — **RESOLVIDO** — (commit desta sessão)
+  - **Causa raiz**: tokenização Asaas usava endpoint errado (`POST /creditCards` → 404). O correto é `POST /creditCard/tokenizeCreditCard` (v3), que exige `remoteIp` (IP do cliente) e `creditCardHolderInfo` completo (postalCode válido, addressNumber, phone). Resposta retorna `creditCardToken` (não `id`).
+  - **Correção**: `src/lib/asaas.ts` (rota + remoteIp + titularAddressNumber + `creditCardToken || id`), `src/app/api/empresa/pagamento/route.ts` (valida titular + captura remoteIp do cliente), `src/app/pagamento/page.tsx` (cartão de teste `4444 4444 4444 4444` · 12/27 · 123 + seção "Dados do Titular").
+  - **Validação E2E real**: tokenização 200 → assinatura `sub_hlvi5poh2zryl6zf` ACTIVE (trial 0) → cobrança `pay_s9upz0k475cu4gw5` **CONFIRMED** → empresa **PAGO**. Dados de teste limpos.
+  - **Testes**: `asaas.test.ts` + `pagamento-api.test.ts` atualizados. **361 passando**, build ok.
+  - **Pendência externa**: redeploy `vibecode` na Vercel + `ASAAS_WEBHOOK_TOKEN` novo + URL do webhook real (não trycloudflare).
+
 - [x] **BUG**: webhook Asaas respondendo `{"error": "Token inválido"}` mesmo com token correto na Vercel. — **RESOLVIDO** — (commit desta sessão)
   - **Causa raiz**: o endpoint só lia o token de `Authorization: Bearer` / `x-asaas-token`. **O Asaas envia o token de autenticação do webhook no header `asaas-access-token`** (docs.asaas.com). O token nunca era encontrado → 401.
   - **Correção** (`src/app/api/webhooks/asaas/route.ts`): aceita `Authorization: Bearer` → `x-asaas-token` → `asaas-access-token` → `asaas_access_token`.

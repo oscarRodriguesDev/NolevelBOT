@@ -17,11 +17,11 @@ import {
   LuTriangleAlert,
 } from "react-icons/lu";
 
-// Cartão de teste da SANDBOX do Asaas
+// Cartão de teste da SANDBOX do Asaas (documentação oficial)
 const CARTAO_TESTE = {
-  number: "5162 3062 1493 2319",
-  expiry: "08/29",
-  ccv: "318",
+  number: "4444 4444 4444 4444",
+  expiry: "12/27",
+  ccv: "123",
   holderName: "NOLEVEL TESTE",
 };
 
@@ -36,6 +36,20 @@ function formatValidade(value: string) {
   const d = value.replace(/\D/g, "").slice(0, 4);
   if (d.length <= 2) return d;
   return `${d.slice(0, 2)}/${d.slice(2)}`;
+}
+
+function formatCEP(value: string) {
+  const d = value.replace(/\D/g, "").slice(0, 8);
+  if (d.length <= 5) return d;
+  return `${d.slice(0, 5)}-${d.slice(5)}`;
+}
+
+function formatTelefone(value: string) {
+  const d = value.replace(/\D/g, "").slice(0, 11);
+  if (d.length <= 2) return d;
+  if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
 }
 
 function PagamentoContent() {
@@ -62,6 +76,11 @@ function PagamentoContent() {
     number: "",
     expiry: "",
     ccv: "",
+  });
+  const [titular, setTitular] = useState({
+    postalCode: "",
+    addressNumber: "",
+    phone: "",
   });
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState<{ ok: boolean; msg: string; codigo?: string } | null>(null);
@@ -91,6 +110,7 @@ function PagamentoContent() {
 
   function usarCartaoTeste() {
     setCartao({ holderName: CARTAO_TESTE.holderName, number: CARTAO_TESTE.number, expiry: CARTAO_TESTE.expiry, ccv: CARTAO_TESTE.ccv });
+    setTitular({ postalCode: "01001-000", addressNumber: "100", phone: "(11) 99999-9999" });
     toast("Cartão de teste preenchido (sandbox).", { icon: "🧪" });
   }
 
@@ -113,6 +133,11 @@ function PagamentoContent() {
             expiryMonth: mm || "",
             expiryYear: aa ? `20${aa}` : "",
             ccv: cartao.ccv,
+          },
+          titular: {
+            postalCode: titular.postalCode,
+            addressNumber: titular.addressNumber,
+            phone: titular.phone,
           },
         }),
       });
@@ -348,7 +373,7 @@ function PagamentoContent() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold uppercase tracking-wider opacity-70">Validade</label>
                 <input
@@ -377,6 +402,65 @@ function PagamentoContent() {
                   style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
                 />
               </div>
+            </div>
+          </motion.section>
+
+          {/* Dados do titular (obrigatórios na tokenização do Asaas) */}
+          <motion.section
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.07 }}
+            className="rounded-2xl border p-6 sm:p-7 space-y-5"
+            style={{ backgroundColor: "var(--surface)", borderColor: "var(--border-subtle)" }}
+          >
+            <div className="flex items-center gap-2">
+              <LuShieldCheck size={18} style={{ color: "var(--primary)" }} />
+              <h2 className="text-sm font-black uppercase tracking-wider">Dados do Titular</h2>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider opacity-70">CEP</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="00000-000"
+                  value={titular.postalCode}
+                  onChange={(e) => setTitular((p) => ({ ...p, postalCode: formatCEP(e.target.value) }))}
+                  required
+                  autoComplete="postal-code"
+                  className="w-full px-4 py-3 rounded-xl border font-mono outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+                  style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider opacity-70">Número</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="123"
+                  value={titular.addressNumber}
+                  onChange={(e) => setTitular((p) => ({ ...p, addressNumber: e.target.value.replace(/\D/g, "").slice(0, 6) }))}
+                  required
+                  className="w-full px-4 py-3 rounded-xl border font-mono outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+                  style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider opacity-70">Telefone com DDD</label>
+              <input
+                type="tel"
+                inputMode="tel"
+                placeholder="(11) 99999-9999"
+                value={titular.phone}
+                onChange={(e) => setTitular((p) => ({ ...p, phone: formatTelefone(e.target.value) }))}
+                required
+                autoComplete="tel"
+                className="w-full px-4 py-3 rounded-xl border font-mono outline-none transition-all duration-200 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+                style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--foreground)" }}
+              />
             </div>
           </motion.section>
 

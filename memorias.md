@@ -4,6 +4,18 @@
 
 ## Sessão 2026-08-15
 
+### BUG 502 no POST /api/empresa/pagamento — RESOLVIDO (tokenização Asaas)
+- **Sintoma reportado**: o Asaas logava 200 (customer criado `cus_000008727218`), mas `POST /api/empresa/pagamento` retornava 502 (`ERR-00001`/`ERR-00002`) para a empresa `59ff0fcf-...` no Vercel. O `storeError` é um Map em memória (TTL 24h, contador por instância) — código não recuperável depois.
+- **Causa raiz**: tokenização com o endpoint errado. O app chamava `POST /creditCards` (inexistente → **404**). O endpoint oficial v3 é **`POST /creditCard/tokenizeCreditCard`**, com `remoteIp` **obrigatório** (IP do cliente, nunca do servidor) e `creditCardHolderInfo` completo (name, email, cpfCnpj, postalCode, addressNumber, phone). Resposta traz **`creditCardToken`** (não `id`). Sem os dados do titular a API rejeita (ex.: CEP inválido → 400 `invalid_holderInfo`).
+- **Cartão de teste**: o correto da sandbox é **`4444 4444 4444 4444` · 12/27 · 123** (doc oficial). O `5162 3062 1493 2319` **não** é o de sucesso — usuário confirmou.
+- **Correção**:
+  - `src/lib/asaas.ts`: `POST /creditCard/tokenizeCreditCard`, body com `remoteIp` + `addressNumber`, resposta `card?.creditCardToken || card?.id`. Interface `DadosCriarAssinatura` + `titularAddressNumber?` e `remoteIp?`.
+  - `src/app/api/empresa/pagamento/route.ts` (POST): valida `titular` (postalCode 8 dígitos, addressNumber, phone ≥10 → 400) e captura o `remoteIp` real do cliente (`x-forwarded-for` → `x-real-ip` → `x-vercel-forwarded-for`), repassando tudo ao `criarAssinatura`.
+  - `src/app/pagamento/page.tsx`: cartão de teste novo + seção "Dados do Titular" (CEP/número/telefone, com máscaras `formatCEP`/`formatTelefone`) + `usarCartaoTeste` preenche o titular.
+- **Testes**: `asaas.test.ts` (URL `/creditCard/tokenizeCreditCard`, `creditCardToken`, `remoteIp: "127.0.0.1"`), `pagamento-api.test.ts` (+1 caso titular incompleto → 400; titular normalizado repassado; remoteIp definido). **361 passando**, build ok.
+- **E2E real validado** (sandbox + banco): tokenização 200 → assinatura `sub_hlvi5poh2zryl6zf` ACTIVE (trial 0) → cobrança `pay_s9upz0k475cu4gw5` **CONFIRMED** → empresa **PAGO**. Dados de teste limpos.
+- **Lições**: (1) sempre conferir o endpoint oficial na doc do Asaas (não assumir REST `/creditCards`); (2) `remoteIp` na tokenização deve ser o IP do cliente (Vercel expõe via `x-forwarded-for`), jamais o IP do servidor; (3) o Asaas valida os dados do titular — o formulário precisa coletá-los.
+
 ### BUG do webhook Asaas "Token inválido" — RESOLVIDO
 - **Sintoma reportado**: o Asaas envia o evento (ex.: `PAYMENT_RECEIVED`) para `/api/webhooks/asaas`, mas o endpoint responde `{"error": "Token inválido"}` mesmo com o token correto configurado na Vercel.
 - **Causa raiz**: o código só lia o token dos headers `Authorization: Bearer ...` e `x-asaas-token`. **O Asaas envia o token de autenticação do webhook no header `asaas-access-token`** (docs.asaas.com → "What does the Authentication Token mean in the webhook settings?"). Como o token nunca era encontrado, o request caía no 401.

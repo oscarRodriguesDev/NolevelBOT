@@ -58,6 +58,9 @@ function req(url: string, body?: unknown) {
   })
 }
 
+// Dados mínimos válidos do titular (obrigatórios na tokenização do Asaas)
+const TITULAR = { postalCode: "01001-000", addressNumber: "100", phone: "(11) 99999-9999" }
+
 const EMPRESA = {
   id: "emp-1",
   nome: "Empresa Teste",
@@ -124,6 +127,20 @@ describe("POST /api/empresa/pagamento — processa o cartão", () => {
     expect(res.status).toBe(400)
   })
 
+  it("dados do titular incompletos -> 400", async () => {
+    mockValidarToken.mockReturnValue("emp-1")
+    mockFindUnique.mockResolvedValue(EMPRESA)
+    const { POST } = await import("@/app/api/empresa/pagamento/route")
+    const res = await POST(
+      req("http://localhost/api/empresa/pagamento", {
+        token: "t",
+        cartao: { number: "5162306214932319", holderName: "JOAO", expiryMonth: "08", expiryYear: "2029", ccv: "318" },
+        titular: { postalCode: "123", addressNumber: "100", phone: "(11) 99999-9999" },
+      })
+    )
+    expect(res.status).toBe(400)
+  })
+
   it("token inválido -> 400", async () => {
     mockValidarToken.mockReturnValue(null)
     const { POST } = await import("@/app/api/empresa/pagamento/route")
@@ -168,6 +185,7 @@ describe("POST /api/empresa/pagamento — processa o cartão", () => {
       req("http://localhost/api/empresa/pagamento", {
         token: "t",
         cartao: { number: "5162306214932319", holderName: "JOAO DA SILVA", expiryMonth: "08", expiryYear: "2029", ccv: "318" },
+        titular: TITULAR,
       })
     )
     expect(res.status).toBe(200)
@@ -186,6 +204,12 @@ describe("POST /api/empresa/pagamento — processa o cartão", () => {
     expect(arg.externalReference).toBe("emp-1")
     expect(arg.cpfCnpj).toBe("12345678000100")
     expect(arg.cartao.number.replace(/\D/g, "")).toBe("5162306214932319")
+    // Dados do titular repassados (normalizados) para a tokenização
+    expect(arg.titularPostalCode).toBe("01001000")
+    expect(arg.titularAddressNumber).toBe("100")
+    expect(arg.titularPhone).toBe("11999999999")
+    // IP do cliente enviado como remoteIp (nunca o do servidor)
+    expect(arg.remoteIp).toBeDefined()
 
     // empresa atualizada com ids do Asaas e fora do trial
     expect(mockUpdate).toHaveBeenCalledWith({
@@ -210,6 +234,7 @@ describe("POST /api/empresa/pagamento — processa o cartão", () => {
       req("http://localhost/api/empresa/pagamento", {
         token: "t",
         cartao: { number: "5162306214932319", holderName: "JOAO DA SILVA", expiryMonth: "08", expiryYear: "2029", ccv: "318" },
+        titular: TITULAR,
       })
     )
     expect(res.status).toBe(502)

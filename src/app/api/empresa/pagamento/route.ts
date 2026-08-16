@@ -73,10 +73,24 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const { token, cartao } = body || {}
+    const { token, cartao, titular } = body || {}
 
     if (!token || !cartao?.number || !cartao?.holderName || !cartao?.expiryMonth || !cartao?.expiryYear || !cartao?.ccv) {
       return NextResponse.json({ error: "Dados do cartão incompletos" }, { status: 400 })
+    }
+
+    // Dados do titular são obrigatórios na tokenização do Asaas
+    const titularPostalCode = String(titular?.postalCode || "").replace(/\D/g, "")
+    const titularAddressNumber = String(titular?.addressNumber || "").trim()
+    const titularPhone = String(titular?.phone || "").replace(/\D/g, "")
+    if (titularPostalCode.length !== 8) {
+      return NextResponse.json({ error: "CEP do titular é obrigatório (8 dígitos)" }, { status: 400 })
+    }
+    if (!titularAddressNumber) {
+      return NextResponse.json({ error: "Número do endereço do titular é obrigatório" }, { status: 400 })
+    }
+    if (titularPhone.length < 10) {
+      return NextResponse.json({ error: "Telefone do titular é obrigatório (com DDD)" }, { status: 400 })
     }
 
     const empresa = await empresaPeloToken(String(token))
@@ -113,6 +127,13 @@ export async function POST(req: NextRequest) {
 
     let assinatura
     try {
+      // IP real do cliente (obrigatório na tokenização do cartão no Asaas).
+      // Nunca usar o IP do servidor.
+      const remoteIp =
+        req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+        req.headers.get("x-real-ip") ||
+        req.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ||
+        ""
       // Quem chega nesta rota optou por PAGAMENTO IMEDIATO (trial não usado aqui).
       // `trial: 0` → primeira cobrança é imediata (sem paymentDelay no Asaas).
       assinatura = await criarAssinatura({
@@ -131,6 +152,10 @@ export async function POST(req: NextRequest) {
           ccv,
         },
         titularCpfCnpj: cpfAdmin,
+        titularPostalCode,
+        titularAddressNumber,
+        titularPhone,
+        remoteIp,
       })
     } catch (e) {
       const code = storeError(e, `asaas:pagar:${empresa.id}`)

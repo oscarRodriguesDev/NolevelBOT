@@ -41,7 +41,9 @@ export interface DadosCriarAssinatura {
   creditCardToken?: string // token já tokenizado no Asaas (dispensa `cartao`)
   titularCpfCnpj?: string // CPF/CNPJ do titular do cartão
   titularPostalCode?: string
+  titularAddressNumber?: string
   titularPhone?: string
+  remoteIp?: string // IP do cliente (obrigatório na tokenização — NÃO é o IP do servidor)
 }
 
 export interface AssinaturaCriada {
@@ -161,7 +163,9 @@ export async function criarAssinatura(
           ")"
       )
     }
-    const card = await asaasFetch("/creditCards", {
+    // Tokenização: endpoint oficial é /creditCard/tokenizeCreditCard (v3),
+    // com remoteIp obrigatório (IP do cliente, não do servidor).
+    const card = await asaasFetch("/creditCard/tokenizeCreditCard", {
       method: "POST",
       body: JSON.stringify({
         customer: customer.id,
@@ -177,13 +181,14 @@ export async function criarAssinatura(
           email: dados.email,
           cpfCnpj: dados.titularCpfCnpj || dados.cpfCnpj,
           postalCode: dados.titularPostalCode || "",
-          addressNumber: "",
+          addressNumber: dados.titularAddressNumber || "",
           phone: dados.titularPhone || "",
           mobilePhone: dados.titularPhone || "",
         },
+        remoteIp: dados.remoteIp || "127.0.0.1",
       }),
     })
-    creditCardToken = card?.id
+    creditCardToken = card?.creditCardToken || card?.id
     if (!creditCardToken) {
       throw new Error("Asaas não retornou token de cartão ao tokenizar")
     }

@@ -76,7 +76,7 @@ describe("asaas - com API key (produção)", () => {
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ id: "cc_token_1" }),
+        json: async () => ({ creditCardToken: "cc_token_1" }),
       })
       .mockResolvedValueOnce({
         ok: true,
@@ -114,11 +114,12 @@ describe("asaas - com API key (produção)", () => {
 
     // Tokenização envia o cartão (para o Asaas), nunca é persistida
     const tokenizacao = fetchMock.mock.calls[2]
-    expect(tokenizacao[0]).toBe("https://sandbox.asaas.com/api/v3/creditCards")
+    expect(tokenizacao[0]).toBe("https://sandbox.asaas.com/api/v3/creditCard/tokenizeCreditCard")
     const bodyToken = JSON.parse(tokenizacao[1].body)
     expect(bodyToken.creditCard.number).toBe("5162306214932319")
     expect(bodyToken.creditCard.expiryYear).toBe("2029")
     expect(bodyToken.creditCard.expiryMonth).toBe("08")
+    expect(bodyToken.remoteIp).toBe("127.0.0.1")
 
     // Assinatura usa o token + valor REAL (não zero)
     const assinaturaCall = fetchMock.mock.calls[3]

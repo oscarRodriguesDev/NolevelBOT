@@ -1,5 +1,19 @@
 # Checkpoints — Estado da Sessão
 
+## 2026-08-15 (Pagamento Asaas: BUG 502 no POST /api/empresa/pagamento — RESOLVIDO + E2E real)
+
+### Estado final
+- **Sintoma**: `POST /api/empresa/pagamento` retornava 502 (`ERR-00001`/`ERR-00002`) para a empresa `59ff0fcf-...`; o Asaas logava 200 (customer criado `cus_000008727218`, depois `deleted: true`).
+- **Causa raiz**: a tokenização usava o endpoint errado — `POST /creditCards` (retorna **404**). O endpoint oficial v3 é **`POST /creditCard/tokenizeCreditCard`**, que exige `remoteIp` (IP do cliente, nunca do servidor) e `creditCardHolderInfo` completo (name, email, cpfCnpj, **postalCode de 8 dígitos válido**, addressNumber, phone com DDD). A resposta retorna **`creditCardToken`** (não `id`).
+- **Correções**:
+  - `src/lib/asaas.ts`: rota de tokenização nova + `creditCardToken || card.id` + `remoteIp` no body + `titularAddressNumber`/`remoteIp` na interface `DadosCriarAssinatura`.
+  - `src/app/api/empresa/pagamento/route.ts`: captura `remoteIp` (x-forwarded-for → x-real-ip → x-vercel-forwarded-for), valida `titular` (CEP 8 dígitos, número, telefone ≥10) e repassa `titularPostalCode`/`titularAddressNumber`/`titularPhone`/`remoteIp`.
+  - `src/app/pagamento/page.tsx`: cartão de teste = **`4444 4444 4444 4444` · 12/27 · 123** (oficial da doc; o `5162...` não é o de sucesso); nova seção "Dados do Titular" (CEP/número/telefone) + `usarCartaoTeste` também preenche o titular.
+- **Testes**: `asaas.test.ts` (URL nova + `creditCardToken` + `remoteIp`), `pagamento-api.test.ts` (titular obrigatório → 400, titular repassado normalizado, remoteIp). **361 passando** (23 arquivos). **Build**: ok.
+- **Validação E2E real (API sandbox + banco)**: empresa de teste criada (PENDENTE) → customer `cus_000008727255` → tokenização 200 (`creditCardToken: 0fd6610d-...`) → assinatura `sub_hlvi5poh2zryl6zf` **ACTIVE** (trial 0, cobrança imediata) → primeira cobrança `pay_s9upz0k475cu4gw5` **CONFIRMED** → empresa **PAGO** + `trialAtivo: false`. Dados de teste removidos do banco.
+- **Observação**: CEP inválido/vazio → Asaas 400 `invalid_holderInfo` ("O CEP informado é inválido"). CEP `01001000` funciona. Em produção os dados do titular devem ser reais (antifraude).
+- **Pendência externa (inalterada)**: redeploy do branch `vibecode` na Vercel + `ASAAS_WEBHOOK_TOKEN` = token novo do painel + webhook apontando para `https://<domínio>/api/webhooks/asaas` (não trycloudflare — túnel morto `premier-jpeg-quarters-paint.trycloudflare.com`).
+
 ## 2026-08-15 (Webhook Asaas: BUG "Token inválido" — RESOLVIDO)
 
 ### Estado final
