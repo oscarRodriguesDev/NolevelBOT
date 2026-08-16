@@ -171,22 +171,24 @@ model tickets_fechados {
 
 //representa o quadro de avisos da empresa
 model avisos {
-  id         String    @id @default(uuid())
-  empresaId  String
-  Empresa    empresa   @relation(fields: [empresaId], references: [id])
-  titulo     String
-  prompt_bot String?
-  nome_bot   String?
-  conteudo   String
-  setor      String?
-  duracao    String?
-  logoUrl    String?
-  expiresAt  DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  id             String    @id @default(uuid())
+  empresaId      String
+  Empresa        empresa   @relation(fields: [empresaId], references: [id])
+  titulo         String
+  prompt_bot     String?
+  nome_bot       String?
+  conteudo       String
+  setor          String?
+  duracao        String?
+  destinatarioCpf String? // CPF ou matricula quando a entrega for especifica para um usuario
+  logoUrl        String?
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@index([empresaId])
   @@index([setor])
+  @@index([destinatarioCpf])
 }
 
 

@@ -73,9 +73,14 @@ describe("obterBaseDeConhecimento", () => {
       expect.objectContaining({
         where: expect.objectContaining({
           empresaId: "emp-1",
-          OR: expect.arrayContaining([
-            expect.objectContaining({ expiresAt: null }),
-            expect.objectContaining({ expiresAt: expect.objectContaining({ gt: expect.any(Date) }) }),
+          // avisos gerais + especificos do proprio usuario
+          AND: expect.arrayContaining([
+            expect.objectContaining({
+              OR: expect.arrayContaining([
+                expect.objectContaining({ destinatarioCpf: null }),
+                expect.objectContaining({ destinatarioCpf: "55555555555" }),
+              ]),
+            }),
           ]),
         }),
       })

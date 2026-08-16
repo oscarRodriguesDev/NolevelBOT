@@ -2,6 +2,23 @@
 
 > Autoria: VIBECODE
 
+## Sessão 2026-08-16 (entrega específica de aviso — campo destinatarioCpf)
+
+### Aviso específico agora é configurado na tela (checkbox + CPF/matrícula)
+- **Pedido**: poder marcar "entrega específica" ao criar/editar um aviso, informar CPF ou matrícula, o sistema identifica o usuário e o aviso vai só para ele.
+- **Banco**: adicionada a coluna `destinatarioCpf String?` no model `avisos` (com `@@index([destinatarioCpf])`). Como matrícula da oficina = campo `cpf` da tabela `cpfs`, um único campo atende CPF (corporativo) e matrícula (oficina). Aplicado via `prisma db push` (o banco não usa migrações — não há `_prisma_migrations`).
+- **Regra de entrega**:
+  - Aviso **sem** `destinatarioCpf` = geral, para todos.
+  - Aviso **com** `destinatarioCpf` = **só** para o usuário cujo CPF/matrícula bate (match exato). O critério legado (número no título/conteúdo) continua funcionando.
+- **Alterados**:
+  - `src/lib/usedata.ts` — `buscarAvisos` filtra `destinatarioCpf: null`; `buscarAvisosPorCpf` considera `destinatarioCpf === cpf` + legado.
+  - `src/app/components/shared-avisos.tsx` — checkbox "Entrega específica", campo CPF/matrícula com botão **Identificar** (GET `/api/quadro-avisos?identificar=...` mostra o nome), badge "Específico" no card; bloqueia publicar sem destinatário identificado.
+  - `src/app/api/quadro-avisos/route.ts` — POST/PUT salvam `destinatarioCpf` validando existência na tabela `cpfs`; GET aceita `?identificar=`; avisos específicos de outros usuários ficam ocultos para GESTOR/ATENDENTE.
+  - `src/app/api/quadro-avisos/mostrar-avisos/route.ts` — avisos específicos só aparecem para o próprio destinatário.
+  - `src/app/api/chat-oficina/route.ts` e `webhook-oficina/route.ts` — `buscarAvisosEspecificos` considera `destinatarioCpf`; `buscarAvisosDoVeiculo` ignora avisos específicos.
+  - `src/lib/smartSearch.ts` — base de conhecimento só inclui avisos gerais + específicos do próprio CPF.
+- **Testes**: 367 passando. **Build**: ok (75 rotas).
+
 ## Sessão 2026-08-16 (aviso específico no chat-corporativo — corrigido)
 
 ### Aviso específico por CPF agora é entregue no chatbot corporativo

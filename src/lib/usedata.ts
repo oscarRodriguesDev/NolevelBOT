@@ -5,24 +5,24 @@ const baseUrl = process.env.BASE_URL_WP || process.env.NEXT_PUBLIC_BASE_URL_WP;
 
 
 //filtra avisos que ainda estao dentro do prazo de duracao
-async function filtrarAvisosValidos(avisos: { titulo: string; conteudo: string; createdAt: Date; duracao: string | null }[]) {
+async function filtrarAvisosValidos(avisos: { titulo: string; conteudo: string; createdAt: Date; duracao: string | null; destinatarioCpf?: string | null }[]) {
   const agora = new Date();
-  const validos: { titulo: string; conteudo: string }[] = [];
+  const validos: { titulo: string; conteudo: string; destinatarioCpf: string | null }[] = [];
 
   for (const aviso of avisos) {
     if (!aviso.duracao) {
-      validos.push(aviso);
+      validos.push({ titulo: aviso.titulo, conteudo: aviso.conteudo, destinatarioCpf: aviso.destinatarioCpf ?? null });
       continue;
     }
     const dias = Number(aviso.duracao);
     if (isNaN(dias)) {
-      validos.push(aviso);
+      validos.push({ titulo: aviso.titulo, conteudo: aviso.conteudo, destinatarioCpf: aviso.destinatarioCpf ?? null });
       continue;
     }
     const dataExpiracao = new Date(aviso.createdAt);
     dataExpiracao.setDate(dataExpiracao.getDate() + dias);
     if (agora <= dataExpiracao) {
-      validos.push(aviso);
+      validos.push({ titulo: aviso.titulo, conteudo: aviso.conteudo, destinatarioCpf: aviso.destinatarioCpf ?? null });
     }
   }
 
@@ -41,8 +41,9 @@ export async function buscarAvisos(cpf?: string, _req?: Request) {
     const cacheKey = cpf ? `avisos:empresa:${empresaId || "none"}` : "avisos:geral";
 
     return await cacheGetOrSet(cacheKey, async () => {
+      // avisos gerais (sem destinatario especifico)
       const avisos = await prisma.avisos.findMany({
-        where: empresaId ? { empresaId } : undefined,
+        where: { ...(empresaId ? { empresaId } : {}), destinatarioCpf: null },
         orderBy: { createdAt: "desc" },
       });
 
@@ -76,7 +77,9 @@ export async function buscarAvisosPorCpf(cpf: string) {
       const validos = await filtrarAvisosValidos(avisos);
 
       const cpfNumbers = cpf.replace(/\D/g, "");
+      // entrega especifica: destinatarioCpf igual ao cpf OU titulo/conteudo contendo o cpf (legado)
       const especificos = validos.filter(a =>
+        a.destinatarioCpf === cpf ||
         a.titulo.includes(cpfNumbers) || a.conteudo.includes(cpfNumbers)
       );
 

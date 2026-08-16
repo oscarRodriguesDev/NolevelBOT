@@ -24,9 +24,21 @@ export async function obterBaseDeConhecimento(cpf: string): Promise<string> {
     const avisos = await prisma.avisos.findMany({
       where: {
         empresaId: empresa.id,
-        OR: [
-          { expiresAt: null },
-          { expiresAt: { gt: new Date() } },
+        AND: [
+          // avisos gerais + avisos especificos do proprio usuario
+          {
+            OR: [
+              { destinatarioCpf: null },
+              { destinatarioCpf: cpf },
+              { destinatarioCpf: cpf.replace(/\D/g, "") },
+            ],
+          },
+          {
+            OR: [
+              { expiresAt: null },
+              { expiresAt: { gt: new Date() } },
+            ],
+          },
         ],
       },
       select: {

@@ -12,6 +12,7 @@ type Aviso = {
   setor?: string | null
   createdAt: string
   duracao?: string | null
+  destinatarioCpf?: string | null
 }
 
 interface Props {
@@ -31,6 +32,10 @@ export default function SharedAvisosPage({ setHeader }: Props) {
   const [conteudo, setConteudo] = useState("")
   const [setor, setSetor] = useState(podeEscolherSetor ? "" : userSetor)
   const [duracao, setDuracao] = useState("")
+  const [entregaEspecifica, setEntregaEspecifica] = useState(false)
+  const [destinatario, setDestinatario] = useState("")
+  const [destinatarioNome, setDestinatarioNome] = useState<string | null>(null)
+  const [destinatarioBuscando, setDestinatarioBuscando] = useState(false)
   const [setoresDisponiveis, setSetoresDisponiveis] = useState<string[]>([])
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -76,16 +81,54 @@ export default function SharedAvisosPage({ setHeader }: Props) {
     setConteudo("")
     setSetor(podeEscolherSetor ? "" : userSetor)
     setDuracao("")
+    setEntregaEspecifica(false)
+    setDestinatario("")
+    setDestinatarioNome(null)
+    setDestinatarioBuscando(false)
     setEditingId(null)
     setErrorMessage(null)
     setIsSubmitting(false)
     setOpen(false)
   }
 
+  // Identifica o usuario pelo cpf ou matricula digitado
+  async function identificarDestinatario(valor: string) {
+    const buscar = valor.replace(/\D/g, "")
+    if (buscar.length < 4) {
+      setDestinatarioNome(null)
+      return
+    }
+
+    setDestinatarioBuscando(true)
+    setDestinatarioNome(null)
+
+    try {
+      const res = await fetch(`/api/quadro-avisos?identificar=${buscar}`)
+      if (!res.ok) {
+        setDestinatarioNome(null)
+        return
+      }
+      const data = await res.json()
+      if (data?.nome) {
+        setDestinatarioNome(data.nome)
+        setDestinatario(data.cpf || buscar)
+      }
+    } catch (error) {
+      console.error("Erro ao identificar usuário:", error)
+      setDestinatarioNome(null)
+    } finally {
+      setDestinatarioBuscando(false)
+    }
+  }
+
   // Envia ou atualiza um aviso
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!titulo || !conteudo) return
+    if (entregaEspecifica && !destinatarioNome) {
+      toast.error("Identifique o usuário destinatário (CPF ou matrícula) antes de publicar.")
+      return
+    }
 
     setErrorMessage(null)
     setIsSubmitting(true)
@@ -94,7 +137,8 @@ export default function SharedAvisosPage({ setHeader }: Props) {
       titulo,
       conteudo,
       setor: podeEscolherSetor ? setor : userSetor,
-      duracao: duracao ? String(duracao) : null
+      duracao: duracao ? String(duracao) : null,
+      destinatarioCpf: entregaEspecifica ? destinatario : null
     }
 
     const url = "/api/quadro-avisos"
@@ -133,6 +177,9 @@ export default function SharedAvisosPage({ setHeader }: Props) {
     setConteudo(aviso.conteudo)
     setSetor(aviso.setor || "")
     setDuracao(aviso.duracao || "")
+    setEntregaEspecifica(!!aviso.destinatarioCpf)
+    setDestinatario(aviso.destinatarioCpf || "")
+    setDestinatarioNome(aviso.destinatarioCpf ? "Destinatário já identificado" : null)
     setEditingId(aviso.id)
     setErrorMessage(null)
     setOpen(true)
@@ -221,6 +268,72 @@ export default function SharedAvisosPage({ setHeader }: Props) {
                 )}
               </div>
 
+              {/* Entrega Específica */}
+              <div className="md:col-span-2 flex flex-col gap-2 pt-1">
+                <label className="flex items-center gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={entregaEspecifica}
+                    onChange={e => {
+                      setEntregaEspecifica(e.target.checked)
+                      if (!e.target.checked) {
+                        setDestinatario("")
+                        setDestinatarioNome(null)
+                      }
+                    }}
+                    className="w-5 h-5 accent-[var(--primary)]"
+                  />
+                  <span className="text-sm font-bold">Entrega específica (para um usuário)</span>
+                </label>
+
+                {entregaEspecifica && (
+                  <div className="flex flex-col gap-2 mt-1">
+                    <div className="flex items-center gap-2">
+                      <input
+                        value={destinatario}
+                        onChange={e => {
+                          setDestinatario(e.target.value)
+                          setDestinatarioNome(null)
+                        }}
+                        onBlur={e => identificarDestinatario(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === "Enter") {
+                            e.preventDefault()
+                            identificarDestinatario(destinatario)
+                          }
+                        }}
+                        placeholder="Digite o CPF ou matrícula do usuário"
+                        className="flex-1 border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all"
+                        style={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border-subtle)" }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => identificarDestinatario(destinatario)}
+                        disabled={destinatarioBuscando}
+                        className="px-4 py-3 rounded-xl text-white font-bold text-sm transition-all hover:brightness-110 disabled:opacity-50"
+                        style={{ backgroundColor: "var(--primary)" }}
+                      >
+                        {destinatarioBuscando ? "Buscando..." : "Identificar"}
+                      </button>
+                    </div>
+
+                    {destinatarioBuscando && (
+                      <span className="text-xs opacity-60">Identificando usuário...</span>
+                    )}
+
+                    {!destinatarioBuscando && destinatarioNome === null && destinatario.replace(/\D/g, "").length >= 4 && (
+                      <span className="text-xs text-red-500 font-medium">Usuário não encontrado para este CPF ou matrícula</span>
+                    )}
+
+                    {!destinatarioBuscando && destinatarioNome && (
+                      <span className="text-xs font-bold" style={{ color: "var(--status-completed)" }}>
+                        ✓ Aviso para: {destinatarioNome}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
               {/* Select Setor */}
               <div className="flex flex-col gap-1">
                 {podeEscolherSetor ? (
@@ -302,6 +415,15 @@ export default function SharedAvisosPage({ setHeader }: Props) {
                         </span>
                       )}
                     </div>
+
+                    {aviso.destinatarioCpf && (
+                      <span
+                        className="inline-block text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md border mb-3"
+                        style={{ backgroundColor: "var(--status-cancelled)", color: "white", borderColor: "transparent" }}
+                      >
+                        Específico
+                      </span>
+                    )}
 
                     <p className="text-sm opacity-80 leading-relaxed mb-6 line-clamp-4">
                       {aviso.conteudo}

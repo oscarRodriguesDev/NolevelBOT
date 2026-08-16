@@ -74,7 +74,11 @@ async function buscarAvisosEspecificos(
       const titulo = aviso.titulo.toLowerCase();
       const conteudo = aviso.conteudo.toLowerCase();
 
-      if (titulo.includes(matLower) || conteudo.includes(matLower)) {
+      // entrega especifica: destinatarioCpf igual a matricula OU titulo/conteudo contendo a matricula (legado)
+      if (
+        aviso.destinatarioCpf === matricula ||
+        titulo.includes(matLower) || conteudo.includes(matLower)
+      ) {
         relevantes.push(`📢 *${aviso.titulo}*: ${aviso.conteudo}`);
       }
     }
@@ -103,6 +107,9 @@ async function buscarAvisosDoVeiculo(
     const onibusLower = numeroOnibus.toLowerCase();
 
     for (const aviso of avisos) {
+      // avisos com entrega especifica nao sao exibidos no fluxo de veiculo
+      if (aviso.destinatarioCpf) continue;
+
       if (aviso.duracao) {
         const dias = Number(aviso.duracao);
         if (!isNaN(dias)) {

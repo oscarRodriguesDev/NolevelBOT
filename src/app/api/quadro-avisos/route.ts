@@ -7,7 +7,7 @@ import { getSessionOrFail } from "@/util/permission"
 import { ROLE } from "@prisma/client"
 
 // Retorna os avisos validos da empresa do usuario, filtrando por setor e removendo vencidos
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await getSessionOrFail()
     const empresaId = session?.user?.empresaId
@@ -19,6 +19,24 @@ export async function GET() {
         { error: "Empresa não identificada" },
         { status: 401 }
       )
+    }
+
+    // identifica um usuario da empresa pelo cpf ou matricula
+    const { searchParams } = new URL(request.url)
+    const identificar = searchParams.get("identificar")
+
+    if (identificar) {
+      const buscar = identificar.replace(/\D/g, "")
+      const usuario = await prisma.cpfs.findFirst({
+        where: { empresaId, cpf: buscar },
+        select: { nome: true, cpf: true },
+      })
+
+      if (!usuario) {
+        return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
+      }
+
+      return NextResponse.json(usuario)
     }
 
     const where: Record<string, unknown> = { empresaId }
@@ -37,7 +55,16 @@ export async function GET() {
     const validos = []
     const vencidosIds: string[] = []
 
+    const usuarioCpf = session?.user?.cpf ? session.user.cpf.replace(/\D/g, "") : ""
+
     for (const aviso of avisos) {
+      // avisos com entrega especifica so aparecem para o proprio destinatario
+      // (ADMIN e GOD enxergam todos para gerenciar)
+      if (aviso.destinatarioCpf && userRole !== "ADMIN" && userRole !== "GOD") {
+        const destinatario = aviso.destinatarioCpf.replace(/\D/g, "")
+        if (destinatario !== usuarioCpf) continue
+      }
+
       if (!aviso.duracao) {
         validos.push(aviso)
         continue
@@ -93,12 +120,29 @@ export async function POST(request: Request) {
     const parsed = validateOrError(body, createAvisoSchema)
     if (parsed instanceof NextResponse) return parsed
 
-    let { titulo, conteudo, setor, duracao } = parsed
+    let { titulo, conteudo, setor, duracao, destinatarioCpf } = parsed
     const userRole = session.user.role as ROLE
     const userSetor = session.user.setor || ""
 
     if (userRole !== "ADMIN" && userRole !== "GOD") {
       setor = userSetor
+    }
+
+    let destinatario = null
+    if (destinatarioCpf) {
+      const buscar = destinatarioCpf.replace(/\D/g, "")
+      const existe = await prisma.cpfs.findFirst({
+        where: { empresaId: empresaId!, cpf: buscar },
+        select: { cpf: true },
+      })
+
+      if (!existe) {
+        return NextResponse.json(
+          { error: "Usuário destinatário não encontrado para este CPF ou matrícula" },
+          { status: 400 }
+        )
+      }
+      destinatario = buscar
     }
 
     let expiresAt: Date | null = null
@@ -120,6 +164,7 @@ export async function POST(request: Request) {
         empresaId: empresaId!,
         duracao,
         setor: setor || null,
+        destinatarioCpf: destinatario,
         expiresAt
       }
     })
@@ -152,13 +197,30 @@ export async function PUT(request: Request) {
     const parsed = validateOrError(body, updateAvisoSchema)
     if (parsed instanceof NextResponse) return parsed
 
-    let { id, titulo, conteudo, setor, duracao } = parsed
+    let { id, titulo, conteudo, setor, duracao, destinatarioCpf } = parsed
     let { expiresAt } = body
     const userRole = session.user.role as ROLE
     const userSetor = session.user.setor || ""
 
     if (userRole !== "ADMIN" && userRole !== "GOD") {
       setor = userSetor
+    }
+
+    let destinatario: string | null = null
+    if (destinatarioCpf) {
+      const buscar = destinatarioCpf.replace(/\D/g, "")
+      const existe = await prisma.cpfs.findFirst({
+        where: { empresaId: session.user.empresaId!, cpf: buscar },
+        select: { cpf: true },
+      })
+
+      if (!existe) {
+        return NextResponse.json(
+          { error: "Usuário destinatário não encontrado para este CPF ou matrícula" },
+          { status: 400 }
+        )
+      }
+      destinatario = buscar
     }
 
     let parsedExpiresAt: Date | null = null
@@ -177,6 +239,7 @@ export async function PUT(request: Request) {
         conteudo,
         duracao,
         setor: setor ?? null,
+        destinatarioCpf: destinatario,
         expiresAt: parsedExpiresAt
       }
     })

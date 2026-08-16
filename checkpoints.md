@@ -1,5 +1,14 @@
 # Checkpoints — Estado da Sessão
 
+## 2026-08-16 (Entrega específica de avisos — CONCLUÍDO)
+
+### Estado final
+- **Banco**: coluna `destinatarioCpf` adicionada ao model `avisos` via `prisma db push` (banco não usa migrações — `_prisma_migrations` não existe; `migrate dev` quebrado por migração antiga referenciando coluna `plano`).
+- **UI (`shared-avisos`)**: checkbox "Entrega específica" → campo CPF/matrícula → botão **Identificar** (GET `/api/quadro-avisos?identificar=` retorna nome) → textarea do aviso; badge "Específico" nos cards; bloqueio de publicar sem destinatário válido.
+- **Regra de entrega**: aviso sem `destinatarioCpf` = geral; com `destinatarioCpf` = só para o destinatário (match exato); legado (número no título/conteúdo) mantido.
+- **Pontos ajustados**: `usedata.ts` (buscarAvisos/buscarAvisosPorCpf), `quadro-avisos` (POST/PUT/GET+identificar), `mostrar-avisos`, `chat-oficina`, `webhook-oficina`, `smartSearch.ts`.
+- **Testes**: 367 passando. **Build**: ok (75 rotas).
+
 ## 2026-08-16 (Aviso específico no chat-corporativo — CORRIGIDO)
 
 ### Estado final

@@ -37,7 +37,14 @@ export async function GET(req: Request) {
     const validos = []
     const vencidosIds: string[] = []
 
+    const cpfNumbers = cpf.replace(/\D/g, "")
+
     for (const aviso of avisos) {
+      // avisos com entrega especifica so aparecem para o proprio destinatario
+      if (aviso.destinatarioCpf && aviso.destinatarioCpf !== cpf && aviso.destinatarioCpf !== cpfNumbers) {
+        continue
+      }
+
       if (!aviso.duracao) {
         validos.push(aviso)
         continue
