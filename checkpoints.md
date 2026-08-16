@@ -1,5 +1,13 @@
 # Checkpoints — Estado da Sessão
 
+## 2026-08-16 (Aviso específico no chat-corporativo — CORRIGIDO)
+
+### Estado final
+- **Sintoma**: aviso específico aparecia na oficina (ao informar a matrícula) mas não no corporativo (ao informar o CPF).
+- **Causa**: `chat-oficina` tinha `buscarAvisosEspecificos`; `chat-corporativo` não tinha nenhuma busca de avisos.
+- **Correção**: `chat-corporativo/route.ts` passou a usar `buscarAvisosPorCpf(cpf)` de `@/lib/usedata` (mesma do webhook-corporativo) e injeta o aviso na saudação (`*📢 Aviso importante para você:*`) antes de pedir a descrição.
+- **Testes**: 367 passando. **Build**: ok (75 rotas).
+
 ## 2026-08-16 (Confirmação de abertura de chamado no chatbot e formulários — CONCLUÍDO)
 
 ### Estado final

@@ -2,6 +2,15 @@
 
 > Autoria: VIBECODE
 
+## Sessão 2026-08-16 (aviso específico no chat-corporativo — corrigido)
+
+### Aviso específico por CPF agora é entregue no chatbot corporativo
+- **Sintoma**: aviso específico para usuário da oficina era entregue pelo `chatbot-app` (assim que informava a matrícula), mas no **corporativo** não era entregue após informar o CPF.
+- **Causa raiz**: o `chat-oficina/route.ts` chama `buscarAvisosEspecificos` (busca avisos da empresa cujo título/conteúdo contém a matrícula) e injeta na saudação; o `chat-corporativo/route.ts` **não tinha essa lógica** — após validar o CPF ia direto para coletar a descrição.
+- **Correção**: `chat-corporativo/route.ts` agora chama a função canônica `buscarAvisosPorCpf(cpf)` de `@/lib/usedata` (a mesma usada no `webhook-corporativo`) após validar o CPF e, se houver avisos, adiciona `*📢 Aviso importante para você:*` na saudação antes de pedir a descrição.
+- **Critério de match**: aviso específico = título ou conteúdo do aviso contendo os dígitos do CPF (mesma regra do WhatsApp corporativo).
+- **Testes**: 367 passando. **Build**: ok (75 rotas).
+
 ## Sessão 2026-08-16 (confirmação de abertura de chamado — chatbot e formulários)
 
 ### Chamado aberto agora é confirmado ao usuário (com número TKT)

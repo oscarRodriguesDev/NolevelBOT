@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { TTLMap } from "@/lib/ttl-map"
 import { prisma } from "@/lib/prisma"
-import { checkEmpresaModule } from "@/lib/usedata"
+import { checkEmpresaModule, buscarAvisosPorCpf } from "@/lib/usedata"
 import { getSetores } from "@/lib/setores"
 
 const FlowState = {
@@ -106,7 +106,17 @@ export async function POST(req: NextRequest) {
         }
 
         session.state = FlowState.COLETAR_DESCRICAO
-        return reply(`Olá, *${registro.nome}!* 😊\n\nDescreva o *motivo* do seu contato com detalhes:`)
+
+        let msg = `Olá, *${registro.nome}!* 😊`
+
+        const avisosEspecificos = await buscarAvisosPorCpf(cpf)
+
+        if (avisosEspecificos && !avisosEspecificos.includes("Sem avisos")) {
+          msg += `\n\n*📢 Aviso importante para você:*\n\n${avisosEspecificos}`
+        }
+
+        msg += `\n\nDescreva o *motivo* do seu contato com detalhes:`
+        return reply(msg)
       }
 
       case FlowState.COLETAR_DESCRICAO: {
