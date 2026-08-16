@@ -4,6 +4,18 @@
 
 ## Sessão 2026-08-15
 
+### Webhook "Token inválido" em produção (após pagamento real CONFIRMED) — diagnóstico adicionado
+- **Contexto**: o pagamento chegou e foi CONFIRMED no Asaas (cartão 4444, `pay_72hi1vjm57sda6ok`, empresa `da544150-...`), mas o webhook respondeu `{"error": "Token inválido"}` mesmo com o token atualizado na Vercel.
+- **Descoberta crítica**: `src/app/api/webhooks/asaas/route.ts` **só existe no branch `vibecode`** — em `origin/main` (commit `fe501ed`), `origin/dev` e `origin/hml` o arquivo não existe. O fix do header `asaas-access-token` (commit `479a670`) está apenas no `vibecode`. **A `main` NÃO deve ser alterada** — o deploy é feito a partir do `vibecode`.
+- **Causa provável do 401**: o deploy atual na Vercel deve ser anterior ao `479a670` (o usuário atualizou a env var, mas mudança de env var não substitui o código). Código antigo → só lê `Authorization`/`x-asaas-token` → header `asaas-access-token` ignorado → token vazio → "Token inválido". (Alternativa: token da env var ≠ painel Asaas.)
+- **Diagnóstico adicionado** (`route.ts`):
+  - 401 diferenciado: **"Token do webhook não configurado no servidor"** (env ausente) / **"Token não enviado (header asaas-access-token ausente)"** (deploy antigo ou header não lido) / **"Token inválido"** (header chegou mas difere).
+  - Log estruturado com **hashes** (nunca o token real) de recebido/esperado + quais headers chegaram.
+  - `trim()` no token esperado e recebido (protege contra espaço acidental na env var da Vercel).
+  - `GET /api/webhooks/asaas` agora responde `codigoVersao: "v2-header-asaas-access-token"`, `tokenConfigurado`, `tokenAmostra` (`****...`), `tokenHash` — permite confirmar qual código está no ar SEM expor o segredo.
+- **Testes**: `asaas-webhook.test.ts` +5 (token errado → "Token inválido"; header ausente → "Token não enviado"; env ausente → "não configurado"; trim aceito; GET diagnóstico sem vazar segredo). **366 passando**, build ok.
+- **Próximo passo**: redeploy do `vibecode` na Vercel → conferir `codigoVersao` no GET → re-testar. A resposta do 401 dirá exatamente o que ajustar.
+
 ### BUG 502 no POST /api/empresa/pagamento — RESOLVIDO (tokenização Asaas)
 - **Sintoma reportado**: o Asaas logava 200 (customer criado `cus_000008727218`), mas `POST /api/empresa/pagamento` retornava 502 (`ERR-00001`/`ERR-00002`) para a empresa `59ff0fcf-...` no Vercel. O `storeError` é um Map em memória (TTL 24h, contador por instância) — código não recuperável depois.
 - **Causa raiz**: tokenização com o endpoint errado. O app chamava `POST /creditCards` (inexistente → **404**). O endpoint oficial v3 é **`POST /creditCard/tokenizeCreditCard`**, com `remoteIp` **obrigatório** (IP do cliente, nunca do servidor) e `creditCardHolderInfo` completo (name, email, cpfCnpj, postalCode, addressNumber, phone). Resposta traz **`creditCardToken`** (não `id`). Sem os dados do titular a API rejeita (ex.: CEP inválido → 400 `invalid_holderInfo`).

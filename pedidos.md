@@ -4,6 +4,12 @@
 
 ## 2026-08-15
 
+- [ ] **BUG**: webhook respondeu `{"error": "Token inválido"}` mesmo com o token atualizado na Vercel (pagamento `pay_72hi1vjm57sda6ok` CONFIRMED). — **DIAGNÓSTICO ADICIONADO, aguardando redeploy** — (commit desta sessão)
+  - **Descoberta**: o webhook só existe no branch `vibecode`; o fix do header `asaas-access-token` (`479a670`) **não está na `main`** (que não deve ser alterada). Deploy é via `vibecode`.
+  - **Causa provável**: deploy atual na Vercel anterior ao `479a670` → código não lê o header `asaas-access-token` → token vazio → 401.
+  - **Diagnóstico adicionado**: 401 diferenciado ("Token do webhook não configurado no servidor" / "Token não enviado (header asaas-access-token ausente)" / "Token inválido"), log com hashes, `trim()` no token, e `GET /api/webhooks/asaas` com `codigoVersao: "v2-header-asaas-access-token"` + `tokenAmostra`/`tokenHash`.
+  - **Ação do usuário**: **Redeploy do `vibecode` na Vercel** → abrir `https://<domínio>/api/webhooks/asaas` → confirmar `codigoVersao: "v2-header-asaas-access-token"` → re-testar o webhook.
+
 - [x] **BUG**: `POST /api/empresa/pagamento` retornando 502 no Vercel (pagamento real não destrava). — **RESOLVIDO** — (commit desta sessão)
   - **Causa raiz**: tokenização Asaas usava endpoint errado (`POST /creditCards` → 404). O correto é `POST /creditCard/tokenizeCreditCard` (v3), que exige `remoteIp` (IP do cliente) e `creditCardHolderInfo` completo (postalCode válido, addressNumber, phone). Resposta retorna `creditCardToken` (não `id`).
   - **Correção**: `src/lib/asaas.ts` (rota + remoteIp + titularAddressNumber + `creditCardToken || id`), `src/app/api/empresa/pagamento/route.ts` (valida titular + captura remoteIp do cliente), `src/app/pagamento/page.tsx` (cartão de teste `4444 4444 4444 4444` · 12/27 · 123 + seção "Dados do Titular").

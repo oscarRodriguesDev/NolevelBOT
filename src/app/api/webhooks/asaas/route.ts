@@ -20,6 +20,18 @@ function getWebhookToken(): string | undefined {
   )
 }
 
+// Hash p/ diagnóstico SEM expor o token (nunca logar o valor real)
+function hashSegredo(v: string): string {
+  let h = 5381
+  for (let i = 0; i < v.length; i++) h = ((h << 5) + h + v.charCodeAt(i)) >>> 0
+  return h.toString(16).padStart(8, "0")
+}
+
+function amostraSegredo(v: string): string {
+  if (v.length <= 8) return "***"
+  return `${v.slice(0, 4)}...${v.slice(-4)}`
+}
+
 // Extrai o evento do payload (formato atual do Asaas e formato legado)
 function extrairEvento(body: any): {
   event: string
@@ -61,16 +73,38 @@ export async function POST(req: NextRequest) {
   // 1) Validação de token (header)
   // O Asaas envia o token de autenticação do webhook no header "asaas-access-token"
   // (também aceitamos Authorization Bearer / x-asaas-token / asaas_access_token por compatibilidade)
-  const tokenHeader = req.headers.get("authorization") || ""
+  const headers = req.headers
+  const tokenHeader = headers.get("authorization") || ""
   const token =
-    tokenHeader.replace(/^Bearer\s+/i, "") ||
-    req.headers.get("x-asaas-token") ||
-    req.headers.get("asaas-access-token") ||
-    req.headers.get("asaas_access_token") ||
-    ""
+    (tokenHeader.replace(/^Bearer\s+/i, "") ||
+      headers.get("x-asaas-token") ||
+      headers.get("asaas-access-token") ||
+      headers.get("asaas_access_token") ||
+      "")
+      .trim()
 
-  const expected = getWebhookToken()
-  if (!expected || token !== expected) {
+  const expected = (getWebhookToken() || "").trim()
+  const temTokenConfigurado = Boolean(expected)
+
+  if (!temTokenConfigurado || token !== expected) {
+    // Diagnóstico SEM expor segredos: loga hashes para comparar no Vercel.
+    // `token` vazio = o header não foi lido (código antigo em produção) ou o Asaas não enviou.
+    console.warn("[webhook-asaas] token inválido", {
+      tokenRecebidoHash: token ? hashSegredo(token) : "vazio",
+      tokenEsperadoHash: expected ? hashSegredo(expected) : "nao-configurado",
+      headersRecebidos: [
+        headers.get("asaas-access-token") ? "asaas-access-token" : null,
+        headers.get("asaas_access_token") ? "asaas_access_token" : null,
+        headers.get("x-asaas-token") ? "x-asaas-token" : null,
+        tokenHeader ? "authorization" : null,
+      ].filter(Boolean),
+    })
+    if (!temTokenConfigurado) {
+      return NextResponse.json({ error: "Token do webhook não configurado no servidor" }, { status: 401 })
+    }
+    if (!token) {
+      return NextResponse.json({ error: "Token não enviado (header asaas-access-token ausente)" }, { status: 401 })
+    }
     return NextResponse.json({ error: "Token inválido" }, { status: 401 })
   }
 
@@ -173,6 +207,16 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
-  // Health check do webhook
-  return NextResponse.json({ ok: true, service: "asaas-webhook" })
+  // Health check + diagnóstico (nunca expõe o token real)
+  const token = getWebhookToken() || ""
+  const headersAceitos = ["asaas-access-token", "asaas_access_token", "x-asaas-token", "authorization (Bearer)"]
+  return NextResponse.json({
+    ok: true,
+    service: "asaas-webhook",
+    codigoVersao: "v2-header-asaas-access-token", // presente apenas no código novo (>= 479a670)
+    tokenConfigurado: Boolean(token),
+    tokenAmostra: token ? amostraSegredo(token) : null,
+    tokenHash: token ? hashSegredo(token) : null,
+    headersAceitos,
+  })
 }

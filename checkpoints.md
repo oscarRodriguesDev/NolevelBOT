@@ -1,5 +1,19 @@
 # Checkpoints — Estado da Sessão
 
+## 2026-08-15 (Webhook: "Token inválido" em produção mesmo com token atualizado — DIAGNÓSTICO adicionado)
+
+### Estado final
+- **Contexto**: pagamento real funcionou (cartão 4444 → cobrança `pay_72hi1vjm57sda6ok` CONFIRMED, empresa `da544150-...`), mas o webhook respondeu `{"error": "Token inválido"}`. O usuário já tinha atualizado o token na Vercel.
+- **Investigação**: o webhook (`src/app/api/webhooks/asaas/route.ts`) só existe no branch **`vibecode`** (em `main`/`dev`/`hml` o arquivo não existe). O fix do header `asaas-access-token` (commit `479a670`) **não existe na `main`** (que está em `fe501ed`). **A `main` não deve ser alterada** — o deploy é via `vibecode`.
+- **Hipóteses para o "Token inválido"**: (a) o deploy atual na Vercel é anterior ao `479a670` → código não lê o header `asaas-access-token` → token vazio; (b) o token na env var difere do painel Asaas (espaço/cópia/regeneração). Sem acesso aos logs não era possível distinguir.
+- **Correção/diagnóstico adicionado** em `route.ts`:
+  - Resposta diferenciada no 401: **"Token do webhook não configurado no servidor"** (env var ausente) / **"Token não enviado (header asaas-access-token ausente)"** (deploy antigo/header não lido) / **"Token inválido"** (header chega mas não bate).
+  - `console.warn` com hashes (nunca o token real) dos tokens recebido/esperado + lista de headers presentes.
+  - `trim()` no token (evita espaço acidental na env var).
+  - `GET /api/webhooks/asaas` (health) agora responde `codigoVersao: "v2-header-asaas-access-token"` + `tokenConfigurado`/`tokenAmostra`/`tokenHash` — confirma se o deploy tem o código novo.
+- **Testes**: `asaas-webhook.test.ts` +5 casos (token errado, header ausente, token não configurado, trim, GET diagnóstico). **366 passando** (23 arquivos). **Build**: ok.
+- **Próximo passo (usuário)**: **Redeploy do branch `vibecode` na Vercel** → abrir `https://<domínio>/api/webhooks/asaas` e conferir se retorna `codigoVersao: "v2-header-asaas-access-token"` → refazer o teste do webhook. A resposta do 401 agora indica exatamente qual é o problema.
+
 ## 2026-08-15 (Pagamento Asaas: BUG 502 no POST /api/empresa/pagamento — RESOLVIDO + E2E real)
 
 ### Estado final

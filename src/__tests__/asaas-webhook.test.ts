@@ -66,6 +66,68 @@ describe("webhook asaas - validação", () => {
     expect(res.status).toBe(401)
   })
 
+  it("token diferente -> 401 'Token inválido' (diagnóstico distingue de header ausente)", async () => {
+    const { POST } = await import("@/app/api/webhooks/asaas/route")
+    const res = await POST(criaRequestAsaas({ event: "PAYMENT_CONFIRMED" }, "token-errado"))
+    expect(res.status).toBe(401)
+    const json = await res.json()
+    expect(json.error).toBe("Token inválido")
+  })
+
+  it("header asaas-access-token ausente -> 401 'Token não enviado' (deploy antigo/header não lido)", async () => {
+    const { POST } = await import("@/app/api/webhooks/asaas/route")
+    const res = await POST(
+      new NextRequest("http://localhost/api/webhooks/asaas", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ event: "PAYMENT_CONFIRMED" }),
+      })
+    )
+    expect(res.status).toBe(401)
+    const json = await res.json()
+    expect(json.error).toBe("Token não enviado (header asaas-access-token ausente)")
+  })
+
+  it("token do webhook não configurado no servidor -> 401 com aviso específico", async () => {
+    delete process.env.ASAAS_TOKEN_WEBHOOK
+    delete process.env.ASAAS_WEBHOOK_TOKEN
+    const { POST } = await import("@/app/api/webhooks/asaas/route")
+    const res = await POST(criaRequestAsaas({ event: "PAYMENT_CONFIRMED" }, "qualquer"))
+    expect(res.status).toBe(401)
+    const json = await res.json()
+    expect(json.error).toBe("Token do webhook não configurado no servidor")
+  })
+
+  it("aceita token com espaços extras (trim)", async () => {
+    const { POST } = await import("@/app/api/webhooks/asaas/route")
+    mockFindUnique.mockResolvedValue({
+      id: "emp-trim",
+      statusPagamento: "PENDENTE",
+      trialAtivo: true,
+    })
+    mockConsultarCobranca.mockResolvedValue({
+      id: "pay_trim",
+      status: "CONFIRMED",
+      externalReference: "emp-trim",
+      subscription: null,
+      customer: null,
+    })
+    const res = await POST(criaRequestAsaas({ id: "evt_trim", event: "PAYMENT_CONFIRMED", payment: { id: "pay_trim" } }, "  whsec_test  "))
+    expect(res.status).toBe(200)
+  })
+
+  it("GET health check informa código novo e estado do token (sem expor segredo)", async () => {
+    const { GET } = await import("@/app/api/webhooks/asaas/route")
+    const res = await GET()
+    const json = await res.json()
+    expect(json.codigoVersao).toBe("v2-header-asaas-access-token")
+    expect(json.tokenConfigurado).toBe(true)
+    expect(json.tokenAmostra).toBeDefined()
+    expect(json.tokenHash).toBeDefined()
+    // o segredo real nunca aparece na resposta
+    expect(JSON.stringify(json)).not.toContain("whsec_test")
+  })
+
   it("aceita token enviado no header asaas-access-token (formato real do Asaas)", async () => {
     const { POST } = await import("@/app/api/webhooks/asaas/route")
 
