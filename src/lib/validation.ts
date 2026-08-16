@@ -36,7 +36,9 @@ export const createUserSchema = z.object({
   cpf: cpfSchema,
   password: passwordSchema,
   setor: z.string().min(1, "Setor é obrigatório"),
-  empresaId: z.string().uuid("Empresa inválida"),
+  // O id da empresa no banco é String (default uuid), mas pode ser um id custom
+  // (ex.: "1" criado via SQL). A existência é validada na rota (findUnique).
+  empresaId: z.string().min(1, "Empresa é obrigatória"),
   role: z.string().min(1, "Papel é obrigatório"),
 })
 
@@ -90,6 +92,7 @@ export const updateUserSchema = z.object({
   email: emailSchema.optional(),
   cpf: cpfSchema.optional(),
   setor: z.string().min(1).optional(),
-  empresaId: z.string().uuid().optional(),
+  // id pode ser custom (não-UUID); a existência é validada na rota.
+  empresaId: z.string().min(1).optional(),
   role: z.string().optional(),
 })

@@ -107,8 +107,13 @@ describe('Validacao - createUserSchema', () => {
     expect(() => createUserSchema.parse({ ...validUser, password: '123' })).toThrow()
   })
 
-  it('rejeita empresaId nao UUID', () => {
-    expect(() => createUserSchema.parse({ ...validUser, empresaId: 'nao-e-uuid' })).toThrow()
+  it('aceita empresaId custom nao UUID (ex.: "1" criado via SQL)', () => {
+    const result = createUserSchema.parse({ ...validUser, empresaId: '1' })
+    expect(result.empresaId).toBe('1')
+  })
+
+  it('rejeita empresaId vazio', () => {
+    expect(() => createUserSchema.parse({ ...validUser, empresaId: '' })).toThrow()
   })
 
   it('rejeita setor vazio', () => {

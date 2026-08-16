@@ -1,5 +1,18 @@
 # Checkpoints — Estado da Sessão
 
+## 2026-08-16 (GOD de empresa específica não conseguia adicionar usuários — RESOLVIDO)
+
+### Estado final
+- **Sintoma**: usuário `GOD` da empresa de id `"1"` (criado via SQL direto no banco, id não-UUID) não conseguia adicionar usuários dentro da própria empresa.
+- **Causa raiz**: `src/lib/validation.ts` exigia `empresaId` **UUID** (`z.string().uuid()`). O schema Prisma aceita qualquer string como id de empresa (`id String @id @default(uuid())`). `empresaId = "1"` → `400 "Dados inválidos — empresaId: Empresa inválida"`. A criação nunca passava da validação.
+- **Correções**:
+  - `src/lib/validation.ts`: `empresaId` em `createUserSchema`/`updateUserSchema` = `z.string().min(1, ...)` (não-UUID aceito; existência validada na rota).
+  - `src/app/api/users/route.ts` (POST): GOD sem `empresaId` usa a empresa da sessão (fallback).
+  - Frontend `shared-gestao-usuarios.tsx` + `god/admins/page.tsx`: select de empresas default = própria empresa do GOD.
+  - **RBAC mantido**: GOD cria **apenas ADMIN** (mesmo na própria empresa) — `CREATE_ROLE_MAP.GOD = ["ADMIN"]` inalterado.
+- **Testes**: `validation.test.ts` e `rbac.test.ts` atualizados. **367 passando** (23 arquivos). **Build**: ok (75 rotas).
+- **Próximo passo (usuário)**: com o GOD da empresa `"1"` logado, criar usuários (Admin/Gestor/Atendente) na empresa — deve funcionar. Se a empresa ainda não tiver `setores` cadastrados, o formulário exigirá setor válido.
+
 ## 2026-08-15 (Webhook: "Token inválido" em produção mesmo com token atualizado — DIAGNÓSTICO adicionado)
 
 ### Estado final

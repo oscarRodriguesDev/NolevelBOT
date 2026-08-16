@@ -84,8 +84,12 @@ export default function CriarUsuarioPage() {
         if (userRole === "GOD" && Array.isArray(data)) {
           setEmpresas(data)
           if (data.length > 0) {
-            setForm(prev => ({ ...prev, empresaId: data[0].id }))
-            setSetoresDisponiveis(data[0].setores || [])
+            // Default: a própria empresa do GOD (quando vinculado a uma),
+            // senão a primeira da lista.
+            const propriaEmpresa = data.find((e: Empresa) => e.id === session?.user?.empresaId)
+            const alvo = propriaEmpresa || data[0]
+            setForm(prev => ({ ...prev, empresaId: alvo.id }))
+            setSetoresDisponiveis(alvo.setores || [])
           }
         } else if (!Array.isArray(data) && data.setores) {
           setSetoresDisponiveis(data.setores)

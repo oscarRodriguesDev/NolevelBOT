@@ -2,6 +2,19 @@
 
 > Autoria: VIBECODE
 
+## Sessão 2026-08-16
+
+### GOD de empresa específica não conseguia adicionar usuários — RESOLVIDO
+- **Contexto**: um usuário com `role = GOD` e `empresaId = "1"` (empresa e usuário criados via SQL direto no banco, com id não-UUID) não conseguia adicionar usuários dentro da própria empresa.
+- **Causa raiz**: `src/lib/validation.ts` validava `empresaId` como **UUID obrigatório** (`z.string().uuid()`). O `id` da `empresa` no schema é `String @id @default(uuid())` — o default é UUID, mas **qualquer string é aceita** (ex.: `"1"` criado via SQL). Ao criar um usuário com `empresaId = "1"`, o Zod rejeitava → `400 "Dados inválidos — empresaId: Empresa inválida"`. A criação nunca passava da validação.
+- **Correções**:
+  - `src/lib/validation.ts`: `createUserSchema.empresaId` e `updateUserSchema.empresaId` deixaram de exigir UUID (`z.string().min(1, ...)`). A existência da empresa continua validada na rota (`findUnique`).
+  - `src/app/api/users/route.ts` (POST): GOD **sem** `empresaId` no formData agora usa a empresa da própria sessão (fallback); só retorna "GOD deve selecionar uma empresa" se o GOD não tiver empresa vinculada.
+  - Frontend (`shared-gestao-usuarios.tsx` e `god/admins/page.tsx`): o select de empresas do GOD agora seleciona por padrão a **própria empresa do GOD** (antes: sempre a primeira da lista — risco de criar usuário na empresa errada).
+  - **RBAC mantido**: `CREATE_ROLE_MAP.GOD = ["ADMIN"]` **inalterado** — o GOD (mesmo o vinculado à própria empresa) cria **apenas ADMIN**; o ADMIN criado é quem cria GESTOR/ATENDENTE. (Tentativa de ampliar para GOD criar todos os papéis foi descartada pelo usuário.)
+- **Testes**: `validation.test.ts` (empresaId custom `"1"` aceito; vazio rejeitado) e `rbac.test.ts` (GOD cria apenas ADMIN; não cria GESTOR/ATENDENTE/GOD) mantidos coerentes. **367 passando**, build ok (75 rotas).
+- **Lições**: (1) `z.string().uuid()` no id da empresa é restrição indevida — o schema Prisma aceita qualquer string; (2) o padrão "GOD global que só cria ADMINS" quebrou quando surgiu o caso "GOD vinculado a uma empresa específica".
+
 ## Sessão 2026-08-15
 
 ### Webhook "Token inválido" em produção (após pagamento real CONFIRMED) — diagnóstico adicionado

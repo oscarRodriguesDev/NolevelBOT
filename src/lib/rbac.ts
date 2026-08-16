@@ -8,6 +8,8 @@ export const ROLES_HIERARCHY: Record<ROLE, number> = {
 }
 
 export const CREATE_ROLE_MAP: Record<ROLE, ROLE[]> = {
+  // GOD cria apenas ADMIN (o "chefe" de cada empresa); o ADMIN criado
+  // por sua vez cria GESTOR e ATENDENTE dentro da própria empresa.
   GOD: ["ADMIN"],
   ADMIN: ["GESTOR", "ATENDENTE"],
   GESTOR: ["ATENDENTE"],

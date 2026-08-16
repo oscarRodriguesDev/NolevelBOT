@@ -73,6 +73,9 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: "Empresa selecionada não existe" }, { status: 400 })
         }
         empresaID = selectedEmpresa
+      } else if (empresaID) {
+        // GOD vinculado a uma empresa cria dentro da própria empresa
+        // (usa a empresa da sessão quando não há empresaId no formData)
       } else {
         return NextResponse.json({ error: "GOD deve selecionar uma empresa" }, { status: 400 })
       }
