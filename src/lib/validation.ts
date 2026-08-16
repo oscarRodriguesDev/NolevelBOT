@@ -76,7 +76,10 @@ export const createAvisoSchema = z.object({
   conteudo: z.string().min(5, "Conteúdo deve ter no mínimo 5 caracteres"),
   setor: z.string().min(1, "Setor é obrigatório"),
   duracao: z.string().optional(),
-  destinatarioCpf: z.string().trim().optional().or(z.literal("").transform(() => undefined)),
+  destinatarioCpf: z.preprocess(
+    (v) => (v === null || v === "" ? undefined : v),
+    z.string().trim().optional()
+  ),
 })
 
 export const updateAvisoSchema = z.object({
@@ -85,7 +88,10 @@ export const updateAvisoSchema = z.object({
   conteudo: z.string().min(5).optional(),
   setor: z.string().min(1).optional(),
   duracao: z.string().optional(),
-  destinatarioCpf: z.string().trim().optional().or(z.literal("").transform(() => undefined)),
+  destinatarioCpf: z.preprocess(
+    (v) => (v === null || v === "" ? undefined : v),
+    z.string().trim().optional()
+  ),
 })
 
 export const updateUserSchema = z.object({
