@@ -2,6 +2,22 @@
 
 > Autoria: VIBECODE
 
+## Sessão 2026-08-16 (análise de avisos por IA nos bots)
+
+### Aviso correspondente ao motivo é apresentado antes de abrir chamado
+- **Pedido**: ao relatar o motivo/defeito, o sistema analisa os avisos com OpenAI (mesma chave `OPENAI_API_KEY`) para buscar correspondência. Se houver aviso relacionado → apresenta aviso personalizado ao usuário e diz "se for só isso, pode encerrar". Só abre chamado se o usuário solicitar explicitamente (*abrir chamado*).
+- **Comportamento**: se não houver correspondência → segue fluxo normal (abre chamado). Se houver → aviso personalizado + pergunta. Usuário pode: encerrar (`sair`) ou solicitar abertura (`abrir chamado`).
+- **Arquivo novo**: `src/lib/analisar-aviso.ts` — função `analisarAvisoPorMotivo(motivo, avisos)` usa `gpt-4o-mini` com prompt focado em análise de correspondência. Retorna `{ corresponde: boolean; mensagem: string | null }`. Falha → fallback "sem correspondência".
+- **Fluxos alterados**:
+  - `chat-corporativo/route.ts` — `COLETAR_DESCRICAO` agora busca avisos (geral + específicos) e chama `analisarAvisoPorMotivo`. Novo estado `CONFIRMAR_AVISO`.
+  - `chat-oficina/route.ts` — `COLETAR_DEFEITO` agora busca avisos e chama `analisarAvisoPorMotivo`. Novo estado `CONFIRMAR_AVISO`.
+  - `webhook-corporativo/route.ts` — `COLETAR_MOTIVO` usa `analisarAvisoPorMotivo` em vez de `botIA` com `AVISO_RESOLVE:`. Novo estado `CONFIRMAR_AVISO`.
+  - `webhook-oficina/route.ts` — `COLETAR_DEFEITO` agora busca avisos e chama `analisarAvisoPorMotivo`. Novo estado `CONFIRMAR_AVISO`.
+  - `chat-handler.ts` (chat-operacional) — `COLETAR_MOTIVO` quando `AVISO_RESOLVE` agora vai para `VERIFICAR_AVISOS` (apresentar aviso e perguntar) em vez de encerrar direto.
+  - `useIA-corporativa.ts` — `CONFIRMAR_AVISO` adicionado ao `FlowState`.
+- **Estado `CONFIRMAR_AVISO`**: se usuário diz "abrir/quero/sim" → segue para anexo; se diz "sair/encerrar/não" → encerra; caso contrário → reitera a pergunta.
+- **Testes**: 367 passando. **Build**: ok (75 rotas). Commit: `7b8df5b`.
+
 ## Sessão 2026-08-16 (entrega específica de aviso — campo destinatarioCpf)
 
 ### Aviso específico agora é configurado na tela (checkbox + CPF/matrícula)

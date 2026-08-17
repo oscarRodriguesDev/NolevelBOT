@@ -1,5 +1,13 @@
 # Checkpoints — Estado da Sessão
 
+## 2026-08-16 (Análise de avisos por IA nos bots — CONCLUÍDO)
+
+### Estado final
+- **Nova função**: `src/lib/analisar-aviso.ts` — usa `gpt-4o-mini` + `OPENAI_API_KEY` para analisar se o motivo do usuário corresponde a algum aviso. Retorna `{ corresponde, mensagem }`.
+- **Fluxos aplicados**: chat-corporativo (`COLETAR_DESCRICAO`), chat-oficina (`COLETAR_DEFEITO`), webhook-corporativo (`COLETAR_MOTIVO`), webhook-oficina (`COLETAR_DEFEITO`), chat-handler (`COLETAR_MOTIVO` → `VERIFICAR_AVISOS`).
+- **Novo estado `CONFIRMAR_AVISO`**: apresenta aviso personalizado e pergunta se usuário quer encerrar ou abrir chamado. Só abre se solicitar explicitamente.
+- **Testes**: 367 passando. **Build**: ok (75 rotas). Commit: `7b8df5b`.
+
 ## 2026-08-16 (Entrega específica de avisos — CONCLUÍDO)
 
 ### Estado final
