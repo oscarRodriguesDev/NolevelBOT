@@ -275,15 +275,14 @@ Nao inclua mais nada alem dessas duas palavras.`,
         const semAvisos = todosAvisos === "Sem avisos." || todosAvisos === "Sem avisos no momento.";
 
         if (!semAvisos) {
-          const analise = await botIA(
-            session, userInput,
-            `Analise o motivo e os avisos. Se o aviso resolver, retorne "AVISO_RESOLVE:" + mensagem. Senao, retorne "PROSSEGUIR_FLUXO".`,
-            todosAvisos
-          );
+          const { analisarAvisoPorMotivo } = await import("@/lib/analisar-aviso");
+          const analise = await analisarAvisoPorMotivo(session.motivoAtual || "", todosAvisos);
 
-          if (analise.startsWith("AVISO_RESOLVE:")) {
-            await sendText( analise.replace("AVISO_RESOLVE:", "").trim());
-            sessions.delete(number);
+          if (analise.corresponde && analise.mensagem) {
+            await sendText(
+              `*📢 Encontrei um aviso relacionado ao seu problema:*\n\n${analise.mensagem}\n\nSe for só isso, você pode *encerrar* o atendimento. Se mesmo assim quiser abrir um chamado, é só me avisar (digite *abrir chamado*).`
+            );
+            session.state = FlowState.CONFIRMAR_AVISO;
             break;
           }
         }
@@ -299,6 +298,30 @@ Nao inclua mais nada alem dessas duas palavras.`,
 
         await sendText( "Certo! Precisa enviar alguma foto ou documento?");
         session.state = FlowState.PERGUNTAR_ANEXO;
+        break;
+      }
+
+      case FlowState.CONFIRMAR_AVISO: {
+        const querAbrir = [
+          "abrir", "quero abrir", "sim", "s", "quero", "continuar", "mesmo assim",
+          "abrir chamado", "abrir mesmo", "vou querer", "quero o chamado",
+        ].some(v => lowerInput.includes(v));
+
+        if (querAbrir) {
+          await sendText( "Certo! Precisa enviar alguma foto ou documento?");
+          session.state = FlowState.PERGUNTAR_ANEXO;
+          break;
+        }
+
+        if (["sair", "encerrar", "não", "nao", "so isso", "só isso", "obrigado", "era isso", "não quero", "nao quero"].some(v => lowerInput.includes(v))) {
+          await sendText( "Sem problemas! Se precisar de algo, estou por aqui. Até mais! 👋");
+          sessions.delete(number);
+          return NextResponse.json({ ok: true });
+        }
+
+        await sendText(
+          "Entendi. Se for só isso, pode digitar *sair*. Se quiser abrir o chamado, digite *abrir chamado*."
+        );
         break;
       }
 

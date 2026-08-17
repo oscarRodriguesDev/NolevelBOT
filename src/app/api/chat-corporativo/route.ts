@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
 import { TTLMap } from "@/lib/ttl-map"
 import { prisma } from "@/lib/prisma"
-import { checkEmpresaModule, buscarAvisosPorCpf } from "@/lib/usedata"
+import { checkEmpresaModule, buscarAvisosPorCpf, buscarAvisos } from "@/lib/usedata"
+import { analisarAvisoPorMotivo } from "@/lib/analisar-aviso"
 import { getSetores } from "@/lib/setores"
 
 const FlowState = {
   INICIO: "inicio",
   IDENTIFICACAO_CPF: "identificacao_cpf",
   COLETAR_DESCRICAO: "coletar_descricao",
+  CONFIRMAR_AVISO: "confirmar_aviso",
   PERGUNTAR_ANEXO: "perguntar_anexo",
   COLETAR_MIDIA: "coletar_midia",
   CONFIRMAR: "confirmar",
@@ -133,8 +135,52 @@ export async function POST(req: NextRequest) {
           return reply("Descreva o *motivo* do seu contato com detalhes:")
         }
 
+        // Analisa os avisos para ver se ha algo relacionado ao motivo relatado
+        const avisosGeral = await buscarAvisos(session.cpf)
+        const avisosEspecificos = await buscarAvisosPorCpf(session.cpf || "")
+
+        const avisosDisponiveis = [
+          avisosGeral.includes("Sem avisos") ? "" : avisosGeral,
+          avisosEspecificos.includes("Sem avisos") ? "" : avisosEspecificos,
+        ].filter(Boolean).join("\n\n")
+
+        if (avisosDisponiveis) {
+          const analise = await analisarAvisoPorMotivo(session.descricao, avisosDisponiveis)
+
+          if (analise.corresponde && analise.mensagem) {
+            session.state = FlowState.CONFIRMAR_AVISO
+            return reply(
+              `*📢 Encontrei um aviso relacionado ao seu problema:*\n\n${analise.mensagem}\n\nSe for só isso, você pode *encerrar* o atendimento. Se mesmo assim quiser abrir um chamado, é só me avisar (digite *abrir chamado*).`
+            )
+          }
+        }
+
         session.state = FlowState.PERGUNTAR_ANEXO
         return reply("Deseja enviar um *anexo* (foto, documento)? (sim/não)")
+      }
+
+      case FlowState.CONFIRMAR_AVISO: {
+        if (hasMedia) {
+          session.anexoUrl = fileUrl
+          return reply("Recebi! Se quiser abrir o chamado mesmo assim, é só confirmar (*abrir chamado*).")
+        }
+
+        const querAbrir = [
+          "abrir", "quero abrir", "sim", "s", "quero", "continuar", "mesmo assim",
+          "abrir chamado", "abrir mesmo", "vou querer", "quero o chamado",
+        ].some(v => lowerInput.includes(v))
+
+        if (querAbrir) {
+          session.state = FlowState.PERGUNTAR_ANEXO
+          return reply("Deseja enviar um *anexo* (foto, documento)? (sim/não)")
+        }
+
+        if (["sair", "encerrar", "não", "nao", "so isso", "só isso", "obrigado", "era isso", "não quero", "nao quero"].some(v => lowerInput.includes(v))) {
+          sessions.delete(sid)
+          return NextResponse.json({ reply: "Sem problemas! Se precisar de algo, estou por aqui. Até mais! 👋", sessionId: sid, done: true })
+        }
+
+        return reply("Entendi. Se for só isso, pode digitar *sair*. Se quiser abrir o chamado, digite *abrir chamado*.")
       }
 
       case FlowState.PERGUNTAR_ANEXO: {

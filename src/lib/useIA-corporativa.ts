@@ -10,6 +10,7 @@ export const FlowState = {
   IDENTIFICACAO_CPF: "identificacao_cpf",
   MENU_PRINCIPAL: "menu_principal",
   COLETAR_MOTIVO: "coletar_motivo",
+  CONFIRMAR_AVISO: "confirmar_aviso",
   PERGUNTAR_ANEXO: "perguntar_anexo",
   COLETAR_MIDIA: "coletar_midia",
   CONFIRMAR: "confirmar",

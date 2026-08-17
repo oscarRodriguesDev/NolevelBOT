@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { TTLMap } from "@/lib/ttl-map"
 import { prisma } from "@/lib/prisma"
-import { checkEmpresaModule } from "@/lib/usedata"
+import { checkEmpresaModule, buscarAvisos } from "@/lib/usedata"
+import { analisarAvisoPorMotivo } from "@/lib/analisar-aviso"
 import { getSetores } from "@/lib/setores"
 
 const FlowState = {
@@ -10,6 +11,7 @@ const FlowState = {
   COLETAR_FUNCAO: "coletar_funcao",
   COLETAR_ONIBUS: "coletar_onibus",
   COLETAR_DEFEITO: "coletar_defeito",
+  CONFIRMAR_AVISO: "confirmar_aviso",
   PERGUNTAR_ANEXO: "perguntar_anexo",
   COLETAR_MIDIA: "coletar_midia",
   CONFIRMAR: "confirmar",
@@ -243,8 +245,46 @@ export async function POST(req: NextRequest) {
           return reply("Descreva o *defeito* encontrado no veículo com detalhes:")
         }
 
+        // Analisa os avisos para ver se ha algo relacionado ao defeito relatado
+        const avisosGeral = await buscarAvisos(session.matricula)
+
+        if (avisosGeral && !avisosGeral.includes("Sem avisos")) {
+          const analise = await analisarAvisoPorMotivo(session.defeito, avisosGeral)
+
+          if (analise.corresponde && analise.mensagem) {
+            session.state = FlowState.CONFIRMAR_AVISO
+            return reply(
+              `*📢 Encontrei um aviso relacionado ao seu problema:*\n\n${analise.mensagem}\n\nSe for só isso, você pode *encerrar* o atendimento. Se mesmo assim quiser abrir um chamado, é só me avisar (digite *abrir chamado*).`
+            )
+          }
+        }
+
         session.state = FlowState.PERGUNTAR_ANEXO
         return reply("Deseja enviar uma *foto* do problema? (sim/não)")
+      }
+
+      case FlowState.CONFIRMAR_AVISO: {
+        if (hasMedia) {
+          session.anexoUrl = fileUrl
+          return reply("Recebi! Se quiser abrir o chamado mesmo assim, é só confirmar (*abrir chamado*).")
+        }
+
+        const querAbrir = [
+          "abrir", "quero abrir", "sim", "s", "quero", "continuar", "mesmo assim",
+          "abrir chamado", "abrir mesmo", "vou querer", "quero o chamado",
+        ].some(v => lowerInput.includes(v))
+
+        if (querAbrir) {
+          session.state = FlowState.PERGUNTAR_ANEXO
+          return reply("Deseja enviar uma *foto* do problema? (sim/não)")
+        }
+
+        if (["sair", "encerrar", "não", "nao", "so isso", "só isso", "obrigado", "era isso", "não quero", "nao quero"].some(v => lowerInput.includes(v))) {
+          sessions.delete(sid)
+          return NextResponse.json({ reply: "Sem problemas! Se precisar de algo, estou por aqui. Até mais! 👋", sessionId: sid, done: true })
+        }
+
+        return reply("Entendi. Se for só isso, pode digitar *sair*. Se quiser abrir o chamado, digite *abrir chamado*.")
       }
 
       case FlowState.PERGUNTAR_ANEXO: {

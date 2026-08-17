@@ -7,6 +7,7 @@ describe("FlowState", () => {
     expect(FlowState.IDENTIFICACAO_CPF).toBe("identificacao_cpf")
     expect(FlowState.MENU_PRINCIPAL).toBe("menu_principal")
     expect(FlowState.COLETAR_MOTIVO).toBe("coletar_motivo")
+    expect(FlowState.CONFIRMAR_AVISO).toBe("confirmar_aviso")
     expect(FlowState.PERGUNTAR_ANEXO).toBe("perguntar_anexo")
     expect(FlowState.COLETAR_MIDIA).toBe("coletar_midia")
     expect(FlowState.CONFIRMAR).toBe("confirmar")

@@ -247,8 +247,10 @@ export async function handleChatRequest(req: NextRequest, config: ChatConfig) {
 
         if (analiseIA.startsWith("AVISO_RESOLVE:")) {
           const msg = analiseIA.replace("AVISO_RESOLVE:", "").trim()
-          sessions.delete(sessionId)
-          return NextResponse.json({ reply: msg })
+          session.state = FlowState.VERIFICAR_AVISOS
+          return NextResponse.json({
+            reply: `*📢 Encontrei um aviso relacionado ao seu problema:*\n\n${msg}\n\nSe for só isso, você pode *encerrar* o atendimento (digite *sair*). Se mesmo assim quiser abrir um chamado, é só me avisar.`
+          })
         }
 
         if (analiseIA.includes("PROSSEGUIR_FLUXO")) {
