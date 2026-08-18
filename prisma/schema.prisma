@@ -13,6 +13,7 @@ enum ROLE {
   ADMIN
   GESTOR
   ATENDENTE
+  ADM_CONTRATO // LIDER DE CONTRATO NA EMPRESA TERCEIRIZADA - VISUALIZA CHAMADOS PRÓPRIOS
 }
 
 enum modulo{
@@ -250,4 +251,38 @@ model cache {
   key       String   @id
   value     String
   expiresAt DateTime
+}
+
+// Registro de relacionamento comercial entre empresas (contratante ↔ terceirizada)
+model empresa_contrato {
+  id                    String   @id @default(uuid())
+  empresaContratanteId  String   // Empresa que contrata o serviço (receptor)
+  empresaTerceirizadaId String   // Empresa que presta o serviço (prestadora)
+  nome                  String   // ex.: "Contrato de limpeza - Empresa X"
+  ativo                 Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  acessos contrato_acesso[]
+
+  @@index([empresaContratanteId])
+  @@index([empresaTerceirizadaId])
+  @@index([empresaContratanteId, empresaTerceirizadaId])
+}
+
+// Permissões de visualização do ADM_CONTRATO (quais chamados ele pode ver)
+model contrato_acesso {
+  id                String   @id @default(uuid())
+  empresaContratoId String
+  empresaContrato   empresa_contrato @relation(fields: [empresaContratoId], references: [id])
+  admContratoUserId String   // ID do usuário ADM_CONTRATO
+  empresaAlvoId     String   // Empresa cujos chamados ele pode visualizar
+  setoresPermitidos String[] // Setores que ele pode ver (ex.: ["rh", "financeiro"])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([empresaContratoId])
+  @@index([admContratoUserId])
+  @@index([empresaAlvoId])
+  @@index([admContratoUserId, empresaAlvoId])
 }

@@ -5,29 +5,33 @@ export const ROLES_HIERARCHY: Record<ROLE, number> = {
   ADMIN: 80,
   GESTOR: 60,
   ATENDENTE: 40,
+  ADM_CONTRATO: 30, // Lider de contrato — visualiza chamados da propria empresa
 }
 
 export const CREATE_ROLE_MAP: Record<ROLE, ROLE[]> = {
   // GOD cria apenas ADMIN (o "chefe" de cada empresa); o ADMIN criado
-  // por sua vez cria GESTOR e ATENDENTE dentro da própria empresa.
+  // por sua vez cria GESTOR, ATENDENTE e ADM_CONTRATO dentro da propria empresa.
   GOD: ["ADMIN"],
-  ADMIN: ["GESTOR", "ATENDENTE"],
+  ADMIN: ["GESTOR", "ATENDENTE", "ADM_CONTRATO"],
   GESTOR: ["ATENDENTE"],
   ATENDENTE: [],
+  ADM_CONTRATO: [],
 }
 
 export const DELETE_ROLE_MAP: Record<ROLE, ROLE[]> = {
-  GOD: ["ADMIN", "GESTOR", "ATENDENTE"], //pode ser que no futuro ele delete apenas o admin
-  ADMIN: ["GESTOR", "ATENDENTE"],
+  GOD: ["ADMIN", "GESTOR", "ATENDENTE", "ADM_CONTRATO"],
+  ADMIN: ["GESTOR", "ATENDENTE", "ADM_CONTRATO"],
   GESTOR: ["ATENDENTE"],
   ATENDENTE: [],
+  ADM_CONTRATO: [],
 }
 
 export const VIEW_USERS_ROLES: Record<ROLE, { empresaScope: boolean; setorScope?: boolean; roles: ROLE[] }> = {
-  GOD: { empresaScope: false, roles: ["GOD", "ADMIN", "GESTOR", "ATENDENTE"] },
-  ADMIN: { empresaScope: true, roles: ["ADMIN", "GESTOR", "ATENDENTE"] },
+  GOD: { empresaScope: false, roles: ["GOD", "ADMIN", "GESTOR", "ATENDENTE", "ADM_CONTRATO"] },
+  ADMIN: { empresaScope: true, roles: ["ADMIN", "GESTOR", "ATENDENTE", "ADM_CONTRATO"] },
   GESTOR: { empresaScope: true, setorScope: true, roles: ["ATENDENTE"] },
   ATENDENTE: { empresaScope: true, roles: [] },
+  ADM_CONTRATO: { empresaScope: true, roles: [] },
 }
 
 export const CAN_VIEW_EMPRESAS: ROLE[] = ["GOD"]
@@ -54,6 +58,7 @@ export function getSetorFilter(
   userEmpresaId: string
 ): { empresaId: string; setor?: string } {
   const base = { empresaId: userEmpresaId }
+  // ADM_CONTRATO ve todos os setores da propria empresa (como ADMIN)
   if (userRole === "ATENDENTE" || userRole === "GESTOR") {
     return { ...base, setor: userSetor }
   }
@@ -76,6 +81,7 @@ export function roleParaDisplay(role: ROLE): string {
     ADMIN: "Admin",
     GESTOR: "Gestor",
     ATENDENTE: "Atendente",
+    ADM_CONTRATO: "Adm Contrato",
   }
   return nomes[role]
 }

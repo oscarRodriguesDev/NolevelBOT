@@ -18,6 +18,7 @@ const roleMap: Record<string, ROLE> = {
   "X1X": "ADMIN",
   "1XX": "GESTOR",
   "X11": "ATENDENTE",
+  "AC1": "ADM_CONTRATO",
 }
 
 // Cria um novo usuario com role, empresa e validacoes RBAC

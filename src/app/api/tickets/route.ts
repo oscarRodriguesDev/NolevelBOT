@@ -212,7 +212,7 @@ export async function GET(req: NextRequest) {
     if (prioridade) where.prioridade = prioridade
 
     if (setor) {
-      if (userRole === "GOD" || userRole === "ADMIN") {
+      if (userRole === "GOD" || userRole === "ADMIN" || userRole === "ADM_CONTRATO") {
         where.setor = setor
       }
     }
@@ -267,6 +267,11 @@ export async function PUT(req: NextRequest) {
   const session = await getSessionOrFail()
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  // ADM_CONTRATO nao pode editar chamados (somente visualizar e criar)
+  if (session.user.role === "ADM_CONTRATO") {
+    return NextResponse.json({ error: "Você não tem permissão para editar chamados" }, { status: 403 })
   }
 
   try {
@@ -373,6 +378,11 @@ export async function DELETE(req: NextRequest) {
   const session = await getSessionOrFail()
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  // ADM_CONTRATO nao pode excluir/chamar chamados (somente visualizar e criar)
+  if (session.user.role === "ADM_CONTRATO") {
+    return NextResponse.json({ error: "Você não tem permissão para excluir chamados" }, { status: 403 })
   }
 
   try {

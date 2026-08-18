@@ -7,14 +7,14 @@ import {
   CAN_VIEW_EMPRESAS, CAN_BATCH_CPF, CAN_CREATE_EMPRESA,
 } from '@/lib/rbac'
 
-type ROLE = 'GOD' | 'ADMIN' | 'GESTOR' | 'ATENDENTE'
+type ROLE = 'GOD' | 'ADMIN' | 'GESTOR' | 'ATENDENTE' | 'ADM_CONTRATO'
 
 describe('RBAC - CREATE_ROLE_MAP', () => {
   it('GOD pode criar apenas ADMIN', () => {
     expect(CREATE_ROLE_MAP.GOD).toEqual(['ADMIN'])
   })
-  it('ADMIN pode criar GESTOR e ATENDENTE', () => {
-    expect(CREATE_ROLE_MAP.ADMIN).toEqual(['GESTOR', 'ATENDENTE'])
+  it('ADMIN pode criar GESTOR, ATENDENTE e ADM_CONTRATO', () => {
+    expect(CREATE_ROLE_MAP.ADMIN).toEqual(['GESTOR', 'ATENDENTE', 'ADM_CONTRATO'])
   })
   it('GESTOR pode criar apenas ATENDENTE', () => {
     expect(CREATE_ROLE_MAP.GESTOR).toEqual(['ATENDENTE'])
@@ -43,6 +43,9 @@ describe('RBAC - podeCriarRole', () => {
   it('ADMIN pode criar ATENDENTE', () => {
     expect(podeCriarRole('ADMIN', 'ATENDENTE')).toBe(true)
   })
+  it('ADMIN pode criar ADM_CONTRATO', () => {
+    expect(podeCriarRole('ADMIN', 'ADM_CONTRATO')).toBe(true)
+  })
   it('ADMIN NAO pode criar GOD', () => {
     expect(podeCriarRole('ADMIN', 'GOD')).toBe(false)
   })
@@ -66,15 +69,23 @@ describe('RBAC - podeCriarRole', () => {
     expect(podeCriarRole('ATENDENTE', 'GESTOR')).toBe(false)
     expect(podeCriarRole('ATENDENTE', 'ADMIN')).toBe(false)
     expect(podeCriarRole('ATENDENTE', 'GOD')).toBe(false)
+    expect(podeCriarRole('ATENDENTE', 'ADM_CONTRATO')).toBe(false)
+  })
+  it('ADM_CONTRATO NAO pode criar ninguem', () => {
+    expect(podeCriarRole('ADM_CONTRATO', 'ATENDENTE')).toBe(false)
+    expect(podeCriarRole('ADM_CONTRATO', 'GESTOR')).toBe(false)
+    expect(podeCriarRole('ADM_CONTRATO', 'ADMIN')).toBe(false)
+    expect(podeCriarRole('ADM_CONTRATO', 'GOD')).toBe(false)
+    expect(podeCriarRole('ADM_CONTRATO', 'ADM_CONTRATO')).toBe(false)
   })
 })
 
 describe('RBAC - DELETE_ROLE_MAP', () => {
-  it('GOD pode deletar ADMIN, GESTOR e ATENDENTE', () => {
-    expect(DELETE_ROLE_MAP.GOD).toEqual(['ADMIN', 'GESTOR', 'ATENDENTE'])
+  it('GOD pode deletar ADMIN, GESTOR, ATENDENTE e ADM_CONTRATO', () => {
+    expect(DELETE_ROLE_MAP.GOD).toEqual(['ADMIN', 'GESTOR', 'ATENDENTE', 'ADM_CONTRATO'])
   })
-  it('ADMIN pode deletar GESTOR e ATENDENTE', () => {
-    expect(DELETE_ROLE_MAP.ADMIN).toEqual(['GESTOR', 'ATENDENTE'])
+  it('ADMIN pode deletar GESTOR, ATENDENTE e ADM_CONTRATO', () => {
+    expect(DELETE_ROLE_MAP.ADMIN).toEqual(['GESTOR', 'ATENDENTE', 'ADM_CONTRATO'])
   })
   it('GESTOR pode deletar apenas ATENDENTE', () => {
     expect(DELETE_ROLE_MAP.GESTOR).toEqual(['ATENDENTE'])
@@ -116,11 +127,24 @@ describe('RBAC - podeDeletarRole', () => {
     expect(podeDeletarRole('GESTOR', 'GESTOR')).toBe(false)
     expect(podeDeletarRole('GESTOR', 'ADMIN')).toBe(false)
   })
+  it('GOD pode deletar ADM_CONTRATO', () => {
+    expect(podeDeletarRole('GOD', 'ADM_CONTRATO')).toBe(true)
+  })
+  it('ADMIN pode deletar ADM_CONTRATO', () => {
+    expect(podeDeletarRole('ADMIN', 'ADM_CONTRATO')).toBe(true)
+  })
   it('ATENDENTE NAO pode deletar ninguem', () => {
     expect(podeDeletarRole('ATENDENTE', 'ATENDENTE')).toBe(false)
     expect(podeDeletarRole('ATENDENTE', 'GESTOR')).toBe(false)
     expect(podeDeletarRole('ATENDENTE', 'ADMIN')).toBe(false)
     expect(podeDeletarRole('ATENDENTE', 'GOD')).toBe(false)
+  })
+  it('ADM_CONTRATO NAO pode deletar ninguem', () => {
+    expect(podeDeletarRole('ADM_CONTRATO', 'ATENDENTE')).toBe(false)
+    expect(podeDeletarRole('ADM_CONTRATO', 'GESTOR')).toBe(false)
+    expect(podeDeletarRole('ADM_CONTRATO', 'ADMIN')).toBe(false)
+    expect(podeDeletarRole('ADM_CONTRATO', 'GOD')).toBe(false)
+    expect(podeDeletarRole('ADM_CONTRATO', 'ADM_CONTRATO')).toBe(false)
   })
 })
 
@@ -136,6 +160,12 @@ describe('RBAC - getSetorFilter', () => {
 
   it('ADMIN nao tem filtro de setor', () => {
     const result = getSetorFilter('ADMIN', setor, empresaId)
+    expect(result).toEqual({ empresaId })
+    expect(result.setor).toBeUndefined()
+  })
+
+  it('ADM_CONTRATO nao tem filtro de setor (ve todos da empresa)', () => {
+    const result = getSetorFilter('ADM_CONTRATO', setor, empresaId)
     expect(result).toEqual({ empresaId })
     expect(result.setor).toBeUndefined()
   })
@@ -168,30 +198,35 @@ describe('RBAC - roleParaDisplay', () => {
     expect(roleParaDisplay('ADMIN')).toBe('Admin')
     expect(roleParaDisplay('GESTOR')).toBe('Gestor')
     expect(roleParaDisplay('ATENDENTE')).toBe('Atendente')
+    expect(roleParaDisplay('ADM_CONTRATO')).toBe('Adm Contrato')
   })
 })
 
 describe('RBAC - rolesQuePodeCriar', () => {
   it('retorna lista de roles que pode criar', () => {
     expect(rolesQuePodeCriar('GOD')).toEqual(['ADMIN'])
-    expect(rolesQuePodeCriar('ADMIN')).toEqual(['GESTOR', 'ATENDENTE'])
+    expect(rolesQuePodeCriar('ADMIN')).toEqual(['GESTOR', 'ATENDENTE', 'ADM_CONTRATO'])
     expect(rolesQuePodeCriar('GESTOR')).toEqual(['ATENDENTE'])
     expect(rolesQuePodeCriar('ATENDENTE')).toEqual([])
+    expect(rolesQuePodeCriar('ADM_CONTRATO')).toEqual([])
   })
 })
 
 describe('RBAC - rolesQuePodeVer', () => {
   it('GOD ve todos os papeis', () => {
-    expect(rolesQuePodeVer('GOD')).toEqual(['GOD', 'ADMIN', 'GESTOR', 'ATENDENTE'])
+    expect(rolesQuePodeVer('GOD')).toEqual(['GOD', 'ADMIN', 'GESTOR', 'ATENDENTE', 'ADM_CONTRATO'])
   })
-  it('ADMIN ve ADMIN, GESTOR e ATENDENTE', () => {
-    expect(rolesQuePodeVer('ADMIN')).toEqual(['ADMIN', 'GESTOR', 'ATENDENTE'])
+  it('ADMIN ve ADMIN, GESTOR, ATENDENTE e ADM_CONTRATO', () => {
+    expect(rolesQuePodeVer('ADMIN')).toEqual(['ADMIN', 'GESTOR', 'ATENDENTE', 'ADM_CONTRATO'])
   })
   it('GESTOR ve apenas ATENDENTE', () => {
     expect(rolesQuePodeVer('GESTOR')).toEqual(['ATENDENTE'])
   })
   it('ATENDENTE nao ve ninguem', () => {
     expect(rolesQuePodeVer('ATENDENTE')).toEqual([])
+  })
+  it('ADM_CONTRATO ve apenas a si mesmo na lista', () => {
+    expect(rolesQuePodeVer('ADM_CONTRATO')).toEqual([])
   })
 })
 
@@ -223,10 +258,14 @@ describe('RBAC - hierarquia de papeis', () => {
   it('ATENDENTE tem hierarquia 40', () => {
     expect(ROLES_HIERARCHY.ATENDENTE).toBe(40)
   })
-  it('hierarquia respeita ordem GOD > ADMIN > GESTOR > ATENDENTE', () => {
+  it('ADM_CONTRATO tem hierarquia 30', () => {
+    expect(ROLES_HIERARCHY.ADM_CONTRATO).toBe(30)
+  })
+  it('hierarquia respeita ordem GOD > ADMIN > GESTOR > ATENDENTE > ADM_CONTRATO', () => {
     expect(ROLES_HIERARCHY.GOD).toBeGreaterThan(ROLES_HIERARCHY.ADMIN)
     expect(ROLES_HIERARCHY.ADMIN).toBeGreaterThan(ROLES_HIERARCHY.GESTOR)
     expect(ROLES_HIERARCHY.GESTOR).toBeGreaterThan(ROLES_HIERARCHY.ATENDENTE)
+    expect(ROLES_HIERARCHY.ATENDENTE).toBeGreaterThan(ROLES_HIERARCHY.ADM_CONTRATO)
   })
 })
 
@@ -245,7 +284,7 @@ describe('RBAC - consistencia dos mapas', () => {
     }
   })
   it('VIEW_USERS_ROLES contem todos os papeis', () => {
-    expect(Object.keys(VIEW_USERS_ROLES).sort()).toEqual(['ADMIN', 'ATENDENTE', 'GESTOR', 'GOD'])
+    expect(Object.keys(VIEW_USERS_ROLES).sort()).toEqual(['ADMIN', 'ADM_CONTRATO', 'ATENDENTE', 'GESTOR', 'GOD'])
   })
   it('GOD ve GOD na propria lista', () => {
     expect(VIEW_USERS_ROLES.GOD.roles.includes('GOD')).toBe(true)
@@ -266,5 +305,9 @@ describe('RBAC - VIEW_USERS_ROLES scopes', () => {
   it('ATENDENTE tem escopo de empresa mas lista vazia', () => {
     expect(VIEW_USERS_ROLES.ATENDENTE.empresaScope).toBe(true)
     expect(VIEW_USERS_ROLES.ATENDENTE.roles).toEqual([])
+  })
+  it('ADM_CONTRATO tem escopo de empresa e lista vazia', () => {
+    expect(VIEW_USERS_ROLES.ADM_CONTRATO.empresaScope).toBe(true)
+    expect(VIEW_USERS_ROLES.ADM_CONTRATO.roles).toEqual([])
   })
 })

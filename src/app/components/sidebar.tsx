@@ -59,6 +59,8 @@ export function Sidebar() {
   const temModulo = (mod: string) => userRole === "GOD" || empresaModulos.includes(mod)
 
   const isAdmin = userRole === "GOD" || userRole === "ADMIN" || userRole === "GESTOR"
+  // ADM_CONTRATO ve apenas chamados e avisos (sem dashboard, usuarios ou criar usuario)
+  const isAdmContrato = userRole === "ADM_CONTRATO"
 
   const modulos: ModuloSection[] = [
     {
@@ -67,12 +69,12 @@ export function Sidebar() {
       icon: LuHeadphones,
       modulos: ['CORPORATIVO'],
       items: [
-        { label: 'Dashboard', href: '/corporativo/dashboards', icon: LuHouse, show: userRole !== "ATENDENTE" },
+        { label: 'Dashboard', href: '/corporativo/dashboards', icon: LuHouse, show: userRole !== "ATENDENTE" && !isAdmContrato },
         { label: 'Chamados', href: '/corporativo/all-tickets', icon: LuTickets, show: true },
         { label: 'Avisos', href: '/corporativo/avisos', icon: LuBell, show: true},
-        { label: 'CPFs Autorizados', href: '/corporativo/cpfs', icon: LuUsers, show: true },
-        { label: 'Usuários', href: '/corporativo/usuarios', icon: LuUsers, show: isAdmin },
-        { label: 'Criar Usuário', href: '/corporativo/gestao-de-usuarios', icon: LuSettings, show: isAdmin },
+        { label: 'CPFs Autorizados', href: '/corporativo/cpfs', icon: LuUsers, show: !isAdmContrato },
+        { label: 'Usuários', href: '/corporativo/usuarios', icon: LuUsers, show: isAdmin && !isAdmContrato },
+        { label: 'Criar Usuário', href: '/corporativo/gestao-de-usuarios', icon: LuSettings, show: isAdmin && !isAdmContrato },
       ],
     },
     {
@@ -81,12 +83,12 @@ export function Sidebar() {
       icon: LuWrench,
       modulos: ['OFICINA'],
       items: [
-        { label: 'Dashboard', href: '/oficina/dashboards', icon: LuHouse, show: userRole !== "ATENDENTE" },
+        { label: 'Dashboard', href: '/oficina/dashboards', icon: LuHouse, show: userRole !== "ATENDENTE" && !isAdmContrato },
         { label: 'Solicitações', href: '/oficina/all-tickets', icon: LuTickets, show: true },
         { label: 'Avisos', href: '/oficina/avisos', icon: LuBell, show:true},
-        { label: 'Colaboradores', href: '/oficina/cpfs', icon: LuTruck, show: true },
-        { label: 'Usuários', href: '/oficina/usuarios', icon: LuUsers, show: isAdmin },
-        { label: 'Criar Usuário', href: '/oficina/gestao-de-usuarios', icon: LuSettings, show: userRole !== "GOD" && isAdmin },
+        { label: 'Colaboradores', href: '/oficina/cpfs', icon: LuTruck, show: !isAdmContrato },
+        { label: 'Usuários', href: '/oficina/usuarios', icon: LuUsers, show: isAdmin && !isAdmContrato },
+        { label: 'Criar Usuário', href: '/oficina/gestao-de-usuarios', icon: LuSettings, show: userRole !== "GOD" && isAdmin && !isAdmContrato },
        
       ],
     },
