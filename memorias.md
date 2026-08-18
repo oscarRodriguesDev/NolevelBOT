@@ -2,17 +2,18 @@
 
 > Autoria: VIBECODE
 
-## Planejado para 2026-08-17 — Implementação ADM_CONTRATO + Testes em `dev`
+## Feature ADM_CONTRATO — CONCLUÍDA (2026-08-18)
 
-### Feature em andamento: Nova role ADM_CONTRATO
-- **Ponto de retorno**: commit `c38d92f` (branch `vibecode`)
-- **O que é**: usuário da empresa terceirizada (prestadora de serviço) que lidera um contrato com outra empresa
-- **Permissões**: apenas visualizar chamados da **própria empresa** (read-only) + pode abrir chamados para si
-- **NÃO pode**: atender, editar, excluir chamados
-- **Criação**: apenas ADMIN da empresa terceirizada
-- **Banco**: tabelas `empresa_contrato` (relacionamento comercial) e `contrato_acesso` (permissões do ADM)
-- **Decisão final**: o ADM Contrato vê APENAS os chamados da empresa dele (Empresa Y). Os setores da empresa contratante NÃO entram no sistema de visibilidade de chamados.
-- **Pendente**: testes em `dev` + promoção para homologação (adiado para depois da feature)
+- **Commit**: `02ca064`
+- **O que foi feito**:
+  - Enum `ROLE`: adicionado `ADM_CONTRATO` (nivel 30, abaixo de ATENDENTE)
+  - RBAC: `ROLES_HIERARCHY`, `CREATE_ROLE_MAP`, `DELETE_ROLE_MAP`, `VIEW_USERS_ROLES`, `getSetorFilter`, `roleParaDisplay` — todos atualizados
+  - API tickets: ADM_CONTRATO pode GET (visualizar) e POST (criar) chamados da própria empresa; PUT e DELETE bloqueados com 403
+  - API users: `roleMap` atualizado com `"AC1": "ADM_CONTRATO"`
+  - Sidebar: ADM_CONTRATO ve chamados/avisos nos modulos corporativo e oficina; NAO ve dashboard, usuarios, empresa
+  - Schema Prisma: models `empresa_contrato` e `contrato_acesso` criados
+  - Testes: 376 passando (era 367; +9 testes novos para ADM_CONTRATO)
+- **Pendente**: testes em `dev` + promoção para homologação
 
 ## Sessão 2026-08-16 (análise de avisos por IA nos bots)
 

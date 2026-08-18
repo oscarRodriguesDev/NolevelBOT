@@ -1,21 +1,30 @@
 # Checkpoints — Estado da Sessão
 
+## Feature ADM_CONTRATO — CONCLUÍDA (2026-08-18)
+
+- **Commit**: `02ca064` (feature ADM_CONTRATO completa)
+- **Branch**: `vibecode`
+- **Testes**: 376 passando. **Build**: ok (75 rotas).
+- **Arquivos alterados**: `prisma/schema.prisma`, `src/lib/rbac.ts`, `src/app/api/tickets/route.ts`, `src/app/api/users/route.ts`, `src/app/components/sidebar.tsx`, `src/__tests__/rbac.test.ts`
+- **O que foi feito**:
+  - Enum `ROLE`: adicionado `ADM_CONTRATO` (nivel 30)
+  - RBAC: ADMIN pode criar/deletar ADM_CONTRATO; ADM_CONTRATO ve todos os chamados da empresa (como ADMIN)
+  - API tickets: ADM_CONTRATO pode GET e POST, bloqueado PUT e DELETE
+  - Sidebar: ADM_CONTRATO ve chamados/avisos, sem dashboard/usuarios/empresa
+  - Models: `empresa_contrato` e `contrato_acesso` no schema Prisma
+  - Testes RBAC atualizados (69 testes, todos passando)
+
 ## PONTO DE RETORNO — 2026-08-17 (antes de implementar ADM_CONTRATO)
 
 - **Commit**: `c38d92f` (alteração no chamado chat-bot)
 - **Branch**: `vibecode`
 - **Testes**: 367 passando. **Build**: ok (75 rotas).
 - **Descrição**: estado estável ANTES da implementação da nova role `ADM_CONTRATO`. Se algo der errado, voltar para este commit.
-- **O que será feito a partir daqui**:
-  - Nova role `ADM_CONTRATO` (usuário especial da empresa terceirizada)
-  - Só visualiza chamados da própria empresa (read-only + pode abrir para si)
-  - Tabelas `empresa_contrato` e `contrato_acesso` (registro de relacionamento comercial)
-  - RBAC, sidebar, API de tickets ajustados
 
-## Próxima sessão (2026-08-17) — Testes em `dev` + promoção para homologação
+## Próxima sessão (2026-08-18) — Testes em `dev` + promoção para homologação
 
-- **Merge**: `vibecode` → `dev` **já realizado**.
-- **Objetivo amanhã**: testar todas as funcionalidades em `dev` e, se tudo estiver ok, promover para homologação.
+- **Merge**: `vibecode` → `dev` pendente.
+- **Objetivo**: testar todas as funcionalidades em `dev` e, se tudo estiver ok, promover para homologação.
 - **Se bug**: corrigir em `vibecode` → merge para `dev` → retestar.
 
 ## 2026-08-16 (Análise de avisos por IA nos bots — CONCLUÍDO)
