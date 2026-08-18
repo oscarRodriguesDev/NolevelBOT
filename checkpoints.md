@@ -1,5 +1,23 @@
 # Checkpoints — Estado da Sessão
 
+## PONTO DE RETORNO — 2026-08-17 (antes de implementar ADM_CONTRATO)
+
+- **Commit**: `c38d92f` (alteração no chamado chat-bot)
+- **Branch**: `vibecode`
+- **Testes**: 367 passando. **Build**: ok (75 rotas).
+- **Descrição**: estado estável ANTES da implementação da nova role `ADM_CONTRATO`. Se algo der errado, voltar para este commit.
+- **O que será feito a partir daqui**:
+  - Nova role `ADM_CONTRATO` (usuário especial da empresa terceirizada)
+  - Só visualiza chamados da própria empresa (read-only + pode abrir para si)
+  - Tabelas `empresa_contrato` e `contrato_acesso` (registro de relacionamento comercial)
+  - RBAC, sidebar, API de tickets ajustados
+
+## Próxima sessão (2026-08-17) — Testes em `dev` + promoção para homologação
+
+- **Merge**: `vibecode` → `dev` **já realizado**.
+- **Objetivo amanhã**: testar todas as funcionalidades em `dev` e, se tudo estiver ok, promover para homologação.
+- **Se bug**: corrigir em `vibecode` → merge para `dev` → retestar.
+
 ## 2026-08-16 (Análise de avisos por IA nos bots — CONCLUÍDO)
 
 ### Estado final

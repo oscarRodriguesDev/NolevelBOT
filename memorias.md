@@ -2,6 +2,18 @@
 
 > Autoria: VIBECODE
 
+## Planejado para 2026-08-17 — Implementação ADM_CONTRATO + Testes em `dev`
+
+### Feature em andamento: Nova role ADM_CONTRATO
+- **Ponto de retorno**: commit `c38d92f` (branch `vibecode`)
+- **O que é**: usuário da empresa terceirizada (prestadora de serviço) que lidera um contrato com outra empresa
+- **Permissões**: apenas visualizar chamados da **própria empresa** (read-only) + pode abrir chamados para si
+- **NÃO pode**: atender, editar, excluir chamados
+- **Criação**: apenas ADMIN da empresa terceirizada
+- **Banco**: tabelas `empresa_contrato` (relacionamento comercial) e `contrato_acesso` (permissões do ADM)
+- **Decisão final**: o ADM Contrato vê APENAS os chamados da empresa dele (Empresa Y). Os setores da empresa contratante NÃO entram no sistema de visibilidade de chamados.
+- **Pendente**: testes em `dev` + promoção para homologação (adiado para depois da feature)
+
 ## Sessão 2026-08-16 (análise de avisos por IA nos bots)
 
 ### Aviso correspondente ao motivo é apresentado antes de abrir chamado
