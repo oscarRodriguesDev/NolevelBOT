@@ -2,6 +2,17 @@
 
 > Autoria: VIBECODE
 
+## Sessão 2026-09-10 (ADM_CONTRATO — criação com acesso a todos os setores)
+
+### ADM_CONTRATO agora é criado como extensão do ADMIN dentro do contrato
+- **Pedido**: na criação de usuário com role ADM_CONTRATO, ele deve receber acesso a **todos os chamados de todos os setores** (como o ADMIN). O ADM_CONTRATO é uma extensão do Admin da empresa, porém dentro do contrato.
+- **Diagnóstico**: o backend já tratava ADM_CONTRATO sem filtro de setor (`getSetorFilter`/`getTicketWhereClause` em `rbac.ts` + GET de `/api/tickets`, `/api/tickets/search`, `/api/dashboards`). O problema era a **criação**: o frontend `shared-gestao-usuarios.tsx` não tinha o código `AC1` no `roleMap`/`roleBackToFront` → o select renderizava `value={undefined}` → o POST `/api/users` respondia "Papel inválido" (400). Além disso, o setor específico era obrigatório no formulário, sem o default "all".
+- **Correções**:
+  - `src/app/components/shared-gestao-usuarios.tsx`: adicionado `"AC1": "ADM_CONTRATO"` ao `roleMap` e `ADM_CONTRATO: "AC1"` ao `roleBackToFront`. Ao selecionar ADM_CONTRATO, o setor é limpo e o campo vira "Todos os setores" (disabled), como no ADMIN, com descrição "Adm Contrato é uma extensão do Admin dentro do contrato — acesso a todos os setores".
+  - `src/app/api/users/route.ts` (POST): default `setor = "all"` agora vale para `ADMIN` **e** `ADM_CONTRATO`; validação "Setor não pertence à sua empresa" (criador = ADMIN) passou a ignorar `setor === "all"` (que não é um setor real da empresa).
+- **Testes**: 376 passando. **Build**: ok (75 rotas).
+- **Pendente (definição de produto)**: os models `empresa_contrato`/`contrato_acesso` do schema continuam órfãos (sem CRUD/código). Se o escopo do contrato for restringir os chamados da empresa **contratante** (alvo), será necessário criar o cadastro de contratos e usar `contrato_acesso` no filtro de tickets. Atualmente ADM_CONTRATO vê todos os chamados da própria empresa (a terceirizada), sem filtro de setor.
+
 ## Feature ADM_CONTRATO — CONCLUÍDA (2026-08-18)
 
 - **Commit**: `02ca064`

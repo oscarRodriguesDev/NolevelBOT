@@ -18,6 +18,7 @@ const roleMap: Record<string, ROLE> = {
   "X1X": "ADMIN",
   "1XX": "GESTOR",
   "X11": "ATENDENTE",
+  "AC1": "ADM_CONTRATO",
 }
 
 // Converte papel interno para codigo de formulario
@@ -27,6 +28,7 @@ function roleBackToFront(role: ROLE): string {
     ADMIN: "X1X",
     GESTOR: "1XX",
     ATENDENTE: "X11",
+    ADM_CONTRATO: "AC1",
   }
   return inv[role]
 }
@@ -133,7 +135,12 @@ export default function SharedGestaoUsuariosPage({ setHeader }: Props) {
       setForm((prev) => ({
         ...prev,
         role: value,
-        setor: value === roleBackToFront("ADMIN") ? "" : prev.setor,
+        // ADMIN e ADM_CONTRATO (extensão do Admin dentro do contrato)
+        // têm acesso a todos os setores — nenhum setor específico.
+        setor:
+          value === roleBackToFront("ADMIN") || value === roleBackToFront("ADM_CONTRATO")
+            ? ""
+            : prev.setor,
       }))
       return
     }
@@ -368,7 +375,7 @@ export default function SharedGestaoUsuariosPage({ setHeader }: Props) {
                       />
                       <p className="text-[10px] mt-1.5 opacity-50">Setor definido automaticamente</p>
                     </div>
-                  ) : form.role === roleBackToFront("ADMIN") ? (
+                  ) : form.role === roleBackToFront("ADMIN") || form.role === roleBackToFront("ADM_CONTRATO") ? (
                     <div>
                       <input
                         value="Todos os setores"
@@ -380,7 +387,11 @@ export default function SharedGestaoUsuariosPage({ setHeader }: Props) {
                           color: "var(--foreground)",
                         }}
                       />
-                      <p className="text-[10px] mt-1.5 opacity-50">Administrador tem acesso a todos os setores</p>
+                      <p className="text-[10px] mt-1.5 opacity-50">
+                        {form.role === roleBackToFront("ADM_CONTRATO")
+                          ? "Adm Contrato é uma extensão do Admin dentro do contrato — acesso a todos os setores"
+                          : "Administrador tem acesso a todos os setores"}
+                      </p>
                     </div>
                   ) : (
                     <select

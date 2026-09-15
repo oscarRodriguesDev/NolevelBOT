@@ -94,7 +94,9 @@ export async function POST(req: NextRequest) {
     let setor = formData.get("setor") as string
     const file = formData.get("avatar") as File | null
 
-    if (finalRole === "ADMIN" && !setor) {
+    // ADMIN e ADM_CONTRATO (extensão do Admin dentro do contrato) têm acesso
+    // a todos os chamados de todos os setores — sem setor específico.
+    if ((finalRole === "ADMIN" || finalRole === "ADM_CONTRATO") && !setor) {
       setor = "all"
     }
 
@@ -110,7 +112,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (userRole === "ADMIN") {
+    // O setor "all" (roles de acesso total: ADMIN/ADM_CONTRATO) não pertence à
+    // lista de setores da empresa — a validação vale apenas para setores reais.
+    if (userRole === "ADMIN" && setor !== "all") {
       const empresa = await prisma.empresa.findUnique({
         where: { id: empresaID },
         select: { setores: true },
