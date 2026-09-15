@@ -216,7 +216,14 @@ async function atualizarChamado() {
                     <LuUser size={16} /> Solicitante
                   </div>
                   <p className="font-medium text-base mb-1">{chamado.nome}</p>
-                  <p className="text-sm opacity-60">CPF: {chamado.cpf}</p>
+                  <p className="text-sm opacity-60">
+                    {chamado.cpf ? `CPF: ${chamado.cpf}` : "CPF: —"}
+                    {chamado.tipo === "TERCEIRO" && (
+                      <span className="ml-2 inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase" style={{ backgroundColor: "var(--surface-elevated)", border: "1px solid var(--border-subtle)" }}>
+                        Terceiro
+                      </span>
+                    )}
+                  </p>
                   <p className="text-sm opacity-60">Setor: {chamado.setor}</p>
                 </div>
 

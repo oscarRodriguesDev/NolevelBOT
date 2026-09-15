@@ -50,6 +50,26 @@ export const createTicketSchema = z.object({
   prioridade: z.enum(["baixa", "normal", "alta", "critica"]).default("normal"),
 })
 
+// Colaborador/terceiro cadastrado pelo atendente (CPF/matricula/telefone opcionais)
+export const colaboradorSchema = z.object({
+  nome: z.string().min(2, "Nome deve ter no mínimo 2 caracteres"),
+  matricula: z.string().optional(),
+  cpf: z.string().optional(),
+  telefone: z.string().optional(),
+})
+
+// Chamado aberto por atendente para um terceiro — sem CPF/matricula obrigatorios
+export const criarChamadoTerceiroSchema = z.object({
+  nome: z.string().min(2, "Nome do colaborador deve ter no mínimo 2 caracteres"),
+  setor: z.string().min(1, "Setor é obrigatório"),
+  descricao: z.string().min(5, "Descreva o problema em detalhes"),
+  prioridade: z.enum(["baixa", "normal", "alta", "critica"]).default("normal"),
+  colaboradorId: z.string().optional(),
+  matricula: z.string().optional(),
+  cpf: z.string().optional(),
+  telefone: z.string().optional(),
+})
+
 export const createEmpresaSchema = z.object({
   nome: z.string().min(2, "Nome deve ter no mínimo 2 caracteres"),
   cnpj: z.string().regex(/^\d{14}$/, "CNPJ deve conter 14 dígitos"),

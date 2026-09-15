@@ -1,5 +1,15 @@
 # Checkpoints — Estado da Sessão
 
+## 2026-09-14 (Chamado para Terceiros — branch `dikma` — CONCLUÍDO)
+
+### Estado final
+- **Feature**: `/chamado-terceiros` + `POST /api/tickets/terceiros` + `GET/POST /api/colaboradores`. Atendente logado abre chamado para terceiro **sem CPF**; colaborador é cadastrado/sugerido por autocomplete; ticket `TKT-...` gerado; consulta por nome/ticket já suportada no all-tickets.
+- **Banco**: `schema.prisma` alterado com autorização do usuário (só branch `dikma`): `Chamado.cpf` opcional + `tipo` (default `COLABORADOR`) + `colaboradorId`; model `colaboradores`; `tickets_fechados.cpf` opcional. Migração `20260914120000_add_colaboradores_chamado_terceiros` **aplicada** via `migrate deploy` e `prisma generate` ok.
+- **Rotas**: `colaboradores` (GET autocomplete CPF mascarado / POST duplicidade 409), `tickets/terceiros` (POST autenticado, valida módulo CORPORATIVO, cria colaborador se nome livre, anexo em `terceiros/<id>`, sem NOTIFICAÇÃO WhatsApp).
+- **Ajustes**: `buscarContato`/`notificarCliente` aceitam cpf null (DELETE → `tickets_fechados` ok); modal e all-tickets mostram "CPF: —" e badge "Terceiro"; sidebar Corporativo ganhou atalho "Chamado de Terceiros".
+- **Testes**: 377 passando (23 arquivos, +10 novos). **Build**: ok (78 rotas). Branch: `dikma`.
+- **Pendências possíveis (pode seguir em outra sessão)**: testes de rota com mock do prisma para as duas APIs novas; eixo "MATRICULA" de busca por colaborador na base `colaboradores` se o usuário pedir.
+
 ## 2026-08-16 (Aviso específico no chat-corporativo — CORRIGIDO)
 
 ### Estado final

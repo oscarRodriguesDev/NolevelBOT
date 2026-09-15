@@ -79,6 +79,7 @@ model empresa {
   chamados        Chamado[]
   cpfs            cpfs[]
   avisos          avisos[]
+  colaboradores   colaboradores[]
   modulos         modulo[]
   databaseUrl     String? // URL de conexão específica para esta empresa
   plano           String   @default("start") // slug do plano de assinatura (tabela planos)
@@ -103,6 +104,7 @@ model User {
   resumo    String?
   password  String
   chamados  Chamado[] @relation("AtendenteChamados")
+  colaboradoresCriados colaboradores[] @relation("CriadorColaboradores")
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
@@ -117,7 +119,10 @@ model Chamado {
   empresaId   String
   ticket      String   @unique
   nome        String
-  cpf         String
+  cpf         String? // opcional — chamados de terceiros podem ser abertos sem CPF
+  tipo        String   @default("COLABORADOR") // COLABORADOR | TERCEIRO
+  colaboradorId String?
+  colaborador colaboradores? @relation(fields: [colaboradorId], references: [id])
   setor       String
   descricao   String
   historico   String?
@@ -134,6 +139,8 @@ model Chamado {
   @@index([status])
   @@index([empresaId, status])
   @@index([ticket])
+  @@index([empresaId, tipo])
+  @@index([colaboradorId])
 }
 
 // Modelo para armazenar CPFs e nomes dos usuários autorizados a usar o chatbot
@@ -151,12 +158,31 @@ model cpfs {
   @@index([cpf])
 }
 
-//para gerar os dashboards de chamados fechados, para não poluir a tabela principal
+// Colaboradores/terceiros atendidos via chamado aberto por atendente (sem CPF obrigatório)
+model colaboradores {
+  id              String    @id @default(uuid())
+  empresaId       String
+  Empresa         empresa   @relation(fields: [empresaId], references: [id])
+  nome            String
+  matricula       String? // opcional — ajuda a identificar o colaborador
+  cpf             String? // opcional — ajuda a identificar o colaborador
+  telefone        String?
+  criadoPorUserId String? // atendente que cadastrou (auditoria)
+  criadoPor       User?     @relation("CriadorColaboradores", fields: [criadoPorUserId], references: [id])
+  chamados        Chamado[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([empresaId, nome])
+  @@index([empresaId, cpf])
+}
+
+// para gerar os dashboards de chamados fechados, para não poluir a tabela principal
 model tickets_fechados {
   id         String   @id @default(uuid())
   ticket     String   @unique
   nome       String
-  cpf        String
+  cpf        String? // opcional — chamados de terceiro podem ser fechados sem CPF
   setor      String
   historico  String?
   prioridade String

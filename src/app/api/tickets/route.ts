@@ -17,7 +17,9 @@ import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 type ContatoTelefone = { telefone: string; instance: string } | null
 
 // Busca telefone de contato do cliente pelo CPF ou historico do chamado
-async function buscarContato(cpf: string, chamadoId?: string): Promise<ContatoTelefone> {
+async function buscarContato(cpf: string | null | undefined, chamadoId?: string): Promise<ContatoTelefone> {
+  if (!cpf) return null
+
   const contato = getPhoneByCpf(cpf)
   if (contato && contato.instance !== 'web') return contato
 
@@ -41,7 +43,7 @@ async function buscarContato(cpf: string, chamadoId?: string): Promise<ContatoTe
 }
 
 // Envia notificacao via WhatsApp para o cliente sobre o chamado
-async function notificarCliente(cpf: string, ticket: string, etapa: 'criado' | 'atualizado' | 'finalizado', nomeAtendente?: string, observacao?: string, chamadoId?: string) {
+async function notificarCliente(cpf: string | null | undefined, ticket: string, etapa: 'criado' | 'atualizado' | 'finalizado', nomeAtendente?: string, observacao?: string, chamadoId?: string) {
   try {
     const contato = await buscarContato(cpf, chamadoId)
     if (!contato || contato.instance === 'web') return

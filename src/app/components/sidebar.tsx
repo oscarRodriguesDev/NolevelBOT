@@ -69,6 +69,7 @@ export function Sidebar() {
       items: [
         { label: 'Dashboard', href: '/corporativo/dashboards', icon: LuHouse, show: userRole !== "ATENDENTE" },
         { label: 'Chamados', href: '/corporativo/all-tickets', icon: LuTickets, show: true },
+        { label: 'Chamado de Terceiros', href: '/chamado-terceiros', icon: LuTickets, show: true },
         { label: 'Avisos', href: '/corporativo/avisos', icon: LuBell, show: true},
         { label: 'CPFs Autorizados', href: '/corporativo/cpfs', icon: LuUsers, show: true },
         { label: 'Usuários', href: '/corporativo/usuarios', icon: LuUsers, show: isAdmin },

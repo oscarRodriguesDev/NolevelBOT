@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   cpfSchema, emailSchema, passwordSchema, statusSchema,
   createUserSchema, createTicketSchema, createEmpresaSchema, createLeadSchema,
+  colaboradorSchema, criarChamadoTerceiroSchema,
 } from '@/lib/validation'
 
 describe('Validacao - CPF', () => {
@@ -221,5 +222,79 @@ describe('Validacao - createLeadSchema', () => {
 
   it('rejeita telefone muito curto', () => {
     expect(() => createLeadSchema.parse({ ...validLead, telefone: '123' })).toThrow()
+  })
+})
+
+describe('Validacao - colaboradorSchema', () => {
+  it('aceita colaborador apenas com nome (CPF/matricula/telefone opcionais)', () => {
+    const result = colaboradorSchema.parse({ nome: 'Joao da Silva' })
+    expect(result.nome).toBe('Joao da Silva')
+    expect(result.cpf).toBeUndefined()
+    expect(result.matricula).toBeUndefined()
+    expect(result.telefone).toBeUndefined()
+  })
+
+  it('aceita colaborador com dados completos', () => {
+    const result = colaboradorSchema.parse({
+      nome: 'Maria Souza',
+      matricula: '12345',
+      cpf: '12345678901',
+      telefone: '11999999999',
+    })
+    expect(result.matricula).toBe('12345')
+    expect(result.cpf).toBe('12345678901')
+  })
+
+  it('rejeita nome muito curto', () => {
+    expect(() => colaboradorSchema.parse({ nome: 'A' })).toThrow()
+  })
+
+  it('aceita campos opcionais vazios ou ausentes', () => {
+    const result = colaboradorSchema.parse({ nome: 'Pedro Teste', cpf: '', matricula: '', telefone: '' })
+    expect(result.cpf).toBe('')
+    expect(result.matricula).toBe('')
+  })
+})
+
+describe('Validacao - criarChamadoTerceiroSchema', () => {
+  const validTerceiros = {
+    nome: 'Carlos Pereira',
+    setor: 'Suporte',
+    descricao: 'Computador não liga na minha estação',
+  }
+
+  it('aceita chamado de terceiro SEM CPF (requisito principal do fluxo)', () => {
+    const result = criarChamadoTerceiroSchema.parse(validTerceiros)
+    expect(result.cpf).toBeUndefined()
+    expect(result.prioridade).toBe('normal')
+  })
+
+  it('aceita chamado com todos os dados opcionais', () => {
+    const result = criarChamadoTerceiroSchema.parse({
+      ...validTerceiros,
+      colaboradorId: '550e8400-e29b-41d4-a716-446655440000',
+      matricula: '999',
+      cpf: '98765432100',
+      telefone: '11988887777',
+      prioridade: 'alta',
+    })
+    expect(result.colaboradorId).toBe('550e8400-e29b-41d4-a716-446655440000')
+    expect(result.prioridade).toBe('alta')
+  })
+
+  it('rejeita nome muito curto', () => {
+    expect(() => criarChamadoTerceiroSchema.parse({ ...validTerceiros, nome: 'A' })).toThrow()
+  })
+
+  it('rejeita descricao muito curta', () => {
+    expect(() => criarChamadoTerceiroSchema.parse({ ...validTerceiros, descricao: 'abc' })).toThrow()
+  })
+
+  it('rejeita setor vazio', () => {
+    expect(() => criarChamadoTerceiroSchema.parse({ ...validTerceiros, setor: '' })).toThrow()
+  })
+
+  it('rejeita prioridade invalida', () => {
+    expect(() => criarChamadoTerceiroSchema.parse({ ...validTerceiros, prioridade: 'urgente' })).toThrow()
   })
 })

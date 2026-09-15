@@ -12,6 +12,7 @@ type Chamado = {
   ticket: string
   nome: string
   cpf: string
+  tipo?: string
   setor: string
   categoria: string
   prioridade: string
@@ -266,7 +267,14 @@ export default function TicketsPage() {
                       }}
                     >
                       <td className="py-3.5 px-4 font-bold" style={{ color: "var(--primary)" }}>{ticket.ticket}</td>
-                      <td className="py-3.5 px-4">{ticket.nome}</td>
+                      <td className="py-3.5 px-4">
+                        {ticket.nome}
+                        {ticket.tipo === "TERCEIRO" && (
+                          <span className="ml-2 inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase" style={{ backgroundColor: "var(--surface-elevated)", border: "1px solid var(--border-subtle)" }}>
+                            Terceiro
+                          </span>
+                        )}
+                      </td>
                       <td className="py-3.5 px-4">{ticket.setor}</td>
                       <td className="py-3.5 px-4">
                         <span className="inline-block px-3 py-1 rounded-full text-[10px] font-bold text-white uppercase" style={{ backgroundColor: getPriorityColor(ticket.prioridade) }}>

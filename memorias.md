@@ -2,6 +2,22 @@
 
 > Autoria: VIBECODE
 
+## Sessão 2026-09-14 (Chamado para Terceiros — branch `dikma`)
+
+### Nova feature: `/chamado-terceiros` — abertura de chamado sem CPF obrigatório
+- **Contexto**: branch `dikma` (versão exclusiva de uma empresa). Atendentes autenticados abrem chamados para terceiros/colaboradores **sem exigir CPF** do solicitante. Usuário autorizou a alteração do `schema.prisma` PARA ESTA VERSÃO (não quebrar outras branches).
+- **Banco (autorizado)**:
+  - `Chamado.cpf` → `String?` (opcional); adicionados `tipo String @default("COLABORADOR")` e `colaboradorId String?` (relação com `colaboradores`); índices `[empresaId, tipo]` e `[colaboradorId]`.
+  - Nova model `colaboradores` (nome obrigatório; matricula/cpf/telefone opcionais; `criadoPorUserId`; índices `[empresaId, nome]` e `[empresaId, cpf]`).
+  - `tickets_fechados.cpf` → `String?`; `empresa` e `User` ganharam relações `colaboradores`.
+  - Migração manual `20260914120000_add_colaboradores_chamado_terceiros` aplicada via `prisma migrate deploy` + `prisma generate` (o `migrate dev` segue quebrado pela shadow database).
+- **Rotas novas**:
+  - `GET/POST /api/colaboradores` — autocomplete por nome (CPF mascarado `123.***.***-00`) e cadastro com duplicidade por CPF/matrícula → 409.
+  - `POST /api/tickets/terceiros` — valida módulo CORPORATIVO; resolve colaborador (se `colaboradorId` → valida pertencimento à empresa; senão cadastra novo colaborador na hora); grava chamado `tipo: "TERCEIRO"`, ticket `TKT-${Date.now()}`, `cpf` nulo quando não há CPF cadastrado, upload em `terceiros/<id>`; **sem notificação WhatsApp** (evita envenenamento do phoneMap com dados de terceiros).
+- **Frontend**: página standalone `/chamado-terceiros` (protegida por sessão, roles ATENDENTE/GESTOR/ADMIN/GOD), form client com autocomplete (debounce 300ms, anti race), setores da empresa via server, prioridade em cards, anexo, tela de sucesso com número do ticket. Atalho na sidebar do módulo Corporativo.
+- **Ajustes de compatibilidade**: `buscarContato`/`notificarCliente` aceitam `cpf: string | null`; modal e all-tickets exibem "CPF: —" quando vazio e badge "Terceiro".
+- **Testes**: +10 casos (`colaboradorSchema` e `criarChamadoTerceiroSchema`). **377 passando** (23 arquivos). **Build**: ok (78 rotas, usuais 75 + 3 novas).
+
 ## Sessão 2026-08-16 (aviso específico no chat-corporativo — corrigido)
 
 ### Aviso específico por CPF agora é entregue no chatbot corporativo
