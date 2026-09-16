@@ -26,6 +26,7 @@ const endpoints = [
   { method: 'DELETE', path: '/api/tickets?atendimento=TKT-xxx', auth: true, description: 'Finalizar chamado (move para tickets_fechados) + notificação WhatsApp' },
   { method: 'POST', path: '/api/tickets/search', auth: false, description: 'Buscar chamados por CPF ou ticket (público — usado nas páginas /consulta)' },
   { method: 'GET', path: '/api/tickets/search', auth: false, description: 'Buscar chamados por CPF ou ticket (público)' },
+  { method: 'GET', path: '/api/tickets/busca', auth: true, description: 'Busca unificada de chamados por nome do colaborador, número do chamado (alfanumérico), CPF ou matrícula (?q=) — autenticado, restrito à empresa/setor do usuário' },
   { method: 'PUT', path: '/api/tickets/search', auth: true, description: 'Atualizar chamado via busca (com validação RBAC)' },
   { method: 'DELETE', path: '/api/tickets/search', auth: true, description: 'Finalizar chamado via busca (com validação RBAC)' },
 

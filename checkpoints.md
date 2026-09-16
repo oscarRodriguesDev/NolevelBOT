@@ -1,5 +1,15 @@
 # Checkpoints — Estado da Sessão
 
+## 2026-09-15 (Busca unificada no /corporativo/consulta — branch `dikma` — CONCLUÍDO)
+
+### Estado final
+- **Feature**: `/corporativo/consulta` agora busca chamados por **nome, CPF (mascarado ou não), matrícula ou nº do chamado (alfanumérico)** via campo único (`?q=`). Nova rota aditiva `GET /api/tickets/busca` — `/api/tickets` e `/api/tickets/search` **intactos** (não quebrou outras versões).
+- **Rota**: `src/app/api/tickets/busca/route.ts` — rate limit 30/min, 401/400/500, RBAC com `getTicketWhereClause` (ATENDENTE/GESTOR restritos ao setor; ADMIN/GOD empresa), OR com ticket/nome `contains insensitive`, CPF só com dígitos normalizados, colaborador TERCEIRO por nome/matrícula/CPF, `include` atendente+colaborador, `orderBy createdAt desc`.
+- **UI**: `src/app/corporativo/consulta/page.tsx` reescrita — campo único, Enter/botão (3+ chars), tabela com badge Terceiro/Colaborador + matrícula, modal com "CPF: —", 401 → "Sessão expirada". `api-docs` atualizado.
+- **Testes**: `tickets-busca.test.ts` (8 novos) — **385/385 passando** (24 arquivos). **Build**: ok (75 rotas, inclui `/api/tickets/busca`).
+- **Seeds nesta sessão (banco do `.env`, branch `dikma`)**: empresas HISKRA (`1`) e DIKMA (`a9a0e4a0-...`), 3 planos base (`start`/`profissional`/`enterprise` com IDs `10000000-...-001/2/3`), 6 CPFs, 14 chamados (13 HISKRA + 1 DIKMA). 10 chamados TERCEIRO DIKMA ficaram de fora (colaboradores não existem neste banco). Tudo em `memorias.md`.
+- **Pendências**: commit não feito (aguardando pedido do usuário); `/api/tickets/search` público segue sem filtro de empresa (vazamento potencial — fora de escopo).
+
 ## 2026-09-14 (Chamado para Terceiros — branch `dikma` — CONCLUÍDO)
 
 ### Estado final

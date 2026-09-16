@@ -2,6 +2,54 @@
 
 > Autoria: VIBECODE
 
+## Sessão 2026-09-15 (Seed: 14 chamados na tabela `Chamado` — INSERT direto no banco)
+
+- **Pedido do usuário**: injetar 24 chamados na tabela `Chamado` do banco do `.env`; **instrução**: inserir apenas os de empresas existentes.
+- **Inserido (14)**: 13 chamados COLABORADOR da HISKRA (`1`) — oscar adm, gestor teste, teste (descrições JSON de ônibus), OSCAR RODRIGUES NETO — e 1 chamado COLABORADOR da DIKMA (`TKT-1789411179389`, JOSE HYTALLO — vale transporte).
+- **Pulado (10)**: todos os chamados **TERCEIRO** da DIKMA (`TKT-1788574...`) — `colaboradorId` não existe na tabela `colaboradores` (FK). Empresas e atendentes existiam; colaboradores do seed anterior não estão neste banco.
+- **Checks**: empresas existentes, atendentes existentes (`b70c8c31`, `a8452530`, `f7bfeec1`, `00632749`), sem ticket/id duplicado; confirmado com SELECT (rows=14).
+- **Pendência opcional**: se os 8 colaboradores forem criados, dá para inserir os 10 chamados TERCEIRO restantes.
+- **Sem código alterado** → build/testes não necessários. Script one-off removido após a execução.
+
+## Sessão 2026-09-15 (Seed: 6 CPFs na tabela `cpfs` — INSERT direto no banco)
+
+- **Pedido do usuário**: injetar 7 CPFs na tabela `cpfs` do banco do `.env`; **instrução**: inserir apenas os que tiverem empresa existente.
+- **Inserido (6)**: `44444444444` (gestor teste), `55555555555` (Atendente), `06230124645` (oscar adm, com telefone `110402788679796`), `01012255587` (teste hiskra) → empresa `1` (HISKRA); `20575667737` (Jose Hytallo) e `12965598740` (WLIENE SILVA OLIVEIRA) → empresa `a9a0e4a0-...` (DIKMA).
+- **Pulado (1)**: `22222222222` (Admin) — empresa `70756748-c3dd-4d48-8d95-6b19a672605a` **não existe no banco** (FK violada).
+- **Check**: sem duplicidade de CPF/id; confirmado com SELECT pós-insert (rows=6).
+- **Sem código alterado** → build/testes não necessários. Script one-off removido após a execução.
+
+## Sessão 2026-09-15 (Seed: planos base Start/Profissional/Enterprise — INSERT direto no banco)
+
+- **Pedido do usuário**: injetar os 3 planos base (`start`, `profissional`, `enterprise`) via SQL direto no banco do `.env`, com IDs fixos `10000000-...-0001/2/3`.
+- **Inserido**: 3 registros em `planos` — Start (29.99, 1 módulo, 5 usuários, sem IA, canal app), Profissional (99.99, 2 módulos, 15 usuários, IA, app+whatsapp, destaque), Enterprise (299.99, módulos ilimitados -1, 30 usuários, IA, app, modulosAutomaticos CORPORATIVO/OFICINA/COMERCIAL).
+- **Detalhe técnico**: 1º attempt falhou com "cannot determine type of empty array" (`ARRAY[]` sem tipo) — corrigido com `ARRAY[]::text[]` nas linhas start/profissional. 2º attempt: `INSERT_OK rows=3`, confirmado via SELECT (slugs únicos respeitados — não havia conflito).
+- **Sem código alterado** → build/testes não necessários. Script one-off removido após a execução.
+
+## Sessão 2026-09-15 (Seed: empresa HISKRA id '1' — INSERT direto no banco)
+
+- **Pedido do usuário**: injetar a empresa HISKRA (`id = '1'`) via SQL direto no banco do `.env` (Supabase `vpaxagmcytlybenzstpe`).
+- **Inserido**: `INSERT` em `empresa` com id `'1'`, nome `HISKRA`, CNPJ `65689803000140`, setores `['ADM']`, status PENDENTE, trialAtivo true, provider EVOLUTION, bot "Maria", módulos `OFICINA/CORPORATIVO/EVENTOS`, plano `start`, timestamps fixos (criada em 2026-06-03).
+- **Detalhe técnico**: o `ARRAY['OFICINA','CORPORATIVO','EVENTOS']` sem cast falhou (`modulo[]` vs `text[]`) — resolvido com `::modulo[]`. Confirmado com SELECT pós-insert (rows=1).
+- **Sem código alterado** → build/testes não necessários. Script one-off removido após a execução.
+
+## Sessão 2026-09-15 (Seed: empresa DIKMA id `a9a0e4a0-...` — INSERT direto no banco)
+
+- **Pedido do usuário**: injetar a empresa DIKMA (`id = 'a9a0e4a0-2b52-45f6-9f72-58abbcf1cab5`) via SQL direto no banco do `.env`.
+- **Inserido**: `INSERT` em `empresa` com id `a9a0e4a0-...`, nome `DIKMA`, CNPJ `01136765000116`, setores `['beneficios','departamento pessoal','sesmt']`, status **PAGO**, trialAtivo true + trialUsado true, provider EVOLUTION, `evolution_token` preenchido (webhook já configurado), módulos `['CORPORATIVO']`, plano `start`, timestamps fixos (2026-09-11).
+- **Detalhe técnico**: 1º attempt falhou com "INSERT has more target columns than expressions" (faltou o 7º `null` entre `provider` e `modulos` — campos `api_key`, `logoUrl`, `botName`, `botPresentation`, `botServiceDesc`, `botAvisosDesc`, `botPrompt`). Corrigido e re-executado: `INSERT_OK rows=1`, confirmado via SELECT.
+- **Sem código alterado** → build/testes não necessários. Script one-off removido após a execução.
+
+## Sessão 2026-09-14 (Seed: 10 chamados de terceiros na DIKMA — dados direto no banco)
+
+- **Pedido do usuário**: adicionar 10 chamados de terceiros no banco (o usuário não tinha inserido; o Time adicionou via SQL direto no Supabase).
+- **Empresa alvo**: `a9a0e4a0-...` (DIKMA, branch `dikma`) — módulo CORPORATIVO ativo, status PAGO, setores: `beneficios`, `departamento pessoal`, `sesmt`.
+- **Inserido** (transação única, com rollback em erro):
+  - **8 colaboradores** novos em `colaboradores` (3 sem CPF, 3 com matrícula) — `criadoPorUserId` = ADMIN Jose Hytallo.
+  - **10 chamados** `tipo='TERCEIRO'` na tabela `Chamado`, todos com `colaboradorId` válido (2 colaboradores com 2 chamados: Carlos Eduardo Mota e João Pedro Santana), 4 com `cpf` nulo (exercita o "CPF: —" nas telas), status NOVO/EM_ATENDIMENTO/AGUARDANDO/CONCLUIDO/CANCELADO, prioridades baixa/normal/alta, alguns sem atendente, `createdAt` espalhado nos últimos 10 dias.
+- **Checklist pós-insert validado**: tickets únicos, zero colaboradores órfãos, zero status/prioridades inválidos. **Sem notificação WhatsApp** (coerente com a regra da rota `terceiros`).
+- **Sem código alterado** → build/testes não necessários. API `GET /api/tickets` (filtro por empresa/setor) já lista esses chamados com badge "Terceiro".
+
 ## Sessão 2026-09-14 (Chamado para Terceiros — branch `dikma`)
 
 ### Nova feature: `/chamado-terceiros` — abertura de chamado sem CPF obrigatório
@@ -268,3 +316,15 @@
   - **GOD** enxerga **todos** os planos (inclui inativos/em extinção via `/api/planos?todos=true`), com badge de status ("Ativo" / "Inativo" / "Extinção dd/mm") no card.
   - Banner "Modo administrador (GOD)" com link para `/god/planos`.
   - Botões **Editar** (→ `/god/planos`) e **Excluir** (solicita extinção em 30 dias via DELETE `/api/planos?id=&action=extinguir`) em cada card.
+
+## Sessão 2026-09-15 (Busca unificada de chamados no /corporativo/consulta — branch `dikma`)
+
+- **Pedido do usuário**: na rota `/corporativo/consulta` (ou outra melhor), permitir buscar chamados por **nome do colaborador, número do chamado (alfanumérico), CPF ou matrícula** — sem quebrar features das outras versões.
+- **Decisão de arquitetura**: criar **rota NOVA e aditiva** `GET /api/tickets/busca?q=` — NÃO tocou em `/api/tickets` nem `/api/tickets/search` (essas continuam servindo páginas públicas/legadas de `/consulta` e `/oficina/consulta`). Página `/corporativo/consulta` reescrita com **campo único de busca** (nome, CPF, matrícula ou nº do chamado).
+- **`src/app/api/tickets/busca/route.ts`** (GET): rate limit (`tickets-busca`, 30/min), 401 sem sessão, 400 sem `q`, `limit` 1–50 (default 30). Monta `where.AND` = `[empresaId, setor (só ATENDENTE/GESTOR via getTicketWhereClause), OR]` com OR de 4 frentes: `ticket contains` (insensitive), `nome contains` (insensitive), `cpf` com **dígitos normalizados** (`q.replace(/\D/g,"")`), e `colaborador.is.OR` (nome/matrícula/CPF na tabela `colaboradores`). `include` atendente + colaborador, `orderBy createdAt desc`.
+- **Ajuste fino**: matrícula usa `qDigits` quando a query tem dígitos (matrículas são cadastradas só com dígitos).
+- **`src/app/corporativo/consulta/page.tsx`** reescrita: campo único com placeholder "Nome, CPF, matrícula ou número do chamado", botão/Enter habilitado com 3+ chars, tabela de resultados (Ticket, Nome com badge **Terceiro/Colaborador**, Matrícula com "—", Setor, Status via `getStatusColor`), modal de detalhes mantido + matrícula + "CPF: —" para vazio, feedback de sessão expirada (401) e erro de rede.
+- **`src/app/api-docs/page.tsx`**: entrada da nova rota documentada (GET /api/tickets/busca, auth).
+- **Testes** `src/__tests__/tickets-busca.test.ts` (8): 401, 400, ticket, nome, CPF mascarado → dígitos, matrícula via colaborador, setor p/ ATENDENTE e ausência p/ ADMIN, 500 em erro de banco. Asserts estruturais do `where` via helpers (`getAnd`/`getOrClause`/`getColaboradorOr`).
+- **Resultado**: `npm run build` ok (75 rotas, inclui `/api/tickets/busca`); `npx vitest run` **385/385 passando** (24 arquivos).
+- **Pendências/observações**: `GET /api/tickets/search?cpf=/?ticket=` segue **sem filtro de empresa** (vazamento entre empresas em endpoints públicos) — fora de escopo, não alterado; buscar se o usuário pedir. Comando git pendente (commitar na branch `dikma` quando o usuário pedir).

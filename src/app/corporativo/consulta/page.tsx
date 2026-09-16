@@ -12,8 +12,9 @@ import {
   FaFlag,
   FaUserTie,
   FaTimes,
-  FaArrowLeft,
+  FaSearch,
 } from "react-icons/fa"
+import { getStatusColor } from "@/types/chamado"
 
 type ChamadoData = {
   ticket: string
@@ -27,38 +28,38 @@ type ChamadoData = {
   createdAt: string
   anexoUrl: string | null
   atendente: { id: string; name: string; email: string; avatarUrl: string } | null
+  tipo: string
+  matricula: string | null
 }
 
-// Pagina de consulta de chamados por CPF com lista e detalhes
+// Pagina de consulta unificada de chamados por nome, CPF, matricula ou ticket
 export default function ConsultaTickets() {
-  const [cpf, setCpf] = useState("")
+  const [query, setQuery] = useState("")
   const [tickets, setTickets] = useState<ChamadoData[]>([])
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
   const [selected, setSelected] = useState<ChamadoData | null>(null)
+  const [errorMsg, setErrorMsg] = useState("")
 
-  // Formata CPF com mascara de digitacao
-  function formatCPF(value: string): string {
-    const digits = value.replace(/\D/g, "").slice(0, 11)
-    return digits
-      .replace(/^(\d{3})(\d)/, "$1.$2")
-      .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
-      .replace(/\.(\d{3})(\d)/, ".$1-$2")
-  }
-
-  const cpfDigits = cpf.replace(/\D/g, "")
-  const cpfValido = cpfDigits.length === 11
-
-  // Busca chamados na API filtrando por CPF
+  // Busca chamados na API filtrando por q (nome/CPF/matricula/ticket)
   async function buscarTickets() {
-    if (!cpfValido) return
+    const q = query.trim()
+    if (q.length < 3) return
     setSearched(true)
     setLoading(true)
+    setErrorMsg("")
+    setTickets([])
 
     try {
-      const res = await fetch(`/api/tickets/search?cpf=${cpfDigits}`)
+      const res = await fetch(`/api/tickets/busca?q=${encodeURIComponent(q)}`)
 
       if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        if (res.status === 401) {
+          setErrorMsg("Sessão expirada, faça login novamente.")
+        } else {
+          setErrorMsg(err.error || "Erro ao buscar chamados")
+        }
         setTickets([])
         return
       }
@@ -83,25 +84,35 @@ export default function ConsultaTickets() {
         createdAt: c.createdAt as string,
         anexoUrl: (c.anexoUrl as string) || null,
         atendente: (c.atendente as Record<string, unknown> | null) as { id: string; name: string; email: string; avatarUrl: string } | null,
+        tipo: (c.tipo as string) || "COLABORADOR",
+        matricula: (c.colaborador as { matricula?: string | null } | null | undefined)?.matricula ?? null,
       }))
 
       setTickets(chamados)
     } catch (err) {
       console.error("Erro na busca:", err)
       setTickets([])
+      setErrorMsg("Erro ao conectar com o servidor")
     } finally {
       setLoading(false)
     }
   }
 
-  // Retorna cor CSS para cada status de chamado
-  function getStatusColor(status: string): string {
-    const map: Record<string, string> = {
-      CONCLUIDO: "var(--status-completed)",
-      ABERTO: "var(--status-new)",
-      EM_ANDAMENTO: "var(--status-in-progress)",
-    }
-    return map[status] || "var(--status-waiting)"
+  // Badge sutil de tipo do chamado (Terceiro/Colaborador)
+  function TipoBadge({ tipo }: { tipo: string }) {
+    const isTerceiro = tipo === "TERCEIRO"
+    return (
+      <span
+        className="inline-block px-2 py-0.5 rounded-md text-[11px] font-semibold ml-2 align-middle"
+        style={{
+          backgroundColor: isTerceiro ? "var(--status-in-progress)" : "var(--surface-elevated)",
+          color: isTerceiro ? "#fff" : "var(--foreground)",
+          border: `1px solid ${isTerceiro ? "transparent" : "var(--border-subtle)"}`,
+        }}
+      >
+        {isTerceiro ? "Terceiro" : "Colaborador"}
+      </span>
+    )
   }
 
   return (
@@ -115,12 +126,12 @@ export default function ConsultaTickets() {
       <div className="absolute right-4 top-4 z-50">
         <ThemeToggle />
       </div>
-      <div className="max-w-2xl mx-auto space-y-8">
+      <div className="max-w-3xl mx-auto space-y-8">
         <div className="space-y-2">
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold" style={{ color: "var(--primary)" }}>
             Consultar Chamados
           </h1>
-          <p className="text-sm opacity-70">Busque seus chamados pelo CPF para visualizar o status</p>
+          <p className="text-sm opacity-70">Busque chamados por nome, CPF, matrícula ou número do chamado</p>
         </div>
 
         <div
@@ -131,12 +142,15 @@ export default function ConsultaTickets() {
           }}
         >
           <div className="space-y-2">
-            <label className="block text-sm font-semibold">CPF</label>
+            <label className="block text-sm font-semibold">Busca</label>
             <input
               type="text"
-              placeholder="000.000.000-00"
-              value={cpf}
-              onChange={(e) => setCpf(formatCPF(e.target.value))}
+              placeholder="Nome, CPF, matrícula ou número do chamado"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && query.trim().length >= 3 && !loading) buscarTickets()
+              }}
               className="w-full px-4 py-3 border rounded-lg outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
               style={{
                 borderColor: "var(--border-subtle)",
@@ -149,7 +163,7 @@ export default function ConsultaTickets() {
 
           <button
             onClick={buscarTickets}
-            disabled={loading || !cpfValido}
+            disabled={loading || query.trim().length < 3}
             className="w-full py-3 rounded-lg font-semibold text-white transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-2"
             style={{ backgroundColor: "var(--primary)" }}
           >
@@ -162,10 +176,25 @@ export default function ConsultaTickets() {
                 Buscando...
               </>
             ) : (
-              "Buscar Chamados"
+              <>
+                <FaSearch />
+                Buscar Chamados
+              </>
             )}
           </button>
         </div>
+
+        {errorMsg && (
+          <div
+            className="p-8 rounded-2xl border text-center transition-colors duration-300"
+            style={{
+              backgroundColor: "var(--surface)",
+              borderColor: "var(--border-subtle)",
+            }}
+          >
+            <p className="opacity-80">{errorMsg}</p>
+          </div>
+        )}
 
         {tickets.length > 0 && (
           <div
@@ -185,6 +214,8 @@ export default function ConsultaTickets() {
                 >
                   <tr>
                     <th className="px-4 sm:px-6 py-3 text-left font-semibold">Ticket</th>
+                    <th className="px-4 sm:px-6 py-3 text-left font-semibold">Nome</th>
+                    <th className="px-4 sm:px-6 py-3 text-left font-semibold">Matrícula</th>
                     <th className="px-4 sm:px-6 py-3 text-left font-semibold">Setor</th>
                     <th className="px-4 sm:px-6 py-3 text-left font-semibold">Status</th>
                   </tr>
@@ -201,9 +232,14 @@ export default function ConsultaTickets() {
                       }}
                       onClick={() => setSelected(t)}
                     >
-                      <td className="px-4 sm:px-6 py-4 font-mono font-semibold" style={{ color: "var(--primary)" }}>
+                      <td className="px-4 sm:px-6 py-4 font-mono font-semibold whitespace-nowrap" style={{ color: "var(--primary)" }}>
                         {t.ticket}
                       </td>
+                      <td className="px-4 sm:px-6 py-4">
+                        <span>{t.nome}</span>
+                        <TipoBadge tipo={t.tipo} />
+                      </td>
+                      <td className="px-4 sm:px-6 py-4">{t.matricula || "—"}</td>
                       <td className="px-4 sm:px-6 py-4">{t.setor}</td>
                       <td className="px-4 sm:px-6 py-4">
                         <span
@@ -224,7 +260,7 @@ export default function ConsultaTickets() {
           </div>
         )}
 
-        {!loading && tickets.length === 0 && searched && (
+        {!loading && tickets.length === 0 && searched && !errorMsg && (
           <div
             className="p-8 rounded-2xl border text-center transition-colors duration-300"
             style={{
@@ -232,7 +268,10 @@ export default function ConsultaTickets() {
               borderColor: "var(--border-subtle)",
             }}
           >
-            <p className="opacity-70">Nenhum chamado encontrado para este CPF.</p>
+            <p className="opacity-70">
+              Nenhum chamado encontrado.
+              {query.trim() && <> Busca por &quot;{query.trim()}&quot;.</>}
+            </p>
           </div>
         )}
       </div>
@@ -268,10 +307,11 @@ export default function ConsultaTickets() {
               <h2 className="text-xl font-semibold">Detalhes do Chamado</h2>
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2 text-sm" style={{ opacity: 0.7 }}>
                 <FaTicketAlt />
                 <span>{selected.ticket}</span>
+                <TipoBadge tipo={selected.tipo} />
               </div>
               <span
                 className="px-3 py-1 rounded-full text-xs font-semibold text-white"
@@ -287,9 +327,16 @@ export default function ConsultaTickets() {
                 <span>{selected.nome}</span>
               </div>
 
+              {selected.matricula && (
+                <div className="flex items-center gap-2">
+                  <FaIdCard style={{ opacity: 0.6 }} />
+                  <span>Matrícula: {selected.matricula}</span>
+                </div>
+              )}
+
               <div className="flex items-center gap-2">
                 <FaIdCard style={{ opacity: 0.6 }} />
-                <span>{selected.cpf}</span>
+                <span>CPF: {selected.cpf || "—"}</span>
               </div>
 
               <div className="flex items-center gap-2">
