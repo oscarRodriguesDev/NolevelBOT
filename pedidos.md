@@ -2,6 +2,13 @@
 
 > Formato: `- [ ] descrição — status — commit`
 
+## 2026-09-15
+
+- [x] **Feature**: busca unificada de chamados no `/corporativo/consulta` por nome do colaborador, nº do chamado (alfanumérico), CPF ou matrícula — sem quebrar outras versões. — **FEITO** — `fd3f624`
+  - Nova rota aditiva `GET /api/tickets/busca?q=` (RBAC por empresa/setor, CPF normalizado, colaborador TERCEIRO por nome/matrícula/CPF).
+  - Página `/corporativo/consulta` reescrita com campo único + badge Terceiro/Colaborador + coluna Matrícula. `/api/tickets` e `/api/tickets/search` intactos.
+  - Testes: 8 novos (`tickets-busca.test.ts`) — **385/385 passando**; build ok (75 rotas). Branch `dikma` atualizada no remoto.
+
 ## 2026-08-15
 
 - [ ] **BUG**: webhook respondeu `{"error": "Token inválido"}` mesmo com o token atualizado na Vercel (pagamento `pay_72hi1vjm57sda6ok` CONFIRMED). — **DIAGNÓSTICO ADICIONADO, aguardando redeploy** — (commit desta sessão)
