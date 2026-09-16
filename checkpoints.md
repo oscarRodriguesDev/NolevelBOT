@@ -1,5 +1,12 @@
 # Checkpoints — Estado da Sessão
 
+## 2026-09-15 (Filtro de escopo na busca — GOD vê tudo, setor "all" — branch `dikma` — CONCLUÍDO)
+
+### Estado final
+- Diagnóstico via banco: `TKT-1789525142405` ("osquilson", matrícula/CPF "1052", setor "beneficios") existe na **DIKMA**; rota de busca achava normalmente. O vazio vinha do **escopo da sessão**: GOD preso à própria empresa e GESTOR/ATENDENTE com setor `"all"` filtrando `{ setor: "all" }`.
+- Correção só em `/api/tickets/busca`: GOD sem filtro de empresa; `setor === "all"` sem filtro de setor (demais comportamentos intactos — `rbac.ts` não alterado).
+- **Testes**: +2 (`tickets-busca.test.ts`) → **391/391**. **Build**: ok (75 rotas).
+
 ## 2026-09-15 (Autocomplete na consulta de chamados — branch `dikma` — CONCLUÍDO)
 
 ### Estado final

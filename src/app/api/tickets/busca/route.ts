@@ -60,9 +60,21 @@ export async function GET(req: NextRequest) {
       },
     })
 
-    const andClauses: Prisma.ChamadoWhereInput[] = [{ empresaId: base.empresaId }]
+    const andClauses: Prisma.ChamadoWhereInput[] = []
 
-    if (userRole === "ATENDENTE" || userRole === "GESTOR") {
+    // GOD enxerga chamados de TODAS as empresas (padrão do god/dashboard);
+    // demais roles ficam restritos à própria empresa
+    if (userRole !== "GOD") {
+      andClauses.push({ empresaId: base.empresaId })
+    }
+
+    // GESTOR/ATENDENTE com setor específico ficam no próprio setor;
+    // setor "all" (acesso total) não filtra por setor
+    if (
+      (userRole === "ATENDENTE" || userRole === "GESTOR") &&
+      userSetor &&
+      userSetor !== "all"
+    ) {
       andClauses.push({ setor: base.setor })
     }
 

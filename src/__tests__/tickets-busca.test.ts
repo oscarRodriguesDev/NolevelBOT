@@ -23,6 +23,14 @@ const sessaoAtendente = {
   user: { id: "user-2", role: "ATENDENTE", setor: "beneficios", empresaId: "emp-1" },
 }
 
+const sessaoGod = {
+  user: { id: "user-3", role: "GOD", setor: "", empresaId: "1" },
+}
+
+const sessaoGestorAll = {
+  user: { id: "user-4", role: "GESTOR", setor: "all", empresaId: "emp-1" },
+}
+
 function criaReq(url = "http://localhost/api/tickets/busca?q=TKT-1786") {
   return new NextRequest(url)
 }
@@ -169,6 +177,32 @@ describe("GET /api/tickets/busca", () => {
     const whereAdmin = getFindManyArgs(1).where as Record<string, unknown>
     const temSetor = getAnd(whereAdmin).some((item) => item.setor !== undefined)
     expect(temSetor).toBe(false)
+  })
+
+  it("GOD não filtra por empresa (enxerga chamados de todas as empresas)", async () => {
+    mockGetSessionOrFail.mockResolvedValue(sessaoGod)
+    mockPrisma.chamado.findMany.mockResolvedValue([])
+
+    await GET(criaReq("http://localhost/api/tickets/busca?q=osquilson"))
+
+    const where = getFindManyArgs().where as Record<string, unknown>
+    const temEmpresa = getAnd(where).some((item) => item.empresaId !== undefined)
+    expect(temEmpresa).toBe(false)
+  })
+
+  it("GESTOR com setor 'all' não filtra por setor", async () => {
+    mockGetSessionOrFail.mockResolvedValue(sessaoGestorAll)
+    mockPrisma.chamado.findMany.mockResolvedValue([])
+
+    await GET(criaReq("http://localhost/api/tickets/busca?q=1052"))
+
+    const where = getFindManyArgs().where as Record<string, unknown>
+    const temSetor = getAnd(where).some((item) => item.setor !== undefined)
+    expect(temSetor).toBe(false)
+    // mantém o isolamento por empresa
+    expect(getAnd(where)).toEqual(
+      expect.arrayContaining([expect.objectContaining({ empresaId: "emp-1" })])
+    )
   })
 
   it("retorna 500 em erro de banco e monta where.AND[2].OR[0] com ticket (role ATENDENTE)", async () => {

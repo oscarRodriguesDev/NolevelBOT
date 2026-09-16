@@ -317,6 +317,19 @@
   - Banner "Modo administrador (GOD)" com link para `/god/planos`.
   - Botões **Editar** (→ `/god/planos`) e **Excluir** (solicita extinção em 30 dias via DELETE `/api/planos?id=&action=extinguir`) em cada card.
 
+## Sessão 2026-09-15 (Diagnóstico busca consulta: filtro de empresa/setor na rota /api/tickets/busca)
+
+- **Sintoma**: buscas `q=osquilson`/`q=1052` retornavam 200 mas "nenhum chamado".
+- **Diagnóstico via banco** (script one-off): o chamado `TKT-1789525142405` (nome "osquilson", setor "beneficios", cpf/matrícula "1052") **existe na DIKMA** (`a9a0e4a0-...`) — simulação do where achava 1 registro. A rota **não tinha bug de cláusula**; o problema era o **escopo da sessão**:
+  - **GOD** (Oscar, empresaId `'1'`) era filtrado pela própria empresa → não via dados da DIKMA.
+  - **GESTOR/ATENDENTE com setor `"all"`** (WLIENE DIKMA) recebia `{ setor: "all" }` → não achava chamados de setor "beneficios".
+- **Correção** (`src/app/api/tickets/busca/route.ts`, SÓ na rota de busca — `rbac.ts` intocado para não afetar outras listagens):
+  - `GOD` → **sem filtro de empresa** (enxerga todas as empresas, padrão do god/dashboard).
+  - `GESTOR/ATENDENTE` com `setor === "all"` → **sem filtro de setor** (mantém isolamento por empresa).
+  - Demais → comportamento anterior (empresa; empresa+setor para GESTOR/ATENDENTE).
+- **Testes**: +2 em `tickets-busca.test.ts` (GOD sem empresa; GESTOR "all" sem setor + mantém empresa) → **391/391 passando** (25 arquivos); build ok (75 rotas).
+- **Observação ao usuário**: para ver os chamados da DIKMA na tela de consulta, logar com usuário da DIKMA (ou GOD — agora vê tudo).
+
 ## Sessão 2026-09-15 (Autocomplete na consulta — correspondências enquanto digita)
 
 - **Pedido**: a busca de consultas por nome, CPF ou matrícula não respondia durante a digitação; queria ver as correspondências já enquanto digita, para escolher.
