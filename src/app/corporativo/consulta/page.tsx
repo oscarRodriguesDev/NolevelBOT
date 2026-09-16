@@ -72,21 +72,29 @@ export default function ConsultaTickets() {
         return
       }
 
-      const chamados: ChamadoData[] = data.map((c: Record<string, unknown>) => ({
-        ticket: c.ticket as string,
-        status: c.status as string,
-        setor: (c.setor as string) || "",
-        nome: (c.nome as string) || "",
-        cpf: (c.cpf as string) || "",
-        descricao: (c.descricao as string) || "",
-        prioridade: (c.prioridade as string) || "normal",
-        historico: (c.historico as string) || null,
-        createdAt: c.createdAt as string,
-        anexoUrl: (c.anexoUrl as string) || null,
-        atendente: (c.atendente as Record<string, unknown> | null) as { id: string; name: string; email: string; avatarUrl: string } | null,
-        tipo: (c.tipo as string) || "COLABORADOR",
-        matricula: (c.colaborador as { matricula?: string | null } | null | undefined)?.matricula ?? null,
-      }))
+      const chamados: ChamadoData[] = data.map((c: Record<string, unknown>) => {
+        const cpfVal = (c.cpf as string) || ""
+        const colaboradorMatricula =
+          (c.colaborador as { matricula?: string | null } | null | undefined)?.matricula ?? null
+        // Mapeamento "cpf OU matricula": a coluna cpf pode guardar CPF (11 dígitos) ou a matrícula
+        const eCpf = /^\d{11}$/.test(cpfVal)
+        const matricula = colaboradorMatricula || (!eCpf && cpfVal ? cpfVal : null)
+        return {
+          ticket: c.ticket as string,
+          status: c.status as string,
+          setor: (c.setor as string) || "",
+          nome: (c.nome as string) || "",
+          cpf: eCpf ? cpfVal : "",
+          descricao: (c.descricao as string) || "",
+          prioridade: (c.prioridade as string) || "normal",
+          historico: (c.historico as string) || null,
+          createdAt: c.createdAt as string,
+          anexoUrl: (c.anexoUrl as string) || null,
+          atendente: (c.atendente as Record<string, unknown> | null) as { id: string; name: string; email: string; avatarUrl: string } | null,
+          tipo: (c.tipo as string) || "COLABORADOR",
+          matricula,
+        }
+      })
 
       setTickets(chamados)
     } catch (err) {

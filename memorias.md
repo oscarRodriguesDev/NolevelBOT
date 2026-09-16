@@ -317,6 +317,19 @@
   - Banner "Modo administrador (GOD)" com link para `/god/planos`.
   - Botões **Editar** (→ `/god/planos`) e **Excluir** (solicita extinção em 30 dias via DELETE `/api/planos?id=&action=extinguir`) em cada card.
 
+## Sessão 2026-09-15 (Ajuste: matrícula em chamado de terceiro — "CPF ou matrícula")
+
+- **Sintoma reportado**: a matrícula não era salva ao abrir chamado de terceiro (era descartada quando o colaborador vinha do autocomplete).
+- **Decisão do usuário (após revisitar)**: em vez de criar campo novo, manter **coluna única `cpf`** no `Chamado` que guarda **CPF OU matrícula** — `schema.prisma`/migrações **não foram alterados** (mudança só de aplicação).
+- **Rota `src/app/api/tickets/terceiros/route.ts`**:
+  - Colaborador **já existente**: se matrícula/CPF vierem no form → `colaboradores.update` (antes o `findFirst` descartava tudo).
+  - Chamado criado com `cpf: colaborador.cpf || colaborador.matricula || null` (mapeamento na MESMA coluna, como o usuário pediu).
+  - `select` passou a incluir `matricula`.
+- **Front `src/app/chamado-terceiros/chamado-terceiros-form.tsx`**: os campos "Matrícula" e "CPF" separados deram lugar a **um campo único "CPF ou Matrícula" (opcional)** — visível na criação do chamado, mesmo com colaborador existente (permite enriquecer o cadastro). No submit: **11 dígitos → `cpf`**; qualquer outro valor → `matricula`. Ao selecionar colaborador, o campo é pré-preenchido com `cpf || matricula`.
+- **UI `/corporativo/consulta`**: mapeia a coluna `cpf` do chamado — `11 dígitos = CPF`; valor curto = **matrícula** (exibe na coluna/badge de matrícula e "CPF: —").
+- **Testes**: novo `src/__tests__/tickets-terceiros.test.ts` (4 casos: 401, update de matrícula em colaborador existente, matrícula na coluna cpf sem CPF, create de colaborador novo com matrícula). **389/389 passando**, build ok (75 rotas). Nenhuma rota/UI das outras versões alterada.
+- **Pendência**: `GET /api/tickets/search` público segue sem filtro de empresa (fora de escopo — não alterado).
+
 ## Sessão 2026-09-15 (Busca unificada de chamados no /corporativo/consulta — branch `dikma`)
 
 - **Pedido do usuário**: na rota `/corporativo/consulta` (ou outra melhor), permitir buscar chamados por **nome do colaborador, número do chamado (alfanumérico), CPF ou matrícula** — sem quebrar features das outras versões.

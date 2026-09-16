@@ -66,15 +66,28 @@ export async function POST(req: NextRequest) {
     }
 
     // Resolve o colaborador: selecionado (colaboradorId) ou novo (nome digitado)
-    let colaboradorRegistrado: { id: string; nome: string; cpf: string | null } | null = null
+    let colaboradorRegistrado: { id: string; nome: string; cpf: string | null; matricula: string | null } | null = null
 
     if (colaboradorId) {
       colaboradorRegistrado = await prisma.colaboradores.findFirst({
         where: { id: colaboradorId, empresaId },
-        select: { id: true, nome: true, cpf: true },
+        select: { id: true, nome: true, cpf: true, matricula: true },
       })
       if (!colaboradorRegistrado) {
         return NextResponse.json({ error: "Colaborador selecionado não pertence à sua empresa" }, { status: 400 })
+      }
+
+      // Colaborador já existente: enriquece o cadastro com matricula/CPF informados
+      // (antes a matrícula digitada era descartada quando o colaborador vinha do autocomplete)
+      const updateData: { matricula?: string; cpf?: string } = {}
+      if (parsed.matricula) updateData.matricula = parsed.matricula.replace(/\D/g, "").slice(0, 30) || undefined
+      if (parsed.cpf) updateData.cpf = parsed.cpf.replace(/\D/g, "").slice(0, 11) || undefined
+      if (updateData.matricula !== undefined || updateData.cpf !== undefined) {
+        colaboradorRegistrado = await prisma.colaboradores.update({
+          where: { id: colaboradorRegistrado.id },
+          data: updateData,
+          select: { id: true, nome: true, cpf: true, matricula: true },
+        })
       }
     } else {
       // Sem correspondência no autocomplete → cadastra o novo colaborador na mesma transacao
@@ -87,7 +100,7 @@ export async function POST(req: NextRequest) {
           telefone: parsed.telefone ? parsed.telefone.replace(/\D/g, "").slice(0, 15) || undefined : undefined,
           criadoPorUserId: session.user.id,
         },
-        select: { id: true, nome: true, cpf: true },
+        select: { id: true, nome: true, cpf: true, matricula: true },
       })
       colaboradorRegistrado = novo
     }
@@ -112,8 +125,9 @@ export async function POST(req: NextRequest) {
       data: {
         ticket,
         nome: colaboradorRegistrado.nome,
-        // CHamados de terceiro: cpf fica null quando o colaborador nao tem CPF cadastrado
-        cpf: colaboradorRegistrado.cpf,
+        // Mapeamento matricula == cpf: sem CPF cadastrado, a matrícula vai para a
+        // MESMA coluna (cpf) — o chamado sempre fica com um identificador pesquisável
+        cpf: colaboradorRegistrado.cpf || colaboradorRegistrado.matricula || null,
         tipo: "TERCEIRO",
         colaboradorId: colaboradorRegistrado.id,
         setor: parsed.setor,

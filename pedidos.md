@@ -8,6 +8,7 @@
   - Nova rota aditiva `GET /api/tickets/busca?q=` (RBAC por empresa/setor, CPF normalizado, colaborador TERCEIRO por nome/matrícula/CPF).
   - Página `/corporativo/consulta` reescrita com campo único + badge Terceiro/Colaborador + coluna Matrícula. `/api/tickets` e `/api/tickets/search` intactos.
   - Testes: 8 novos (`tickets-busca.test.ts`) — **385/385 passando**; build ok (75 rotas). Branch `dikma` atualizada no remoto.
+  - **Ajuste (matrícula)**: campo único "CPF ou Matrícula" na criação do chamado de terceiro (11 dígitos → CPF, senão matrícula); matrícula agora é salva no colaborador existente e vai para a coluna `cpf` do chamado quando não há CPF. Testes +4 (`tickets-terceiros.test.ts`) → **389/389**.
 
 ## 2026-08-15
 

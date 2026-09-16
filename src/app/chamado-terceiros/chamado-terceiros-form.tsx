@@ -39,8 +39,7 @@ export default function ChamadoTerceirosForm({ setores, empresaNome }: Props) {
   const [buscando, setBuscando] = useState(false)
   const [mostrarSugestoes, setMostrarSugestoes] = useState(false)
   const [focados, setFocados] = useState(false)
-  const [matricula, setMatricula] = useState("")
-  const [cpfNovo, setCpfNovo] = useState("")
+  const [identificador, setIdentificador] = useState("") // CPF ou matrícula do colaborador
   const [telefone, setTelefone] = useState("")
   const [setor, setSetor] = useState("")
   const [prioridade, setPrioridade] = useState<Prioridade>(null)
@@ -93,6 +92,7 @@ export default function ChamadoTerceirosForm({ setores, empresaNome }: Props) {
   const selecionarColaborador = (c: ColaboradorSugestao) => {
     setColaborador(c)
     setNome(c.nome)
+    setIdentificador(c.cpf || c.matricula || "")
     setSugestoes([])
     setMostrarSugestoes(false)
     setFocados(false)
@@ -102,8 +102,7 @@ export default function ChamadoTerceirosForm({ setores, empresaNome }: Props) {
     setColaborador(null)
     setNome("")
     setSugestoes([])
-    setMatricula("")
-    setCpfNovo("")
+    setIdentificador("")
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -143,12 +142,12 @@ export default function ChamadoTerceirosForm({ setores, empresaNome }: Props) {
 
       if (colaborador?.id) {
         form.append("colaboradorId", colaborador.id)
-      } else {
-        const matriculaDigits = matricula.replace(/\D/g, "")
-        const cpfDigits = cpfNovo.replace(/\D/g, "")
-        if (matriculaDigits) form.append("matricula", matriculaDigits)
-        if (cpfDigits) form.append("cpf", cpfDigits)
       }
+      // "CPF ou matrícula": 11 dígitos → CPF; qualquer outro valor → matrícula
+      // (a rota grava na coluna cpf: CPF quando existir, senão a matrícula)
+      const idDigits = identificador.replace(/\D/g, "")
+      if (idDigits.length === 11) form.append("cpf", idDigits)
+      else if (idDigits) form.append("matricula", idDigits)
 
       if (telefone) {
         form.append("telefone", telefone.replace(/\D/g, ""))
@@ -368,49 +367,30 @@ export default function ChamadoTerceirosForm({ setores, empresaNome }: Props) {
               )}
             </div>
 
-            {/* Campos opcionais apenas para colaborador novo */}
-            {!colaborador && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
-                    Matrícula <span className="font-normal opacity-50">(opcional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={matricula}
-                    onChange={(e) => setMatricula(e.target.value.replace(/\D/g, "").slice(0, 30))}
-                    className="w-full px-4 py-3 rounded-xl outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
-                    style={{
-                      backgroundColor: "var(--surface-elevated)",
-                      border: "1px solid var(--border-subtle)",
-                      color: "var(--foreground)",
-                      "--tw-ring-color": "var(--primary)",
-                    } as never}
-                    placeholder="Matrícula do colaborador"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
-                    CPF <span className="font-normal opacity-50">(opcional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={cpfNovo}
-                    onChange={(e) => setCpfNovo(e.target.value.replace(/\D/g, "").slice(0, 11))}
-                    className="w-full px-4 py-3 rounded-xl outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
-                    style={{
-                      backgroundColor: "var(--surface-elevated)",
-                      border: "1px solid var(--border-subtle)",
-                      color: "var(--foreground)",
-                      "--tw-ring-color": "var(--primary)",
-                    } as never}
-                    placeholder="Somente números"
-                  />
-                </div>
-              </div>
-            )}
+            {/* Identificador: CPF ou matrícula (opcional) — também permite enriquecer
+                o cadastro quando um colaborador existente é selecionado */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
+                CPF ou Matrícula <span className="font-normal opacity-50">(opcional)</span>
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={identificador}
+                onChange={(e) => setIdentificador(e.target.value.replace(/\D/g, "").slice(0, 30))}
+                className="w-full px-4 py-3 rounded-xl outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
+                style={{
+                  backgroundColor: "var(--surface-elevated)",
+                  border: "1px solid var(--border-subtle)",
+                  color: "var(--foreground)",
+                  "--tw-ring-color": "var(--primary)",
+                } as never}
+                placeholder="CPF ou matrícula do colaborador"
+              />
+              <p className="mt-1 text-xs opacity-50">
+                Digite o CPF (11 dígitos) ou a matrícula do colaborador.
+              </p>
+            </div>
 
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-2">

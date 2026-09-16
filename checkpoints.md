@@ -1,5 +1,14 @@
 # Checkpoints — Estado da Sessão
 
+## 2026-09-15 (Matrícula em chamado de terceiro "CPF ou matrícula" — branch `dikma` — CONCLUÍDO)
+
+### Estado final
+- **Problema**: matrícula não era salva na abertura de chamado de terceiro (descartada quando colaborador vinha do autocomplete).
+- **Solução (sem alterar schema)**: coluna única `cpf` do `Chamado` guarda **CPF ou matrícula** (`cpf: colaborador.cpf || colaborador.matricula`); `colaboradores.update` agora salva matrícula/CPF em colaborador existente; `select` inclui `matricula`.
+- **Front**: campo único **"CPF ou Matrícula"** no `chamado-terceiros-form` (11 dígitos → cpf; senão → matrícula); consulta `/corporativo/consulta` distingue por tamanho (11 dígitos = CPF, valor curto = matrícula).
+- **Schema/migrações**: NÃO alterados (caminho "criar coluna matricula" foi testado e **descartado pelo usuário**; shadow DB do `migrate dev` também falhou por histórico antigo — irrelevante pois não houve migração).
+- **Testes**: +4 (`tickets-terceiros.test.ts`) → **389/389 passando** (25 arquivos). **Build**: ok (75 rotas).
+
 ## 2026-09-15 (Busca unificada no /corporativo/consulta — branch `dikma` — CONCLUÍDO)
 
 ### Estado final
