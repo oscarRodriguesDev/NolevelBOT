@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { ThemeToggle } from "../../components/theme-toggle"
 import {
   FaTicketAlt,
@@ -32,7 +32,39 @@ type ChamadoData = {
   matricula: string | null
 }
 
+// Normaliza o chamado vindo da API — mapeamento "cpf OU matricula":
+// a coluna cpf pode guardar CPF (11 dígitos) ou a matrícula do colaborador
+function normalizarChamado(c: Record<string, unknown>): ChamadoData {
+  const cpfVal = (c.cpf as string) || ""
+  const colaboradorMatricula =
+    (c.colaborador as { matricula?: string | null } | null | undefined)?.matricula ?? null
+  const eCpf = /^\d{11}$/.test(cpfVal)
+  const matricula = colaboradorMatricula || (!eCpf && cpfVal ? cpfVal : null)
+  return {
+    ticket: c.ticket as string,
+    status: c.status as string,
+    setor: (c.setor as string) || "",
+    nome: (c.nome as string) || "",
+    cpf: eCpf ? cpfVal : "",
+    descricao: (c.descricao as string) || "",
+    prioridade: (c.prioridade as string) || "normal",
+    historico: (c.historico as string) || null,
+    createdAt: c.createdAt as string,
+    anexoUrl: (c.anexoUrl as string) || null,
+    atendente: (c.atendente as Record<string, unknown> | null) as { id: string; name: string; email: string; avatarUrl: string } | null,
+    tipo: (c.tipo as string) || "COLABORADOR",
+    matricula,
+  }
+}
+
+function extrairChamados(json: unknown): ChamadoData[] {
+  const data = Array.isArray(json) ? json : (json as { data?: unknown } | null)?.data
+  if (!Array.isArray(data)) return []
+  return data.map((c) => normalizarChamado(c as Record<string, unknown>))
+}
+
 // Pagina de consulta unificada de chamados por nome, CPF, matricula ou ticket
+// com autocomplete: ao digitar, as correspondências aparecem para escolher
 export default function ConsultaTickets() {
   const [query, setQuery] = useState("")
   const [tickets, setTickets] = useState<ChamadoData[]>([])
@@ -41,14 +73,74 @@ export default function ConsultaTickets() {
   const [selected, setSelected] = useState<ChamadoData | null>(null)
   const [errorMsg, setErrorMsg] = useState("")
 
-  // Busca chamados na API filtrando por q (nome/CPF/matricula/ticket)
+  // Autocomplete
+  const [sugestoes, setSugestoes] = useState<ChamadoData[]>([])
+  const [buscandoSugestoes, setBuscandoSugestoes] = useState(false)
+  const [sugestoesAbertas, setSugestoesAbertas] = useState(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const buscaCounter = useRef(0)
+
+  const abrirDetalhe = (chamado: ChamadoData) => {
+    setSugestoesAbertas(false)
+    setSelected(chamado)
+  }
+
+  // Busca por nome, CPF, matrícula ou nº do chamado já durante a digitação
+  const buscarSugestoes = useCallback(async (termo: string) => {
+    const q = termo.trim()
+    if (q.length < 2) {
+      setSugestoes([])
+      setSugestoesAbertas(false)
+      return
+    }
+    const contador = ++buscaCounter.current
+    setBuscandoSugestoes(true)
+    try {
+      const res = await fetch(`/api/tickets/busca?q=${encodeURIComponent(q)}&limit=8`)
+      const json = await res.json().catch(() => null)
+      // Descarta resposta obsoleta (digitação mais recente)
+      if (contador === buscaCounter.current) {
+        if (res.status === 401) {
+          setSugestoes([])
+          setSugestoesAbertas(false)
+          setErrorMsg("Sessão expirada, faça login novamente.")
+        } else {
+          setSugestoes(extrairChamados(json))
+          setSugestoesAbertas(true)
+        }
+      }
+    } catch {
+      if (contador === buscaCounter.current) {
+        setSugestoes([])
+        setSugestoesAbertas(false)
+      }
+    } finally {
+      if (contador === buscaCounter.current) setBuscandoSugestoes(false)
+    }
+  }, [])
+
+  // Debounce: dispara o autocomplete 300ms após parar de digitar
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (query.trim().length < 2) {
+      setSugestoes([])
+      setSugestoesAbertas(false)
+      return
+    }
+    debounceRef.current = setTimeout(() => buscarSugestoes(query), 300)
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [query, buscarSugestoes])
+
+  // Busca completa (botão/Enter) — lista todos os resultados
   async function buscarTickets() {
     const q = query.trim()
-    if (q.length < 3) return
+    if (q.length < 2) return
     setSearched(true)
     setLoading(true)
     setErrorMsg("")
-    setTickets([])
+    setSugestoesAbertas(false)
 
     try {
       const res = await fetch(`/api/tickets/busca?q=${encodeURIComponent(q)}`)
@@ -65,38 +157,7 @@ export default function ConsultaTickets() {
       }
 
       const json = await res.json()
-      const data = Array.isArray(json) ? json : json?.data
-
-      if (!Array.isArray(data)) {
-        setTickets([])
-        return
-      }
-
-      const chamados: ChamadoData[] = data.map((c: Record<string, unknown>) => {
-        const cpfVal = (c.cpf as string) || ""
-        const colaboradorMatricula =
-          (c.colaborador as { matricula?: string | null } | null | undefined)?.matricula ?? null
-        // Mapeamento "cpf OU matricula": a coluna cpf pode guardar CPF (11 dígitos) ou a matrícula
-        const eCpf = /^\d{11}$/.test(cpfVal)
-        const matricula = colaboradorMatricula || (!eCpf && cpfVal ? cpfVal : null)
-        return {
-          ticket: c.ticket as string,
-          status: c.status as string,
-          setor: (c.setor as string) || "",
-          nome: (c.nome as string) || "",
-          cpf: eCpf ? cpfVal : "",
-          descricao: (c.descricao as string) || "",
-          prioridade: (c.prioridade as string) || "normal",
-          historico: (c.historico as string) || null,
-          createdAt: c.createdAt as string,
-          anexoUrl: (c.anexoUrl as string) || null,
-          atendente: (c.atendente as Record<string, unknown> | null) as { id: string; name: string; email: string; avatarUrl: string } | null,
-          tipo: (c.tipo as string) || "COLABORADOR",
-          matricula,
-        }
-      })
-
-      setTickets(chamados)
+      setTickets(extrairChamados(json))
     } catch (err) {
       console.error("Erro na busca:", err)
       setTickets([])
@@ -139,7 +200,7 @@ export default function ConsultaTickets() {
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold" style={{ color: "var(--primary)" }}>
             Consultar Chamados
           </h1>
-          <p className="text-sm opacity-70">Busque chamados por nome, CPF, matrícula ou número do chamado</p>
+          <p className="text-sm opacity-70">Digite nome, CPF, matrícula ou número do chamado — as correspondências aparecem automaticamente</p>
         </div>
 
         <div
@@ -151,27 +212,101 @@ export default function ConsultaTickets() {
         >
           <div className="space-y-2">
             <label className="block text-sm font-semibold">Busca</label>
-            <input
-              type="text"
-              placeholder="Nome, CPF, matrícula ou número do chamado"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && query.trim().length >= 3 && !loading) buscarTickets()
-              }}
-              className="w-full px-4 py-3 border rounded-lg outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
-              style={{
-                borderColor: "var(--border-subtle)",
-                backgroundColor: "var(--surface-elevated)",
-                color: "var(--foreground)",
-                "--tw-ring-color": "var(--primary)",
-              } as never}
-            />
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Nome, CPF, matrícula ou número do chamado"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value)
+                  setErrorMsg("")
+                }}
+                onFocus={() => query.trim().length >= 2 && setSugestoesAbertas(true)}
+                onBlur={() => setTimeout(() => setSugestoesAbertas(false), 150)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && query.trim().length >= 2 && !loading) buscarTickets()
+                }}
+                className="w-full px-4 py-3 border rounded-lg outline-none transition-all duration-300 focus:ring-2 focus:ring-opacity-50"
+                style={{
+                  borderColor: "var(--border-subtle)",
+                  backgroundColor: "var(--surface-elevated)",
+                  color: "var(--foreground)",
+                  "--tw-ring-color": "var(--primary)",
+                } as never}
+              />
+
+              {/* Autocomplete: correspondências enquanto digita */}
+              {sugestoesAbertas && (
+                <div
+                  className="absolute z-30 mt-2 w-full rounded-xl border shadow-xl overflow-hidden"
+                  style={{
+                    backgroundColor: "var(--surface-elevated)",
+                    borderColor: "var(--border-subtle)",
+                  }}
+                >
+                  {buscandoSugestoes && (
+                    <div className="px-4 py-3 text-sm opacity-60 flex items-center gap-2">
+                      <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Buscando...
+                    </div>
+                  )}
+
+                  {!buscandoSugestoes && sugestoes.length === 0 && (
+                    <div className="px-4 py-3 text-sm opacity-70">
+                      Nenhuma correspondência para &quot;{query.trim()}&quot;.
+                    </div>
+                  )}
+
+                  {sugestoes.map((s) => (
+                    <button
+                      key={s.ticket}
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        abrirDetalhe(s)
+                      }}
+                      className="w-full text-left px-4 py-3 hover:bg-[var(--surface)] transition-colors border-b last:border-0"
+                      style={{ borderColor: "var(--border-subtle)" }}
+                    >
+                      <p className="text-sm font-semibold flex items-center flex-wrap">
+                        {s.nome}
+                        <TipoBadge tipo={s.tipo} />
+                      </p>
+                      <p className="text-xs opacity-60 font-mono mt-0.5" style={{ color: "var(--primary)" }}>
+                        {s.ticket}
+                        {s.matricula && <span className="opacity-70" style={{ color: "var(--foreground)" }}> · Matrícula: {s.matricula}</span>}
+                        {!s.matricula && s.cpf && <span className="opacity-70" style={{ color: "var(--foreground)" }}> · CPF: {s.cpf}</span>}
+                      </p>
+                    </button>
+                  ))}
+
+                  {sugestoes.length > 0 && (
+                    <button
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        buscarTickets()
+                      }}
+                      className="w-full text-left px-4 py-3 text-sm font-semibold transition-colors hover:opacity-80 border-t"
+                      style={{
+                        borderColor: "var(--border-subtle)",
+                        color: "var(--primary)",
+                      }}
+                    >
+                      Ver todos os resultados para &quot;{query.trim()}&quot;
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           <button
             onClick={buscarTickets}
-            disabled={loading || query.trim().length < 3}
+            disabled={loading || query.trim().length < 2}
             className="w-full py-3 rounded-lg font-semibold text-white transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-2"
             style={{ backgroundColor: "var(--primary)" }}
           >

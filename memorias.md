@@ -317,6 +317,14 @@
   - Banner "Modo administrador (GOD)" com link para `/god/planos`.
   - Botões **Editar** (→ `/god/planos`) e **Excluir** (solicita extinção em 30 dias via DELETE `/api/planos?id=&action=extinguir`) em cada card.
 
+## Sessão 2026-09-15 (Autocomplete na consulta — correspondências enquanto digita)
+
+- **Pedido**: a busca de consultas por nome, CPF ou matrícula não respondia durante a digitação; queria ver as correspondências já enquanto digita, para escolher.
+- **`src/app/corporativo/consulta/page.tsx`**: adicionado **autocomplete em tempo real** — debounce 300ms, dispara a partir de **2 caracteres** (`GET /api/tickets/busca?q=&limit=8`), dropdown clicável com nome + badge Terceiro/Colaborador + ticket + matrícula/CPF; clicar abre o modal de detalhes; item "Ver todos os resultados" roda a busca completa. Anti race-condition (contador) e limpeza do debounce no unmount, mesmo padrão do form de terceiros.
+- **Extração**: `normalizarChamado`/`extrairChamados` viraram helpers reutilizáveis (mapeamento "cpf OU matrícula" — 11 dígitos = CPF).
+- **Conferido** `getTicketWhereClause(role, setor, empresaId)` — assinatura/uso correto; rota de busca sem bug de filtro (GESTOR/ATENDENTE → empresa+setor; ADMIN/GOD → empresa).
+- **Validação**: build ok (75 rotas), **389/389 testes** (25 arquivos). Sem alterações em rotas de API nem no schema.
+
 ## Sessão 2026-09-15 (Ajuste: matrícula em chamado de terceiro — "CPF ou matrícula")
 
 - **Sintoma reportado**: a matrícula não era salva ao abrir chamado de terceiro (era descartada quando o colaborador vinha do autocomplete).

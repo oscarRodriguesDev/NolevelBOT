@@ -1,5 +1,12 @@
 # Checkpoints — Estado da Sessão
 
+## 2026-09-15 (Autocomplete na consulta de chamados — branch `dikma` — CONCLUÍDO)
+
+### Estado final
+- `/corporativo/consulta` agora tem **autocomplete em tempo real**: a partir de 2 caracteres, com debounce de 300ms, mostra dropdown de correspondências (nome, ticket, matrícula/CPF, badge Terceiro/Colaborador); clicar abre o modal; "Ver todos os resultados" executa a busca completa.
+- Helpers `normalizarChamado`/`extrairChamados` extraídos (mapeamento "cpf OU matrícula"). Rota `/api/tickets/busca` e RBAC conferidos (sem bug de filtro).
+- **Testes**: 389/389 passando (25 arquivos). **Build**: ok (75 rotas). Nada de API/schema alterado.
+
 ## 2026-09-15 (Matrícula em chamado de terceiro "CPF ou matrícula" — branch `dikma` — CONCLUÍDO)
 
 ### Estado final
